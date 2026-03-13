@@ -1,0 +1,100 @@
+<%- layout('../layouts/main') %>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Roles</div>
+        <div class="card-options">
+            <% if (can('add_roles')) { %>
+                <button class="btn btn-primary btn-sm" onclick="addRole()">
+                    <i class="ti ti-plus me-1"></i> Add Role
+                </button>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="card-body border-bottom py-3">
+        <input type="text" id="searchInput" class="form-control form-control-sm"
+               placeholder="Search roles..." style="max-width:300px;"/>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-vcenter table-hover card-table" id="datalist">
+            <thead>
+                <tr>
+                    <th style="width:50px;">#</th>
+                    <th>Role Name</th>
+                    <th>Panel</th>
+                    <th>Status</th>
+                    <th style="width:100px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1"></div>
+
+<script src="/js/pages/roles.js"></script>
+<script>
+$(function () {
+    var searchTimer;
+    $('#searchInput').on('keyup', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () { $('#datalist').DataTable().draw(); }, 400);
+    });
+
+    $('#datalist').DataTable({
+        processing: true,
+        serverSide: true,
+        searching:  false,
+        ordering:   false,
+        pageLength: 15,
+        ajax: {
+            url:  BASE_URL + '/roles/paginate',
+            type: 'POST',
+            data: function (d) {
+                d.page     = Math.ceil(d.start / d.length) + 1;
+                d.per_page = d.length;
+                d.search   = $('#searchInput').val();
+            },
+            dataSrc: function (json) {
+                if (json && json.data && json.data.pagination) {
+                    json.recordsTotal = json.recordsFiltered = json.data.pagination.total;
+                    return json.data.data || [];
+                }
+                return [];
+            },
+        },
+        columns: [
+            { data: null, render: function (d, t, r, meta) { return meta.row + 1; } },
+            { data: 'name' },
+            { data: 'panel_type', defaultContent: '-' },
+            {
+                data: 'status',
+                render: function (d) {
+                    return parseInt(d) === 1
+                        ? '<span class="badge bg-success-lt">Active</span>'
+                        : '<span class="badge bg-danger-lt">Inactive</span>';
+                }
+            },
+            {
+                data: 'uuid',
+                render: function (uuid, t, row) {
+                    var html = '<div class="btn-group">';
+                    <% if (can('edit_roles')) { %>
+                        html += '<button class="btn btn-sm btn-outline-primary" onclick="editRole(\'' + uuid + '\')" title="Edit"><i class="ti ti-edit"></i></button>';
+                    <% } %>
+                    <% if (can('delete_roles')) { %>
+                        if (!row.is_super_role) {
+                            html += '<button class="btn btn-sm btn-outline-danger" onclick="deleteRole(\'' + uuid + '\')" title="Delete"><i class="ti ti-trash"></i></button>';
+                        }
+                    <% } %>
+                    html += '</div>';
+                    return html;
+                }
+            },
+        ],
+    });
+});
+</script>

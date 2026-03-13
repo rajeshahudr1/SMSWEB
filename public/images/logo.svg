@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="44" viewBox="0 0 160 44">
+  <rect width="44" height="44" rx="10" fill="#0054a6"/>
+  <text x="8" y="31" font-family="Arial" font-size="22" font-weight="800" fill="white">♻</text>
+  <text x="52" y="22" font-family="Arial,sans-serif" font-size="15" font-weight="800" fill="#1a2332">SMS</text>
+  <text x="52" y="36" font-family="Arial,sans-serif" font-size="10" fill="#667380">Scrap Management</text>
+</svg>

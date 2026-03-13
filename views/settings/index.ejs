@@ -1,0 +1,155 @@
+<%- layout('../layouts/main') %>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">My Settings</div>
+        <div class="card-options text-secondary small">
+            Changes take effect immediately and apply across all pages.
+        </div>
+    </div>
+
+    <form id="frmSettings" method="POST" action="/settings/user" novalidate>
+        <div class="card-body">
+            <div class="row g-4">
+
+                <!-- Theme Colour -->
+                <div class="col-md-6">
+                    <label class="form-label">Theme Colour</label>
+                    <div class="row g-2" id="themeColours">
+                        <%
+                          var colours = [
+                            { label:'Blue',   value:'#0054a6' },
+                            { label:'Teal',   value:'#0ca678' },
+                            { label:'Purple', value:'#9b59b6' },
+                            { label:'Red',    value:'#d63939' },
+                            { label:'Orange', value:'#f76707' },
+                            { label:'Indigo', value:'#4263eb' },
+                          ];
+                        %>
+                        <% colours.forEach(function(c) { %>
+                            <div class="col-auto">
+                                <label class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input"
+                                           name="theme_color" value="<%- c.value %>"
+                                           <%- (userSettings.theme_color === c.value || (!userSettings.theme_color && c.value === '#0054a6')) ? 'checked' : '' %>>
+                                    <span class="form-check-label d-flex align-items-center gap-1">
+                                        <span class="d-inline-block rounded-circle"
+                                              style="width:18px;height:18px;background:<%- c.value %>;"></span>
+                                        <%- c.label %>
+                                    </span>
+                                </label>
+                            </div>
+                        <% }) %>
+                    </div>
+                    <p class="form-hint">Applies as the primary colour across the app.</p>
+                </div>
+
+                <!-- Font Size -->
+                <div class="col-md-3">
+                    <label class="form-label">Font Size</label>
+                    <select name="font_size" class="form-select">
+                        <option value="12px" <%- userSettings.font_size === '12px' ? 'selected' : '' %>>Small (12px)</option>
+                        <option value="14px" <%- (!userSettings.font_size || userSettings.font_size === '14px') ? 'selected' : '' %>>Medium (14px)</option>
+                        <option value="16px" <%- userSettings.font_size === '16px' ? 'selected' : '' %>>Large (16px)</option>
+                    </select>
+                </div>
+
+                <!-- Dark Mode -->
+                <div class="col-md-3">
+                    <label class="form-label">Dark Mode</label>
+                    <label class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" name="dark_mode" value="1"
+                               <%- (userSettings.dark_mode == '1') ? 'checked' : '' %>>
+                        <span class="form-check-label">Enable dark theme</span>
+                    </label>
+                </div>
+
+                <div class="col-12"><hr/></div>
+
+                <!-- Date Format -->
+                <div class="col-md-4">
+                    <label class="form-label">Date Format</label>
+                    <select name="date_format" class="form-select">
+                        <option value="DD/MM/YYYY" <%- (!userSettings.date_format || userSettings.date_format === 'DD/MM/YYYY') ? 'selected' : '' %>>DD/MM/YYYY</option>
+                        <option value="MM/DD/YYYY" <%- userSettings.date_format === 'MM/DD/YYYY' ? 'selected' : '' %>>MM/DD/YYYY</option>
+                        <option value="YYYY-MM-DD" <%- userSettings.date_format === 'YYYY-MM-DD' ? 'selected' : '' %>>YYYY-MM-DD</option>
+                        <option value="DD MMM YYYY" <%- userSettings.date_format === 'DD MMM YYYY' ? 'selected' : '' %>>DD MMM YYYY</option>
+                    </select>
+                    <p class="form-hint">How dates appear everywhere in the app.</p>
+                </div>
+
+                <!-- Timezone -->
+                <div class="col-md-4">
+                    <label class="form-label">Timezone</label>
+                    <select name="timezone" class="form-select select2">
+                        <%
+                          var timezones = [
+                            'Asia/Kolkata', 'Asia/Dubai', 'Asia/Singapore',
+                            'Europe/London', 'Europe/Paris',
+                            'America/New_York', 'America/Chicago',
+                            'America/Denver', 'America/Los_Angeles',
+                            'Australia/Sydney', 'Pacific/Auckland',
+                          ];
+                        %>
+                        <% timezones.forEach(function(tz) { %>
+                            <option value="<%- tz %>"
+                                <%- (userSettings.timezone === tz || (!userSettings.timezone && tz === 'Asia/Kolkata')) ? 'selected' : '' %>>
+                                <%- tz %>
+                            </option>
+                        <% }) %>
+                    </select>
+                    <p class="form-hint">All dates are stored in UTC and displayed in your timezone.</p>
+                </div>
+
+                <!-- Items per page -->
+                <div class="col-md-4">
+                    <label class="form-label">Items per Page</label>
+                    <select name="items_per_page" class="form-select">
+                        <option value="10"  <%- userSettings.items_per_page == '10'  ? 'selected' : '' %>>10</option>
+                        <option value="15"  <%- (!userSettings.items_per_page || userSettings.items_per_page == '15') ? 'selected' : '' %>>15</option>
+                        <option value="25"  <%- userSettings.items_per_page == '25'  ? 'selected' : '' %>>25</option>
+                        <option value="50"  <%- userSettings.items_per_page == '50'  ? 'selected' : '' %>>50</option>
+                        <option value="100" <%- userSettings.items_per_page == '100' ? 'selected' : '' %>>100</option>
+                    </select>
+                    <p class="form-hint">Default rows in all data tables.</p>
+                </div>
+
+                <!-- Sidebar Collapsed -->
+                <div class="col-md-4">
+                    <label class="form-label">Sidebar</label>
+                    <label class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" name="sidebar_collapsed" value="1"
+                               <%- (userSettings.sidebar_collapsed == '1') ? 'checked' : '' %>>
+                        <span class="form-check-label">Start with sidebar collapsed</span>
+                    </label>
+                </div>
+
+                <!-- Language -->
+                <div class="col-md-4">
+                    <label class="form-label">Language</label>
+                    <select name="language" class="form-select">
+                        <option value="en" <%- (!userSettings.language || userSettings.language === 'en') ? 'selected' : '' %>>English</option>
+                        <option value="hi" <%- userSettings.language === 'hi' ? 'selected' : '' %>>Hindi</option>
+                        <option value="gu" <%- userSettings.language === 'gu' ? 'selected' : '' %>>Gujarati</option>
+                    </select>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card-footer text-end">
+            <button type="button" class="btn btn-outline-secondary me-2" id="btnReset">Reset to Default</button>
+            <button type="submit" id="btnSave" class="btn btn-primary"
+                    data-loading="Saving..." data-original-text="Save Settings">
+                Save Settings
+            </button>
+        </div>
+    </form>
+</div>
+
+<script src="/js/pages/settings.js"></script>
+<script>
+$(function () {
+    $('.select2').select2({ theme: 'bootstrap-5', width: '100%' });
+});
+</script>

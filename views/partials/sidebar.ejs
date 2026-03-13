@@ -1,0 +1,156 @@
+<%
+/*
+  Sidebar is built from session menus (loaded on login from API).
+  menus[] is a 3-level tree: level 1 = groups, level 2 = items, level 3 = sub-items.
+  activeLink is set by each controller: res.locals.activeLink = 'users';
+  can() is a helper injected by injectLocals middleware.
+*/
+%>
+<aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+
+        <!-- Toggle for mobile -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Logo -->
+        <a href="/dashboard" class="navbar-brand navbar-brand-autodark">
+            <img src="/images/logo.svg" height="36" alt="<%- APP_NAME %>"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+            <span style="display:none; font-weight:700; font-size:18px; color:#fff;"><%- APP_NAME %></span>
+        </a>
+
+        <!-- User avatar (mobile) -->
+        <div class="navbar-nav flex-row d-lg-none">
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown">
+                    <% if (user && user.profile_image) { %>
+                        <span class="avatar avatar-sm" style="background-image: url(<%- user.profile_image %>)"></span>
+                    <% } else { %>
+                        <span class="avatar avatar-sm bg-primary-lt">
+                            <%- user ? user.name.charAt(0).toUpperCase() : 'U' %>
+                        </span>
+                    <% } %>
+                </a>
+            </div>
+        </div>
+
+        <!-- Menu -->
+        <div class="collapse navbar-collapse" id="sidebar-menu">
+            <ul class="navbar-nav pt-lg-3">
+
+                <!-- Dashboard — always shown to logged-in user -->
+                <li class="nav-item <%= activeLink === 'dashboard' ? 'active' : '' %>">
+                    <a class="nav-link" href="/dashboard">
+                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                            <i class="ti ti-home"></i>
+                        </span>
+                        <span class="nav-link-title">Dashboard</span>
+                    </a>
+                </li>
+
+                <%
+                /*
+                  Dynamic menu from API.
+                  menus is an array of level-1 groups, each with children[].
+                  Each child may have children[] (level 3).
+                  permission_key controls visibility.
+                */
+                if (menus && menus.length > 0) {
+                    menus.forEach(function(group) {
+                        // Level 1 — group header (no link) or single item
+                        if (group.children && group.children.length > 0) {
+                            // Check if any child is visible
+                            var anyVisible = group.children.some(function(child) {
+                                return !child.permission_key || can(child.permission_key);
+                            });
+                            if (!anyVisible) return;
+
+                            // Is any child active?
+                            var groupActive = group.children.some(function(child) {
+                                return child.route_path && activeLink === child.route_path.replace('/','');
+                            });
+                %>
+                <li class="nav-item dropdown <%= groupActive ? 'active' : '' %>">
+                    <a class="nav-link dropdown-toggle" href="#menu-<%- group.id %>"
+                       data-bs-toggle="collapse" role="button"
+                       aria-expanded="<%= groupActive ? 'true' : 'false' %>">
+                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                            <i class="ti <%- group.icon || 'ti-layout-grid' %>"></i>
+                        </span>
+                        <span class="nav-link-title"><%- group.title %></span>
+                    </a>
+                    <div class="dropdown-menu <%= groupActive ? 'show' : '' %>" id="menu-<%- group.id %>">
+                        <% group.children.forEach(function(child) { %>
+                            <% if (!child.permission_key || can(child.permission_key)) { %>
+                                <% if (child.children && child.children.length > 0) { %>
+                                    <!-- Level 3 — nested group -->
+                                    <% var childActive = child.children.some(function(sub) { return activeLink === sub.route_path.replace('/',''); }); %>
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle <%= childActive ? 'active' : '' %>"
+                                           href="#submenu-<%- child.id %>" data-bs-toggle="collapse">
+                                            <%- child.title %>
+                                        </a>
+                                        <div class="collapse <%= childActive ? 'show' : '' %>" id="submenu-<%- child.id %>">
+                                            <% child.children.forEach(function(sub) { %>
+                                                <% if (!sub.permission_key || can(sub.permission_key)) { %>
+                                                    <a class="dropdown-item ms-3 <%= activeLink === sub.route_path.replace('/','') ? 'active' : '' %>"
+                                                       href="<%- sub.route_path %>">
+                                                        <%- sub.title %>
+                                                    </a>
+                                                <% } %>
+                                            <% }) %>
+                                        </div>
+                                    </div>
+                                <% } else { %>
+                                    <!-- Level 2 — normal item -->
+                                    <a class="dropdown-item <%= activeLink === child.route_path.replace('/','') ? 'active' : '' %>"
+                                       href="<%- child.route_path %>">
+                                        <%- child.title %>
+                                    </a>
+                                <% } %>
+                            <% } %>
+                        <% }) %>
+                    </div>
+                </li>
+                <%
+                        } else {
+                            // Single item (no children)
+                            if (group.permission_key && !can(group.permission_key)) return;
+                %>
+                <li class="nav-item <%= activeLink === (group.route_path || '').replace('/','') ? 'active' : '' %>">
+                    <a class="nav-link" href="<%- group.route_path || '#' %>">
+                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                            <i class="ti <%- group.icon || 'ti-circle' %>"></i>
+                        </span>
+                        <span class="nav-link-title"><%- group.title %></span>
+                    </a>
+                </li>
+                <%
+                        }
+                    });
+                }
+                %>
+
+                <!-- Settings — always shown -->
+                <li class="nav-item <%= activeLink === 'settings' ? 'active' : '' %>">
+                    <a class="nav-link" href="/settings">
+                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                            <i class="ti ti-settings"></i>
+                        </span>
+                        <span class="nav-link-title">Settings</span>
+                    </a>
+                </li>
+
+            </ul>
+
+            <!-- Bottom: Logout -->
+            <div class="mt-auto pb-3">
+                <a href="/logout" class="btn btn-outline-light w-100">
+                    <i class="ti ti-logout me-2"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</aside>

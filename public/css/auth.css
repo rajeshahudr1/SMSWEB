@@ -1,0 +1,396 @@
+/* ============================================================
+   auth.css · SMS Web · Auth + Legal Pages  — Full Responsive
+   ============================================================ */
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+/* ────────────────────────────────────────────────────────────
+   1. SIGN-IN COVER LAYOUT (Tabler sign-in-cover style)
+   ──────────────────────────────────────────────────────────── */
+.sms-auth-cover {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── LEFT COVER PANEL ── */
+.sms-auth-cover__left {
+  flex: 1 1 55%;
+  position: relative;
+  background: linear-gradient(150deg, #002f6c 0%, #0054a6 45%, #1279d0 75%, #0ea5e9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 3rem 2.5rem;
+}
+
+/* Animated background blobs */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.065);
+  animation: blobFloat 8s ease-in-out infinite;
+  pointer-events: none;
+}
+.blob-1 { width: 420px; height: 420px; top: -130px; right: -100px; animation-delay: 0s; }
+.blob-2 { width: 300px; height: 300px; bottom: -100px; left: -70px; animation-delay: 3s; }
+.blob-3 { width: 200px; height: 200px; bottom: 28%; left: 12%; animation-delay: 5.5s; }
+.blob-4 { width: 140px; height: 140px; top: 30%; right: 10%; animation-delay: 1.5s; }
+
+@keyframes blobFloat {
+  0%, 100% { transform: scale(1) translateY(0); opacity: .6; }
+  50%       { transform: scale(1.1) translateY(-12px); opacity: .35; }
+}
+
+/* Cover content */
+.sms-cover-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  color: #fff;
+}
+
+/* Cover brand */
+.sms-cover-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 2rem;
+}
+.sms-cover-brand__icon {
+  width: 52px; height: 52px;
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  backdrop-filter: blur(6px);
+  flex-shrink: 0;
+}
+.sms-cover-brand__name { font-size: 21px; font-weight: 800; line-height: 1.15; }
+.sms-cover-brand__sub  { font-size: 12px; opacity: .72; margin-top: 2px; }
+
+/* Cover illustration */
+.sms-cover-illustration {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 18px;
+  padding: .6rem;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+.sms-cover-illustration img { display: block; width: 100%; }
+
+/* Feature list */
+.sms-cover-features { margin-bottom: 1.75rem; }
+.sms-cover-feat {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  font-size: 13.5px;
+  padding: 6px 0;
+  opacity: .9;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sms-cover-feat:last-child { border-bottom: none; }
+.sms-cover-feat__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(100,255,175,0.85);
+  flex-shrink: 0; margin-top: 5px;
+}
+
+/* Trust badges */
+.sms-cover-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.sms-cover-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 13px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.11);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 11.5px; color: rgba(255,255,255,.85);
+  backdrop-filter: blur(4px);
+}
+
+/* ── RIGHT FORM PANEL ── */
+.sms-auth-cover__right {
+  width: 480px;
+  min-width: 360px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  overflow-y: auto;
+}
+.sms-auth-form-wrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Mobile logo (shown < lg) */
+.sms-mobile-logo {
+  display: none;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.sms-mobile-logo__icon {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, #0054a6, #0ea5e9);
+  border-radius: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 30px;
+  margin: 0 auto .75rem;
+}
+
+/* ── FORM ELEMENTS ── */
+.sms-auth-title    { font-size: 24px; font-weight: 800; color: #1a2332; margin-bottom: .35rem; }
+.sms-auth-subtitle { font-size: 14px; color: #667380; margin-bottom: 1.75rem; line-height: 1.5; }
+
+/* Google button */
+.sms-btn-google {
+  width: 100%; height: 46px;
+  border: 1.5px solid #dce0e6;
+  background: #fff;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+  font-size: 14.5px; font-weight: 500; color: #344054;
+  cursor: pointer; transition: all .15s; outline: none;
+  text-decoration: none;
+  margin-bottom: .75rem;
+}
+.sms-btn-google:hover { background: #f7f8fa; border-color: #adb5bd; }
+
+/* Divider */
+.sms-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 1.1rem 0;
+  color: #adb5bd; font-size: 11.5px;
+  font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+}
+.sms-divider::before, .sms-divider::after {
+  content: ''; flex: 1; height: 1px; background: #e9ecef;
+}
+
+/* Panel chips */
+.sms-panel-chips { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+.sms-panel-chip {
+  flex: 1; padding: 9px 8px;
+  border: 1.5px solid #dce0e6; border-radius: 9px;
+  background: #fff; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: #667380;
+  text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all .15s;
+}
+.sms-panel-chip.active { border-color: #0054a6; color: #0054a6; background: #eef4ff; }
+.sms-panel-chip:hover:not(.active) { border-color: #93b4d9; color: #0054a6; }
+
+/* Input group flat */
+.sms-input-group {
+  display: flex;
+  border: 1.5px solid #dce0e6; border-radius: 9px; overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+.sms-input-group:focus-within {
+  border-color: #0054a6;
+  box-shadow: 0 0 0 3px rgba(0,84,166,.13);
+}
+.sms-input-group__icon {
+  width: 42px; display: flex; align-items: center; justify-content: center;
+  background: #f8f9fa; border-right: 1.5px solid #e9ecef;
+  color: #adb5bd; font-size: 17px; flex-shrink: 0;
+}
+.sms-input-group:focus-within .sms-input-group__icon { color: #0054a6; }
+.sms-input-group input {
+  flex: 1; border: none; outline: none; padding: .6rem .75rem;
+  font-size: 14px; background: transparent; color: #344054;
+}
+.sms-input-group__btn {
+  width: 42px; background: none; border: none; border-left: 1.5px solid #e9ecef;
+  cursor: pointer; color: #adb5bd; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s;
+}
+.sms-input-group__btn:hover { color: #0054a6; }
+
+.sms-field-error { font-size: 12px; color: #d63939; margin-top: 4px; min-height: 16px; }
+.sms-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; font-weight: 500; color: #344054; margin-bottom: 5px;
+}
+.sms-label a { font-weight: 400; font-size: 12.5px; }
+
+/* Auth button */
+.sms-btn-auth {
+  width: 100%; height: 46px;
+  background: #0054a6; color: #fff;
+  border: none; border-radius: 9px;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.sms-btn-auth:hover { background: #004494; }
+.sms-btn-auth:disabled { opacity: .65; cursor: not-allowed; }
+
+/* Secondary button */
+.sms-btn-outline {
+  width: 100%; height: 44px;
+  background: transparent; color: #344054;
+  border: 1.5px solid #dce0e6; border-radius: 9px;
+  font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none;
+}
+.sms-btn-outline:hover { background: #f8f9fa; border-color: #adb5bd; }
+
+/* Password strength */
+.sms-pw-strength { height: 4px; border-radius: 2px; background: #e9ecef; overflow: hidden; margin-top: 6px; }
+.sms-pw-bar      { height: 100%; border-radius: 2px; width: 0; transition: width .3s, background .3s; }
+
+/* OTP boxes */
+.sms-otp-row { display: flex; gap: 10px; justify-content: center; margin: 1rem 0; }
+.sms-otp-box {
+  width: 52px; height: 58px; text-align: center;
+  font-size: 24px; font-weight: 700;
+  border: 2px solid #dce0e6; border-radius: 10px;
+  outline: none; transition: border-color .15s;
+  background: #f8f9fa;
+}
+.sms-otp-box:focus { border-color: #0054a6; background: #fff; box-shadow: 0 0 0 3px rgba(0,84,166,.12); }
+.sms-otp-box.filled { border-color: #0054a6; background: #eef4ff; }
+
+/* Step indicator */
+.sms-steps {
+  display: flex; overflow: hidden; border-radius: 10px;
+  border: 1px solid #e9ecef; margin-bottom: 1.75rem;
+}
+.sms-step {
+  flex: 1; padding: 9px 6px; text-align: center;
+  font-size: 12px; font-weight: 600; color: #adb5bd; background: #f8f9fa;
+  border-right: 1px solid #e9ecef; transition: all .2s;
+}
+.sms-step:last-child { border-right: none; }
+.sms-step.active { background: #0054a6; color: #fff; }
+.sms-step.done   { background: #d1fae5; color: #065f46; }
+
+/* ── LEGAL PAGES ── */
+.sms-legal-wrap {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #f0f4f8 0%, #e8edf5 100%);
+  padding: 2rem 1rem 4rem;
+}
+.sms-legal-container { max-width: 880px; margin: 0 auto; }
+
+.sms-legal-header {
+  background: linear-gradient(145deg, #002f6c 0%, #0054a6 50%, #0ea5e9 100%);
+  color: #fff; padding: 3rem 2.5rem;
+  border-radius: 18px 18px 0 0;
+  position: relative; overflow: hidden;
+}
+.sms-legal-header::before {
+  content: ''; position: absolute;
+  top: -60px; right: -60px;
+  width: 260px; height: 260px; border-radius: 50%;
+  background: rgba(255,255,255,.06);
+}
+.sms-legal-header__back {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,.65); text-decoration: none; font-size: 13px;
+  margin-bottom: 1.25rem;
+  transition: color .15s;
+}
+.sms-legal-header__back:hover { color: #fff; }
+.sms-legal-header__row { display: flex; align-items: center; gap: 1.25rem; }
+.sms-legal-header__icon {
+  width: 58px; height: 58px; border-radius: 16px;
+  background: rgba(255,255,255,.2); display: flex;
+  align-items: center; justify-content: center; font-size: 30px;
+  flex-shrink: 0; backdrop-filter: blur(4px);
+}
+.sms-legal-header h1 { font-size: 28px; font-weight: 800; margin: 0 0 .3rem; }
+.sms-legal-header p  { font-size: 13px; opacity: .72; margin: 0; }
+
+.sms-legal-body {
+  background: #fff;
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 6px 32px rgba(0,0,0,.09);
+  padding: 2.5rem;
+}
+.sms-legal-highlight {
+  background: #eef4ff; border-left: 4px solid #0054a6;
+  border-radius: 0 10px 10px 0; padding: 1rem 1.25rem;
+  font-size: 13.5px; color: #344054; margin-bottom: 2rem;
+  line-height: 1.6;
+}
+.sms-legal-toc {
+  background: #f8fafc; border: 1px solid #e9ecef;
+  border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 2.25rem;
+}
+.sms-legal-toc__title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: #667380; margin-bottom: .75rem;
+}
+.sms-legal-toc a {
+  display: block; font-size: 13.5px; color: #0054a6; padding: 3px 0;
+  text-decoration: none;
+}
+.sms-legal-toc a:hover { text-decoration: underline; }
+.sms-legal-body h3 {
+  font-size: 16px; font-weight: 700; color: #1a2332;
+  margin: 2.25rem 0 .85rem;
+  padding-bottom: .6rem; border-bottom: 2px solid #eef4ff;
+  display: flex; align-items: center; gap: 10px;
+}
+.sms-legal-body h3:first-of-type { margin-top: 0; }
+.sms-legal-body h3 .sec-num {
+  font-size: 13px; font-weight: 700; color: #fff;
+  background: #0054a6; border-radius: 6px;
+  padding: 1px 8px; flex-shrink: 0;
+}
+.sms-legal-body p, .sms-legal-body li {
+  font-size: 14px; color: #4a5568; line-height: 1.85;
+}
+.sms-legal-body ul { padding-left: 1.5rem; }
+.sms-legal-body strong { color: #1a2332; }
+.sms-legal-body a { color: #0054a6; }
+
+.sms-legal-info-box {
+  background: #f8fafc; border: 1px solid #e9ecef;
+  border-radius: 12px; padding: 1.5rem; margin-top: 1rem;
+}
+.sms-data-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: .75rem; margin-bottom: 2rem; }
+@media (max-width: 767px) { .sms-data-cards { grid-template-columns: repeat(2,1fr); } }
+.sms-data-card {
+  text-align: center; padding: 1rem .75rem;
+  border-radius: 12px; border: 1px solid;
+}
+.sms-legal-footer {
+  margin-top: 2.25rem; padding-top: 1.25rem;
+  border-top: 1px solid #e9ecef;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: .75rem;
+}
+
+/* ── TOASTR ── */
+#toast-container { z-index: 99999 !important; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 991.98px) {
+  .sms-auth-cover__left  { display: none !important; }
+  .sms-auth-cover__right { width: 100%; min-width: unset; }
+  .sms-mobile-logo       { display: block; }
+  .sms-legal-body        { padding: 1.5rem; }
+}
+@media (max-width: 575.98px) {
+  .sms-auth-cover__right  { padding: 1.5rem 1rem; }
+  .sms-legal-header       { padding: 2rem 1.25rem; }
+  .sms-legal-header h1    { font-size: 22px; }
+  .sms-otp-box            { width: 42px; height: 50px; font-size: 20px; }
+  #toast-container.toast-top-right { top:8px; right:8px; left:8px; }
+  #toast-container .toast { max-width: 100%; width: 100%; }
+}

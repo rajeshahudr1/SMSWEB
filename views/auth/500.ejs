@@ -1,0 +1,23 @@
+<%- layout('../layouts/auth') %>
+
+<div class="page page-center">
+    <div class="container-tight py-4 text-center">
+        <div class="empty">
+            <div class="empty-icon">
+                <i class="ti ti-server-off" style="font-size:64px; color:#d63939;"></i>
+            </div>
+            <p class="empty-title h1">500</p>
+            <p class="empty-subtitle text-secondary">
+                Internal server error. Please try again or contact support.
+            </p>
+            <% if (error) { %>
+                <p class="text-danger small"><code><%- error %></code></p>
+            <% } %>
+            <div class="empty-action">
+                <a href="/dashboard" class="btn btn-primary">
+                    <i class="ti ti-arrow-left me-2"></i> Back to dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

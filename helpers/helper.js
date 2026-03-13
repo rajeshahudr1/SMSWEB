@@ -1,0 +1,84 @@
+'use strict';
+
+/**
+ * helper.js (sms-web)
+ * Utility functions for the web (EJS) layer.
+ * Date display always uses the user's timezone from session settings.
+ */
+
+const moment = require('moment-timezone');
+
+// Default timezone — overridden per-user via settings
+const DEFAULT_TZ = process.env.TIMEZONE || 'Asia/Kolkata';
+
+// ── Get timezone from session settings ───────────
+// Pass req.session.settings object to get user's tz
+function getTZ(settings) {
+    return (settings && settings.timezone) ? settings.timezone : DEFAULT_TZ;
+}
+
+// ── Format a UTC date from API for display ────────
+// Respects user's timezone stored in session settings
+function formatDate(date, settings) {
+    if (!date) return '-';
+    return moment.utc(date).tz(getTZ(settings)).format('DD/MM/YYYY');
+}
+
+function formatDateTime(date, settings) {
+    if (!date) return '-';
+    return moment.utc(date).tz(getTZ(settings)).format('DD/MM/YYYY hh:mm A');
+}
+
+function formatTime(date, settings) {
+    if (!date) return '-';
+    return moment.utc(date).tz(getTZ(settings)).format('hh:mm A');
+}
+
+function timeAgo(date, settings) {
+    if (!date) return '-';
+    const m = moment.utc(date).tz(getTZ(settings));
+    return m.fromNow();
+}
+
+// ── Format based on user's date_format setting ───
+// date_format setting values: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD' | 'DD MMM YYYY'
+function formatDateSetting(date, settings) {
+    if (!date) return '-';
+    const fmt = (settings && settings.date_format) ? settings.date_format : 'DD/MM/YYYY';
+    return moment.utc(date).tz(getTZ(settings)).format(fmt);
+}
+
+// ── Asset URL helper ─────────────────────────────
+function assetUrl(path) {
+    const base = process.env.APP_URL || '';
+    return base + '/' + path.replace(/^\//, '');
+}
+
+// ── Truncate string ──────────────────────────────
+function truncate(str, len) {
+    if (!str) return '';
+    return str.length > len ? str.slice(0, len) + '...' : str;
+}
+
+// ── Format currency ──────────────────────────────
+function currency(amount, symbol) {
+    symbol = symbol || '₹';
+    if (!amount && amount !== 0) return symbol + '0.00';
+    return symbol + parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+}
+
+// ── Capitalise first letter ───────────────────────
+function ucFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ── Status badge HTML ────────────────────────────
+function statusBadge(status) {
+    if (parseInt(status) === 1) {
+        return '<span class="badge bg-success-lt">Active</span>';
+    }
+    return '<span class="badge bg-danger-lt">Inactive</span>';
+}
+
+module.exports = { formatDate, formatDateTime, formatTime, timeAgo, formatDateSetting, getTZ, assetUrl, truncate, currency, ucFirst, statusBadge };

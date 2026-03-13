@@ -1,0 +1,158 @@
+<%- layout('../layouts/auth') %>
+
+<div class="sms-auth-cover">
+
+  <!-- ═══ LEFT COVER ═══════════════════════════════════ -->
+  <div class="sms-auth-cover__left">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+
+    <div class="sms-cover-content">
+      <!-- Brand -->
+      <div class="sms-cover-brand">
+        <div class="sms-cover-brand__icon">♻</div>
+        <div>
+          <div class="sms-cover-brand__name">SMS Platform</div>
+          <div class="sms-cover-brand__sub">Scrap Management System</div>
+        </div>
+      </div>
+
+      <!-- Illustration -->
+      <div class="sms-cover-illustration">
+        <img src="/images/sms-illustration.svg" alt="Vehicle Scrappage Management"/>
+      </div>
+
+      <!-- Features -->
+      <div class="sms-cover-features">
+        <div class="sms-cover-feat">
+          <span class="sms-cover-feat__dot"></span>
+          <span>MoRTH-compliant Registered Vehicle Scrapping Facility (RVSF) management</span>
+        </div>
+        <div class="sms-cover-feat">
+          <span class="sms-cover-feat__dot"></span>
+          <span>Real-time weighbridge &amp; inventory tracking with VAHAN sync</span>
+        </div>
+        <div class="sms-cover-feat">
+          <span class="sms-cover-feat__dot"></span>
+          <span>Multi-yard B2B &amp; B2C operations with role-based access</span>
+        </div>
+        <div class="sms-cover-feat">
+          <span class="sms-cover-feat__dot"></span>
+          <span>Automated compliance reports, depollution certificates &amp; audit logs</span>
+        </div>
+      </div>
+
+      <!-- Trust badges -->
+      <div class="sms-cover-badges">
+        <span class="sms-cover-badge"><i class="ti ti-shield-check"></i> ISO 9001</span>
+        <span class="sms-cover-badge"><i class="ti ti-lock"></i> SSL Secured</span>
+        <span class="sms-cover-badge"><i class="ti ti-building-factory-2"></i> 500+ Yards</span>
+        <span class="sms-cover-badge"><i class="ti ti-flag"></i> MoRTH</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RIGHT FORM ════════════════════════════════════ -->
+  <div class="sms-auth-cover__right">
+    <div class="sms-auth-form-wrap">
+
+      <!-- Mobile logo -->
+      <div class="sms-mobile-logo">
+        <div class="sms-mobile-logo__icon">♻</div>
+        <div style="font-size:19px; font-weight:800; color:#1a2332;">SMS Platform</div>
+        <div style="font-size:12px; color:#667380;">Scrap Management System</div>
+      </div>
+
+      <h2 class="sms-auth-title">Welcome back 👋</h2>
+      <p class="sms-auth-subtitle">Sign in to your SMS account to continue</p>
+
+      <!-- Google -->
+      <button type="button" class="sms-btn-google" id="btnGoogleLogin">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" height="20" alt="Google" loading="lazy"/>
+        Continue with Google
+      </button>
+
+      <div class="sms-divider">or sign in with email</div>
+
+      <!-- Panel chips -->
+      <div class="sms-panel-chips">
+        <button type="button" class="sms-panel-chip active" data-panel="b2b">
+          <i class="ti ti-building-factory-2"></i> Business (B2B)
+        </button>
+        <button type="button" class="sms-panel-chip" data-panel="b2c">
+          <i class="ti ti-user-circle"></i> Individual (B2C)
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="frmLogin" novalidate>
+        <input type="hidden" id="fPanel" name="panel" value="b2b"/>
+
+        <div class="mb-3">
+          <div class="sms-label">
+            <span>Email address <span style="color:#d63939;">*</span></span>
+          </div>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="ti ti-mail"></i></span>
+            <input type="email" id="fEmail" name="email" placeholder="you@company.com" autocomplete="email"/>
+          </div>
+          <div class="sms-field-error" id="err-email"></div>
+        </div>
+
+        <div class="mb-3">
+          <div class="sms-label">
+            <span>Password <span style="color:#d63939;">*</span></span>
+            <a href="/forgot-password" class="text-primary">Forgot password?</a>
+          </div>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="ti ti-lock"></i></span>
+            <input type="password" id="fPassword" name="password" placeholder="••••••••" autocomplete="current-password"/>
+            <button type="button" class="sms-input-group__btn" id="btnTogglePw" tabindex="-1" aria-label="Toggle password">
+              <i class="ti ti-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+          <div class="sms-field-error" id="err-password"></div>
+        </div>
+
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+          <label class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" name="remember_me" value="1"/>
+            <span class="form-check-label small text-secondary">Keep me signed in</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btnLogin" class="sms-btn-auth">
+          <i class="ti ti-login"></i> Sign in to SMS
+        </button>
+      </form>
+
+      <div class="sms-divider mt-3">new to sms?</div>
+
+      <a href="/signup" class="sms-btn-outline">
+        <i class="ti ti-user-plus"></i> Create a free account
+      </a>
+
+      <p class="text-center mt-4 mb-0" style="font-size:12px; color:#adb5bd;">
+        By signing in you agree to our
+        <a href="/terms" class="text-primary text-decoration-none">Terms of Service</a> &amp;
+        <a href="/privacy" class="text-primary text-decoration-none">Privacy Policy</a>
+      </p>
+
+    </div>
+  </div>
+</div>
+
+<!-- Google One Tap -->
+<div id="g_id_onload"
+     data-client_id="<%= process.env.GOOGLE_CLIENT_ID || '' %>"
+     data-callback="handleGoogleCredential"
+     data-auto_prompt="false">
+</div>
+<% block('scripts', `
+<script>
+function handleGoogleCredential(r){ googleSignIn(r.credential,'login'); }
+</script>
+<script src="/js/pages/login.js"></script>
+`) %>

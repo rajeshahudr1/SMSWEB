@@ -1,0 +1,163 @@
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><%- role ? 'Edit Role' : 'Add Role' %></div>
+        <div class="card-options">
+            <a href="/roles" class="btn btn-sm btn-outline-secondary">
+                <i class="ti ti-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <form id="frmRole"
+          action="<%- role ? BASE_URL + '/roles/' + role.uuid : BASE_URL + '/roles' %>"
+          method="POST" novalidate>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <!-- Role Name -->
+                <div class="col-md-6">
+                    <label class="form-label required">Role Name</label>
+                    <input type="text" name="name" class="form-control"
+                           value="<%- role ? role.name : '' %>" placeholder="e.g. Yard Manager" required/>
+                </div>
+
+                <!-- Panel Type -->
+                <div class="col-md-3">
+                    <label class="form-label">Panel Type</label>
+                    <select name="panel_type" class="form-select">
+                        <option value="1" <%- (!role || role.panel_type == 1) ? 'selected' : '' %>>B2B</option>
+                        <option value="2" <%- (role && role.panel_type == 2)  ? 'selected' : '' %>>B2C</option>
+                        <option value="3" <%- (role && role.panel_type == 3)  ? 'selected' : '' %>>Both</option>
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="1" <%- (!role || role.status == 1) ? 'selected' : '' %>>Active</option>
+                        <option value="0" <%- (role && role.status == 0)  ? 'selected' : '' %>>Inactive</option>
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <input type="text" name="description" class="form-control"
+                           value="<%- role ? (role.description || '') : '' %>"
+                           placeholder="Short description of this role"/>
+                </div>
+
+                <!-- Permissions (grouped by module) -->
+                <div class="col-12">
+                    <label class="form-label">Permissions</label>
+
+                    <% if (permissions && permissions.length > 0) { %>
+                        <!-- Select All / None -->
+                        <div class="mb-3 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll">
+                                Select All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSelectNone">
+                                Clear All
+                            </button>
+                        </div>
+
+                        <% var grouped = {}; %>
+                        <% permissions.forEach(function(p) { %>
+                            <% if (!grouped[p.group_name]) grouped[p.group_name] = []; %>
+                            <% grouped[p.group_name].push(p); %>
+                        <% }) %>
+
+                        <div class="row g-3">
+                            <% Object.keys(grouped).forEach(function(group) { %>
+                                <div class="col-md-4">
+                                    <div class="card border">
+                                        <div class="card-header py-2">
+                                            <label class="form-check mb-0">
+                                                <input type="checkbox" class="form-check-input group-toggle"
+                                                       data-group="<%- group %>"/>
+                                                <span class="form-check-label fw-medium text-capitalize">
+                                                    <%- group.replace(/_/g, ' ') %>
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <% grouped[group].forEach(function(perm) { %>
+                                                <%
+                                                  var isChecked = false;
+                                                  if (role && role.permissions) {
+                                                      isChecked = role.permissions.some(function(rp) { return rp.permission_id == perm.id; });
+                                                  }
+                                                %>
+                                                <label class="form-check mb-1">
+                                                    <input type="checkbox"
+                                                           class="form-check-input perm-check"
+                                                           data-group="<%- group %>"
+                                                           name="permissions[]"
+                                                           value="<%- perm.id %>"
+                                                           <%- isChecked ? 'checked' : '' %>/>
+                                                    <span class="form-check-label small"><%- perm.display_name %></span>
+                                                </label>
+                                            <% }) %>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">No permissions defined yet.</div>
+                    <% } %>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card-footer text-end">
+            <a href="/roles" class="btn btn-outline-secondary me-2">Cancel</a>
+            <button type="submit" id="btnSubmit" class="btn btn-primary"
+                    data-loading="Saving..."
+                    data-original-text="<%- role ? 'Update Role' : 'Add Role' %>">
+                <%- role ? 'Update Role' : 'Add Role' %>
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script src="/js/pages/roles.js"></script>
+<script>
+$(function () {
+    // Group toggle — check/uncheck all permissions in a group
+    $('.group-toggle').on('change', function () {
+        var group = $(this).data('group');
+        var checked = $(this).is(':checked');
+        $('.perm-check[data-group="' + group + '"]').prop('checked', checked);
+    });
+
+    // Update group toggle when individual perms change
+    $('.perm-check').on('change', function () {
+        var group = $(this).data('group');
+        var total    = $('.perm-check[data-group="' + group + '"]').length;
+        var checkedN = $('.perm-check[data-group="' + group + '"]:checked').length;
+        $('.group-toggle[data-group="' + group + '"]').prop('checked', total === checkedN);
+    });
+
+    // Select / deselect all
+    $('#btnSelectAll').on('click', function () {
+        $('.perm-check, .group-toggle').prop('checked', true);
+    });
+    $('#btnSelectNone').on('click', function () {
+        $('.perm-check, .group-toggle').prop('checked', false);
+    });
+
+    // Initialise group toggles on page load
+    $('.group-toggle').each(function () {
+        var group = $(this).data('group');
+        var total    = $('.perm-check[data-group="' + group + '"]').length;
+        var checkedN = $('.perm-check[data-group="' + group + '"]:checked').length;
+        $(this).prop('checked', total === checkedN && total > 0);
+    });
+});
+</script>

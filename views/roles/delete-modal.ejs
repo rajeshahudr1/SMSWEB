@@ -1,0 +1,25 @@
+<div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Delete Role</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-4 text-center">
+            <% if (role) { %>
+                <i class="ti ti-trash text-danger mb-3 d-block" style="font-size:48px;"></i>
+                <h5>Are you sure?</h5>
+                <p class="text-secondary">Delete role <strong><%- role.name %></strong>?<br/>This cannot be undone.</p>
+            <% } else { %>
+                <p class="text-danger">Role not found.</p>
+            <% } %>
+        </div>
+        <% if (role) { %>
+        <div class="modal-footer">
+            <button class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-danger" id="btnDeleteConfirm"
+                    data-uuid="<%- role.uuid %>"
+                    data-loading="Deleting..." data-text="Yes, delete">Yes, delete</button>
+        </div>
+        <% } %>
+    </div>
+</div>

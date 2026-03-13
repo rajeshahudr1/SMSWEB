@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title><%- page_title %> | <%- APP_NAME %></title>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+    <link rel="stylesheet" href="/css/auth.css"/>
+</head>
+<body class="antialiased">
+
+<!-- PAGE HTML (no scripts here) -->
+<%- body %>
+
+<!-- ══ ALL SCRIPTS AT BOTTOM — jQuery loads before any page script ══ -->
+
+<!-- ❶ jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- ❷ jQuery Validate -->
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+<!-- ❸ Toastr -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<!-- ❹ Tabler JS -->
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+<!-- ❺ Google GIS -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+
+<!-- ❻ Global vars -->
+<script>
+    var BASE_URL         = '<%- BASE_URL %>';
+    var GOOGLE_CLIENT_ID = '<%= process.env.GOOGLE_CLIENT_ID || "" %>';
+
+    toastr.options = {
+        closeButton: true, progressBar: true,
+        positionClass: 'toast-top-right',
+        timeOut: 5000, extendedTimeOut: 2000,
+        preventDuplicates: true,
+    };
+    <% if (locals.flash_success) { %>
+    $(function(){ toastr.success('<%- (flash_success||"").replace(/'/g,"\\'") %>'); });
+    <% } %>
+    <% if (locals.flash_error) { %>
+    $(function(){ toastr.error('<%- (flash_error||"").replace(/'/g,"\\'") %>'); });
+    <% } %>
+</script>
+
+<!-- ❼ Page-specific scripts (block filled by each view) -->
+<%- blocks.scripts %>
+
+</body>
+</html>
