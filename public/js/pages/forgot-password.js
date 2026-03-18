@@ -19,10 +19,10 @@ $(function () {
                 } else {
                     toastr.error(res.message || 'Could not send reset link.');
                 }
-                $btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> Send Reset Link');
+                $btn.prop('disabled', false).html('<i class="bi bi-send me-1"></i> Send Reset Link');
             }, 'json').fail(function () {
                 toastr.error('Server error. Please try again.');
-                $btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> Send Reset Link');
+                $btn.prop('disabled', false).html('<i class="bi bi-send me-1"></i> Send Reset Link');
             });
         }
     });

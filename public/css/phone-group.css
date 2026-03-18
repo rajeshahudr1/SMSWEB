@@ -1,0 +1,110 @@
+/* ============================================================
+   phone-group.css · SMS Web · Country code + phone input
+   Include in BOTH auth.ejs layout and main.ejs layout
+   ============================================================ */
+
+/* Phone group container */
+.sms-phone-group {
+    display: flex;
+    align-items: stretch;
+    border: 1.5px solid #dce0e6;
+    border-radius: 9px;
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+    background: #fff;
+}
+.sms-phone-group:focus-within {
+    border-color: #0054a6;
+    box-shadow: 0 0 0 3px rgba(0,84,166,.13);
+}
+
+/* Dial code part */
+.sms-phone-code-wrap {
+    width: 130px;
+    flex-shrink: 0;
+    border-right: 1.5px solid #e9ecef;
+    background: #f8f9fa;
+}
+.sms-phone-code-wrap .select2-container {
+    width: 100% !important;
+}
+.sms-phone-code-wrap .select2-container .select2-selection--single {
+    height: 44px;
+    border: none !important;
+    background: transparent;
+    border-radius: 0;
+    outline: none;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+}
+.sms-phone-code-wrap .select2-container .select2-selection__rendered {
+    font-size: 13px;
+    font-family: monospace;
+    font-weight: 600;
+    color: #344054;
+    padding: 0;
+    line-height: 44px;
+}
+.sms-phone-code-wrap .select2-container .select2-selection__arrow {
+    height: 44px;
+    top: 0;
+    right: 4px;
+}
+
+/* Number input part */
+.sms-phone-number-inp {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    padding: 0 .75rem;
+    font-size: 14px;
+    color: #344054;
+    background: transparent;
+    height: 44px;
+}
+.sms-phone-number-inp::placeholder { color: #adb5bd; }
+
+/* Inside auth forms (.sms-input-group style match) */
+.sms-auth-form-wrap .sms-phone-group {
+    height: 46px;
+}
+.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection--single,
+.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection__rendered {
+    height: 46px;
+    line-height: 46px;
+}
+.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection__arrow {
+    height: 46px;
+}
+.sms-auth-form-wrap .sms-phone-number-inp {
+    height: 46px;
+}
+
+/* Dropdown results */
+.select2-results__option {
+    font-size: 13px;
+    font-family: monospace;
+    padding: 6px 10px;
+}
+
+/* Error state */
+.sms-phone-group.is-invalid {
+    border-color: #d63939 !important;
+    box-shadow: 0 0 0 3px rgba(214,57,57,.12) !important;
+}
+
+/* Inside Bootstrap .form-group (main panel) */
+.input-group .sms-phone-group {
+    border-radius: 8px;
+    border: 1.5px solid #dce0e6;
+}
+
+/* Responsive */
+@media (max-width: 380px) {
+    .sms-phone-code-wrap { width: 105px; }
+    .sms-phone-code-wrap .select2-container .select2-selection__rendered { font-size: 11px; }
+    .sms-phone-number-inp { font-size: 13px; }
+}

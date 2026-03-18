@@ -1,0 +1,90 @@
+<%- layout('../layouts/main') %>
+<%
+var p      = typeof permission !== 'undefined' ? permission : null;
+var isEdit = !!p;
+var formAction = isEdit ? '/permissions/' + p.uuid : '/permissions';
+var pageTitle  = isEdit ? 'Edit Permission' : 'Add Permission';
+%>
+
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <div class="page-pretitle"><a href="/dashboard">Dashboard</a> / <a href="/permissions">Permissions</a></div>
+      <h2 class="page-title"><%- pageTitle %></h2>
+    </div>
+    <div class="col-auto">
+      <a href="/permissions" class="btn btn-outline-secondary"><i class="bi bi-circle me-1"></i>Back</a>
+    </div>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <form id="frmPermission" method="POST" action="<%- formAction %>" novalidate>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-key me-2"></i>Permission Details</div>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+
+            <div class="col-12">
+              <label class="form-label required">Display Name</label>
+              <input type="text" name="display_name" class="form-control"
+                     value="<%- isEdit ? (p.display_name||'') : '' %>"
+                     placeholder="e.g. View Vehicles" required/>
+              <div class="form-hint">Human-readable label shown in the UI.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label required">Group / Module</label>
+              <input type="text" name="group_name" class="form-control" list="groupList"
+                     value="<%- isEdit ? (p.group_name||'') : '' %>"
+                     placeholder="e.g. Vehicle Management" required/>
+              <datalist id="groupList">
+                <% if (typeof groups !== 'undefined') { groups.forEach(function(g){ %>
+                <option value="<%- g %>">
+                <% }) } %>
+              </datalist>
+            </div>
+
+            <div class="col-sm-6">
+              <label class="form-label required">Action</label>
+              <select name="action" class="form-select" required>
+                <% ['view','add','edit','delete','export','import'].forEach(function(a){ %>
+                <option value="<%- a %>" <%- isEdit&&p.action===a ? 'selected':'' %>><%- a %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="col-sm-6">
+              <label class="form-label">Panel Type</label>
+              <select name="panel_type" class="form-select">
+                <option value="b2b"  <%- (!isEdit||p.panel_type==='b2b')  ? 'selected':'' %>>B2B</option>
+                <option value="b2c"  <%- isEdit&&p.panel_type==='b2c'  ? 'selected':'' %>>B2C</option>
+                <option value="both" <%- isEdit&&p.panel_type==='both' ? 'selected':'' %>>Both</option>
+              </select>
+            </div>
+
+            <% if (isEdit) { %>
+            <div class="col-12">
+              <label class="form-label">Permission Key</label>
+              <input type="text" class="form-control bg-light" value="<%- p.name||'' %>" readonly/>
+              <div class="form-hint">Auto-generated. Cannot be changed.</div>
+            </div>
+            <% } %>
+
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="/permissions" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+          <button type="submit" class="btn btn-primary" id="btnSubmit">
+            <i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update' : 'Create' %>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% block('scripts', "<script>\n$(function(){\n  $('#frmPermission').on('submit', function(e){\n    e.preventDefault();\n    var $btn = $('#btnSubmit');\n    btnLoading($btn);\n    smsAjax({\n      url: $(this).attr('action'),\n      data: $(this).serialize(),\n      btn: $btn,\n      success: function(r){\n        if(r.status===200||r.status===201){\n          toastr.success(r.message||'Saved.');\n          setTimeout(function(){ window.location='/permissions'; }, 800);\n        } else {\n          toastr.error(r.message||'Error.');\n          btnReset($btn);\n        }\n      }\n    });\n  });\n});\n</script>") %>

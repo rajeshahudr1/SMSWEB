@@ -1,204 +1,276 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
-    <title><%- page_title %> | <%- APP_NAME %></title>
-
-    <!-- Tabler CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css"/>
-    <!-- Tabler Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
-    <!-- DataTables Bootstrap5 -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css"/>
-    <!-- Select2 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"/>
-    <!-- Toastr -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
-    <!-- Custom -->
-    <link rel="stylesheet" href="/css/app.css"/>
-
-    <!-- Theme & font driven by user settings -->
-    <style>
-        :root {
-            --tblr-primary:   <%- (settings && settings.theme_color) ? settings.theme_color : '#0054a6' %>;
-            --tblr-font-size: <%- (settings && settings.font_size)   ? settings.font_size   : '14px'    %>;
-        }
-    </style>
-</head>
-
 <%
-var bodyClass = (settings && settings.dark_mode == '1') ? 'antialiased theme-dark' : 'antialiased';
+var s         = settings || {};
+var isDark    = s.dark_mode === '1';
+var isRTL     = s.direction === 'rtl';
+var themeColor= s.theme_color  || '#0054a6';
+var fontSize  = s.font_size    || '14px';
+var curLang   = lang           || 'en';
+var _rmap     = {none:'0',sm:'4px',md:'8px',lg:'12px',xl:'16px'};
+var borderRad = _rmap[s.border_radius] || '8px';
+var bodyClass = 'antialiased' + (isDark ? ' theme-dark' : '');
+var htmlDir   = isRTL ? 'rtl' : 'ltr';
 %>
+<!DOCTYPE html>
+<html dir="<%- htmlDir %>" lang="<%- curLang %>">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+<title><%- page_title %> | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+
+<!-- ALL LOCAL — no CDN, Bootstrap Icons only (tabler-icons removed - font path broken) -->
+<link rel="stylesheet" href="/libs/css/tabler.min.css"/>
+<% if (isRTL) { %>
+<link rel="stylesheet" href="/libs/css/tabler-rtl.min.css"/>
+<% } %>
+<link rel="stylesheet" href="/libs/css/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/libs/css/dataTables.bootstrap5.min.css"/>
+<link rel="stylesheet" href="/libs/css/select2.min.css"/>
+<link rel="stylesheet" href="/libs/css/select2-bootstrap-5-theme.min.css"/>
+<link rel="stylesheet" href="/libs/css/toastr.min.css"/>
+<link rel="stylesheet" href="/libs/css/flatpickr.min.css"/>
+<link rel="stylesheet" href="/css/app.css"/>
+
+<style>
+:root{
+  --tblr-primary:          <%- themeColor %>;
+  --tblr-font-size:        <%- fontSize %>;
+  --tblr-border-radius:    <%- borderRad %>;
+  --tblr-border-radius-sm: calc(<%- borderRad %> * .6);
+  --tblr-border-radius-lg: calc(<%- borderRad %> * 1.5);
+}
+</style>
+</head>
 <body class="<%- bodyClass %>">
 
-<!-- Page-loading overlay -->
-<div id="page-loading">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-</div>
+<!-- Page loader -->
+<div id="sms-loader"><div class="sms-loader-spin"></div></div>
 
 <div class="wrapper">
+  <% include ../partials/sidebar %>
+  <div class="page-wrapper">
+    <% include ../partials/header %>
+    <div class="page-body">
+      <div class="container-xl">
 
-    <!-- ── SIDEBAR ──────────────────────────────── -->
-    <% include ../partials/sidebar %>
-
-    <!-- ── MAIN PAGE WRAPPER ────────────────────── -->
-    <div class="page-wrapper">
-
-        <!-- ── MOBILE TOPBAR (visible < 992px) ──── -->
-        <div class="mobile-topbar d-lg-none">
-            <button class="btn-menu" id="btnMobileMenu" aria-label="Open menu">
-                <i class="ti ti-menu-2"></i>
-            </button>
-            <span class="page-title-mobile"><%- page_title %></span>
-            <!-- Dark mode toggle on mobile -->
-            <label class="form-check form-switch mb-0 me-2" title="Dark mode">
-                <input class="form-check-input" type="checkbox" id="darkModeToggleMobile"
-                       <%- (settings && settings.dark_mode == '1') ? 'checked' : '' %>>
-            </label>
-            <!-- User avatar dropdown on mobile -->
-            <div class="dropdown">
-                <div class="mobile-user-avatar" data-bs-toggle="dropdown">
-                    <%- user ? user.name.charAt(0).toUpperCase() : 'U' %>
-                </div>
-                <div class="dropdown-menu dropdown-menu-end">
-                    <div class="dropdown-header">
-                        <strong><%- user ? user.name : '' %></strong>
-                        <div class="text-secondary" style="font-size:12px;"><%- user ? user.email : '' %></div>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <a href="/profile"  class="dropdown-item"><i class="ti ti-user me-2"></i>Profile</a>
-                    <a href="/settings" class="dropdown-item"><i class="ti ti-settings me-2"></i>Settings</a>
-                    <div class="dropdown-divider"></div>
-                    <a href="/logout"   class="dropdown-item text-danger"><i class="ti ti-logout me-2"></i>Logout</a>
-                </div>
+        <% if (locals.breadcrumbs && breadcrumbs.length > 0) { %>
+        <div class="page-header d-print-none">
+          <div class="row align-items-center">
+            <div class="col">
+              <div class="page-pretitle">
+                <% breadcrumbs.slice(0,-1).forEach(function(c,i){ %>
+                <a href="<%- c.url %>"><%- c.name %></a><% if(i<breadcrumbs.length-2){ %> / <% } %>
+                <% }) %>
+              </div>
+              <h2 class="page-title"><%- page_title %></h2>
             </div>
+          </div>
         </div>
+        <% } %>
 
-        <!-- ── DESKTOP HEADER (visible ≥ 992px) ─── -->
-        <% include ../partials/header %>
+        <%- body %>
 
-        <!-- ── PAGE CONTENT ─────────────────────── -->
-        <div class="page-body" id="divMainContainer">
-            <div class="container-xl">
-
-                <% if (locals.breadcrumbs && breadcrumbs.length > 0) { %>
-                <div class="page-header d-print-none mb-3">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h2 class="page-title"><%- page_title %></h2>
-                            <ol class="breadcrumb" aria-label="breadcrumbs">
-                                <% breadcrumbs.forEach(function(crumb, i) { %>
-                                    <% if (i === breadcrumbs.length - 1) { %>
-                                        <li class="breadcrumb-item active"><a href="#"><%- crumb.name %></a></li>
-                                    <% } else { %>
-                                        <li class="breadcrumb-item"><a href="<%- crumb.url %>"><%- crumb.name %></a></li>
-                                    <% } %>
-                                <% }) %>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-                <% } %>
-
-                <%- body %>
-
-            </div>
-        </div>
-
-        <!-- ── FOOTER ────────────────────────────── -->
-        <% include ../partials/footer %>
-
+      </div>
     </div>
+    <% include ../partials/footer %>
+  </div>
 </div>
 
-<!-- Global modal -->
-<div class="modal fade" id="myModal" tabindex="-1"></div>
+<% include ../partials/theme-panel %>
+<div class="modal fade" id="smsModal" tabindex="-1" aria-hidden="true"></div>
 
-<!-- ── SCRIPTS ────────────────────────────────────── -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<!-- ═══ ALL SCRIPTS — jQuery first, then everything else ═══ -->
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/tabler.min.js"></script>
+<script src="/libs/js/jquery.dataTables.min.js"></script>
+<script src="/libs/js/dataTables.bootstrap5.min.js"></script>
+<script src="/libs/js/select2.min.js"></script>
+<script src="/libs/js/jquery.validate.min.js"></script>
+<script src="/libs/js/flatpickr.min.js"></script>
+<script src="/libs/js/toastr.min.js"></script>
 <script src="/js/app.js"></script>
 
 <script>
-    var BASE_URL = '<%- BASE_URL %>';
+/* ── Global constants (jQuery already loaded above) ── */
+var BASE_URL     = '<%- BASE_URL %>';
+var SMS_LANG     = '<%- curLang %>';
+var SMS_IS_RTL   = <%- isRTL ? 'true' : 'false' %>;
+var SMS_SETTINGS = <%- JSON.stringify(s) %>;
+var SMS_T_DICT   = <%- langDict_json %>;
+function SMS_T(k,f){ return SMS_T_DICT[k]||f||k; }
 
-    toastr.options = {
-        closeButton: true, progressBar: true,
-        positionClass: 'toast-top-right', timeOut: 4500,
-        preventDuplicates: true,
-    };
-    <% if (locals.flash_success) { %>
-    $(function(){ toastr.success('<%- (flash_success||"").replace(/'/g,"\\'") %>'); });
-    <% } %>
-    <% if (locals.flash_error) { %>
-    $(function(){ toastr.error('<%- (flash_error||"").replace(/'/g,"\\'") %>'); });
-    <% } %>
+window.H = window.H||{};
+H.esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
-    // ── Mobile sidebar toggle ─────────────────────
-    $(function () {
-        var $sidebar = $('.navbar-vertical');
-        var $body    = $('body');
+var SMS_PENDING_THEME = {
+  theme_color:   SMS_SETTINGS.theme_color   || '#0054a6',
+  dark_mode:     SMS_SETTINGS.dark_mode      || '0',
+  direction:     SMS_SETTINGS.direction      || 'ltr',
+  border_radius: SMS_SETTINGS.border_radius  || 'md',
+  font_size:     SMS_SETTINGS.font_size       || '14px',
+  sidebar_style: SMS_SETTINGS.sidebar_style  || 'dark',
+  language:      SMS_SETTINGS.language       || 'en',
+};
 
-        // Open
-        $('#btnMobileMenu').on('click', function (e) {
-            e.stopPropagation();
-            $sidebar.addClass('show');
-            $body.addClass('sidebar-open');
-        });
+var _RM = {none:'0',sm:'4px',md:'8px',lg:'12px',xl:'16px'};
+function smsLiveTheme(){
+  var r = document.documentElement, rad = _RM[SMS_PENDING_THEME.border_radius]||'8px';
+  r.style.setProperty('--tblr-primary',         SMS_PENDING_THEME.theme_color);
+  r.style.setProperty('--tblr-font-size',        SMS_PENDING_THEME.font_size);
+  r.style.setProperty('--tblr-border-radius',    rad);
+  r.style.setProperty('--tblr-border-radius-sm', 'calc('+rad+'*.6)');
+  r.style.setProperty('--tblr-border-radius-lg', 'calc('+rad+'*1.5)');
+  SMS_PENDING_THEME.dark_mode==='1' ? $('body').addClass('theme-dark') : $('body').removeClass('theme-dark');
+}
 
-        // Close on backdrop click
-        $body.on('click', function (e) {
-            if ($body.hasClass('sidebar-open') && !$sidebar.is(e.target) && !$sidebar.has(e.target).length) {
-                $sidebar.removeClass('show');
-                $body.removeClass('sidebar-open');
-            }
-        });
+toastr.options = {
+  closeButton:true, progressBar:true,
+  positionClass: SMS_IS_RTL ? 'toast-top-left' : 'toast-top-right',
+  timeOut:4500, preventDuplicates:true
+};
 
-        // Close on nav link click (mobile)
-        $sidebar.find('a.nav-link, a.dropdown-item').on('click', function () {
-            if ($(window).width() < 992) {
-                $sidebar.removeClass('show');
-                $body.removeClass('sidebar-open');
-            }
-        });
+<% if (locals.flash_success) { %>
+$(function(){ toastr.success("<%- (flash_success||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"') %>"); });
+<% } %>
+<% if (locals.flash_error) { %>
+$(function(){ toastr.error("<%- (flash_error||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"') %>"); });
+<% } %>
 
-        // Swipe-left to close sidebar on mobile
-        var touchStartX = 0;
-        document.addEventListener('touchstart', function (e) {
-            touchStartX = e.changedTouches[0].clientX;
-        }, { passive: true });
-        document.addEventListener('touchend', function (e) {
-            var dx = e.changedTouches[0].clientX - touchStartX;
-            if (dx < -60 && $body.hasClass('sidebar-open')) {
-                $sidebar.removeClass('show');
-                $body.removeClass('sidebar-open');
-            }
-        }, { passive: true });
+$(function(){
+  /* ── Sidebar: mobile open/close ── */
+  var $sb = $('.navbar-vertical'), $bd = $('#smsSidebarBackdrop');
+  $('#smsBtnMenu').on('click', function(e){ e.stopPropagation(); $sb.addClass('show'); $bd.addClass('show'); });
+  $bd.on('click', function(){ $sb.removeClass('show'); $bd.removeClass('show'); });
+  $sb.find('a.nav-link:not(.dropdown-toggle),a.dropdown-item').on('click',function(){
+    if($(window).width()<992){ $sb.removeClass('show'); $bd.removeClass('show'); }
+  });
 
-        // Dark mode toggle — mobile
-        $('#darkModeToggleMobile').on('change', function () {
-            $.post('/settings/user', { dark_mode: $(this).is(':checked') ? '1' : '0' }, function () {
-                location.reload();
-            });
-        });
+  /* ── Hide loader ── */
+  $('#sms-loader').addClass('hide');
+  setTimeout(function(){ $('#sms-loader').hide(); }, 300);
 
-        // ── Flatpickr on all date inputs ─────────
-        $('input[type="date"]').flatpickr({ dateFormat: 'Y-m-d', allowInput: true });
+  /* ── Year fill ── */
+  var yr = document.getElementById('sms-year');
+  if(yr) yr.textContent = new Date().getFullYear();
+
+  /* ── Flatpickr ── */
+  if(typeof flatpickr !== 'undefined'){
+    $('input[type="date"]').flatpickr({ dateFormat:'Y-m-d', allowInput:true });
+  }
+
+  /* ── Dark mode toggle ── */
+  $(document).on('change','#smsDarkToggle,#smsDarkToggleMobile', function(){
+    $.post(BASE_URL+'/settings/theme',{dark_mode:$(this).is(':checked')?'1':'0'},function(r){
+      if(r.status===200) location.reload();
     });
+  });
+
+  /* ── Language switch ── */
+  $(document).on('click','.sms-lang-btn',function(e){
+    e.preventDefault();
+    var lg=$(this).data('lang'); if(!lg) return;
+    $.post(BASE_URL+'/settings/language',{lang:lg},function(r){
+      if(r.status===200) location.reload();
+      else toastr.error(SMS_T('general.error','Error'));
+    });
+  });
+
+  /* ── Theme panel open/close ── */
+  $(document).on('click','#smsBtnTheme,#smsBtnThemeMobile',function(){
+    $('#smsThemePanel').addClass('open'); $('#smsThemeBd').addClass('show');
+  });
+  $(document).on('click','#smsThemeBd,#smsBtnCloseTheme',function(){
+    $('#smsThemePanel').removeClass('open'); $('#smsThemeBd').removeClass('show');
+  });
+
+  /* ── Theme panel: colour ── */
+  $(document).on('click','.tp-color[data-color]',function(){
+    var c=$(this).data('color');
+    $('.tp-color').removeClass('active').empty();
+    $(this).addClass('active').html('<i class="bi bi-check-lg"></i>');
+    SMS_PENDING_THEME.theme_color=c; smsLiveTheme();
+  });
+  $(document).on('input','#tpCustomColor',function(){
+    $('.tp-color[data-color]').removeClass('active').empty();
+    SMS_PENDING_THEME.theme_color=$(this).val(); smsLiveTheme();
+  });
+
+  /* ── Theme panel: buttons ── */
+  $(document).on('click','.tp-btn[data-mode]',function(){
+    $(this).closest('.tp-group').find('.tp-btn').removeClass('active');
+    $(this).addClass('active');
+    SMS_PENDING_THEME.dark_mode=$(this).data('mode')==='dark'?'1':'0'; smsLiveTheme();
+  });
+  $(document).on('click','.tp-btn[data-dir]',function(){
+    $(this).closest('.tp-group').find('.tp-btn').removeClass('active');
+    $(this).addClass('active'); SMS_PENDING_THEME.direction=$(this).data('dir');
+  });
+  $(document).on('click','.tp-btn[data-radius]',function(){
+    $(this).closest('.tp-group').find('.tp-btn').removeClass('active');
+    $(this).addClass('active'); SMS_PENDING_THEME.border_radius=$(this).data('radius'); smsLiveTheme();
+  });
+  $(document).on('click','.tp-btn[data-font]',function(){
+    $(this).closest('.tp-group').find('.tp-btn').removeClass('active');
+    $(this).addClass('active'); SMS_PENDING_THEME.font_size=$(this).data('font'); smsLiveTheme();
+  });
+  $(document).on('click','.tp-btn[data-sb]',function(){
+    $(this).closest('.tp-group').find('.tp-btn').removeClass('active');
+    $(this).addClass('active'); SMS_PENDING_THEME.sidebar_style=$(this).data('sb');
+  });
+  $(document).on('click','.tp-btn[data-lang]',function(){
+    $(this).closest('.tp-group').find('.tp-btn').removeClass('active');
+    $(this).addClass('active'); SMS_PENDING_THEME.language=$(this).data('lang');
+  });
+
+  /* ── Theme panel: save ── */
+  $(document).on('click','#smsBtnSaveTheme',function(){
+    var $b=$(this).prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>');
+    $.post(BASE_URL+'/settings/theme',SMS_PENDING_THEME,function(r){
+      $b.prop('disabled',false).html('<i class="bi bi-floppy me-1"></i>Save');
+      if(r.status===200){
+        var reload = SMS_PENDING_THEME.language!==      (SMS_SETTINGS.language     ||'en') ||
+                     SMS_PENDING_THEME.direction!==     (SMS_SETTINGS.direction    ||'ltr')||
+                     SMS_PENDING_THEME.dark_mode!==     (SMS_SETTINGS.dark_mode    ||'0') ||
+                     SMS_PENDING_THEME.sidebar_style!==(SMS_SETTINGS.sidebar_style||'dark');
+        if(reload){ location.reload(); }
+        else{ toastr.success(SMS_T('settings.saved','Saved.')); Object.assign(SMS_SETTINGS,SMS_PENDING_THEME);
+              $('#smsThemePanel').removeClass('open'); $('#smsThemeBd').removeClass('show'); }
+      } else toastr.error(SMS_T('general.error','Error saving.'));
+    }).fail(function(){ $b.prop('disabled',false).html('<i class="bi bi-floppy me-1"></i>Save'); toastr.error(SMS_T('general.error')); });
+  });
+
+  /* ── Theme panel: reset ── */
+  $(document).on('click','#smsBtnResetTheme',function(){
+    $.post(BASE_URL+'/settings/theme',{theme_color:'#0054a6',dark_mode:'0',direction:'ltr',
+      border_radius:'md',font_size:'14px',sidebar_style:'dark',language:'en'},function(r){
+      if(r.status===200) location.reload();
+    });
+  });
+
+  /* ── Offcanvas form: icon picker (Bootstrap Icons) ── */
+  $(document).on('input','#iconInput',function(){
+    $('#iconPreviewI').attr('class','bi '+($(this).val().trim()||'bi-circle'));
+  });
+  $(document).on('click','.icon-pick',function(){
+    var ic=$(this).data('icon');
+    $('#iconInput').val(ic); $('#iconPreviewI').attr('class','bi '+ic);
+  });
+
+  /* ── Roles form: permissions matrix ── */
+  $(document).on('change','.group-toggle',function(){
+    var g=$(this).data('group');
+    $('.perm-check[data-group="'+g+'"]').prop('checked',$(this).is(':checked'));
+  });
+  $(document).on('click','#btnSelectAll',function(){
+    $('.perm-check,.group-toggle').prop('checked',true);
+  });
+  $(document).on('click','#btnClearAll',function(){
+    $('.perm-check,.group-toggle').prop('checked',false);
+  });
+});
 </script>
 
+<%- block('scripts') %>
 </body>
 </html>

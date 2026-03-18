@@ -1,67 +1,112 @@
 'use strict';
+const api      = require('../helpers/api');
+const FormData = require('form-data');
+const fs       = require('fs');
+const multer   = require('multer');
+const path     = require('path');
+const os       = require('os');
 
-const api = require('../helpers/api');
+// Temp storage — file is forwarded to API then deleted
+const tempUpload = multer({
+    dest: os.tmpdir(),
+    limits: { fileSize: 10 * 1024 * 1024 },  // 10MB max
+    fileFilter(req, file, cb) {
+        const allowed = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx'];
+        const ext     = path.extname(file.originalname).toLowerCase();
+        if (allowed.includes(ext)) cb(null, true);
+        else cb(new Error('Only JPG, PNG, PDF, DOC or DOCX files are allowed.'));
+    },
+});
 
-// ════════════════════════════════════════════
-//  LOGIN
-// ════════════════════════════════════════════
-exports.loginPage = (req, res) => {
-    res.render('auth/login', { page_title: 'Login' });
-};
+/* ── Clean up temp file ── */
+function cleanTemp(file) {
+    if (file && file.path && fs.existsSync(file.path)) {
+        try { fs.unlinkSync(file.path); } catch (_) {}
+    }
+}
+
+/* ── Shared session builder ── */
+async function buildSession(req, d) {
+    req.session.token       = d.token;
+    req.session.user        = d.user;
+    req.session.permissions = d.permissions || [];
+    req.session.menus       = d.menus       || [];
+    req.session.settings    = d.settings    || {};
+    return new Promise(r => req.session.save(r));
+}
+
+/* ── Build multipart FormData from req.body + optional file ── */
+function buildFormData(fields, file) {
+    const fd = new FormData();
+    Object.keys(fields).forEach(k => {
+        if (fields[k] !== undefined && fields[k] !== null) {
+            fd.append(k, String(fields[k]));
+        }
+    });
+    if (file) {
+        fd.append('address_proof', fs.createReadStream(file.path), {
+            filename:    file.originalname,
+            contentType: file.mimetype,
+        });
+    }
+    return fd;
+}
+
+/* ════════════════════════════════════════
+   LOGIN
+════════════════════════════════════════ */
+exports.loginPage  = (req, res) => res.render('auth/login',  { page_title: 'Login' });
+exports.signupPage = (req, res) => res.render('auth/signup', { page_title: 'Create Account' });
 
 exports.loginPost = async (req, res) => {
     const { email, password, panel } = req.body;
     const result = await api.post('/auth/login', { email, password, panel: panel || 'b2b' });
-
     if (result.status === 200 && result.data) {
-        const d = result.data;
-        req.session.token       = d.token;
-        req.session.user        = d.user;
-        req.session.permissions = d.permissions || [];
-        req.session.menus       = d.menus       || [];
-        req.session.settings    = d.settings    || {};
-        return req.session.save(() => res.json({ status: 200, message: 'Login successful.' }));
+        await buildSession(req, result.data);
+        return res.json({ status: 200, message: 'Login successful.' });
     }
-
-    // API might return 403 when email unverified
-    const status = result.status || 401;
-    return res.json({ status, message: result.message || 'Invalid email or password.' });
+    return res.json({ status: result.status || 401, message: result.message || 'Invalid email or password.' });
 };
 
-// ════════════════════════════════════════════
-//  SIGNUP (email) — 3-step
-// ════════════════════════════════════════════
-exports.signupPage = (req, res) => {
-    res.render('auth/signup', { page_title: 'Create Account' });
-};
+/* ════════════════════════════════════════
+   SIGNUP — multipart (address_proof file)
+════════════════════════════════════════ */
+exports.signupPost = [
+    // 1. Receive file in web layer
+    (req, res, next) => {
+        tempUpload.single('address_proof')(req, res, (err) => {
+            if (err) return res.json({ status: 422, message: err.message || 'File upload error.' });
+            next();
+        });
+    },
+    // 2. Forward to API as multipart
+    async (req, res) => {
+        try {
+            const fd = buildFormData(req.body, req.file);
+            const result = await api.postForm('/auth/signup', fd);
+            cleanTemp(req.file);
+            return res.json({
+                status:  result.status,
+                message: result.message,
+                data:    result.data   || null,
+                errors:  result.errors || null,
+            });
+        } catch (err) {
+            cleanTemp(req.file);
+            return res.json({ status: 500, message: 'Server error during signup.' });
+        }
+    },
+];
 
-exports.signupPost = async (req, res) => {
-    const result = await api.post('/auth/signup', req.body);
-    return res.json({ status: result.status, message: result.message, data: result.data || null });
-};
-
-// ════════════════════════════════════════════
-//  VERIFY EMAIL OTP
-// ════════════════════════════════════════════
-exports.verifyEmailPage = (req, res) => {
-    res.render('auth/signup', {
-        page_title: 'Verify Email',
-        prefillEmail: req.query.email || '',
-    });
-};
+/* ════════════════════════════════════════
+   VERIFY EMAIL OTP
+════════════════════════════════════════ */
+exports.verifyEmailPage = (req, res) =>
+    res.render('auth/signup', { page_title: 'Verify Email', prefillEmail: req.query.email || '' });
 
 exports.verifyEmailPost = async (req, res) => {
     const result = await api.post('/auth/verify-email', req.body);
-
-    if (result.status === 200 && result.data) {
-        const d = result.data;
-        req.session.token       = d.token;
-        req.session.user        = d.user;
-        req.session.permissions = d.permissions || [];
-        req.session.menus       = d.menus       || [];
-        req.session.settings    = d.settings    || {};
-        return req.session.save(() => res.json({ status: 200, message: result.message }));
-    }
+    if (result.status === 200 && result.data) await buildSession(req, result.data);
     return res.json({ status: result.status, message: result.message });
 };
 
@@ -70,80 +115,73 @@ exports.resendOtpPost = async (req, res) => {
     return res.json({ status: result.status, message: result.message });
 };
 
-// ════════════════════════════════════════════
-//  GOOGLE OAUTH
-// ════════════════════════════════════════════
+/* ════════════════════════════════════════
+   GOOGLE OAUTH
+════════════════════════════════════════ */
 exports.googlePost = async (req, res) => {
     const result = await api.post('/auth/google', req.body);
-
+    console.log('[googlePost] API result:', JSON.stringify(result, null, 2));
     if (result.status === 200 && result.data) {
         const d = result.data;
-
-        // New Google user — needs profile completion
         if (d.profile_complete === false) {
+            console.log('[googlePost] new user — temp_token:', d.temp_token, '| google_data:', d.google_data);
             return res.json({
-                status:  200,
-                message: result.message,
-                data: {
-                    profile_complete: false,
-                    temp_token:  d.temp_token,
-                    google_data: d.google_data,
-                },
+                status: 200, message: result.message,
+                data: { profile_complete: false, temp_token: d.temp_token, google_data: d.google_data },
             });
         }
-
-        // Existing user — create session
-        req.session.token       = d.token;
-        req.session.user        = d.user;
-        req.session.permissions = d.permissions || [];
-        req.session.menus       = d.menus       || [];
-        req.session.settings    = d.settings    || {};
-        return req.session.save(() => res.json({ status: 200, message: 'Google login successful.' }));
+        await buildSession(req, d);
+        return res.json({ status: 200, message: 'Google login successful.' });
     }
     return res.json({ status: result.status || 400, message: result.message || 'Google login failed.' });
 };
 
 exports.googleCompletePage = (req, res) => {
     const token = req.query.token || '';
-    // Decode payload (no verify — API will verify on POST)
-    let googleData = {};
-    try {
-        const parts = token.split('.');
-        if (parts[1]) {
-            googleData = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-        }
-    } catch (e) { /* ignore */ }
-
+    console.log('[googleCompletePage] token from URL:', token ? token.slice(0,30)+'...' : 'EMPTY');
     res.render('auth/google-complete', {
         page_title:     'Complete Your Profile',
         temp_token:     token,
-        google_name:    googleData.name    || '',
-        google_email:   googleData.email   || '',
-        google_picture: googleData.picture || '',
+        google_name:    req.query.gname  || '',
+        google_email:   req.query.gemail || '',
+        google_picture: req.query.gpic   || '',
     });
 };
 
-exports.googleCompletePost = async (req, res) => {
-    const result = await api.post('/auth/google/complete-profile', req.body);
+/* GOOGLE COMPLETE — multipart (address_proof file) */
+exports.googleCompletePost = [
+    (req, res, next) => {
+        tempUpload.single('address_proof')(req, res, (err) => {
+            if (err) return res.json({ status: 422, message: err.message || 'File upload error.' });
+            next();
+        });
+    },
+    async (req, res) => {
+        try {
+            const fd     = buildFormData(req.body, req.file);
+            const result = await api.postForm('/auth/google/complete-profile', fd);
+            cleanTemp(req.file);
 
-    if (result.status === 200 && result.data) {
-        const d = result.data;
-        req.session.token       = d.token;
-        req.session.user        = d.user;
-        req.session.permissions = d.permissions || [];
-        req.session.menus       = d.menus       || [];
-        req.session.settings    = d.settings    || {};
-        return req.session.save(() => res.json({ status: 200, message: 'Setup complete.' }));
-    }
-    return res.json({ status: result.status || 400, message: result.message || 'Setup failed.' });
-};
+            if ((result.status === 200 || result.status === 201) && result.data && result.data.token) {
+                await buildSession(req, result.data);
+                return res.json({ status: 200, message: result.message });
+            }
+            return res.json({
+                status:  result.status || 400,
+                message: result.message || 'Setup failed.',
+                errors:  result.errors  || null,
+            });
+        } catch (err) {
+            cleanTemp(req.file);
+            return res.json({ status: 500, message: 'Server error during setup.' });
+        }
+    },
+];
 
-// ════════════════════════════════════════════
-//  FORGOT / RESET PASSWORD
-// ════════════════════════════════════════════
-exports.forgotPage = (req, res) => {
-    res.render('auth/forgot-password', { page_title: 'Forgot Password' });
-};
+/* ════════════════════════════════════════
+   FORGOT / RESET PASSWORD
+════════════════════════════════════════ */
+exports.forgotPage = (req, res) => res.render('auth/forgot-password', { page_title: 'Forgot Password' });
 
 exports.forgotPost = async (req, res) => {
     const result = await api.post('/auth/forgot-password', { email: req.body.email });
@@ -156,24 +194,17 @@ exports.resetPage = async (req, res) => {
         req.flash('error', 'Reset link is invalid or has expired.');
         return res.redirect('/forgot-password');
     }
-    res.render('auth/reset-password', {
-        page_title: 'Reset Password',
-        token:      req.params.token,
-    });
+    res.render('auth/reset-password', { page_title: 'Reset Password', token: req.params.token });
 };
 
 exports.resetPost = async (req, res) => {
     const result = await api.post('/auth/reset-password', {
-        token:            req.body.token,
-        password:         req.body.password,
-        confirm_password: req.body.confirm_password,
+        token: req.body.token, password: req.body.password, confirm_password: req.body.confirm_password,
     });
     return res.json({ status: result.status, message: result.message });
 };
 
-// ════════════════════════════════════════════
-//  LOGOUT
-// ════════════════════════════════════════════
-exports.logout = (req, res) => {
-    req.session.destroy(() => res.redirect('/login'));
-};
+/* ════════════════════════════════════════
+   LOGOUT
+════════════════════════════════════════ */
+exports.logout = (req, res) => req.session.destroy(() => res.redirect('/login'));

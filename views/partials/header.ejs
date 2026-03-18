@@ -1,99 +1,161 @@
-<!-- Desktop header — hidden below 992px (mobile uses topbar in main.ejs) -->
-<header class="navbar navbar-expand-md d-none d-lg-flex d-print-none">
-    <div class="container-xl">
+<%
+var s = settings || {};
+var curLang = lang || 'en';
+var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===curLang; });
+%>
+<!-- Desktop header -->
+<header class="navbar navbar-expand-md d-none d-lg-flex d-print-none sticky-top">
+  <div class="container-xl">
 
-        <!-- Page title on desktop -->
-        <div class="navbar-nav me-auto">
-            <span class="navbar-text fw-semibold text-body" style="font-size:15px;">
-                <%- page_title %>
-            </span>
-        </div>
-
-        <!-- Right side controls -->
-        <div class="navbar-nav flex-row align-items-center gap-2 ms-auto">
-
-            <!-- Dark mode toggle -->
-            <div class="nav-item d-flex align-items-center">
-                <label class="form-check form-switch mb-0" title="Toggle dark mode">
-                    <input class="form-check-input" type="checkbox" id="darkModeToggle"
-                           <%- (settings && settings.dark_mode == '1') ? 'checked' : '' %>>
-                    <span class="form-check-label">
-                        <i class="ti ti-moon-stars"></i>
-                    </span>
-                </label>
-            </div>
-
-            <!-- Notifications -->
-            <div class="nav-item dropdown">
-                <a href="#" class="nav-link px-2 position-relative" data-bs-toggle="dropdown" title="Notifications">
-                    <i class="ti ti-bell" style="font-size:20px;"></i>
-                    <span class="badge bg-red badge-notification" style="font-size:9px;">0</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow" style="min-width:280px;">
-                    <div class="dropdown-header d-flex justify-content-between">
-                        <span>Notifications</span>
-                        <small class="text-muted">0 new</small>
-                    </div>
-                    <div class="text-center text-muted py-4">
-                        <i class="ti ti-bell-off" style="font-size:28px; opacity:.4;"></i>
-                        <p class="mb-0 mt-2" style="font-size:13px;">No new notifications</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User dropdown -->
-            <div class="nav-item dropdown">
-                <a href="#" class="nav-link d-flex align-items-center gap-2 p-0 lh-1 text-reset"
-                   data-bs-toggle="dropdown" style="text-decoration:none;">
-                    <% if (user && user.profile_image) { %>
-                        <span class="avatar avatar-sm"
-                              style="background-image:url(<%- user.profile_image %>)"></span>
-                    <% } else { %>
-                        <span class="avatar avatar-sm bg-primary text-white"
-                              style="font-weight:700;font-size:14px;">
-                            <%- user ? user.name.charAt(0).toUpperCase() : 'U' %>
-                        </span>
-                    <% } %>
-                    <div class="d-none d-xl-block">
-                        <div class="fw-semibold lh-1" style="font-size:13px;">
-                            <%- user ? user.name : '' %>
-                        </div>
-                        <div class="text-secondary mt-1" style="font-size:11px;">
-                            <%- user && user.is_org_admin ? 'Administrator' : 'User' %>
-                        </div>
-                    </div>
-                    <i class="ti ti-chevron-down text-secondary d-none d-xl-block" style="font-size:14px;"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                    <div class="dropdown-header">
-                        <div class="fw-semibold"><%- user ? user.name : '' %></div>
-                        <div class="text-secondary" style="font-size:12px;"><%- user ? user.email : '' %></div>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <a href="/profile"  class="dropdown-item">
-                        <i class="ti ti-user me-2"></i> My Profile
-                    </a>
-                    <a href="/settings" class="dropdown-item">
-                        <i class="ti ti-settings me-2"></i> Settings
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="/logout" class="dropdown-item text-danger">
-                        <i class="ti ti-logout me-2"></i> Logout
-                    </a>
-                </div>
-            </div>
-
-        </div>
+    <div class="me-auto">
+      <div class="page-pretitle d-none" id="hdrPretitle"></div>
+      <h2 class="h4 mb-0 fw-semibold"><%- page_title %></h2>
     </div>
+
+    <div class="navbar-nav flex-row align-items-center gap-1 ms-auto">
+
+      <!-- Dark mode toggle -->
+      <div class="nav-item">
+        <label class="form-check form-switch mb-0 me-1" title="Dark mode">
+          <input class="form-check-input" type="checkbox" id="smsDarkToggle"
+                 <%- s.dark_mode==='1' ? 'checked' : '' %> role="switch"/>
+        </label>
+      </div>
+
+      <!-- Language -->
+      <div class="nav-item dropdown">
+        <a href="#" class="nav-link px-2 d-flex align-items-center gap-1" data-bs-toggle="dropdown">
+          <span><%- curLangObj ? curLangObj.flag : '🌐' %></span>
+          <span class="d-none d-xl-inline small fw-medium"><%- curLangObj ? curLangObj.nativeName : 'EN' %></span>
+          <i class="bi bi-chevron-down text-muted" style="font-size:11px;"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end shadow" style="min-width:160px;">
+          <h6 class="dropdown-header text-uppercase">Language</h6>
+          <% (SUPPORTED_LANGUAGES||[]).forEach(function(lng){ %>
+          <a href="#" class="dropdown-item d-flex align-items-center gap-2 sms-lang-btn
+                             <%- curLang===lng.code?'active':'' %>" data-lang="<%- lng.code %>">
+            <span><%- lng.flag %></span>
+            <div>
+              <div class="fw-medium" style="font-size:13px;"><%- lng.nativeName %></div>
+              <div class="text-muted" style="font-size:11px;"><%- lng.name %></div>
+            </div>
+            <% if(curLang===lng.code){ %><i class="bi bi-check-lg ms-auto text-primary"></i><% } %>
+          </a>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Theme customise -->
+      <div class="nav-item">
+        <button class="btn btn-ghost-secondary btn-icon" id="smsBtnTheme" title="Customise">
+          <i class="bi bi-sliders"></i>
+        </button>
+      </div>
+
+      <!-- Notifications -->
+      <div class="nav-item dropdown">
+        <a href="#" class="nav-link px-2 position-relative" data-bs-toggle="dropdown">
+          <i class="bi bi-bell fs-4"></i>
+          <span class="badge bg-danger badge-notification" style="font-size:9px;">0</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end shadow" style="min-width:290px;">
+          <div class="dropdown-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Notifications</span>
+            <span class="text-muted small">0 new</span>
+          </div>
+          <div class="text-center text-muted py-4 px-3">
+            <i class="bi bi-bell-slash mb-2 d-block" style="font-size:32px;opacity:.3;"></i>
+            <p class="mb-0 small">No new notifications</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- User -->
+      <div class="nav-item dropdown">
+        <a href="#" class="nav-link d-flex align-items-center gap-2 ps-2 pe-0"
+           data-bs-toggle="dropdown" style="text-decoration:none;">
+          <% if (user && user.profile_image) { %>
+          <span class="avatar avatar-sm" style="background-image:url(<%- user.profile_image %>)"></span>
+          <% } else { %>
+          <span class="avatar avatar-sm bg-primary text-white fw-bold">
+            <%- user ? user.name.charAt(0).toUpperCase() : 'U' %>
+          </span>
+          <% } %>
+          <div class="d-none d-xl-block lh-sm">
+            <div class="fw-semibold" style="font-size:13px;"><%- user ? user.name : '' %></div>
+            <div class="text-muted" style="font-size:11px;"><%- user&&user.is_org_admin ? 'Admin' : 'User' %></div>
+          </div>
+          <i class="bi bi-chevron-down text-muted d-none d-xl-inline" style="font-size:12px;"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end shadow">
+          <div class="dropdown-header">
+            <div class="fw-semibold"><%- user ? user.name : '' %></div>
+            <div class="text-muted small"><%- user ? user.email : '' %></div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <a href="/profile"  class="dropdown-item"><i class="bi bi-person me-2"></i><%- t?t('nav.profile'):'Profile' %></a>
+          <a href="/settings" class="dropdown-item"><i class="bi bi-gear me-2"></i><%- t?t('nav.settings'):'Settings' %></a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i><%- t?t('nav.logout'):'Logout' %></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </header>
 
-<script>
-$(function () {
-    // Desktop dark mode toggle
-    $('#darkModeToggle').on('change', function () {
-        $.post('/settings/user', { dark_mode: $(this).is(':checked') ? '1' : '0' }, function () {
-            location.reload();
-        });
-    });
-});
-</script>
+<!-- Mobile topbar -->
+<div class="sms-topbar d-flex d-lg-none align-items-center gap-2 px-3 py-2 sticky-top">
+  <button class="btn btn-ghost-secondary btn-icon" id="smsBtnMenu">
+    <i class="bi bi-list"></i>
+  </button>
+  <div class="flex-fill fw-semibold text-truncate"><%- page_title %></div>
+
+  <!-- Mobile lang -->
+  <div class="dropdown">
+    <button class="btn btn-ghost-secondary btn-icon btn-sm" data-bs-toggle="dropdown">
+      <span><%- curLangObj ? curLangObj.flag : '🌐' %></span>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end shadow">
+      <% (SUPPORTED_LANGUAGES||[]).forEach(function(lng){ %>
+      <a href="#" class="dropdown-item sms-lang-btn <%- curLang===lng.code?'active':'' %>"
+         data-lang="<%- lng.code %>">
+        <span class="me-2"><%- lng.flag %></span><%- lng.nativeName %>
+      </a>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Mobile theme -->
+  <button class="btn btn-ghost-secondary btn-icon btn-sm" id="smsBtnThemeMobile">
+    <i class="bi bi-sliders"></i>
+  </button>
+
+  <!-- Mobile dark mode -->
+  <label class="form-check form-switch mb-0">
+    <input class="form-check-input" type="checkbox" id="smsDarkToggleMobile"
+           <%- s.dark_mode==='1' ? 'checked' : '' %> role="switch"/>
+  </label>
+
+  <!-- Mobile user -->
+  <div class="dropdown">
+    <button class="avatar avatar-sm bg-primary text-white fw-bold border-0 p-0"
+            data-bs-toggle="dropdown">
+      <%- user ? user.name.charAt(0).toUpperCase() : 'U' %>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end shadow">
+      <div class="dropdown-header">
+        <div class="fw-semibold"><%- user ? user.name : '' %></div>
+        <div class="text-muted small"><%- user ? user.email : '' %></div>
+      </div>
+      <div class="dropdown-divider"></div>
+      <a href="/profile"  class="dropdown-item"><i class="bi bi-person me-2"></i>Profile</a>
+      <a href="/settings" class="dropdown-item"><i class="bi bi-gear me-2"></i>Settings</a>
+      <div class="dropdown-divider"></div>
+      <a href="/logout" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar backdrop (mobile) -->
+<div id="smsSidebarBackdrop" class="sms-sidebar-backdrop"></div>

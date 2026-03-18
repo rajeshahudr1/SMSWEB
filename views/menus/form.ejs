@@ -1,0 +1,110 @@
+<%
+var m = menu || null;
+var isEdit = !!m;
+var tablerIcons = ['ti-home','ti-users','ti-shield-lock','ti-key','ti-settings','ti-car','ti-box','ti-file-description','ti-gavel','ti-layout-dashboard','ti-menu-2','ti-adjustments','ti-user-circle','ti-building','ti-chart-bar','ti-report','ti-tools','ti-recycle','ti-weight','ti-certificate','ti-map-pin'];
+%>
+<form id="frmMenu" method="POST"
+      action="<%- isEdit ? BASE_URL + '/menus/' + m.uuid : BASE_URL + '/menus' %>"
+      data-uuid="<%- isEdit ? m.uuid : '' %>">
+
+  <div class="row g-3">
+
+    <!-- Title -->
+    <div class="col-12">
+      <label class="form-label">Menu Title <span class="text-danger">*</span></label>
+      <input type="text" name="title" class="form-control"
+             value="<%- isEdit ? (m.title||'') : '' %>"
+             placeholder="e.g. Vehicle Intake" required/>
+    </div>
+
+    <!-- Icon -->
+    <div class="col-12">
+      <label class="form-label">Icon <span class="text-danger">*</span></label>
+      <div class="input-group">
+        <span class="input-group-text" id="iconPreview">
+          <i class="ti <%- isEdit ? (m.icon||'ti-circle') : 'ti-circle' %>" id="iconPreviewI"></i>
+        </span>
+        <input type="text" name="icon" id="iconInput" class="form-control"
+               value="<%- isEdit ? (m.icon||'') : '' %>"
+               placeholder="bi bi-house-door-fill (Tabler icon class)"/>
+      </div>
+      <div class="d-flex flex-wrap gap-1 mt-2">
+        <% tablerIcons.forEach(function(ic){ %>
+        <button type="button" class="btn btn-xs btn-outline-secondary icon-pick p-1" data-icon="<%- ic %>" title="<%- ic %>">
+          <i class="ti <%- ic %>"></i>
+        </button>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Route path -->
+    <div class="col-12">
+      <label class="form-label">Route Path</label>
+      <input type="text" name="route_path" class="form-control"
+             value="<%- isEdit ? (m.route_path||'') : '' %>"
+             placeholder="/vehicle/intake (leave blank for group headers)"/>
+    </div>
+
+    <!-- Parent -->
+    <div class="col-sm-6">
+      <label class="form-label">Parent Menu</label>
+      <select name="parent_id" class="form-select select2">
+        <option value="">— Top Level —</option>
+        <% if (typeof allMenus !== 'undefined') { allMenus.filter(function(x){ return x.level <= 2 && (!isEdit || x.id !== m.id); }).forEach(function(mn){ %>
+        <option value="<%- mn.id %>" <%- isEdit && m.parent_id == mn.id ? 'selected':'' %>>
+          <%- '  '.repeat((mn.level||1)-1) %><%- mn.title %>
+        </option>
+        <% }) } %>
+      </select>
+    </div>
+
+    <!-- Panel type -->
+    <div class="col-sm-6">
+      <label class="form-label">Panel Type</label>
+      <select name="panel_type" class="form-select">
+        <option value="b2b"  <%- (!isEdit || m.panel_type==='b2b')  ? 'selected':'' %>>B2B</option>
+        <option value="b2c"  <%- isEdit && m.panel_type==='b2c'  ? 'selected':'' %>>B2C</option>
+        <option value="both" <%- isEdit && m.panel_type==='both' ? 'selected':'' %>>Both</option>
+      </select>
+    </div>
+
+    <!-- Permission key -->
+    <div class="col-12">
+      <label class="form-label">Permission Key</label>
+      <input type="text" name="permission_key" class="form-control" list="permKeyList"
+             value="<%- isEdit ? (m.permission_key||'') : '' %>"
+             placeholder="e.g. view_vehicle_intake (blank = always visible)"/>
+      <datalist id="permKeyList">
+        <% if (typeof permGroups !== 'undefined') { Object.keys(permGroups).forEach(function(g){ permGroups[g].forEach(function(p){ %>
+        <option value="<%- p.name %>">
+        <% }) }) } %>
+      </datalist>
+      <div class="form-hint">Leave blank to show to all logged-in users.</div>
+    </div>
+
+    <!-- Sort order -->
+    <div class="col-sm-6">
+      <label class="form-label">Sort Order</label>
+      <input type="number" name="sort_order" class="form-control"
+             value="<%- isEdit ? (m.sort_order||10) : 10 %>" min="0" step="10"/>
+    </div>
+
+    <!-- Visibility -->
+    <div class="col-sm-6 d-flex align-items-end">
+      <label class="form-check form-switch mb-0">
+        <input type="checkbox" class="form-check-input" name="is_visible" value="1"
+               <%- (!isEdit || parseInt(m.is_visible)) ? 'checked':'' %>/>
+        <span class="form-check-label">Visible in sidebar</span>
+      </label>
+    </div>
+
+  </div>
+
+  <div class="mt-4 d-flex justify-content-end gap-2">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">Cancel</button>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-floppy me-1"></i>
+      <%- isEdit ? 'Update Menu' : 'Create Menu' %>
+    </button>
+  </div>
+</form>

@@ -94,7 +94,6 @@ function _handleError(err) {
     return { status: 500, success: false, message: 'Could not connect to API server.' };
 }
 
-module.exports = { get, post, put, patch, del, postForm };
 // ── PATCH request ─────────────────────────────────────────
 async function patch(endpoint, body = {}, token = null) {
     try {
@@ -106,3 +105,5 @@ async function patch(endpoint, body = {}, token = null) {
         return _handleError(err);
     }
 }
+
+module.exports = { get, post, put, patch, del, postForm };

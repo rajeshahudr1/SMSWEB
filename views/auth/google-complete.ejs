@@ -7,14 +7,11 @@
     <div class="sms-cover-content">
       <div class="sms-cover-brand">
         <div class="sms-cover-brand__icon">♻</div>
-        <div>
-          <div class="sms-cover-brand__name">SMS Platform</div>
-          <div class="sms-cover-brand__sub">Almost there!</div>
-        </div>
+        <div><div class="sms-cover-brand__name">SMS Platform</div><div class="sms-cover-brand__sub">Almost there!</div></div>
       </div>
       <div class="sms-cover-features" style="margin-top:2rem;">
         <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Your Google account is verified</div>
-        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Just add your organisation details</div>
+        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Just add your company details</div>
         <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Takes less than 2 minutes</div>
       </div>
     </div>
@@ -23,68 +20,105 @@
   <div class="sms-auth-cover__right">
     <div class="sms-auth-form-wrap">
 
-      <!-- Mobile logo -->
       <div class="sms-mobile-logo">
         <div class="sms-mobile-logo__icon">♻</div>
         <div style="font-size:18px;font-weight:800;color:#1a2332;">SMS Platform</div>
       </div>
 
-      <!-- Google account banner -->
       <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-4"
            style="background:#eef4ff;border:1.5px solid #b8d0f8;">
         <% if (locals.google_picture) { %>
         <img src="<%- google_picture %>" width="44" height="44"
              style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="Avatar"/>
         <% } else { %>
-        <div style="width:44px;height:44px;border-radius:50%;background:#0054a6;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;">👤</div>
+        <div style="width:44px;height:44px;border-radius:50%;background:#0054a6;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;"><i class="bi bi-person-fill"></i></div>
         <% } %>
         <div style="min-width:0;">
           <div class="fw-semibold" style="font-size:14px;"><%- locals.google_name || '' %></div>
           <div class="text-secondary" style="font-size:12px;"><%- locals.google_email || '' %></div>
         </div>
-        <span class="badge bg-success-lt ms-auto" style="white-space:nowrap;">✓ Google Verified</span>
+        <span class="badge bg-success-lt ms-auto" style="white-space:nowrap;"><i class="bi bi-check-circle me-1"></i>Google Verified</span>
       </div>
 
       <div class="sms-auth-title">Complete your profile</div>
-      <p class="sms-auth-subtitle">Set up your organisation to start using SMS</p>
+      <p class="sms-auth-subtitle">Set up your company to start using SMS</p>
 
       <form id="frmGoogleComplete" novalidate>
-        <input type="hidden" name="temp_token" id="gcTempToken" value="<%- locals.temp_token || '' %>"/>
+        <input type="hidden" id="gcTempToken" value="<%= locals.temp_token || '' %>"/>
 
         <div class="mb-3">
           <label class="sms-label">Company / Organisation Name <span class="text-danger">*</span></label>
           <div class="sms-input-group">
-            <span class="sms-input-group__icon"><i class="ti ti-building"></i></span>
-            <input type="text" name="company_name" placeholder="e.g. Rajesh Scrap Yard Pvt Ltd"/>
+            <span class="sms-input-group__icon"><i class="bi bi-building"></i></span>
+            <input type="text" id="gc_company" placeholder="e.g. Rajesh Metals Pvt Ltd"/>
           </div>
           <div class="sms-field-error" id="err-company_name"></div>
         </div>
 
-        <div class="row g-2 mb-3">
-          <div class="col-7">
-            <label class="sms-label">Yard Type <span class="text-danger">*</span></label>
-            <select name="yard_type" class="form-select">
-              <option value="">-- Select --</option>
-              <option value="RVSF">RVSF (Registered)</option>
-              <option value="Collection Centre">Collection Centre</option>
-              <option value="Dismantler">Dismantler</option>
-              <option value="Shredder">Shredder</option>
-              <option value="Other">Other</option>
-            </select>
-            <div class="sms-field-error" id="err-yard_type"></div>
-          </div>
-          <div class="col-5">
-            <label class="sms-label">Phone <span class="text-danger">*</span></label>
-            <div class="sms-input-group">
-              <span class="sms-input-group__icon"><i class="ti ti-phone"></i></span>
-              <input type="text" name="phone" placeholder="+91 XXXXXXXXXX"/>
-            </div>
-            <div class="sms-field-error" id="err-phone"></div>
+        <div class="mb-3">
+          <label class="sms-label">Company Registration Number</label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-hash"></i></span>
+            <input type="text" id="gc_reg" placeholder="e.g. U27100MH2023PTC123456"/>
           </div>
         </div>
 
+        <div class="mb-3">
+          <label class="sms-label">Phone <span class="text-danger">*</span></label>
+          <div id="gcPhoneWrap"></div>
+          <input type="hidden" id="gc_phone"/>
+          <div class="sms-field-error" id="err-phone"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="sms-label">Country <span class="text-danger">*</span></label>
+          <select id="gc_country" class="form-select"><option value="">— Select Country —</option></select>
+          <div class="sms-field-error" id="err-country_id"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">State <span class="text-danger">*</span></label>
+          <select id="gc_state" class="form-select" disabled><option value="">— Select State —</option></select>
+          <div class="sms-field-error" id="err-state_id"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">City <span class="text-danger">*</span></label>
+          <select id="gc_city" class="form-select" disabled><option value="">— Select City —</option></select>
+          <div class="sms-field-error" id="err-city_id"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">ZIP / Postal Code <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-geo"></i></span>
+            <input type="text" id="gc_zip" placeholder="e.g. 400001"/>
+          </div>
+          <div class="sms-field-error" id="err-zip_code"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">Full Address <span class="text-danger">*</span></label>
+          <textarea id="gc_address" class="form-control" rows="2"
+                    placeholder="Plot No, Street, Area, Landmark" style="resize:none;"></textarea>
+          <div class="sms-field-error" id="err-address"></div>
+        </div>
+
+        <!-- Address Proof Upload -->
+        <div class="mb-4">
+          <label class="sms-label">
+            Address Proof
+            <span class="text-muted fw-normal" style="font-size:11px;">JPG / PNG / PDF / DOC — max 10MB (optional)</span>
+          </label>
+          <div class="sms-file-upload">
+            <input type="file" id="gc_proof" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" style="display:none;"/>
+            <label for="gc_proof" class="sms-file-upload__label" id="gcProofLabel">
+              <i class="bi bi-cloud-upload fs-4 d-block mb-1 text-primary"></i>
+              <span class="fw-medium">Click to upload</span>
+              <small class="d-block text-muted mt-1">or drag &amp; drop here</small>
+            </label>
+          </div>
+          <div class="sms-field-error" id="err-address_proof"></div>
+        </div>
+
         <button type="submit" class="sms-btn-auth" id="btnGCSubmit">
-          <i class="ti ti-rocket me-1"></i> Complete Setup &amp; Login
+          <i class="bi bi-check-lg me-1"></i> Complete Setup &amp; Login
         </button>
       </form>
 

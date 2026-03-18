@@ -1,247 +1,220 @@
-<form id="frmUser"
-      action="<%- user ? BASE_URL + '/users/' + user.uuid : BASE_URL + '/users' %>"
-      method="POST" novalidate>
-  <% if (user) { %><input type="hidden" name="_method" value="PUT"/><% } %>
+<%- layout('../layouts/main') %>
+<%
+var u      = typeof user !== 'undefined' ? user : null;
+var isEdit = !!u;
+var formAction = isEdit ? '/users/' + u.uuid : '/users';
+var pageTitle  = isEdit ? 'Edit User' : 'Add User';
+%>
 
-  <div class="row g-3 mb-3">
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <div class="page-pretitle">
+        <a href="/dashboard">Dashboard</a> / <a href="/users">Users</a>
+      </div>
+      <h2 class="page-title"><%- pageTitle %></h2>
+    </div>
+    <div class="col-auto">
+      <a href="/users" class="btn btn-outline-secondary">
+        <i class="bi bi-circle me-1"></i>Back to Users
+      </a>
+    </div>
+  </div>
+</div>
 
-    <!-- Name -->
-    <div class="col-12">
-      <label class="form-label required">Full Name</label>
-      <div class="input-group">
-        <span class="input-group-text bg-light"><i class="ti ti-user text-secondary"></i></span>
-        <input type="text" name="name" class="form-control"
-               value="<%- user ? user.name : '' %>" placeholder="Full name" required/>
+<form id="frmUser" method="POST" action="<%- formAction %>" novalidate>
+<div class="row g-4">
+
+  <!-- Left column: core fields -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-person me-2"></i>User Information</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label required">Full Name</label>
+            <input type="text" name="name" class="form-control"
+                   value="<%- isEdit ? (u.name||'') : '' %>"
+                   placeholder="Full name" required/>
+            <div class="invalid-feedback">Please enter full name.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label <%- !isEdit ? 'required' : '' %>">Email</label>
+            <input type="email" name="email" class="form-control"
+                   value="<%- isEdit ? (u.email||'') : '' %>"
+                   placeholder="user@company.com"
+                   <%- isEdit ? 'readonly' : 'required' %>/>
+            <% if (isEdit) { %><div class="form-hint">Email cannot be changed.</div><% } %>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label <%- !isEdit ? 'required' : '' %>">Password</label>
+            <div class="input-group">
+              <input type="password" name="password" id="fPwd" class="form-control"
+                     placeholder="<%- isEdit ? 'Leave blank to keep current' : 'Min 8 characters' %>"
+                     <%- isEdit ? '' : 'required minlength="8"' %>/>
+              <button type="button" class="btn btn-outline-secondary btn-pwd-toggle">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control"
+                   value="<%- isEdit ? (u.phone||'') : '' %>"
+                   placeholder="+91 98765 43210"/>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Role</label>
+            <select name="role_id" class="form-select select2">
+              <option value="">— No Role —</option>
+              <% if (typeof roles !== 'undefined') { roles.forEach(function(r){ %>
+              <option value="<%- r.id %>" <%- isEdit && u.role_id==r.id ? 'selected':'' %>><%- r.name %></option>
+              <% }) } %>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Panel Access</label>
+            <select name="panel_access" class="form-select">
+              <option value="b2b"  <%- (!isEdit||u.panel_access==='b2b')  ? 'selected':'' %>>B2B</option>
+              <option value="b2c"  <%- isEdit&&u.panel_access==='b2c'  ? 'selected':'' %>>B2C</option>
+              <option value="both" <%- isEdit&&u.panel_access==='both' ? 'selected':'' %>>Both</option>
+            </select>
+          </div>
+
+          <% if (isEdit) { %>
+          <div class="col-md-6">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+              <option value="1" <%- parseInt(u.status) ? 'selected':'' %>>Active</option>
+              <option value="0" <%- !parseInt(u.status) ? 'selected':'' %>>Inactive</option>
+            </select>
+          </div>
+          <% } %>
+
+        </div>
       </div>
     </div>
 
-    <!-- Email -->
-    <div class="col-12">
-      <label class="form-label required">Email Address</label>
-      <div class="input-group">
-        <span class="input-group-text bg-light"><i class="ti ti-mail text-secondary"></i></span>
-        <input type="email" name="email" class="form-control"
-               value="<%- user ? user.email : '' %>" placeholder="user@company.com" required/>
+    <!-- Location -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-geo-alt-fill me-2"></i>Location</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Country</label>
+            <select name="country_id" class="form-select select2" id="sCountry">
+              <option value="">— Country —</option>
+              <% if (typeof countries !== 'undefined') { countries.forEach(function(c){ %>
+              <option value="<%- c.id %>" <%- isEdit&&u.country_id==c.id ? 'selected':'' %>><%- c.name %></option>
+              <% }) } %>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">State</label>
+            <select name="state_id" class="form-select" id="sState">
+              <option value="">— State —</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">City</label>
+            <select name="city_id" class="form-select" id="sCity">
+              <option value="">— City —</option>
+            </select>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Address</label>
+            <input type="text" name="address" class="form-control"
+                   value="<%- isEdit ? (u.address||'') : '' %>"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">ZIP Code</label>
+            <input type="text" name="zip_code" class="form-control"
+                   value="<%- isEdit ? (u.zip_code||'') : '' %>"/>
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- Phone -->
-    <div class="col-md-6">
-      <label class="form-label">Phone</label>
-      <div class="input-group">
-        <span class="input-group-text bg-light"><i class="ti ti-phone text-secondary"></i></span>
-        <input type="text" name="phone" class="form-control"
-               value="<%- user ? (user.phone||'') : '' %>" placeholder="10-digit mobile"/>
-      </div>
-    </div>
-
-    <!-- Role -->
-    <div class="col-md-6">
-      <label class="form-label required">Role</label>
-      <select name="role_id" id="role_id" class="form-select select2" required>
-        <option value="">— Select Role —</option>
-        <% roles.forEach(function(r){ %>
-          <option value="<%- r.id %>" <%- (user && user.role_id == r.id) ? 'selected' : '' %>><%- r.name %></option>
-        <% }) %>
-      </select>
-    </div>
-
-    <!-- Panel access -->
-    <div class="col-md-6">
-      <label class="form-label">Panel Access</label>
-      <select name="panel_access" class="form-select">
-        <option value="b2b"  <%- (!user || user.panel_access==='b2b')  ? 'selected':'' %>>B2B — Business</option>
-        <option value="b2c"  <%- (user && user.panel_access==='b2c')   ? 'selected':'' %>>B2C — Individual</option>
-        <option value="both" <%- (user && user.panel_access==='both')  ? 'selected':'' %>>Both</option>
-      </select>
-    </div>
-
-    <!-- Status -->
-    <div class="col-md-6">
-      <label class="form-label">Status</label>
-      <select name="status" class="form-select">
-        <option value="1" <%- (!user || user.status==1) ? 'selected':'' %>>Active</option>
-        <option value="0" <%- (user && user.status==0)  ? 'selected':'' %>>Inactive</option>
-      </select>
-    </div>
-
-    <!-- Password -->
-    <div class="col-md-6">
-      <label class="form-label <%- !user ? 'required' : '' %>">
-        Password
-        <% if (user) { %><small class="text-muted fw-normal">(leave blank to keep)</small><% } %>
-      </label>
-      <div class="input-group">
-        <span class="input-group-text bg-light"><i class="ti ti-lock text-secondary"></i></span>
-        <input type="password" name="password" id="password" class="form-control"
-               placeholder="Min 8 characters" <%- !user ? 'required' : '' %> minlength="8"/>
-        <button type="button" class="input-group-text bg-light border-start-0" id="togglePassword" tabindex="-1">
-          <i class="ti ti-eye text-secondary"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Confirm password -->
-    <div class="col-md-6">
-      <label class="form-label">Confirm Password</label>
-      <div class="input-group">
-        <span class="input-group-text bg-light"><i class="ti ti-lock-check text-secondary"></i></span>
-        <input type="password" name="confirm_password" id="confirm_password"
-               class="form-control" placeholder="Repeat password"/>
-      </div>
-    </div>
-
-    <!-- Divider: Address -->
-    <div class="col-12">
-      <div class="d-flex align-items-center gap-2">
-        <hr class="flex-fill my-0"/>
-        <small class="text-secondary fw-semibold text-uppercase" style="font-size:10.5px; letter-spacing:.07em; white-space:nowrap;">
-          <i class="ti ti-map-pin me-1"></i>Address Info
-        </small>
-        <hr class="flex-fill my-0"/>
-      </div>
-    </div>
-
-    <!-- Country -->
-    <div class="col-md-4">
-      <label class="form-label">Country</label>
-      <select name="country_id" id="country_id" class="form-select select2"
-              data-selected="<%- user ? (user.country_id||'') : '' %>">
-        <option value="">— Country —</option>
-        <% countries.forEach(function(c){ %>
-          <option value="<%- c.id %>" <%- (user && user.country_id==c.id)?'selected':'' %>><%- c.name %></option>
-        <% }) %>
-      </select>
-    </div>
-
-    <!-- State (dynamic) -->
-    <div class="col-md-4">
-      <label class="form-label">State</label>
-      <select name="state_id" id="state_id" class="form-select select2"
-              data-selected="<%- user ? (user.state_id||'') : '' %>">
-        <option value="">— State —</option>
-      </select>
-    </div>
-
-    <!-- City (dynamic) -->
-    <div class="col-md-4">
-      <label class="form-label">City</label>
-      <select name="city_id" id="city_id" class="form-select select2"
-              data-selected="<%- user ? (user.city_id||'') : '' %>">
-        <option value="">— City —</option>
-      </select>
-    </div>
-
-    <!-- Address -->
-    <div class="col-12">
-      <label class="form-label">Street Address</label>
-      <div class="input-group">
-        <span class="input-group-text bg-light"><i class="ti ti-building text-secondary"></i></span>
-        <input type="text" name="address" class="form-control"
-               value="<%- user ? (user.address||'') : '' %>" placeholder="Building, street, area"/>
-      </div>
-    </div>
-
-    <!-- ZIP -->
-    <div class="col-md-4">
-      <label class="form-label">PIN / ZIP Code</label>
-      <input type="text" name="zip_code" class="form-control"
-             value="<%- user ? (user.zip_code||'') : '' %>" placeholder="6-digit PIN" maxlength="10"/>
-    </div>
-
-    <!-- Profile Image upload -->
-    <div class="col-12">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <hr class="flex-fill my-0"/>
-        <small class="text-secondary fw-semibold text-uppercase" style="font-size:10.5px; letter-spacing:.07em; white-space:nowrap;">
-          <i class="ti ti-photo me-1"></i>Profile Photo
-        </small>
-        <hr class="flex-fill my-0"/>
-      </div>
-      <% if (user && user.profile_image) { %>
-      <div class="mb-2 d-flex align-items-center gap-2">
-        <img src="<%- user.profile_image %>" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #e9ecef;"/>
-        <span class="text-secondary small">Current photo. Upload new to replace.</span>
-      </div>
-      <% } %>
-      <div class="sms-dropzone" id="imgDropzone">
-        <input type="file" name="profile_image" id="profileImageInput" class="sms-dropzone__input"
-               accept="image/jpeg,image/png,image/gif,image/webp"/>
-        <div class="sms-dropzone__icon"><i class="ti ti-photo"></i></div>
-        <div class="sms-dropzone__title">Drop photo here or click to browse</div>
-        <div class="sms-dropzone__hint">JPEG, PNG, GIF, WebP · Max 2 MB</div>
-      </div>
-      <div class="sms-file-list" id="imgPreviewList"></div>
-    </div>
-
-  </div><!-- /row -->
-
-  <!-- Footer buttons -->
-  <div class="offcanvas-footer">
-    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">
-      <i class="ti ti-x me-1"></i>Cancel
-    </button>
-    <button type="submit" id="btnSubmit" class="btn btn-primary">
-      <i class="ti ti-device-floppy me-1"></i>
-      <%- user ? 'Update User' : 'Create User' %>
-    </button>
   </div>
 
+  <!-- Right column: extra info + settings -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-circle me-2"></i>Personal Details</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Gender</label>
+            <select name="gender" class="form-select">
+              <option value="">— Select —</option>
+              <option value="male"   <%- isEdit&&u.gender==='male'   ? 'selected':'' %>>Male</option>
+              <option value="female" <%- isEdit&&u.gender==='female' ? 'selected':'' %>>Female</option>
+              <option value="other"  <%- isEdit&&u.gender==='other'  ? 'selected':'' %>>Other</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" name="dob" class="form-control"
+                   value="<%- isEdit&&u.dob ? String(u.dob).slice(0,10) : '' %>"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Aadhar Number</label>
+            <input type="text" name="aadhar_no" class="form-control"
+                   value="<%- isEdit ? (u.aadhar_no||'') : '' %>"
+                   placeholder="12-digit" maxlength="12"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">PAN Number</label>
+            <input type="text" name="pan_no" class="form-control text-uppercase"
+                   value="<%- isEdit ? (u.pan_no||'') : '' %>"
+                   placeholder="ABCDE1234F" maxlength="10"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-shield me-2"></i>Access</div>
+      </div>
+      <div class="card-body">
+        <label class="form-check form-switch">
+          <input type="checkbox" class="form-check-input" name="is_org_admin" value="1"
+                 <%- isEdit&&parseInt(u.is_org_admin) ? 'checked':'' %>/>
+          <span class="form-check-label fw-medium">Organisation Admin</span>
+        </label>
+        <div class="form-hint">Bypasses all permission checks.</div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" id="btnSubmit">
+            <i class="bi bi-floppy me-1"></i>
+            <%- isEdit ? 'Update User' : 'Create User' %>
+          </button>
+          <a href="/users" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg me-1"></i>Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
 </form>
 
-<script>
-$(function () {
-  // Select2 inside offcanvas
-  $('#frmUser .select2').select2({
-    theme: 'bootstrap-5', width: '100%',
-    dropdownParent: $('#canvasUser'),
-  });
-
-  // Country → state cascade
-  $('#country_id').on('change', function () { loadStates($(this).val(),'',''); });
-  $('#state_id').on('change',   function () { loadCities($(this).val(),''); });
-
-  // Edit: preload state+city
-  var sc = '<%- user ? (user.state_id||"")  : "" %>';
-  var cc = '<%- user ? (user.city_id ||"")  : "" %>';
-  var cv = $('#country_id').val();
-  if (cv && sc) loadStates(cv, sc, cc);
-
-  // Image upload
-  var $dz    = $('#imgDropzone');
-  var $input = $('#profileImageInput');
-  var $list  = $('#imgPreviewList');
-  var ALLOWED = ['jpg','jpeg','png','gif','webp'];
-  var MAX_MB  = 2;
-
-  $dz.on('click', function(e){ if (!$(e.target).is('input')) $input.click(); });
-  $input.on('change', function(){ validateImg(this.files[0]); });
-  $dz.on('dragover', function(e){ e.preventDefault(); $dz.addClass('dragover'); });
-  $dz.on('dragleave drop', function(e){
-    e.preventDefault(); $dz.removeClass('dragover');
-    if (e.type==='drop' && e.originalEvent.dataTransfer.files[0])
-      validateImg(e.originalEvent.dataTransfer.files[0]);
-  });
-
-  function validateImg(file) {
-    if (!file) return;
-    var ext  = file.name.split('.').pop().toLowerCase();
-    var size = file.size/(1024*1024);
-    $list.empty();
-    if (!ALLOWED.includes(ext)) {
-      $list.html('<div class="sms-file-item error"><i class="ti ti-alert-circle text-danger sms-file-item__icon"></i><span>Only JPEG/PNG/GIF/WebP allowed.</span></div>');
-      toastr.error('Invalid image type.'); return;
-    }
-    if (size > MAX_MB) {
-      $list.html('<div class="sms-file-item error"><i class="ti ti-alert-circle text-danger sms-file-item__icon"></i><span>Image exceeds 2 MB limit.</span></div>');
-      toastr.error('Image too large.'); return;
-    }
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      $list.html('<div class="sms-file-item"><img src="'+e.target.result+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"><span class="sms-file-item__name">'+file.name+'</span><span class="badge-ext">'+ext+'</span><span class="sms-file-item__size">'+Math.round(size*1024)+' KB</span></div>');
-      $dz.find('.sms-dropzone__title').text('Photo selected ✓');
-    };
-    reader.readAsDataURL(file);
-  }
-});
-</script>
+<% block('scripts', "<script>\n$(function(){\n  // Init location cascade\n  initLocationCascade(document);\n  initSelect2('.select2');\n\n  // Form submit\n  $('#frmUser').on('submit', function(e){\n    e.preventDefault();\n    var $btn = $('#btnSubmit');\n    btnLoading($btn);\n    var fd = new FormData(this);\n    smsAjax({\n      url:  $(this).attr('action'),\n      method: 'POST',\n      data: fd, fd: true,\n      btn: $btn,\n      success: function(r){\n        if(r.status===200||r.status===201){\n          toastr.success(r.message||'Saved.');\n          setTimeout(function(){ window.location='/users'; }, 800);\n        } else {\n          toastr.error(r.message||'Error saving.');\n          btnReset($btn);\n        }\n      }\n    });\n  });\n});\n</script>") %>

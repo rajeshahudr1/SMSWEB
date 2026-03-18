@@ -1,274 +1,173 @@
-/* =====================================================
-   app.js  —  SMS Web  (loaded on every page)
-   Global helpers: loading, toastr, ajax, form submit,
-   Select2 init, location cascades, delete confirm.
-   Uses jQuery (loaded before this file in main.ejs).
-   ===================================================== */
+/* ============================================================
+   app.js — SMS Web Global Helpers
+   Loaded AFTER jQuery in main.ejs. Safe to use $ here.
+   ============================================================ */
 
-/* ── Toastr defaults ─────────────────────────────── */
-toastr.options = {
-    closeButton:   true,
-    progressBar:   true,
-    positionClass: 'toast-top-right',
-    timeOut:       4000,
-    newestOnTop:   true,
-};
+/* ── Loading ── */
+function showLoading()  { $('#sms-loader').removeClass('hide').show(); }
+function hideLoading()  { $('#sms-loader').addClass('hide'); setTimeout(function(){ $('#sms-loader').hide(); }, 300); }
 
-/* ── Show / hide full-page loading spinner ─────────
-   Usage:  showLoading();   hideLoading();
-   ─────────────────────────────────────────────────── */
-function showLoading() {
-    $('#page-loading').addClass('show');
-}
-function hideLoading() {
-    $('#page-loading').removeClass('show');
-}
-
-/* ── Disable / restore a submit button ─────────────
-   Usage:
-     btnLoading($('#btnSubmit'));
-     btnReset($('#btnSubmit'));
-   ─────────────────────────────────────────────────── */
+/* ── Button state ── */
 function btnLoading($btn) {
-    $btn.prop('disabled', true).html($btn.data('loading') || 'Loading...');
+    $btn.data('orig', $btn.html()).prop('disabled', true)
+        .html('<span class="spinner-border spinner-border-sm me-1"></span>' + ($btn.data('loading') || 'Loading...'));
 }
 function btnReset($btn) {
-    $btn.prop('disabled', false).html($btn.data('original-text') || $btn.data('text') || 'Submit');
+    $btn.prop('disabled', false).html($btn.data('orig') || $btn.data('original-text') || 'Submit');
 }
 
-/* ── Standard AJAX form submit helper ───────────────
-   Handles validation errors, success redirect/reload.
-
-   Usage in page JS:
-     submitForm({
-       formId:      '#frmUser',
-       btnId:       '#btnSubmit',
-       onSuccess:   function(res) { ... }   // optional
-     });
-   ─────────────────────────────────────────────────── */
-function submitForm(options) {
-    var $form = $(options.formId);
-    var $btn  = $(options.btnId || '#btnSubmit');
-
-    $form.on('submit', function (e) {
-        e.preventDefault();
-
-        // jQuery Validate check
-        if ($form.validate && !$form.valid()) return;
-
-        btnLoading($btn);
-        showLoading();
-
-        $.ajax({
-            url:  $form.attr('action'),
-            type: 'POST',
-            data: $form.serialize(),
-            success: function (res) {
-                hideLoading();
-                if (res.status === 200 || res.status === 201) {
-                    toastr.success(res.message || 'Saved successfully.');
-                    if (options.onSuccess) {
-                        options.onSuccess(res);
-                    } else if (options.redirect) {
-                        setTimeout(function () {
-                            window.location.href = BASE_URL + options.redirect;
-                        }, 800);
-                    } else {
-                        setTimeout(function () { location.reload(); }, 800);
-                    }
-                } else {
-                    toastr.error(res.message || 'Something went wrong.');
-                    btnReset($btn);
-                }
-            },
-            error: function () {
-                hideLoading();
-                btnReset($btn);
-                toastr.error('Could not connect. Please try again.');
-            },
-        });
+/* ── AJAX helper ── */
+function smsAjax(opts) {
+    // opts: { url, method, data, success, error, btn }
+    if (opts.btn) btnLoading(opts.btn);
+    $.ajax({
+        url:         opts.url,
+        type:        opts.method || 'POST',
+        data:        opts.data,
+        processData: opts.fd ? false : true,
+        contentType: opts.fd ? false : 'application/x-www-form-urlencoded; charset=UTF-8',
+        success: function(res) {
+            if (opts.btn) btnReset(opts.btn);
+            if (typeof opts.success === 'function') opts.success(res);
+        },
+        error: function(xhr) {
+            if (opts.btn) btnReset(opts.btn);
+            if (typeof opts.error === 'function') opts.error(xhr);
+            else toastr.error(SMS_T('general.error', 'Network error. Please try again.'));
+        }
     });
 }
 
-/* ── AJAX GET — load HTML into a container ──────────
-   Used by list pages to load create/edit form via AJAX
-   instead of full page reload (like vibrant pattern).
-
-   Usage:
-     loadView(BASE_URL + '/users/create', '#divMainContainer');
-   ─────────────────────────────────────────────────── */
-function loadView(url, containerId) {
-    containerId = containerId || '#divMainContainer';
-    showLoading();
-    $.get(url, function (html) {
-        $(containerId).html(html);
-        hideLoading();
-        // Re-init Select2 inside loaded content
-        $(containerId).find('.select2').each(function () {
-            if (!$(this).hasClass('select2-hidden-accessible')) {
-                $(this).select2({ theme: 'bootstrap-5', width: '100%' });
-            }
-        });
-        // Re-init flatpickr date inputs
-        $(containerId).find('.datepicker').each(function () {
-            flatpickr(this, { dateFormat: 'Y-m-d' });
-        });
-    }).fail(function () {
-        hideLoading();
-        toastr.error('Failed to load. Please try again.');
+/* ── Confirm dialog (modal) ── */
+function smsConfirm(opts) {
+    // opts: { icon, title, msg, btnClass, btnText, onConfirm }
+    var $m = $('#smsModal');
+    $m.html(
+        '<div class="modal-dialog modal-sm modal-dialog-centered">' +
+        '<div class="modal-content">' +
+        '<div class="modal-body text-center py-4 px-4">' +
+        '<div class="mb-3" style="font-size:52px;">' + (opts.icon||'⚠️') + '</div>' +
+        '<h4 class="mb-1">' + (opts.title||'Confirm') + '</h4>' +
+        '<p class="text-secondary small mb-0">' + (opts.msg||'') + '</p>' +
+        '</div>' +
+        '<div class="modal-footer justify-content-center border-0 pt-0 pb-4 gap-2">' +
+        '<button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>' +
+        '<button class="btn ' + (opts.btnClass||'btn-danger') + '" id="smsConfirmBtn">' + (opts.btnText||'Confirm') + '</button>' +
+        '</div></div></div>'
+    );
+    var modal = new bootstrap.Modal($m[0]);
+    modal.show();
+    $('#smsConfirmBtn').off('click').on('click', function() {
+        modal.hide();
+        if (typeof opts.onConfirm === 'function') opts.onConfirm();
     });
 }
 
-/* ── Delete confirm via modal ───────────────────────
-   Load confirm modal HTML from server then show it.
+/* ── Toast shortcuts ── */
+function smsSuccess(msg) { toastr.success(msg); }
+function smsError(msg)   { toastr.error(msg); }
+function smsInfo(msg)    { toastr.info(msg); }
 
-   Usage:
-     loadDeleteModal(BASE_URL + '/users/' + uuid + '/delete');
-   ─────────────────────────────────────────────────── */
-function loadDeleteModal(url) {
-    showLoading();
-    $.get(url, function (html) {
-        $('#myModal').html(html);
-        var modal = new bootstrap.Modal(document.getElementById('myModal'));
-        modal.show();
-        hideLoading();
-    }).fail(function () {
-        hideLoading();
-        toastr.error('Failed to load. Please try again.');
-    });
-}
+/* ── Pagination builder ── */
+function buildPagination(pg, onPage) {
+    if (!pg || pg.last_page <= 1) return '';
+    var html = '<nav><ul class="pagination pagination-sm mb-0 flex-wrap">';
+    html += '<li class="page-item ' + (pg.current_page <= 1 ? 'disabled' : '') + '">' +
+            '<a class="page-link" href="#" data-p="' + (pg.current_page - 1) + '"><i class="ti ti-chevron-left"></i></a></li>';
 
-/* ── AJAX POST delete (used inside delete modal) ────
-   Usage:
-     confirmDelete(BASE_URL + '/users/' + uuid + '/delete', function() {
-       $('#datalist').DataTable().draw();
-     });
-   ─────────────────────────────────────────────────── */
-function confirmDelete(url, onSuccess) {
-    var $btn = $('#btnDeleteConfirm');
-    $btn.off('click').on('click', function () {
-        btnLoading($btn);
-        showLoading();
-        $.post(url, function (res) {
-            hideLoading();
-            bootstrap.Modal.getInstance(document.getElementById('myModal')).hide();
-            if (res.status === 200) {
-                toastr.success(res.message || 'Deleted successfully.');
-                if (onSuccess) onSuccess(res);
-            } else {
-                toastr.error(res.message || 'Delete failed.');
-                btnReset($btn);
-            }
-        }).fail(function () {
-            hideLoading();
-            btnReset($btn);
-            toastr.error('Could not connect. Please try again.');
-        });
-    });
-}
-
-/* ── Location cascade helpers ────────────────────────
-   Used on any form with country → state → city dropdowns.
-
-   loadStates(countryId, selectedStateId, selectedCityId)
-   loadCities(stateId, selectedCityId)
-   ─────────────────────────────────────────────────── */
-function loadStates(countryId, selectedStateId, selectedCityId) {
-    if (!countryId) {
-        $('#state_id').html('<option value="">-- Select State --</option>');
-        $('#city_id').html('<option value="">-- Select City --</option>');
-        return;
+    var pages = [], prev = 0;
+    for (var i = 1; i <= pg.last_page; i++) {
+        if (i === 1 || i === pg.last_page || Math.abs(i - pg.current_page) <= 1) {
+            if (prev && i - prev > 1) pages.push('...');
+            pages.push(i); prev = i;
+        }
     }
-    $.get(BASE_URL + '/locations/countries/' + countryId + '/states', function (res) {
-        var html = '<option value="">-- Select State --</option>';
-        if (res.status === 200 && res.data) {
-            $.each(res.data, function (i, s) {
-                html += '<option value="' + s.id + '"' + (s.id == selectedStateId ? ' selected' : '') + '>' + s.name + '</option>';
-            });
-        }
-        $('#state_id').html(html).trigger('change.select2');
-
-        // If editing, preload cities too
-        if (selectedStateId) {
-            loadCities(selectedStateId, selectedCityId);
-        }
-    });
-}
-
-function loadCities(stateId, selectedCityId) {
-    if (!stateId) {
-        $('#city_id').html('<option value="">-- Select City --</option>');
-        return;
-    }
-    $.get(BASE_URL + '/locations/states/' + stateId + '/cities', function (res) {
-        var html = '<option value="">-- Select City --</option>';
-        if (res.status === 200 && res.data) {
-            $.each(res.data, function (i, c) {
-                html += '<option value="' + c.id + '"' + (c.id == selectedCityId ? ' selected' : '') + '>' + c.name + '</option>';
-            });
-        }
-        $('#city_id').html(html).trigger('change.select2');
-    });
-}
-
-/* ── Toggle active/inactive status ──────────────────
-   Usage:  toggleStatus(BASE_URL + '/users/' + uuid + '/toggle-status', table)
-   ─────────────────────────────────────────────────── */
-function toggleStatus(url, table) {
-    showLoading();
-    $.post(url, function (res) {
-        hideLoading();
-        if (res.status === 200) {
-            toastr.success(res.message || 'Status updated.');
-            if (table) table.draw(false);  // redraw without resetting pagination
+    pages.forEach(function(p) {
+        if (p === '...') {
+            html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
         } else {
-            toastr.error(res.message || 'Failed to update status.');
+            html += '<li class="page-item ' + (p === pg.current_page ? 'active' : '') + '">' +
+                    '<a class="page-link" href="#" data-p="' + p + '">' + p + '</a></li>';
         }
-    }).fail(function () {
-        hideLoading();
-        toastr.error('Could not connect. Please try again.');
     });
+    html += '<li class="page-item ' + (pg.current_page >= pg.last_page ? 'disabled' : '') + '">' +
+            '<a class="page-link" href="#" data-p="' + (pg.current_page + 1) + '"><i class="ti ti-chevron-right"></i></a></li>';
+    html += '</ul></nav>';
+
+    // Bind after insert
+    setTimeout(function() {
+        $(document).off('click.smsPage').on('click.smsPage', '.page-link[data-p]', function(e) {
+            e.preventDefault();
+            var p = parseInt($(this).data('p'));
+            if (p > 0) onPage(p);
+        });
+    }, 0);
+    return html;
 }
 
-/* ── Init all global components on DOM ready ──────── */
-$(function () {
-
-    // Select2 on any element with .select2 class
-    $('.select2').each(function () {
+/* ── Select2 init ── */
+function initSelect2(ctx, parent) {
+    $(ctx || '.select2', parent).each(function() {
         if (!$(this).hasClass('select2-hidden-accessible')) {
-            $(this).select2({ theme: 'bootstrap-5', width: '100%' });
+            $(this).select2({
+                theme: 'bootstrap-5', width: '100%',
+                dropdownParent: parent ? $(parent) : $('body')
+            });
         }
     });
+}
 
-    // Flatpickr on any input with .datepicker class
+/* ── Location cascade (country → state → city) ── */
+function initLocationCascade(ctx) {
+    var $ctx     = $(ctx || document);
+    var $country = $ctx.find('[name="country_id"], #sCountry');
+    var $state   = $ctx.find('[name="state_id"],   #sState');
+    var $city    = $ctx.find('[name="city_id"],    #sCity');
+    if (!$country.length) return;
+
+    $country.off('change.loc').on('change.loc', function() {
+        var cid = $(this).val();
+        $state.html('<option value="">Loading...</option>');
+        $city.html('<option value="">— Select City —</option>');
+        if (!cid) { $state.html('<option value="">— Select State —</option>'); return; }
+        $.get(BASE_URL + '/locations/states/' + cid, function(r) {
+            var h = '<option value="">— Select State —</option>';
+            if (r.status === 200) (r.data||[]).forEach(function(s) { h += '<option value="'+s.id+'">'+s.name+'</option>'; });
+            $state.html(h);
+            if ($state.hasClass('select2-hidden-accessible')) $state.trigger('change');
+        });
+    });
+    $state.off('change.loc').on('change.loc', function() {
+        var sid = $(this).val();
+        $city.html('<option value="">Loading...</option>');
+        if (!sid) { $city.html('<option value="">— Select City —</option>'); return; }
+        $.get(BASE_URL + '/locations/cities/' + sid, function(r) {
+            var h = '<option value="">— Select City —</option>';
+            if (r.status === 200) {
+                var cities = r.data && r.data.data ? r.data.data : r.data;
+                (cities||[]).forEach(function(c) { h += '<option value="'+c.id+'">'+c.name+'</option>'; });
+            }
+            $city.html(h);
+            if ($city.hasClass('select2-hidden-accessible')) $city.trigger('change');
+        });
+    });
+}
+
+/* ── Global DOM ready ── */
+$(function() {
+    // Init Select2 on all pages
+    initSelect2();
+
+    // Flatpickr
     if (typeof flatpickr !== 'undefined') {
-        $('.datepicker').each(function () {
-            flatpickr(this, { dateFormat: 'Y-m-d', allowInput: true });
-        });
-        $('.datetimepicker').each(function () {
-            flatpickr(this, { dateFormat: 'Y-m-d H:i', enableTime: true, allowInput: true });
-        });
+        $('input[type="date"]').flatpickr({ dateFormat: 'Y-m-d', allowInput: true });
     }
 
-    // Password toggle — any input with a sibling #togglePassword
-    $(document).on('click', '#togglePassword', function () {
-        var $input = $(this).closest('.input-group').find('input[type=password], input[type=text]');
-        var $icon  = $(this).find('i');
-        if ($input.attr('type') === 'password') {
-            $input.attr('type', 'text');
-            $icon.removeClass('ti-eye').addClass('ti-eye-off');
-        } else {
-            $input.attr('type', 'password');
-            $icon.removeClass('ti-eye-off').addClass('ti-eye');
-        }
+    // Password toggle
+    $(document).on('click', '.btn-pwd-toggle', function() {
+        var $inp = $(this).closest('.input-group').find('input');
+        var isText = $inp.attr('type') === 'text';
+        $inp.attr('type', isText ? 'password' : 'text');
+        $(this).find('i').toggleClass('bi-eye bi-eye-slash');
     });
-
-    // Scroll to first invalid field on form submit
-    $(document).on('submit', 'form', function () {
-        var $first = $(this).find('.is-invalid').first();
-        if ($first.length) {
-            $('html, body').animate({ scrollTop: $first.offset().top - 100 }, 400);
-        }
-    });
-
 });

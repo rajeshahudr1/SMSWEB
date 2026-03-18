@@ -1,85 +1,118 @@
 <%- layout('../layouts/main') %>
+<%
+var s = stats || {};
+var recentUsers = s.recent_users || [];
+var statCards = [
+  { icon:'ti-users',       label: t ? t('dash.total_users')    : 'Total Users',    val: s.total_users || 0,       color:'blue',   trend:'+12%', up:true  },
+  { icon:'ti-car',         label: t ? t('dash.vehicles_today') : 'Vehicles Today', val: s.vehicles_today || 0,    color:'green',  trend:'Today',up:true  },
+  { icon:'ti-shield-lock', label: t ? t('dash.roles')          : 'Roles',          val: s.total_roles || 0,       color:'orange', trend:'RBAC', up:true  },
+  { icon:'ti-key',         label: t ? t('dash.permissions')    : 'Permissions',    val: s.total_permissions || 0, color:'purple', trend:'Active',up:true },
+];
+%>
 
-<!-- Stat cards 2x2 mobile, 4 col desktop -->
-<div class="row row-deck row-cards mb-3 g-3">
-  <%
-  var stats_cards = [
-    { icon:'ti-users',         label:'Total Users',    val: stats ? stats.total_users : 0,       color:'blue',   trend:'+12%',  badge:'bg-success-lt' },
-    { icon:'ti-car',           label:'Vehicles Today', val: stats ? (stats.vehicles_today||0):0,  color:'green',  trend:'Today', badge:'bg-green-lt'   },
-    { icon:'ti-shield-lock',   label:'Roles',          val: stats ? stats.total_roles : 0,        color:'orange', trend:'RBAC',  badge:'bg-yellow-lt'  },
-    { icon:'ti-key',           label:'Permissions',    val: stats ? stats.total_permissions : 0,  color:'purple', trend:'Active',badge:'bg-purple-lt'  },
-  ];
-  %>
-  <% stats_cards.forEach(function(sc){ %>
-  <div class="col-6 col-lg-3">
-    <div class="card card-sm h-100">
+<!-- ══ STAT CARDS ══════════════════════════════════════════ -->
+<div class="row row-deck row-cards mb-3">
+  <% statCards.forEach(function(c){ %>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
       <div class="card-body">
-        <div class="d-flex align-items-start justify-content-between mb-3">
-          <span class="avatar bg-<%- sc.color %>-lt" style="font-size:20px; width:40px; height:40px;">
-            <i class="ti <%- sc.icon %> text-<%- sc.color %>"></i>
-          </span>
-          <span class="badge <%- sc.badge %> small"><%- sc.trend %></span>
+        <div class="d-flex align-items-center">
+          <div class="subheader"><%- c.label %></div>
+          <div class="ms-auto lh-1">
+            <span class="badge bg-<%- c.up ? 'success' : 'danger' %>-lt small"><%- c.trend %></span>
+          </div>
         </div>
-        <div class="h2 mb-1" style="font-size:1.8rem;"><%- sc.val %></div>
-        <div class="text-secondary small"><%- sc.label %></div>
+        <div class="d-flex align-items-baseline mt-3 mb-0">
+          <div class="h1 mb-0 me-2" style="font-size:2rem; font-weight:800;"><%- c.val.toLocaleString() %></div>
+        </div>
+        <div class="d-flex align-items-center mt-3">
+          <span class="avatar me-2 bg-<%- c.color %>-lt" style="font-size:18px; width:36px; height:36px;">
+            <i class="ti <%- c.icon %> text-<%- c.color %>"></i>
+          </span>
+          <div class="progress flex-grow-1" style="height:4px;">
+            <div class="progress-bar bg-<%- c.color %>" style="width:<%- Math.min((c.val/100)*10,100) %>%"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
   <% }) %>
 </div>
 
-<!-- Welcome card -->
-<div class="row g-3 mb-3">
-  <div class="col-lg-8">
-    <div class="card h-100">
+<!-- ══ ROW 2: Welcome + Quick actions ══════════════════════ -->
+<div class="row row-cards mb-3">
+
+  <!-- Welcome card -->
+  <div class="col-md-8">
+    <div class="card">
       <div class="card-body">
         <div class="row align-items-center g-3">
           <div class="col-auto">
-            <span class="avatar avatar-lg bg-primary-lt" style="width:60px;height:60px;font-size:26px;">
-              <i class="ti ti-<%= (user && user.is_org_admin) ? 'crown' : 'user' %> text-primary"></i>
+            <span class="avatar avatar-xl bg-primary-lt" style="font-size:28px; width:68px; height:68px;">
+              <% if (user && user.profile_image) { %>
+              <span style="background-image:url(<%- user.profile_image %>);width:100%;height:100%;background-size:cover;background-position:center;display:block;border-radius:inherit;"></span>
+              <% } else { %>
+              <i class="ti ti-<%- (user && user.is_org_admin) ? 'crown' : 'user' %> text-primary"></i>
+              <% } %>
             </span>
           </div>
           <div class="col">
-            <h3 class="mb-1">Welcome back, <strong><%- user ? user.name : 'User' %></strong> 👋</h3>
-            <p class="text-secondary mb-0 small">
-              <i class="ti ti-badge me-1"></i><%- (user && user.is_org_admin) ? 'Administrator' : 'Staff User' %>
-              <% if (user && user.organization_name) { %>
-              &nbsp;·&nbsp;<i class="ti ti-building me-1"></i><%- user.organization_name %>
-              <% } %>
-            </p>
+            <div class="h3 mb-0">
+              <%- t ? t('dash.welcome') : 'Welcome back' %>,
+              <strong><%- user ? user.name : 'User' %></strong> 👋
+            </div>
+            <div class="text-secondary small mt-1">
+              <i class="bi bi-circle me-1"></i>
+              <%- (user && user.is_org_admin) ? 'Administrator' : 'Staff User' %>
+              &nbsp;·&nbsp;
+              <i class="bi bi-building me-1"></i>
+              <%- (user && user.company_name) ? user.company_name : 'SMS Platform' %>
+              &nbsp;·&nbsp;
+              <i class="bi bi-circle me-1"></i>
+              <%- (user && user.panel_access) ? user.panel_access.toUpperCase() : 'B2B' %>
+            </div>
           </div>
-          <div class="col-12 col-sm-auto d-flex flex-wrap gap-2">
-            <a href="/profile"  class="btn btn-sm btn-outline-primary"><i class="ti ti-user me-1"></i>Profile</a>
-            <a href="/users"    class="btn btn-sm btn-primary"><i class="ti ti-users me-1"></i>Manage Users</a>
+          <div class="col-12 col-sm-auto d-flex flex-wrap gap-2 mt-2 mt-sm-0">
+            <a href="/profile" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-person me-1"></i><%- t ? t('nav.profile') : 'Profile' %>
+            </a>
+            <a href="/users" class="btn btn-sm btn-primary">
+              <i class="bi bi-people-fill me-1"></i><%- t ? t('users.title') : 'Users' %>
+            </a>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-lg-4">
+
+  <!-- Storage card -->
+  <div class="col-md-4">
     <div class="card h-100">
       <div class="card-header py-2">
-        <div class="card-title small"><i class="ti ti-database me-1 text-secondary"></i>Storage Used</div>
+        <div class="card-title small fw-semibold">
+          <i class="bi bi-database me-1 text-secondary"></i>
+          <%- t ? t('dash.storage') : 'Storage Used' %>
+        </div>
       </div>
       <div class="card-body py-3">
         <div class="d-flex justify-content-between mb-1">
           <span class="small text-secondary">6.5 GB of 10 GB</span>
           <span class="small fw-semibold text-primary">65%</span>
         </div>
-        <div class="progress mb-3" style="height:8px; border-radius:4px;">
+        <div class="progress mb-3" style="height:6px;">
           <div class="progress-bar bg-primary" style="width:65%;"></div>
         </div>
         <div class="row text-center g-2">
           <div class="col-4">
-            <div class="fw-bold text-blue" style="font-size:13px;">915 MB</div>
+            <div class="fw-bold text-blue small">915 MB</div>
             <div class="text-muted" style="font-size:11px;">Regular</div>
           </div>
           <div class="col-4">
-            <div class="fw-bold text-orange" style="font-size:13px;">415 MB</div>
+            <div class="fw-bold text-orange small">415 MB</div>
             <div class="text-muted" style="font-size:11px;">System</div>
           </div>
           <div class="col-4">
-            <div class="fw-bold text-green" style="font-size:13px;">3.5 GB</div>
+            <div class="fw-bold text-green small">3.5 GB</div>
             <div class="text-muted" style="font-size:11px;">Free</div>
           </div>
         </div>
@@ -88,34 +121,144 @@
   </div>
 </div>
 
-<!-- Quick modules -->
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title"><i class="ti ti-layout-grid me-2 text-primary"></i>Quick Access</h3>
-  </div>
-  <div class="card-body">
-    <div class="row g-3">
-      <% [
-        { icon:'ti-users',       label:'Users',      url:'/users',    color:'blue',   desc:'Manage accounts' },
-        { icon:'ti-shield-lock', label:'Roles',       url:'/roles',    color:'green',  desc:'Access control'  },
-        { icon:'ti-settings',    label:'Settings',    url:'/settings', color:'orange', desc:'App preferences' },
-        { icon:'ti-user-circle', label:'My Profile',  url:'/profile',  color:'purple', desc:'Update info'     },
-      ].forEach(function(m){ %>
-      <div class="col-6 col-md-3">
-        <a href="<%- m.url %>" class="card card-link border text-decoration-none h-100"
-           style="transition:box-shadow .18s; cursor:pointer;"
-           onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'"
-           onmouseleave="this.style.boxShadow=''">
-          <div class="card-body text-center py-3 px-2">
-            <span class="avatar avatar-md bg-<%- m.color %>-lt mb-2" style="font-size:22px;">
-              <i class="ti <%- m.icon %> text-<%- m.color %>"></i>
-            </span>
-            <div class="fw-semibold" style="font-size:13.5px;"><%- m.label %></div>
-            <div class="text-muted" style="font-size:11.5px;"><%- m.desc %></div>
-          </div>
-        </a>
+<!-- ══ ROW 3: Recent Users + Quick Access ══════════════════ -->
+<div class="row row-cards mb-3">
+
+  <!-- Recent Users -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="bi bi-people-fill me-2 text-primary"></i>
+          Recent Users
+        </div>
+        <div class="card-options">
+          <a href="/users" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-circle me-1"></i>View All
+          </a>
+        </div>
       </div>
-      <% }) %>
+      <div class="table-responsive">
+        <table class="table table-vcenter table-hover card-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th class="d-none d-md-table-cell">Email</th>
+              <th class="d-none d-sm-table-cell">Role</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (recentUsers && recentUsers.length) { %>
+            <% recentUsers.forEach(function(u){ %>
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar avatar-sm bg-primary-lt"
+                        style="font-size:13px; font-weight:700;
+                               <%- u.profile_image ? 'background-image:url('+u.profile_image+');background-size:cover;' : '' %>">
+                    <%- u.profile_image ? '' : u.name.charAt(0).toUpperCase() %>
+                  </span>
+                  <span class="fw-medium small"><%- u.name %></span>
+                </div>
+              </td>
+              <td class="d-none d-md-table-cell text-secondary small"><%- u.email %></td>
+              <td class="d-none d-sm-table-cell">
+                <span class="badge bg-secondary-lt"><%- u.role_name || '—' %></span>
+              </td>
+              <td>
+                <% if (parseInt(u.status)) { %>
+                <span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>Active</span>
+                <% } else { %>
+                <span class="badge bg-danger-lt">Inactive</span>
+                <% } %>
+              </td>
+            </tr>
+            <% }) %>
+            <% } else { %>
+            <tr>
+              <td colspan="4" class="text-center text-secondary py-4">
+                <i class="bi bi-circle mb-2" style="font-size:30px;opacity:.3;display:block;"></i>
+                No users yet
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Access modules -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="bi bi-grid me-2 text-primary"></i>
+          <%- t ? t('dash.quick_actions') : 'Quick Access' %>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          <%
+          var quickModules = [
+            { icon:'ti-users',       label: t ? t('users.title') : 'Users',         url:'/users',       color:'blue'   },
+            { icon:'ti-shield-lock', label: t ? t('roles.title') : 'Roles',          url:'/roles',       color:'green'  },
+            { icon:'ti-settings',    label: t ? t('nav.settings')  : 'Settings',       url:'/settings',    color:'orange' },
+            { icon:'ti-user-circle', label: t ? t('nav.profile')   : 'My Profile',     url:'/profile',     color:'purple' },
+          ];
+          %>
+          <% quickModules.forEach(function(m){ %>
+          <div class="col-6">
+            <a href="<%- m.url %>" class="card card-sm card-link border h-100 text-decoration-none" style="transition:box-shadow .15s;">
+              <div class="card-body text-center py-3 px-2">
+                <span class="avatar bg-<%- m.color %>-lt mb-2" style="font-size:20px;">
+                  <i class="ti <%- m.icon %> text-<%- m.color %>"></i>
+                </span>
+                <div class="fw-semibold small"><%- m.label %></div>
+              </div>
+            </a>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ROW 4: Activity feed ═════════════════════════════════ -->
+<div class="row row-cards">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="bi bi-circle me-2 text-primary"></i>
+          <%- t ? t('dash.recent') : 'Recent Activity' %>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="divide-y">
+          <% var activities = [
+            { icon:'ti-user-plus',   color:'green',  text:'New user registered', time:'2 min ago'  },
+            { icon:'ti-shield-check',color:'blue',   text:'Role permissions updated', time:'1 hr ago' },
+            { icon:'ti-settings',    color:'orange', text:'System settings changed', time:'3 hr ago'  },
+            { icon:'ti-car',         color:'purple', text:'Vehicle intake recorded', time:'5 hr ago'  },
+          ]; %>
+          <% activities.forEach(function(a){ %>
+          <div class="row g-0 align-items-center p-3">
+            <div class="col-auto me-3">
+              <span class="avatar avatar-sm bg-<%- a.color %>-lt">
+                <i class="ti <%- a.icon %> text-<%- a.color %>"></i>
+              </span>
+            </div>
+            <div class="col">
+              <div class="small fw-medium"><%- a.text %></div>
+              <div class="text-secondary" style="font-size:11px;"><%- a.time %></div>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
     </div>
   </div>
 </div>

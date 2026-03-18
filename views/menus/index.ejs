@@ -1,0 +1,90 @@
+<%- layout('../layouts/main') %>
+
+<div class="page-header d-print-none mb-3">
+  <div class="row align-items-center g-2">
+    <div class="col">
+      <h2 class="page-title mb-0">
+        <i class="bi bi-list me-2 text-primary"></i>Menu Manager
+        <span class="badge bg-danger-lt ms-2" style="font-size:11px;">Super Admin</span>
+      </h2>
+      <ol class="breadcrumb mt-1">
+        <li class="breadcrumb-item"><a href="/dashboard"><i class="bi bi-house-door-fill me-1"></i>Dashboard</a></li>
+        <li class="breadcrumb-item active">Menu Manager</li>
+      </ol>
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <div class="btn-group btn-group-sm me-2">
+        <button class="btn btn-outline-secondary active" data-panel="b2b" id="panelB2B">B2B</button>
+        <button class="btn btn-outline-secondary" data-panel="b2c" id="panelB2C">B2C</button>
+      </div>
+      <% if (can('add_menus')) { %>
+      <button class="btn btn-primary" id="btnAddMenu">
+        <i class="bi bi-plus-lg me-1"></i>
+        <span class="d-none d-sm-inline">Add Menu</span>
+      </button>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="row row-cards">
+
+  <!-- Menu Tree -->
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-circle me-2 text-primary"></i>Menu Tree</div>
+        <div class="card-options">
+          <span class="text-secondary small">Drag to reorder</span>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div id="menuTree" class="p-3">
+          <div class="text-center py-5 text-secondary">
+            <div class="spinner-border spinner-border-sm me-2 text-primary"></div>Loading...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-info-circle me-2"></i>Instructions</div>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled small text-secondary">
+          <li class="mb-2"><i class="bi bi-circle me-2 text-primary"></i>Drag items to reorder</li>
+          <li class="mb-2"><i class="bi bi-eye me-2 text-green"></i>Click eye icon to toggle visibility</li>
+          <li class="mb-2"><i class="bi bi-pencil me-2 text-orange"></i>Click edit to modify menu item</li>
+          <li class="mb-2"><i class="bi bi-trash3 me-2 text-danger"></i>Delete removes menu item</li>
+          <li class="mb-2"><i class="bi bi-lock me-2 text-secondary"></i>Permission key controls who sees the menu</li>
+        </ul>
+        <hr/>
+        <div class="small">
+          <div class="fw-semibold mb-1">Level indicators:</div>
+          <div class="d-flex flex-column gap-1">
+            <div><span class="badge bg-primary-lt me-1">L1</span> Group header (no link)</div>
+            <div><span class="badge bg-secondary-lt me-1">L2</span> Sub-menu item</div>
+            <div><span class="badge bg-light text-dark me-1">L3</span> Sub-child item</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Offcanvas form -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasMenu" style="width:440px;">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title" id="offcanvasTitle">Menu Item</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body" id="offcanvasBody">
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+  </div>
+</div>
+
+<% block('scripts', '<script src="/js/pages/menus.js"></script>') %>

@@ -1,55 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%- locals.lang || 'en' %>">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
-    <title><%- page_title %> | <%- APP_NAME %></title>
-    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
-    <link rel="stylesheet" href="/css/auth.css"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title><%- page_title %> | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+<link rel="stylesheet" href="/libs/css/tabler.min.css"/>
+<link rel="stylesheet" href="/libs/css/toastr.min.css"/>
+<link rel="stylesheet" href="/libs/css/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/libs/css/select2.min.css"/>
+<link rel="stylesheet" href="/libs/css/select2-bootstrap-5-theme.min.css"/>
+<link rel="stylesheet" href="/css/auth.css"/>
+<link rel="stylesheet" href="/css/phone-group.css"/>
+<link rel="stylesheet" href="/css/auth-file-upload.css"/>
 </head>
-<body class="antialiased">
-
-<!-- PAGE HTML (no scripts here) -->
+<body class="antialiased d-flex flex-column min-vh-100 bg-light">
+<script src="/libs/js/jquery.min.js"></script>
 <%- body %>
 
-<!-- ══ ALL SCRIPTS AT BOTTOM — jQuery loads before any page script ══ -->
 
-<!-- ❶ jQuery -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<!-- ❷ jQuery Validate -->
-<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
-<!-- ❸ Toastr -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-<!-- ❹ Tabler JS -->
-<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
-<!-- ❺ Google GIS -->
-<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="/libs/js/tabler.min.js"></script>
+<script src="/libs/js/select2.min.js"></script>
+<script src="/libs/js/jquery.validate.min.js"></script>
+<script src="/libs/js/toastr.min.js"></script>
 
-<!-- ❻ Global vars -->
+<!-- BASE_URL and globals must be defined BEFORE common utilities -->
 <script>
-    var BASE_URL         = '<%- BASE_URL %>';
-    var GOOGLE_CLIENT_ID = '<%= process.env.GOOGLE_CLIENT_ID || "" %>';
+var BASE_URL = '<%- locals.BASE_URL || "" %>';
+var SMS_T_DICT = <%- locals.langDict_json || '{}' %>;
+function SMS_T(k,f){ return SMS_T_DICT[k]||f||k; }
 
-    toastr.options = {
-        closeButton: true, progressBar: true,
-        positionClass: 'toast-top-right',
-        timeOut: 5000, extendedTimeOut: 2000,
-        preventDuplicates: true,
-    };
-    <% if (locals.flash_success) { %>
-    $(function(){ toastr.success('<%- (flash_success||"").replace(/'/g,"\\'") %>'); });
-    <% } %>
-    <% if (locals.flash_error) { %>
-    $(function(){ toastr.error('<%- (flash_error||"").replace(/'/g,"\\'") %>'); });
-    <% } %>
+toastr.options = { closeButton:true, progressBar:true, positionClass:'toast-top-right', timeOut:5000 };
+<% if (locals.flash_success) { %>
+$(function(){ toastr.success("<%- (flash_success||'').replace(/"/g,'&quot;') %>"); });
+<% } %>
+<% if (locals.flash_error) { %>
+$(function(){ toastr.error("<%- (flash_error||'').replace(/"/g,'&quot;') %>"); });
+<% } %>
 </script>
 
-<!-- ❼ Page-specific scripts (block filled by each view) -->
-<%- blocks.scripts %>
+<!-- Common utilities load AFTER BASE_URL is defined -->
+<script src="/js/common/location.js"></script>
+<script src="/js/common/phone.js"></script>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<%- block('scripts') %>
 </body>
 </html>

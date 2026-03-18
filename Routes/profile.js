@@ -8,7 +8,9 @@ const { requireLogin } = require('../Middlewares/auth');
 router.use(requireLogin);
 
 router.get( '/',                 Profile.index);
-router.post('/',                 Profile.update);
-router.post('/change-password',  Profile.changePassword);
+router.put( '/',                 Profile.update);           // PUT — profile update
+router.post('/upload-image',     Profile.uploadImage);
+router.post('/change-password',  Profile.changePassword);  // POST — for users with password
+router.post('/set-password',     Profile.setPassword);     // POST — for Google users setting first password
 
 module.exports = router;

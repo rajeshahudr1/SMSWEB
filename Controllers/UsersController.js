@@ -9,7 +9,7 @@ const getRoles = (token) => api.get('/roles?per_page=200', token).then(r => r.st
 exports.index = async (req, res) => {
     const roles = await getRoles(req.session.token);
     res.render('users/index', {
-        page_title:  'Users',
+        page_title:  res.locals.t ? res.locals.t('users.title') : 'Users',
         activeLink:  'users',
         breadcrumbs: [
             { name: 'Dashboard', url: '/dashboard' },

@@ -81,4 +81,15 @@ function statusBadge(status) {
     return '<span class="badge bg-danger-lt">Inactive</span>';
 }
 
-module.exports = { formatDate, formatDateTime, formatTime, timeAgo, formatDateSetting, getTZ, assetUrl, truncate, currency, ucFirst, statusBadge };
+
+// ── HTML-escape for safe use in HTML attributes/content ──────
+function escape(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g,  '&amp;')
+        .replace(/</g,  '&lt;')
+        .replace(/>/g,  '&gt;')
+        .replace(/"/g,  '&quot;')
+        .replace(/'/g,  '&#39;');
+}
+module.exports = { formatDate, formatDateTime, formatTime, timeAgo, formatDateSetting, getTZ, assetUrl, truncate, currency, ucFirst, statusBadge, escape };

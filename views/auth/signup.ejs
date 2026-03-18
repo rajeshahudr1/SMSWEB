@@ -2,7 +2,6 @@
 
 <div class="sms-auth-cover">
 
-  <!-- ═══ LEFT PANEL ═══════════════════════════ -->
   <div class="sms-auth-cover__left">
     <div class="blob blob-1"></div><div class="blob blob-2"></div>
     <div class="blob blob-3"></div><div class="blob blob-4"></div>
@@ -15,41 +14,38 @@
         </div>
       </div>
       <div class="sms-cover-features" style="margin-top:2rem;">
-        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Register your scrapyard in minutes</div>
+        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Register your company in minutes</div>
         <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>MoRTH &amp; VAHAN compliance built-in</div>
-        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Multi-yard &amp; multi-user support</div>
-        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Secure — data encrypted at rest</div>
+        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Multi-user &amp; role-based access</div>
+        <div class="sms-cover-feat"><span class="sms-cover-feat__dot"></span>Both B2B &amp; B2C panel access</div>
       </div>
       <div class="sms-cover-badges mt-4">
         <span class="sms-cover-badge">✅ Free to start</span>
-        <span class="sms-cover-badge">🏭 Multi-yard</span>
-        <span class="sms-cover-badge">📄 Govt. docs</span>
+        <span class="sms-cover-badge">🏢 Multi-user</span>
       </div>
     </div>
   </div>
 
-  <!-- ═══ RIGHT FORM ════════════════════════════ -->
   <div class="sms-auth-cover__right">
     <div class="sms-auth-form-wrap">
 
-      <!-- Mobile logo -->
       <div class="sms-mobile-logo">
         <div class="sms-mobile-logo__icon">♻</div>
         <div style="font-size:18px;font-weight:800;color:#1a2332;">SMS Platform</div>
         <div style="font-size:12px;color:#667380;">Scrap Management System</div>
       </div>
 
-      <!-- Step indicator -->
       <div class="sms-steps mb-3">
-        <div class="sms-step active" id="ind1">1 · Organisation</div>
-        <div class="sms-step" id="ind2">2 · Your Details</div>
-        <div class="sms-step" id="ind3">3 · Verify Email</div>
+        <div class="sms-step active" id="ind1">1 · Company</div>
+        <div class="sms-step" id="ind2">2 · Location</div>
+        <div class="sms-step" id="ind3">3 · Account</div>
+        <div class="sms-step" id="ind4">4 · Verify</div>
       </div>
 
       <!-- ── STEP 1 ── -->
       <div id="step1">
-        <div class="sms-auth-title">Create your account</div>
-        <div class="sms-auth-subtitle">Start with your organisation details</div>
+        <div class="sms-auth-title">Company Details</div>
+        <div class="sms-auth-subtitle">Tell us about your organisation</div>
 
         <button type="button" class="sms-btn-google mb-3" id="btnGoogleSignup">
           <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" height="20" alt="Google"/>
@@ -57,98 +53,156 @@
         </button>
         <div class="sms-divider">or sign up with email</div>
 
-        <form id="frm1" novalidate>
-          <div class="mb-3">
-            <label class="sms-label">Company / Organisation Name <span class="text-danger">*</span></label>
-            <input type="text" name="company_name" id="s1_company" class="form-control"
-                   placeholder="e.g. Rajesh Scrap Yard Pvt Ltd"/>
-            <div class="sms-field-error" id="err-company_name"></div>
+        <div class="mb-3">
+          <label class="sms-label">Company / Organisation Name <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-building"></i></span>
+            <input type="text" id="s1_company" placeholder="e.g. Rajesh Metals Pvt Ltd"/>
           </div>
-          <div class="row g-2 mb-3">
-            <div class="col-7">
-              <label class="sms-label">Yard Type <span class="text-danger">*</span></label>
-              <select name="yard_type" id="s1_yard_type" class="form-select">
-                <option value="">-- Select --</option>
-                <option value="RVSF">RVSF (Registered Vehicle Scrapping Facility)</option>
-                <option value="Collection Centre">Collection Centre</option>
-                <option value="Dismantler">Dismantler</option>
-                <option value="Shredder">Shredder</option>
-                <option value="Other">Other</option>
-              </select>
-              <div class="sms-field-error" id="err-yard_type"></div>
-            </div>
-            <div class="col-5">
-              <label class="sms-label">Reg. No.</label>
-              <input type="text" name="registration_number" class="form-control" placeholder="Optional"/>
-            </div>
+          <div class="sms-field-error" id="err-company_name"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="sms-label">Company Registration Number <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-hash"></i></span>
+            <input type="text" id="s1_reg" placeholder="e.g. U27100MH2023PTC123456"/>
           </div>
-          <div class="mb-3">
-            <label class="sms-label">Business Email <span class="text-danger">*</span></label>
-            <div class="sms-input-group">
-              <span class="sms-input-group__icon"><i class="ti ti-mail"></i></span>
-              <input type="email" name="email" id="s1_email" placeholder="admin@yourcompany.com"/>
-            </div>
-            <div class="sms-field-error" id="err-email"></div>
+          <div class="sms-field-error" id="err-registration_number"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="sms-label">Business Email <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-envelope"></i></span>
+            <input type="email" id="s1_email" placeholder="admin@yourcompany.com"/>
           </div>
-          <button type="button" class="sms-btn-auth" id="btnS1Next">
-            Continue <i class="ti ti-arrow-right ms-1"></i>
-          </button>
-        </form>
+          <div class="sms-field-error" id="err-email"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="sms-label">Phone</label>
+          <div id="s1PhoneWrap"></div>
+          <input type="hidden" id="s1_phone"/>
+          <div class="sms-field-error" id="err-phone"></div>
+        </div>
+
+        <button type="button" class="sms-btn-auth" id="btnS1Next">
+          Continue <i class="bi bi-arrow-right ms-1"></i>
+        </button>
       </div>
 
       <!-- ── STEP 2 ── -->
       <div id="step2" style="display:none;">
-        <div class="sms-auth-title">Your admin account</div>
-        <div class="sms-auth-subtitle">Set up your login credentials</div>
-        <form id="frm2" novalidate>
-          <div class="mb-3">
-            <label class="sms-label">Full Name <span class="text-danger">*</span></label>
-            <div class="sms-input-group">
-              <span class="sms-input-group__icon"><i class="ti ti-user"></i></span>
-              <input type="text" name="name" id="s2_name" placeholder="Your full name"/>
-            </div>
-            <div class="sms-field-error" id="err-name"></div>
+        <div class="sms-auth-title">Location Details</div>
+        <div class="sms-auth-subtitle">Company address information</div>
+
+        <div class="mb-3">
+          <label class="sms-label">Country <span class="text-danger">*</span></label>
+          <select id="s2_country" class="form-select"><option value="">— Select Country —</option></select>
+          <div class="sms-field-error" id="err-country_id"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">State <span class="text-danger">*</span></label>
+          <select id="s2_state" class="form-select" disabled><option value="">— Select State —</option></select>
+          <div class="sms-field-error" id="err-state_id"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">City <span class="text-danger">*</span></label>
+          <select id="s2_city" class="form-select" disabled><option value="">— Select City —</option></select>
+          <div class="sms-field-error" id="err-city_id"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">ZIP / Postal Code <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-geo"></i></span>
+            <input type="text" id="s2_zip" placeholder="e.g. 400001"/>
           </div>
-          <div class="mb-3">
-            <label class="sms-label">Phone</label>
-            <div class="sms-input-group">
-              <span class="sms-input-group__icon"><i class="ti ti-phone"></i></span>
-              <input type="text" name="phone" placeholder="+91 9999999999"/>
-            </div>
+          <div class="sms-field-error" id="err-zip_code"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">Full Address <span class="text-danger">*</span></label>
+          <textarea id="s2_address" class="form-control" rows="2"
+                    placeholder="Plot No, Street, Area, Landmark" style="resize:none;"></textarea>
+          <div class="sms-field-error" id="err-address"></div>
+        </div>
+
+        <!-- Address Proof Upload -->
+        <div class="mb-4">
+          <label class="sms-label">
+            Address Proof
+            <span class="text-muted fw-normal" style="font-size:11px;">
+              JPG / PNG / PDF / DOC — max 10MB (optional)
+            </span>
+          </label>
+          <div class="sms-file-upload" id="s2ProofUploadBox">
+            <input type="file" id="s2_proof" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                   style="display:none;"/>
+            <label for="s2_proof" class="sms-file-upload__label" id="s2ProofLabel">
+              <i class="bi bi-cloud-upload fs-4 d-block mb-1 text-primary"></i>
+              <span class="fw-medium">Click to upload</span>
+              <small class="d-block text-muted mt-1">or drag &amp; drop here</small>
+            </label>
           </div>
-          <div class="mb-3">
-            <label class="sms-label">Password <span class="text-danger">*</span></label>
-            <div class="sms-input-group">
-              <span class="sms-input-group__icon"><i class="ti ti-lock"></i></span>
-              <input type="password" name="password" id="s2_pw" placeholder="Min 8 characters"/>
-              <button class="sms-input-group__btn" type="button" id="btnToggleS2Pw" tabindex="-1">
-                <i class="ti ti-eye" id="s2EyeIcon"></i>
-              </button>
-            </div>
-            <div class="sms-pw-strength mt-1"><div class="sms-pw-bar" id="pwBar"></div></div>
-            <div class="sms-field-error" id="err-password"></div>
-          </div>
-          <div class="mb-4">
-            <label class="sms-label">Confirm Password <span class="text-danger">*</span></label>
-            <div class="sms-input-group">
-              <span class="sms-input-group__icon"><i class="ti ti-lock-check"></i></span>
-              <input type="password" name="confirm_password" id="s2_cpw" placeholder="Repeat password"/>
-            </div>
-            <div class="sms-field-error" id="err-confirm_password"></div>
-          </div>
-          <div class="d-flex gap-2">
-            <button type="button" class="sms-btn-outline" style="flex:1;" id="btnS2Back">
-              <i class="ti ti-arrow-left"></i> Back
-            </button>
-            <button type="button" class="sms-btn-auth" style="flex:2;" id="btnS2Submit">
-              Create Account <i class="ti ti-arrow-right ms-1"></i>
-            </button>
-          </div>
-        </form>
+          <div class="sms-field-error" id="err-address_proof"></div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button" class="sms-btn-outline" style="flex:1;" id="btnS2Back">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <button type="button" class="sms-btn-auth" style="flex:2;" id="btnS2Next">
+            Continue <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- ── STEP 3 OTP ── -->
+      <!-- ── STEP 3 ── -->
       <div id="step3" style="display:none;">
+        <div class="sms-auth-title">Your Admin Account</div>
+        <div class="sms-auth-subtitle">Set up your login credentials</div>
+
+        <div class="mb-3">
+          <label class="sms-label">Full Name <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-person"></i></span>
+            <input type="text" id="s3_name" placeholder="Your full name"/>
+          </div>
+          <div class="sms-field-error" id="err-name"></div>
+        </div>
+        <div class="mb-3">
+          <label class="sms-label">Password <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-lock"></i></span>
+            <input type="password" id="s3_pw" placeholder="Min 8 characters"/>
+            <button class="sms-input-group__btn" type="button" id="btnToggleS3Pw" tabindex="-1">
+              <i class="bi bi-eye" id="s3EyeIcon"></i>
+            </button>
+          </div>
+          <div class="sms-pw-strength mt-1"><div class="sms-pw-bar" id="pwBar"></div></div>
+          <div class="sms-field-error" id="err-password"></div>
+        </div>
+        <div class="mb-4">
+          <label class="sms-label">Confirm Password <span class="text-danger">*</span></label>
+          <div class="sms-input-group">
+            <span class="sms-input-group__icon"><i class="bi bi-lock-fill"></i></span>
+            <input type="password" id="s3_cpw" placeholder="Repeat password"/>
+          </div>
+          <div class="sms-field-error" id="err-confirm_password"></div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button" class="sms-btn-outline" style="flex:1;" id="btnS3Back">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <button type="button" class="sms-btn-auth" style="flex:2;" id="btnS3Submit">
+            Create Account <i class="bi bi-check-lg ms-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 4 ── -->
+      <div id="step4" style="display:none;">
         <div class="text-center mb-3">
           <div style="font-size:52px;">📧</div>
           <div class="sms-auth-title mt-2">Verify your email</div>
@@ -157,20 +211,16 @@
             <span class="fw-semibold text-primary" id="otpEmailDisplay"></span>
           </p>
         </div>
-        <form id="frm3" novalidate>
-          <div class="sms-otp-row">
-            <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
-            <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
-            <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
-            <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
-            <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
-            <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
-          </div>
-          <div class="sms-field-error text-center" id="err-otp"></div>
-          <button type="submit" class="sms-btn-auth mt-3" id="btnVerifyOTP">
-            Verify &amp; Login
-          </button>
-        </form>
+        <div class="sms-otp-row">
+          <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" class="sms-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+        </div>
+        <div class="sms-field-error text-center" id="err-otp"></div>
+        <button type="button" class="sms-btn-auth mt-3" id="btnVerifyOTP">Verify &amp; Login</button>
         <p class="text-center text-secondary mt-3 mb-0" style="font-size:13px;">
           Didn't receive it?
           <button type="button" class="btn btn-link p-0 text-primary" id="btnResendOTP"
@@ -189,12 +239,6 @@
 <div id="g_id_onload"
      data-client_id="<%= process.env.GOOGLE_CLIENT_ID || '' %>"
      data-callback="handleGoogleCredential"
-     data-auto_prompt="false">
-</div>
+     data-auto_prompt="false"></div>
 
-<% block('scripts', `
-<script>
-function handleGoogleCredential(response) { googleSignIn(response.credential, 'signup'); }
-</script>
-<script src="/js/pages/signup.js"></script>
-`) %>
+<% block('scripts', '<script src="/js/pages/signup.js"></script>') %>

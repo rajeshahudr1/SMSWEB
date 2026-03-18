@@ -1,0 +1,93 @@
+<%- layout('../layouts/main') %>
+
+<div class="page-header">
+  <div class="row align-items-center g-2">
+    <div class="col">
+      <div class="page-pretitle"><a href="/dashboard">Dashboard</a></div>
+      <h2 class="page-title"><i class="bi bi-key me-2 text-primary"></i>Permissions</h2>
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-secondary active" id="btnViewGroup" title="Grouped"><i class="bi bi-circle"></i></button>
+        <button class="btn btn-outline-secondary" id="btnViewFlat" title="Flat table"><i class="bi bi-list-ul"></i></button>
+      </div>
+      <% if (can('add_permissions')) { %>
+      <a href="/permissions/create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Add Permission</span>
+      </a>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-sm-6 col-md-4">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" id="searchInput" placeholder="Search permissions…"/>
+        </div>
+      </div>
+      <div class="col-6 col-sm-4 col-md-3">
+        <select class="form-select" id="filterGroup">
+          <option value="">All Groups</option>
+        </select>
+      </div>
+      <div class="col-6 col-sm-4 col-md-2">
+        <select class="form-select" id="filterAction">
+          <option value="">All Actions</option>
+          <option value="view">view</option>
+          <option value="add">add</option>
+          <option value="edit">edit</option>
+          <option value="delete">delete</option>
+          <option value="export">export</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grouped view -->
+<div id="groupedView">
+  <div id="permGroups">
+    <div class="card"><div class="card-body text-center py-5 text-muted">
+      <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…
+    </div></div>
+  </div>
+</div>
+
+<!-- Flat table view -->
+<div id="flatView" class="d-none">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">All Permissions <span class="badge bg-primary-lt ms-2" id="badgeTotal">–</span></div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-vcenter">
+        <thead>
+          <tr>
+            <th style="width:36px;" class="text-muted">#</th>
+            <th>Permission Name</th>
+            <th class="d-none d-sm-table-cell">Display Name</th>
+            <th class="d-none d-md-table-cell">Group</th>
+            <th class="d-none d-md-table-cell">Action</th>
+            <th>Panel</th>
+            <th class="text-end" style="width:80px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="flatTableBody"></tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex align-items-center flex-wrap gap-2">
+      <div class="text-muted small" id="tableInfo"></div>
+      <div class="ms-auto" id="tablePagination"></div>
+    </div>
+  </div>
+</div>
+
+<% block('scripts', '<script src="/js/pages/permissions.js"></script>') %>

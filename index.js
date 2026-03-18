@@ -41,12 +41,11 @@ app.use(session({
 // ── Flash messages ────────────────────────────────
 app.use(flash());
 
-// ── Inject user, settings, permissions into every view ──
+// ── Inject user, settings, i18n into every view ──
 app.use(injectLocals);
 
-// ── Expose EJS helpers to all views ──────────────
+// ── Expose helpers to all EJS views ──────────────
 app.use((req, res, next) => {
-    // Date format helpers — use user's session settings
     res.locals.H        = H;
     res.locals.settings = req.session.settings || {};
     next();
@@ -65,9 +64,7 @@ app.use('/', require('./Routes'));
 
 // ── 404 handler ───────────────────────────────────
 app.use((req, res) => {
-    res.status(404).render('auth/404', {
-        page_title: '404 - Page Not Found',
-    });
+    res.status(404).render('auth/404', { page_title: '404 - Page Not Found' });
 });
 
 // ── Error handler ─────────────────────────────────
@@ -81,7 +78,7 @@ app.use((err, req, res, next) => {
 
 // ── Start ─────────────────────────────────────────
 app.listen(PORT, () => {
-    console.log(chalk.greenBright(`sms-web started on port ${chalk.white.bold(PORT)}`));
+    console.log(chalk.greenBright(`\n  🚗 SMS Web started on port ${chalk.white.bold(PORT)}`));
     console.log(chalk.cyan(`  App URL : ${process.env.APP_URL || 'http://localhost:' + PORT}`));
-    console.log(chalk.cyan(`  API URL : ${process.env.API_URL || 'http://localhost:3000/api'}`));
+    console.log(chalk.cyan(`  API URL : ${process.env.API_URL || 'http://localhost:3000/api'}\n`));
 });

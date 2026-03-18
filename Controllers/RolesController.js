@@ -4,7 +4,7 @@ const api = require('../helpers/api');
 
 exports.index = async (req, res) => {
     res.render('roles/index', {
-        page_title:  'Roles',
+        page_title:  res.locals.t ? res.locals.t('roles.title') : 'Roles',
         activeLink:  'roles',
         breadcrumbs: [
             { name: 'Dashboard', url: '/dashboard' },

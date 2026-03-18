@@ -1,156 +1,109 @@
 <%
-/*
-  Sidebar is built from session menus (loaded on login from API).
-  menus[] is a 3-level tree: level 1 = groups, level 2 = items, level 3 = sub-items.
-  activeLink is set by each controller: res.locals.activeLink = 'users';
-  can() is a helper injected by injectLocals middleware.
-*/
+var sbTheme = (settings && settings.sidebar_style === 'light') ? 'light' : 'dark';
 %>
-<aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
-    <div class="container-fluid">
+<aside class="navbar navbar-vertical navbar-expand-lg sms-sidebar" data-bs-theme="<%- sbTheme %>">
+  <div class="container-fluid">
 
-        <!-- Toggle for mobile -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    <!-- Logo -->
+    <a href="/dashboard" class="navbar-brand sms-sidebar-brand d-flex align-items-center gap-2">
+      <div class="sms-sidebar-logo">
+        <i class="bi bi-recycle"></i>
+      </div>
+      <div class="lh-sm">
+        <div class="fw-bold" style="font-size:15px;"><%- APP_NAME %></div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;opacity:.5;">Management</div>
+      </div>
+    </a>
 
-        <!-- Logo -->
-        <a href="/dashboard" class="navbar-brand navbar-brand-autodark">
-            <img src="/images/logo.svg" height="36" alt="<%- APP_NAME %>"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-            <span style="display:none; font-weight:700; font-size:18px; color:#fff;"><%- APP_NAME %></span>
-        </a>
+    <!-- Mobile toggler -->
+    <button class="navbar-toggler border-0 p-2" type="button" id="smsBtnMenu" aria-label="Toggle menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-        <!-- User avatar (mobile) -->
-        <div class="navbar-nav flex-row d-lg-none">
-            <div class="nav-item dropdown">
-                <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown">
-                    <% if (user && user.profile_image) { %>
-                        <span class="avatar avatar-sm" style="background-image: url(<%- user.profile_image %>)"></span>
-                    <% } else { %>
-                        <span class="avatar avatar-sm bg-primary-lt">
-                            <%- user ? user.name.charAt(0).toUpperCase() : 'U' %>
-                        </span>
-                    <% } %>
-                </a>
-            </div>
+    <div class="collapse navbar-collapse" id="smsNavCollapse">
+
+      <!-- User card -->
+      <div class="sms-sidebar-user">
+        <% if (user && user.profile_image) { %>
+        <span class="avatar avatar-sm" style="background-image:url(<%- user.profile_image %>)"></span>
+        <% } else { %>
+        <span class="sms-sidebar-avatar"><%- user ? user.name.charAt(0).toUpperCase() : 'U' %></span>
+        <% } %>
+        <div class="flex-fill overflow-hidden">
+          <div class="fw-semibold text-truncate" style="font-size:13px;"><%- user ? user.name : '' %></div>
+          <div class="sms-sidebar-role">
+            <span class="sms-role-dot"></span>
+            <%- user && user.is_org_admin ? 'Administrator' : 'Staff' %>
+          </div>
         </div>
+        <a href="/settings" class="sms-user-settings-btn" title="Settings"><i class="bi bi-gear"></i></a>
+      </div>
 
-        <!-- Menu -->
-        <div class="collapse navbar-collapse" id="sidebar-menu">
-            <ul class="navbar-nav pt-lg-3">
+      <ul class="navbar-nav flex-column">
 
-                <!-- Dashboard — always shown to logged-in user -->
-                <li class="nav-item <%= activeLink === 'dashboard' ? 'active' : '' %>">
-                    <a class="nav-link" href="/dashboard">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <i class="ti ti-home"></i>
-                        </span>
-                        <span class="nav-link-title">Dashboard</span>
+        <% if (menus && menus.length > 0) { %>
+        <% menus.forEach(function(group) { %>
+
+          <% if (group.children && group.children.length > 0) { %>
+            <%
+              var anyVisible = group.children.some(function(c){ return !c.permission_key || can(c.permission_key); });
+              if (!anyVisible) return;
+              var groupActive = group.children.some(function(c){
+                return c.route_path && activeLink === c.route_path.replace('/','');
+              });
+            %>
+            <li class="nav-item sms-nav-section"><span><%- group.title %></span></li>
+            <% group.children.forEach(function(child) { %>
+              <% if (!child.permission_key || can(child.permission_key)) { %>
+                <% if (child.children && child.children.length > 0) { %>
+                  <% var ca = child.children.some(function(s){ return activeLink===(s.route_path||'').replace('/',''); }); %>
+                  <li class="nav-item">
+                    <a class="nav-link sms-nav-link <%- ca?'active':'' %>"
+                       href="#sb-<%- child.id %>" data-bs-toggle="collapse" aria-expanded="<%- ca?'true':'false' %>">
+                      <span class="sms-nav-icon"><i class="bi <%- (child.icon||'bi-dot').replace('ti ti-','bi-').replace('ti-','bi-') %>"></i></span>
+                      <span><%- child.title %></span>
+                      <i class="bi bi-chevron-down ms-auto sms-chevron"></i>
                     </a>
-                </li>
-
-                <%
-                /*
-                  Dynamic menu from API.
-                  menus is an array of level-1 groups, each with children[].
-                  Each child may have children[] (level 3).
-                  permission_key controls visibility.
-                */
-                if (menus && menus.length > 0) {
-                    menus.forEach(function(group) {
-                        // Level 1 — group header (no link) or single item
-                        if (group.children && group.children.length > 0) {
-                            // Check if any child is visible
-                            var anyVisible = group.children.some(function(child) {
-                                return !child.permission_key || can(child.permission_key);
-                            });
-                            if (!anyVisible) return;
-
-                            // Is any child active?
-                            var groupActive = group.children.some(function(child) {
-                                return child.route_path && activeLink === child.route_path.replace('/','');
-                            });
-                %>
-                <li class="nav-item dropdown <%= groupActive ? 'active' : '' %>">
-                    <a class="nav-link dropdown-toggle" href="#menu-<%- group.id %>"
-                       data-bs-toggle="collapse" role="button"
-                       aria-expanded="<%= groupActive ? 'true' : 'false' %>">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <i class="ti <%- group.icon || 'ti-layout-grid' %>"></i>
-                        </span>
-                        <span class="nav-link-title"><%- group.title %></span>
-                    </a>
-                    <div class="dropdown-menu <%= groupActive ? 'show' : '' %>" id="menu-<%- group.id %>">
-                        <% group.children.forEach(function(child) { %>
-                            <% if (!child.permission_key || can(child.permission_key)) { %>
-                                <% if (child.children && child.children.length > 0) { %>
-                                    <!-- Level 3 — nested group -->
-                                    <% var childActive = child.children.some(function(sub) { return activeLink === sub.route_path.replace('/',''); }); %>
-                                    <div class="dropend">
-                                        <a class="dropdown-item dropdown-toggle <%= childActive ? 'active' : '' %>"
-                                           href="#submenu-<%- child.id %>" data-bs-toggle="collapse">
-                                            <%- child.title %>
-                                        </a>
-                                        <div class="collapse <%= childActive ? 'show' : '' %>" id="submenu-<%- child.id %>">
-                                            <% child.children.forEach(function(sub) { %>
-                                                <% if (!sub.permission_key || can(sub.permission_key)) { %>
-                                                    <a class="dropdown-item ms-3 <%= activeLink === sub.route_path.replace('/','') ? 'active' : '' %>"
-                                                       href="<%- sub.route_path %>">
-                                                        <%- sub.title %>
-                                                    </a>
-                                                <% } %>
-                                            <% }) %>
-                                        </div>
-                                    </div>
-                                <% } else { %>
-                                    <!-- Level 2 — normal item -->
-                                    <a class="dropdown-item <%= activeLink === child.route_path.replace('/','') ? 'active' : '' %>"
-                                       href="<%- child.route_path %>">
-                                        <%- child.title %>
-                                    </a>
-                                <% } %>
-                            <% } %>
-                        <% }) %>
+                    <div class="collapse <%- ca?'show':'' %>" id="sb-<%- child.id %>">
+                      <% child.children.forEach(function(sub){ %>
+                        <% if (!sub.permission_key || can(sub.permission_key)) { %>
+                        <a class="nav-link sms-nav-sublink <%- activeLink===(sub.route_path||'').replace('/','') ?'active':'' %>"
+                           href="<%- sub.route_path %>">
+                          <span class="sms-nav-dot"></span><%- sub.title %>
+                        </a>
+                        <% } %>
+                      <% }) %>
                     </div>
-                </li>
-                <%
-                        } else {
-                            // Single item (no children)
-                            if (group.permission_key && !can(group.permission_key)) return;
-                %>
-                <li class="nav-item <%= activeLink === (group.route_path || '').replace('/','') ? 'active' : '' %>">
-                    <a class="nav-link" href="<%- group.route_path || '#' %>">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <i class="ti <%- group.icon || 'ti-circle' %>"></i>
-                        </span>
-                        <span class="nav-link-title"><%- group.title %></span>
+                  </li>
+                <% } else { %>
+                  <li class="nav-item">
+                    <a class="nav-link sms-nav-link <%- activeLink===(child.route_path||'').replace('/','') ?'active':'' %>"
+                       href="<%- child.route_path %>">
+                      <span class="sms-nav-icon"><i class="bi <%- (child.icon||'bi-dot').replace('ti ti-','bi-').replace('ti-','bi-') %>"></i></span>
+                      <span><%- child.title %></span>
                     </a>
-                </li>
-                <%
-                        }
-                    });
-                }
-                %>
+                  </li>
+                <% } %>
+              <% } %>
+            <% }) %>
 
-                <!-- Settings — always shown -->
-                <li class="nav-item <%= activeLink === 'settings' ? 'active' : '' %>">
-                    <a class="nav-link" href="/settings">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <i class="ti ti-settings"></i>
-                        </span>
-                        <span class="nav-link-title">Settings</span>
-                    </a>
-                </li>
+          <% } else { %>
+            <% if (group.permission_key && !can(group.permission_key)) { return; } %>
+            <li class="nav-item">
+              <a class="nav-link sms-nav-link <%- activeLink===(group.route_path||'').replace('/','') ?'active':'' %>"
+                 href="<%- group.route_path || '#' %>">
+                <span class="sms-nav-icon"><i class="bi <%- (group.icon||'bi-circle').replace('ti ti-','bi-').replace('ti-','bi-') %>"></i></span>
+                <span><%- group.title %></span>
+              </a>
+            </li>
+          <% } %>
 
-            </ul>
+        <% }) %><% } %>
 
-            <!-- Bottom: Logout -->
-            <div class="mt-auto pb-3">
-                <a href="/logout" class="btn btn-outline-light w-100">
-                    <i class="ti ti-logout me-2"></i> Logout
-                </a>
-            </div>
-        </div>
+      </ul>
+
+
+
     </div>
+  </div>
 </aside>

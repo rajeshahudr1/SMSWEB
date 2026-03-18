@@ -1,151 +1,382 @@
 <%- layout('../layouts/main') %>
 
-<div class="row">
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <div class="page-pretitle"><a href="/dashboard">Dashboard</a></div>
+      <h2 class="page-title"><i class="bi bi-person-circle me-2 text-primary"></i>My Profile</h2>
+    </div>
+  </div>
+</div>
 
-    <!-- Left: avatar + basic info -->
-    <div class="col-md-3 mb-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <% if (profile && profile.profile_image) { %>
-                    <span class="avatar avatar-xl mb-3 avatar-rounded"
-                          style="background-image: url(<%- profile.profile_image %>)"></span>
-                <% } else { %>
-                    <span class="avatar avatar-xl bg-primary text-white mb-3 avatar-rounded"
-                          style="font-size:36px;">
-                        <%- profile ? profile.name.charAt(0).toUpperCase() : 'U' %>
-                    </span>
-                <% } %>
-                <h3 class="mb-1"><%- profile ? profile.name : '' %></h3>
-                <p class="text-secondary small mb-3"><%- profile ? profile.email : '' %></p>
-                <span class="badge <%- (profile && profile.status == 1) ? 'bg-success-lt' : 'bg-danger-lt' %>">
-                    <%- (profile && profile.status == 1) ? 'Active' : 'Inactive' %>
-                </span>
-            </div>
+<div class="row g-4">
+
+  <!-- Left: Avatar + quick info -->
+  <div class="col-md-4 col-xl-3">
+
+    <div class="card text-center">
+      <div class="card-body pt-4 pb-3">
+        <div class="profile-avatar-wrap d-inline-block mb-3">
+          <% if (profile && profile.profile_image_url) { %>
+            <span class="avatar avatar-xl avatar-rounded"
+                  style="background-image:url(<%- profile.profile_image_url %>); width:96px; height:96px;"></span>
+          <% } else { %>
+            <span class="avatar avatar-xl avatar-rounded bg-primary-lt text-primary fw-bold"
+                  style="width:96px; height:96px; font-size:36px;">
+            <%- profile ? profile.name.charAt(0).toUpperCase() : 'U' %>
+          </span>
+          <% } %>
         </div>
+        <h3 class="mb-1 fw-bold"><%- profile ? profile.name : '' %></h3>
+        <p class="text-muted small mb-2"><%- profile ? profile.email : '' %></p>
+        <% if (profile && profile.role_name) { %>
+          <span class="badge bg-primary-lt mb-2"><%- profile.role_name %></span>
+        <% } %>
+        <br/>
+        <span class="badge <%- (profile && profile.status==1) ? 'bg-success-lt' : 'bg-danger-lt' %>">
+          <span class="status-dot status-dot-animated <%- (profile && profile.status==1) ? 'bg-success' : 'bg-danger' %> me-1"></span>
+          <%- (profile && profile.status==1) ? 'Active' : 'Inactive' %>
+        </span>
+      </div>
+      <div class="card-footer">
+        <div class="row g-3 text-center">
+          <div class="col-6 border-end">
+            <div class="fw-bold"><%- profile ? (profile.panel_access||'').toUpperCase() : '—' %></div>
+            <div class="text-muted small">Panel</div>
+          </div>
+          <div class="col-6">
+            <div class="fw-bold"><%- profile && profile.is_org_admin ? 'Admin' : 'User' %></div>
+            <div class="text-muted small">Role</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Right: tabs with profile info + change password -->
-    <div class="col-md-9">
-        <div class="card">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
-                    <li class="nav-item">
-                        <a href="#tab-profile" class="nav-link active" data-bs-toggle="tab">
-                            <i class="ti ti-user me-1"></i> Profile
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#tab-password" class="nav-link" data-bs-toggle="tab">
-                            <i class="ti ti-lock me-1"></i> Change Password
-                        </a>
-                    </li>
-                </ul>
+    <!-- Upload avatar card -->
+    <div class="card mt-3">
+      <div class="card-body">
+        <h4 class="card-title mb-3"><i class="bi bi-camera me-2"></i>Profile Photo</h4>
+        <form id="frmAvatar">
+          <input type="file" id="avatarFile" accept="image/jpeg,image/png,image/gif,image/webp"
+                 class="form-control mb-2"/>
+          <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+            <i class="bi bi-upload me-1"></i>Upload Photo
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Tabs -->
+  <div class="col-md-8 col-xl-9">
+    <div class="card">
+      <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" id="profileTabs">
+          <li class="nav-item">
+            <a href="#tab-info" class="nav-link active" data-bs-toggle="tab">
+              <i class="bi bi-person me-1"></i>Profile Info
+            </a>
+          </li>
+          <% if (profile && profile.is_org_admin) { %>
+            <li class="nav-item">
+              <a href="#tab-company" class="nav-link" data-bs-toggle="tab">
+                <i class="bi bi-building me-1"></i>Company
+              </a>
+            </li>
+          <% } %>
+          <% if (profile && profile.auth_provider === 'google' && !profile.password) { %>
+            <li class="nav-item">
+              <a href="#tab-setpw" class="nav-link" data-bs-toggle="tab">
+                <i class="bi bi-key me-1"></i>Set Password
+              </a>
+            </li>
+          <% } else { %>
+            <li class="nav-item">
+              <a href="#tab-password" class="nav-link" data-bs-toggle="tab">
+                <i class="bi bi-lock me-1"></i>Change Password
+              </a>
+            </li>
+          <% } %>
+        </ul>
+      </div>
+
+      <div class="card-body tab-content">
+
+        <!-- ─── Profile Tab ─── -->
+        <div class="tab-pane active" id="tab-info">
+          <form id="frmProfile" novalidate>
+            <div class="row g-3">
+
+              <div class="col-md-6">
+                <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" name="name" id="pName" class="form-control"
+                       value="<%- profile ? H.escape(profile.name) : '' %>" required/>
+                <div class="invalid-feedback" id="err-pName"></div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control bg-light"
+                       value="<%- profile ? profile.email : '' %>" readonly/>
+                <div class="form-hint">Email cannot be changed.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Phone <span class="text-danger">*</span></label>
+                <!-- SMS_Phone widget mounts here -->
+                <div id="pPhoneWrap"></div>
+                <input type="hidden" name="phone" id="pPhone"
+                       value="<%- profile ? (profile.phone||'') : '' %>"/>
+                <div class="invalid-feedback d-block" id="err-pPhone"></div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Gender</label>
+                <select name="gender" class="form-select">
+                  <option value="">— Select —</option>
+                  <option value="male"   <%- (profile&&profile.gender==='male')   ? 'selected':'' %>>Male</option>
+                  <option value="female" <%- (profile&&profile.gender==='female') ? 'selected':'' %>>Female</option>
+                  <option value="other"  <%- (profile&&profile.gender==='other')  ? 'selected':'' %>>Other</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" name="dob" class="form-control"
+                       value="<%- (profile&&profile.dob) ? String(profile.dob).slice(0,10) : '' %>"/>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">PAN Number</label>
+                <input type="text" name="pan_no" class="form-control text-uppercase"
+                       value="<%- profile ? (profile.pan_no||'') : '' %>"
+                       placeholder="ABCDE1234F" maxlength="10"/>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Aadhar Number</label>
+                <input type="text" name="aadhar_no" class="form-control"
+                       value="<%- profile ? (profile.aadhar_no||'') : '' %>"
+                       placeholder="12-digit number" maxlength="12"/>
+              </div>
+
+              <!-- Location fields -->
+              <div class="col-md-4">
+                <label class="form-label">Country <span class="text-danger">*</span></label>
+                <select name="country_id" id="pCountry" class="form-select" required>
+                  <option value="">— Select Country —</option>
+                </select>
+                <div class="invalid-feedback" id="err-pCountry"></div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">State <span class="text-danger">*</span></label>
+                <select name="state_id" id="pState" class="form-select" required disabled>
+                  <option value="">— Select State —</option>
+                </select>
+                <div class="invalid-feedback" id="err-pState"></div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">City <span class="text-danger">*</span></label>
+                <select name="city_id" id="pCity" class="form-select" required disabled>
+                  <option value="">— Select City —</option>
+                </select>
+                <div class="invalid-feedback" id="err-pCity"></div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">ZIP / Postal Code <span class="text-danger">*</span></label>
+                <input type="text" name="zip_code" id="pZip" class="form-control"
+                       value="<%- profile ? (profile.zip_code||'') : '' %>"
+                       placeholder="400001" required/>
+                <div class="invalid-feedback" id="err-pZip"></div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Address <span class="text-danger">*</span></label>
+                <input type="text" name="address" id="pAddress" class="form-control"
+                       value="<%- profile ? (profile.address||'') : '' %>"
+                       placeholder="Plot No, Street, Area, Landmark" required/>
+                <div class="invalid-feedback" id="err-pAddress"></div>
+              </div>
+
             </div>
 
-            <div class="card-body">
-                <div class="tab-content">
+            <!-- Hidden: pre-fill values for JS -->
+            <input type="hidden" id="prefillCountryId" value="<%- profile ? (profile.country_id||'') : '' %>"/>
+            <input type="hidden" id="prefillStateId"   value="<%- profile ? (profile.state_id||'') : '' %>"/>
+            <input type="hidden" id="prefillCityId"    value="<%- profile ? (profile.city_id||'') : '' %>"/>
 
-                    <!-- Profile tab -->
-                    <div class="tab-pane active" id="tab-profile">
-                        <form id="frmProfile" method="POST" action="/profile" novalidate>
-                            <div class="row g-3">
+            <div class="mt-4 d-flex justify-content-end">
+              <button type="submit" id="btnProfile" class="btn btn-primary">
+                <i class="bi bi-floppy me-1"></i>Save Profile
+              </button>
+            </div>
+          </form>
+        </div>
 
-                                <div class="col-md-6">
-                                    <label class="form-label required">Full Name</label>
-                                    <input type="text" name="name" class="form-control"
-                                           value="<%- profile ? profile.name : '' %>" required/>
-                                </div>
+        <!-- ─── Company Tab (Org Admin only) ─── -->
+        <% if (profile && profile.is_org_admin) { %>
+          <div class="tab-pane" id="tab-company">
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-info-circle me-2"></i>
+              Updating company details here will sync to your organisation profile.
+            </div>
+            <form id="frmCompany" novalidate>
+              <div class="row g-3">
 
-                                <div class="col-md-6">
-                                    <label class="form-label">Phone</label>
-                                    <input type="text" name="phone" class="form-control"
-                                           value="<%- profile ? (profile.phone || '') : '' %>"/>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Gender</label>
-                                    <select name="gender" class="form-select">
-                                        <option value="">-- Select --</option>
-                                        <option value="male"   <%- (profile && profile.gender === 'male')   ? 'selected' : '' %>>Male</option>
-                                        <option value="female" <%- (profile && profile.gender === 'female') ? 'selected' : '' %>>Female</option>
-                                        <option value="other"  <%- (profile && profile.gender === 'other')  ? 'selected' : '' %>>Other</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Date of Birth</label>
-                                    <input type="date" name="dob" class="form-control"
-                                           value="<%- (profile && profile.dob) ? profile.dob.substring(0,10) : '' %>"/>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label">Address</label>
-                                    <input type="text" name="address" class="form-control"
-                                           value="<%- profile ? (profile.address || '') : '' %>"/>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">PAN Number</label>
-                                    <input type="text" name="pan_no" class="form-control text-uppercase"
-                                           value="<%- profile ? (profile.pan_no || '') : '' %>"
-                                           placeholder="ABCDE1234F" maxlength="10"/>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Aadhar Number</label>
-                                    <input type="text" name="aadhar_no" class="form-control"
-                                           value="<%- profile ? (profile.aadhar_no || '') : '' %>"
-                                           placeholder="12-digit Aadhar" maxlength="12"/>
-                                </div>
-
-                            </div>
-                            <div class="mt-4 text-end">
-                                <button type="submit" id="btnProfile" class="btn btn-primary"
-                                        data-loading="Saving..." data-original-text="Save Profile">
-                                    Save Profile
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Change Password tab -->
-                    <div class="tab-pane" id="tab-password">
-                        <form id="frmPassword" method="POST" action="/profile/change-password" novalidate>
-                            <div class="row g-3" style="max-width:450px;">
-
-                                <div class="col-12">
-                                    <label class="form-label required">Current Password</label>
-                                    <input type="password" name="current_password"
-                                           class="form-control" required placeholder="Current password"/>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label required">New Password</label>
-                                    <input type="password" name="password" id="newPwd"
-                                           class="form-control" required placeholder="Min 8 characters" minlength="8"/>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label required">Confirm New Password</label>
-                                    <input type="password" name="confirm_password"
-                                           class="form-control" required placeholder="Repeat new password"/>
-                                </div>
-
-                            </div>
-                            <div class="mt-4 text-end" style="max-width:450px;">
-                                <button type="submit" id="btnPassword" class="btn btn-primary"
-                                        data-loading="Updating..." data-original-text="Change Password">
-                                    Change Password
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
+                <div class="col-md-6">
+                  <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                  <input type="text" name="company_name" id="cName" class="form-control"
+                         value="<%- profile ? (profile.company_name||'') : '' %>" required/>
+                  <div class="invalid-feedback" id="err-cName"></div>
                 </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Registration Number</label>
+                  <input type="text" name="registration_number" class="form-control"
+                         value="<%- profile ? (profile.registration_number||'') : '' %>"/>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Company Phone</label>
+                  <div id="orgPhoneWrap"></div>
+                  <input type="hidden" name="org_phone" id="orgPhone"
+                         value="<%- profile ? (profile.org_phone||'') : '' %>"/>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Website</label>
+                  <input type="text" name="org_website" class="form-control"
+                         value="<%- profile ? (profile.org_website||'') : '' %>"
+                         placeholder="https://yourcompany.com"/>
+                </div>
+
+                <% if (profile.address_proof_url) { %>
+                  <div class="col-12">
+                    <label class="form-label">Address Proof (current)</label>
+                    <div>
+                      <a href="<%- profile.address_proof_url %>" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-file-earmark me-1"></i>View Address Proof
+                      </a>
+                    </div>
+                  </div>
+                <% } %>
+
+              </div>
+
+              <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" id="btnCompany" class="btn btn-primary">
+                  <i class="bi bi-floppy me-1"></i>Save Company Details
+                </button>
+              </div>
+            </form>
+          </div>
+        <% } %>
+
+        <!-- ─── Set Password Tab (Google users without password) ─── -->
+        <% if (profile && profile.auth_provider === 'google' && !profile.password) { %>
+          <div class="tab-pane" id="tab-setpw">
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-google me-2"></i>
+              You signed in with Google. You can set a password to also log in with email.
             </div>
-        </div>
+            <form id="frmSetPassword" novalidate>
+              <div class="row g-3" style="max-width:480px;">
+
+                <div class="col-12">
+                  <label class="form-label">New Password <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <input type="password" name="new_password" id="setPwd" class="form-control"
+                           required placeholder="Min 8 characters" minlength="8"/>
+                    <button type="button" class="btn btn-outline-secondary btn-pwd-toggle">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" id="err-setPwd"></div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <input type="password" name="confirm_password" id="setConfPwd" class="form-control"
+                           required placeholder="Repeat password"/>
+                    <button type="button" class="btn btn-outline-secondary btn-pwd-toggle">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" id="err-setConfPwd"></div>
+                </div>
+
+              </div>
+
+              <div class="mt-4">
+                <button type="submit" id="btnSetPassword" class="btn btn-primary">
+                  <i class="bi bi-key me-1"></i>Set Password
+                </button>
+              </div>
+            </form>
+          </div>
+        <% } else { %>
+
+          <!-- ─── Change Password Tab ─── -->
+          <div class="tab-pane" id="tab-password">
+            <form id="frmPassword" novalidate>
+              <div class="row g-3" style="max-width:480px;">
+
+                <div class="col-12">
+                  <label class="form-label">Current Password <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <input type="password" name="current_password" id="curPwd"
+                           class="form-control" required placeholder="Current password"/>
+                    <button type="button" class="btn btn-outline-secondary btn-pwd-toggle">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" id="err-curPwd"></div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">New Password <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <input type="password" name="password" id="newPwd"
+                           class="form-control" required placeholder="Min 8 characters" minlength="8"/>
+                    <button type="button" class="btn btn-outline-secondary btn-pwd-toggle">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" id="err-newPwd"></div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <input type="password" name="confirm_password" id="confPwd"
+                           class="form-control" required placeholder="Repeat new password"/>
+                    <button type="button" class="btn btn-outline-secondary btn-pwd-toggle">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" id="err-confPwd"></div>
+                </div>
+
+              </div>
+
+              <div class="mt-4">
+                <button type="submit" id="btnPassword" class="btn btn-primary">
+                  <i class="bi bi-lock me-1"></i>Change Password
+                </button>
+              </div>
+            </form>
+          </div>
+        <% } %>
+
+      </div>
     </div>
+  </div>
 
 </div>
 
-<script src="/js/pages/profile.js"></script>
+<% block('scripts', '<script src="/js/common/location.js"></script><script src="/js/common/phone.js"></script><script src="/js/pages/profile.js"></script>') %>

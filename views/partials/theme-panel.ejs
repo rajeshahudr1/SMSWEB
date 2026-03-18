@@ -1,0 +1,132 @@
+<%
+var s   = settings || {};
+var _tc = s.theme_color   || '#0054a6';
+var _dm = s.dark_mode     === '1';
+var _rt = s.direction     === 'rtl';
+var _br = s.border_radius || 'md';
+var _fs = s.font_size     || '14px';
+var _ss = s.sidebar_style || 'dark';
+var _lg = lang            || 'en';
+
+var colors = [
+  {val:'#0054a6',name:'Blue'},   {val:'#0ea5e9',name:'Azure'},
+  {val:'#4263eb',name:'Indigo'}, {val:'#9b59b6',name:'Purple'},
+  {val:'#0ca678',name:'Teal'},   {val:'#2fb344',name:'Green'},
+  {val:'#f76707',name:'Orange'}, {val:'#d63939',name:'Red'},
+];
+%>
+
+<!-- Backdrop -->
+<div id="smsThemeBd" class="sms-theme-bd"></div>
+
+<!-- Panel -->
+<aside id="smsThemePanel" class="sms-theme-panel" aria-label="Customise">
+
+  <div class="sms-tp-head">
+    <div>
+      <div class="fw-bold" style="font-size:15px;">Customise</div>
+      <div class="text-secondary" style="font-size:12px;">Personalise your interface</div>
+    </div>
+    <button id="smsBtnCloseTheme" class="btn btn-ghost-secondary btn-icon btn-sm">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <div class="sms-tp-body">
+
+    <!-- Accent colour -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Accent Colour</div>
+      <div class="sms-tp-colors">
+        <% colors.forEach(function(c){ %>
+        <button type="button" class="tp-color <%- _tc===c.val?'active':'' %>"
+                data-color="<%- c.val %>" style="background:<%- c.val %>;" title="<%- c.name %>">
+          <% if(_tc===c.val){ %><i class="bi bi-check-lg"></i><% } %>
+        </button>
+        <% }) %>
+        <label class="tp-custom-color" title="Custom">
+          <i class="bi bi-circle"></i>
+          <input type="color" id="tpCustomColor" value="<%- _tc %>"
+                 style="opacity:0;position:absolute;width:0;height:0;"/>
+        </label>
+      </div>
+    </div>
+
+    <!-- Mode -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Mode</div>
+      <div class="tp-group">
+        <button type="button" class="tp-btn <%- !_dm?'active':'' %>" data-mode="light">
+          <i class="bi bi-circle"></i> Light
+        </button>
+        <button type="button" class="tp-btn <%- _dm?'active':'' %>" data-mode="dark">
+          <i class="bi bi-circle"></i> Dark
+        </button>
+      </div>
+    </div>
+
+    <!-- Direction -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Direction</div>
+      <div class="tp-group">
+        <button type="button" class="tp-btn <%- !_rt?'active':'' %>" data-dir="ltr">
+          <i class="bi bi-circle"></i> LTR
+        </button>
+        <button type="button" class="tp-btn <%- _rt?'active':'' %>" data-dir="rtl">
+          <i class="bi bi-circle"></i> RTL
+        </button>
+      </div>
+    </div>
+
+    <!-- Border radius -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Border Radius</div>
+      <div class="tp-group">
+        <% [{k:'none',l:'None'},{k:'sm',l:'Small'},{k:'md',l:'Medium'},{k:'lg',l:'Large'},{k:'xl',l:'XL'}].forEach(function(r){ %>
+        <button type="button" class="tp-btn <%- _br===r.k?'active':'' %>" data-radius="<%- r.k %>"><%- r.l %></button>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Font size -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Font Size</div>
+      <div class="tp-group">
+        <button type="button" class="tp-btn <%- _fs==='12px'?'active':'' %>" data-font="12px">Small</button>
+        <button type="button" class="tp-btn <%- _fs==='14px'?'active':'' %>" data-font="14px">Medium</button>
+        <button type="button" class="tp-btn <%- _fs==='16px'?'active':'' %>" data-font="16px">Large</button>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Sidebar</div>
+      <div class="tp-group">
+        <button type="button" class="tp-btn <%- _ss!=='light'?'active':'' %>" data-sb="dark">Dark</button>
+        <button type="button" class="tp-btn <%- _ss==='light'?'active':'' %>" data-sb="light">Light</button>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Language</div>
+      <div class="tp-group">
+        <% (SUPPORTED_LANGUAGES||[]).forEach(function(l){ %>
+        <button type="button" class="tp-btn <%- _lg===l.code?'active':'' %>" data-lang="<%- l.code %>">
+          <%- l.flag %> <%- l.nativeName %>
+        </button>
+        <% }) %>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sms-tp-foot">
+    <button type="button" id="smsBtnResetTheme" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-clockwise me-1"></i>Reset
+    </button>
+    <button type="button" id="smsBtnSaveTheme" class="btn btn-primary btn-sm">
+      <i class="bi bi-floppy me-1"></i>Save
+    </button>
+  </div>
+</aside>

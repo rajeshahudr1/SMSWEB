@@ -24,7 +24,7 @@ $(function () {
         var $inp = $('#fPassword');
         var isPass = $inp.attr('type') === 'password';
         $inp.attr('type', isPass ? 'text' : 'password');
-        $('#eyeIcon').toggleClass('ti-eye', !isPass).toggleClass('ti-eye-off', isPass);
+        $('#eyeIcon').toggleClass('bi-eye', !isPass).toggleClass('bi-eye-slash', isPass);
     });
 
     // ── Google button click → open picker ────────
@@ -110,7 +110,12 @@ function googleSignIn(idToken, mode) {
             if (res.status === 200) {
                 if (res.data && res.data.profile_complete === false) {
                     // New Google user — complete profile
-                    window.location.href = '/google-complete?token=' + encodeURIComponent(res.data.temp_token);
+                    var gd = res.data.google_data || {};
+                    var qs = '?token='  + encodeURIComponent(res.data.temp_token)
+                        + '&gname='  + encodeURIComponent(gd.name    || '')
+                        + '&gemail=' + encodeURIComponent(gd.email   || '')
+                        + '&gpic='   + encodeURIComponent(gd.picture || '');
+                    window.location.href = BASE_URL + '/google-complete' + qs;
                 } else {
                     toastr.success('Google login successful!');
                     setTimeout(function () { window.location.href = '/dashboard'; }, 700);

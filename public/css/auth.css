@@ -1,5 +1,5 @@
 /* ============================================================
-   auth.css · SMS Web · Auth + Legal Pages  — Full Responsive
+   auth.css · SMS Web · Auth + Legal Pages — Full Responsive
    ============================================================ */
 
 /* ── Reset ── */
@@ -7,11 +7,12 @@
 body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
 /* ────────────────────────────────────────────────────────────
-   1. SIGN-IN COVER LAYOUT (Tabler sign-in-cover style)
+   1. COVER LAYOUT
    ──────────────────────────────────────────────────────────── */
 .sms-auth-cover {
   display: flex;
   min-height: 100vh;
+  height: 100vh;         /* needed so right panel overflow-y works */
 }
 
 /* ── LEFT COVER PANEL ── */
@@ -73,17 +74,6 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 .sms-cover-brand__name { font-size: 21px; font-weight: 800; line-height: 1.15; }
 .sms-cover-brand__sub  { font-size: 12px; opacity: .72; margin-top: 2px; }
 
-/* Cover illustration */
-.sms-cover-illustration {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 18px;
-  padding: .6rem;
-  margin: 1.5rem 0;
-  overflow: hidden;
-}
-.sms-cover-illustration img { display: block; width: 100%; }
-
 /* Feature list */
 .sms-cover-features { margin-bottom: 1.75rem; }
 .sms-cover-feat {
@@ -116,25 +106,28 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 
 /* ── RIGHT FORM PANEL ── */
 .sms-auth-cover__right {
-  width: 480px;
-  min-width: 360px;
+  width: 500px;
+  min-width: 0;            /* allow shrink below 500px */
+  flex-shrink: 0;
   background: #fff;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* top-align so scroll works */
   justify-content: center;
-  padding: 2.5rem 1.5rem;
-  overflow-y: auto;
+  padding: 2.5rem 1.75rem;
+  overflow-y: auto;        /* scrollable when content is tall */
+  -webkit-overflow-scrolling: touch;
 }
 .sms-auth-form-wrap {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  padding-bottom: 1.5rem; /* breathing room at bottom */
 }
 
 /* Mobile logo (shown < lg) */
 .sms-mobile-logo {
   display: none;
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 .sms-mobile-logo__icon {
   width: 56px; height: 56px;
@@ -145,9 +138,11 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
   margin: 0 auto .75rem;
 }
 
-/* ── FORM ELEMENTS ── */
-.sms-auth-title    { font-size: 24px; font-weight: 800; color: #1a2332; margin-bottom: .35rem; }
-.sms-auth-subtitle { font-size: 14px; color: #667380; margin-bottom: 1.75rem; line-height: 1.5; }
+/* ────────────────────────────────────────────────────────────
+   2. FORM ELEMENTS
+   ──────────────────────────────────────────────────────────── */
+.sms-auth-title    { font-size: 22px; font-weight: 800; color: #1a2332; margin-bottom: .3rem; }
+.sms-auth-subtitle { font-size: 13.5px; color: #667380; margin-bottom: 1.5rem; line-height: 1.5; }
 
 /* Google button */
 .sms-btn-google {
@@ -157,7 +152,7 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
   border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   gap: 10px;
-  font-size: 14.5px; font-weight: 500; color: #344054;
+  font-size: 14px; font-weight: 500; color: #344054;
   cursor: pointer; transition: all .15s; outline: none;
   text-decoration: none;
   margin-bottom: .75rem;
@@ -167,13 +162,82 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 /* Divider */
 .sms-divider {
   display: flex; align-items: center; gap: 12px;
-  margin: 1.1rem 0;
-  color: #adb5bd; font-size: 11.5px;
+  margin: 1rem 0;
+  color: #adb5bd; font-size: 11px;
   font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
 }
 .sms-divider::before, .sms-divider::after {
   content: ''; flex: 1; height: 1px; background: #e9ecef;
 }
+
+/* Input group flat */
+.sms-input-group {
+  display: flex;
+  border: 1.5px solid #dce0e6; border-radius: 9px; overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+.sms-input-group:focus-within {
+  border-color: #0054a6;
+  box-shadow: 0 0 0 3px rgba(0,84,166,.13);
+}
+.sms-input-group__icon {
+  width: 42px; display: flex; align-items: center; justify-content: center;
+  background: #f8f9fa; border-right: 1.5px solid #e9ecef;
+  color: #adb5bd; font-size: 16px; flex-shrink: 0;
+}
+.sms-input-group:focus-within .sms-input-group__icon { color: #0054a6; }
+.sms-input-group input {
+  flex: 1; min-width: 0; border: none; outline: none; padding: .6rem .75rem;
+  font-size: 14px; background: transparent; color: #344054;
+}
+.sms-input-group__btn {
+  width: 42px; background: none; border: none; border-left: 1.5px solid #e9ecef;
+  cursor: pointer; color: #adb5bd; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s; flex-shrink: 0;
+}
+.sms-input-group__btn:hover { color: #0054a6; }
+
+/* form-select inside location steps */
+.form-select {
+  font-size: 14px;
+}
+
+.sms-field-error { font-size: 12px; color: #d63939; margin-top: 4px; min-height: 16px; }
+.sms-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; font-weight: 500; color: #344054; margin-bottom: 5px;
+}
+.sms-label a { font-weight: 400; font-size: 12.5px; }
+
+/* Auth button */
+.sms-btn-auth {
+  width: 100%; min-height: 46px;
+  background: #0054a6; color: #fff;
+  border: none; border-radius: 9px;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none;
+}
+.sms-btn-auth:hover { background: #004494; color: #fff; }
+.sms-btn-auth:disabled { opacity: .65; cursor: not-allowed; }
+
+/* Secondary / back button */
+.sms-btn-outline {
+  width: 100%; min-height: 44px;
+  background: transparent; color: #344054;
+  border: 1.5px solid #dce0e6; border-radius: 9px;
+  font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none;
+}
+.sms-btn-outline:hover { background: #f8f9fa; border-color: #adb5bd; }
+
+/* Password strength */
+.sms-pw-strength { height: 4px; border-radius: 2px; background: #e9ecef; overflow: hidden; margin-top: 6px; }
+.sms-pw-bar      { height: 100%; border-radius: 2px; width: 0; transition: width .3s, background .3s; }
 
 /* Panel chips */
 .sms-panel-chips { display: flex; gap: 8px; margin-bottom: 1.25rem; }
@@ -189,96 +253,53 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 .sms-panel-chip.active { border-color: #0054a6; color: #0054a6; background: #eef4ff; }
 .sms-panel-chip:hover:not(.active) { border-color: #93b4d9; color: #0054a6; }
 
-/* Input group flat */
-.sms-input-group {
-  display: flex;
-  border: 1.5px solid #dce0e6; border-radius: 9px; overflow: hidden;
-  transition: border-color .15s, box-shadow .15s;
-}
-.sms-input-group:focus-within {
-  border-color: #0054a6;
-  box-shadow: 0 0 0 3px rgba(0,84,166,.13);
-}
-.sms-input-group__icon {
-  width: 42px; display: flex; align-items: center; justify-content: center;
-  background: #f8f9fa; border-right: 1.5px solid #e9ecef;
-  color: #adb5bd; font-size: 17px; flex-shrink: 0;
-}
-.sms-input-group:focus-within .sms-input-group__icon { color: #0054a6; }
-.sms-input-group input {
-  flex: 1; border: none; outline: none; padding: .6rem .75rem;
-  font-size: 14px; background: transparent; color: #344054;
-}
-.sms-input-group__btn {
-  width: 42px; background: none; border: none; border-left: 1.5px solid #e9ecef;
-  cursor: pointer; color: #adb5bd; font-size: 16px;
-  display: flex; align-items: center; justify-content: center;
-  transition: color .15s;
-}
-.sms-input-group__btn:hover { color: #0054a6; }
-
-.sms-field-error { font-size: 12px; color: #d63939; margin-top: 4px; min-height: 16px; }
-.sms-label {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 13px; font-weight: 500; color: #344054; margin-bottom: 5px;
-}
-.sms-label a { font-weight: 400; font-size: 12.5px; }
-
-/* Auth button */
-.sms-btn-auth {
-  width: 100%; height: 46px;
-  background: #0054a6; color: #fff;
-  border: none; border-radius: 9px;
-  font-size: 15px; font-weight: 600;
-  cursor: pointer; transition: background .15s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.sms-btn-auth:hover { background: #004494; }
-.sms-btn-auth:disabled { opacity: .65; cursor: not-allowed; }
-
-/* Secondary button */
-.sms-btn-outline {
-  width: 100%; height: 44px;
-  background: transparent; color: #344054;
-  border: 1.5px solid #dce0e6; border-radius: 9px;
-  font-size: 14px; font-weight: 500;
-  cursor: pointer; transition: all .15s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  text-decoration: none;
-}
-.sms-btn-outline:hover { background: #f8f9fa; border-color: #adb5bd; }
-
-/* Password strength */
-.sms-pw-strength { height: 4px; border-radius: 2px; background: #e9ecef; overflow: hidden; margin-top: 6px; }
-.sms-pw-bar      { height: 100%; border-radius: 2px; width: 0; transition: width .3s, background .3s; }
-
-/* OTP boxes */
-.sms-otp-row { display: flex; gap: 10px; justify-content: center; margin: 1rem 0; }
-.sms-otp-box {
-  width: 52px; height: 58px; text-align: center;
-  font-size: 24px; font-weight: 700;
-  border: 2px solid #dce0e6; border-radius: 10px;
-  outline: none; transition: border-color .15s;
-  background: #f8f9fa;
-}
-.sms-otp-box:focus { border-color: #0054a6; background: #fff; box-shadow: 0 0 0 3px rgba(0,84,166,.12); }
-.sms-otp-box.filled { border-color: #0054a6; background: #eef4ff; }
-
-/* Step indicator */
+/* ────────────────────────────────────────────────────────────
+   3. STEP INDICATOR — 4 steps, tight on mobile
+   ──────────────────────────────────────────────────────────── */
 .sms-steps {
-  display: flex; overflow: hidden; border-radius: 10px;
-  border: 1px solid #e9ecef; margin-bottom: 1.75rem;
+  display: flex;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 1.5rem;
 }
 .sms-step {
-  flex: 1; padding: 9px 6px; text-align: center;
-  font-size: 12px; font-weight: 600; color: #adb5bd; background: #f8f9fa;
-  border-right: 1px solid #e9ecef; transition: all .2s;
+  flex: 1;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #adb5bd;
+  background: #f8f9fa;
+  border-right: 1px solid #e9ecef;
+  transition: all .2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 .sms-step:last-child { border-right: none; }
 .sms-step.active { background: #0054a6; color: #fff; }
 .sms-step.done   { background: #d1fae5; color: #065f46; }
 
-/* ── LEGAL PAGES ── */
+/* ────────────────────────────────────────────────────────────
+   4. OTP BOXES
+   ──────────────────────────────────────────────────────────── */
+.sms-otp-row { display: flex; gap: 8px; justify-content: center; margin: 1rem 0; }
+.sms-otp-box {
+  width: 48px; height: 56px; text-align: center;
+  font-size: 22px; font-weight: 700;
+  border: 2px solid #dce0e6; border-radius: 10px;
+  outline: none; transition: border-color .15s;
+  background: #f8f9fa;
+  flex-shrink: 0;
+}
+.sms-otp-box:focus { border-color: #0054a6; background: #fff; box-shadow: 0 0 0 3px rgba(0,84,166,.12); }
+.sms-otp-box.filled { border-color: #0054a6; background: #eef4ff; }
+
+/* ────────────────────────────────────────────────────────────
+   5. LEGAL PAGES
+   ──────────────────────────────────────────────────────────── */
 .sms-legal-wrap {
   min-height: 100vh;
   background: linear-gradient(160deg, #f0f4f8 0%, #e8edf5 100%);
@@ -301,8 +322,7 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 .sms-legal-header__back {
   display: inline-flex; align-items: center; gap: 6px;
   color: rgba(255,255,255,.65); text-decoration: none; font-size: 13px;
-  margin-bottom: 1.25rem;
-  transition: color .15s;
+  margin-bottom: 1.25rem; transition: color .15s;
 }
 .sms-legal-header__back:hover { color: #fff; }
 .sms-legal-header__row { display: flex; align-items: center; gap: 1.25rem; }
@@ -324,8 +344,7 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 .sms-legal-highlight {
   background: #eef4ff; border-left: 4px solid #0054a6;
   border-radius: 0 10px 10px 0; padding: 1rem 1.25rem;
-  font-size: 13.5px; color: #344054; margin-bottom: 2rem;
-  line-height: 1.6;
+  font-size: 13.5px; color: #344054; margin-bottom: 2rem; line-height: 1.6;
 }
 .sms-legal-toc {
   background: #f8fafc; border: 1px solid #e9ecef;
@@ -335,10 +354,7 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .08em; color: #667380; margin-bottom: .75rem;
 }
-.sms-legal-toc a {
-  display: block; font-size: 13.5px; color: #0054a6; padding: 3px 0;
-  text-decoration: none;
-}
+.sms-legal-toc a { display: block; font-size: 13.5px; color: #0054a6; padding: 3px 0; text-decoration: none; }
 .sms-legal-toc a:hover { text-decoration: underline; }
 .sms-legal-body h3 {
   font-size: 16px; font-weight: 700; color: #1a2332;
@@ -349,26 +365,18 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 .sms-legal-body h3:first-of-type { margin-top: 0; }
 .sms-legal-body h3 .sec-num {
   font-size: 13px; font-weight: 700; color: #fff;
-  background: #0054a6; border-radius: 6px;
-  padding: 1px 8px; flex-shrink: 0;
+  background: #0054a6; border-radius: 6px; padding: 1px 8px; flex-shrink: 0;
 }
-.sms-legal-body p, .sms-legal-body li {
-  font-size: 14px; color: #4a5568; line-height: 1.85;
-}
+.sms-legal-body p, .sms-legal-body li { font-size: 14px; color: #4a5568; line-height: 1.85; }
 .sms-legal-body ul { padding-left: 1.5rem; }
 .sms-legal-body strong { color: #1a2332; }
 .sms-legal-body a { color: #0054a6; }
-
 .sms-legal-info-box {
   background: #f8fafc; border: 1px solid #e9ecef;
   border-radius: 12px; padding: 1.5rem; margin-top: 1rem;
 }
 .sms-data-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: .75rem; margin-bottom: 2rem; }
-@media (max-width: 767px) { .sms-data-cards { grid-template-columns: repeat(2,1fr); } }
-.sms-data-card {
-  text-align: center; padding: 1rem .75rem;
-  border-radius: 12px; border: 1px solid;
-}
+.sms-data-card { text-align: center; padding: 1rem .75rem; border-radius: 12px; border: 1px solid; }
 .sms-legal-footer {
   margin-top: 2.25rem; padding-top: 1.25rem;
   border-top: 1px solid #e9ecef;
@@ -379,18 +387,68 @@ body { margin: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSyste
 /* ── TOASTR ── */
 #toast-container { z-index: 99999 !important; }
 
-/* ── RESPONSIVE ── */
+/* ────────────────────────────────────────────────────────────
+   6. RESPONSIVE BREAKPOINTS
+   ──────────────────────────────────────────────────────────── */
+
+/* Tablet — hide left panel, full-width right */
 @media (max-width: 991.98px) {
+  .sms-auth-cover {
+    height: auto;        /* allow natural scrolling on tablet */
+    min-height: 100vh;
+  }
   .sms-auth-cover__left  { display: none !important; }
-  .sms-auth-cover__right { width: 100%; min-width: unset; }
-  .sms-mobile-logo       { display: block; }
-  .sms-legal-body        { padding: 1.5rem; }
+  .sms-auth-cover__right {
+    width: 100%;
+    min-width: unset;
+    flex-shrink: 1;
+    align-items: flex-start;
+    padding: 2rem 1.5rem;
+  }
+  .sms-auth-form-wrap {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .sms-mobile-logo { display: block; }
+  .sms-legal-body  { padding: 1.5rem; }
 }
+
+/* Small mobile (≤ 575px) */
 @media (max-width: 575.98px) {
-  .sms-auth-cover__right  { padding: 1.5rem 1rem; }
+  .sms-auth-cover__right  { padding: 1.25rem 1rem 2rem; }
+  .sms-auth-form-wrap     { max-width: 100%; }
+
+  /* Step text becomes just number on very small screens */
+  .sms-step { font-size: 10px; padding: 7px 2px; }
+
+  /* OTP boxes smaller */
+  .sms-otp-row { gap: 6px; }
+  .sms-otp-box { width: 40px; height: 48px; font-size: 18px; }
+
+  /* Title slightly smaller */
+  .sms-auth-title { font-size: 20px; }
+
+  /* Stack back/next buttons on very small screens */
+  .d-flex.gap-2 .sms-btn-outline,
+  .d-flex.gap-2 .sms-btn-auth {
+    font-size: 13px;
+  }
+
+  /* Legal */
   .sms-legal-header       { padding: 2rem 1.25rem; }
   .sms-legal-header h1    { font-size: 22px; }
-  .sms-otp-box            { width: 42px; height: 50px; font-size: 20px; }
+  .sms-data-cards         { grid-template-columns: repeat(2,1fr); }
+
+  /* Toastr full width */
   #toast-container.toast-top-right { top:8px; right:8px; left:8px; }
   #toast-container .toast { max-width: 100%; width: 100%; }
+}
+
+/* Extra small (≤ 380px) — very tight phones */
+@media (max-width: 380px) {
+  .sms-auth-cover__right { padding: 1rem .75rem 2rem; }
+  .sms-step { font-size: 9px; padding: 6px 1px; }
+  .sms-otp-box { width: 36px; height: 44px; font-size: 16px; }
+  .sms-otp-row { gap: 4px; }
+  .sms-btn-auth, .sms-btn-outline { font-size: 13px; min-height: 42px; }
 }

@@ -1,0 +1,23 @@
+/* ── File upload widget (auth forms) ── */
+.sms-file-upload {
+    border: 2px dashed #dce0e6;
+    border-radius: 10px;
+    background: #f8f9fa;
+    transition: border-color .2s, background .2s;
+    overflow: hidden;
+}
+.sms-file-upload:hover,
+.sms-file-upload.drag-over {
+    border-color: #0054a6;
+    background: #eef4ff;
+}
+.sms-file-upload__label {
+    display: block;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #344054;
+    margin: 0;
+}
+.sms-file-upload__label:hover { color: #0054a6; }
