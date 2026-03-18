@@ -1,8 +1,12 @@
 <%- layout('../layouts/main') %>
 <%
 var p = profile || {};
-var isGoogleOnly = p.auth_provider === 'google' && !p.password;
-var isOrgAdmin   = p.is_org_admin == 1;
+var isGoogleOnly    = p.auth_provider === 'google' && !p.password;
+var isOrgAdmin      = p.is_org_admin == 1;
+var isSuperAdmin    = p.is_super_admin == 1;
+/* Company user = has an org but is NOT the org admin and NOT super admin */
+var isCompanyUser   = !isSuperAdmin && !isOrgAdmin && !!p.organization_id;
+var showCompanyTab  = isOrgAdmin || isCompanyUser;
 %>
 
 <div class="row g-4">
@@ -125,27 +129,25 @@ var isOrgAdmin   = p.is_org_admin == 1;
   <div class="col-lg-9 col-md-8">
     <div class="card">
 
-      <!-- Tab header -->
-      <div class="card-header p-0">
-        <ul class="nav nav-tabs px-3" id="profileTabs">
-          <li class="nav-item">
-            <a href="#tab-info" class="nav-link active py-3" data-bs-toggle="tab">
-              <i class="bi bi-person me-1"></i>Profile Info
+      <!-- Tab header — pill style -->
+      <div class="sms-profile-tabs-wrap">
+        <div class="sms-profile-tabs" id="profileTabs">
+          <a href="#tab-info" class="sms-profile-tab active" data-sms-tab="tab-info">
+            <span class="sms-profile-tab__icon"><i class="bi bi-person-fill"></i></span>
+            <span class="sms-profile-tab__label">Profile Info</span>
+          </a>
+          <% if (showCompanyTab) { %>
+            <a href="#tab-company" class="sms-profile-tab" data-sms-tab="tab-company">
+              <span class="sms-profile-tab__icon"><i class="bi bi-building-fill"></i></span>
+              <span class="sms-profile-tab__label">Company</span>
+              <% if (isCompanyUser) { %><span class="sms-profile-tab__badge">View</span><% } %>
             </a>
-          </li>
-          <% if (isOrgAdmin) { %>
-            <li class="nav-item">
-              <a href="#tab-company" class="nav-link py-3" data-bs-toggle="tab">
-                <i class="bi bi-building me-1"></i>Company
-              </a>
-            </li>
           <% } %>
-          <li class="nav-item">
-            <a href="#tab-password" class="nav-link py-3" data-bs-toggle="tab">
-              <i class="bi bi-lock me-1"></i><%- isGoogleOnly ? 'Set Password' : 'Change Password' %>
-            </a>
-          </li>
-        </ul>
+          <a href="#tab-password" class="sms-profile-tab" data-sms-tab="tab-password">
+            <span class="sms-profile-tab__icon"><i class="bi bi-shield-lock-fill"></i></span>
+            <span class="sms-profile-tab__label"><%- isGoogleOnly ? 'Set Password' : 'Change Password' %></span>
+          </a>
+        </div>
       </div>
 
       <div class="card-body tab-content p-4">
@@ -289,80 +291,138 @@ var isOrgAdmin   = p.is_org_admin == 1;
           </form>
         </div>
 
-        <!-- ── Company Tab ──────────────────────────── -->
-        <% if (isOrgAdmin) { %>
+        <!-- ── Company Tab (org admin = editable, company user = read-only) ── -->
+        <% if (showCompanyTab) { %>
           <div class="tab-pane" id="tab-company">
-            <div class="alert alert-info-lt border-0 d-flex gap-2 mb-4" style="background:var(--tblr-info-lt,#e8f4fd);border-radius:8px;padding:12px 16px;">
-              <i class="bi bi-info-circle-fill text-info mt-1" style="flex-shrink:0;"></i>
-              <div class="small">Updating company details here will sync to your organisation profile.</div>
-            </div>
 
-            <form id="frmCompany" novalidate autocomplete="off">
+            <% if (isOrgAdmin) { %>
+              <div class="sms-tab-notice sms-tab-notice--info mb-4">
+                <i class="bi bi-info-circle-fill"></i>
+                <span>Updating company details here will sync to your organisation profile.</span>
+              </div>
+            <% } else { %>
+              <div class="sms-tab-notice sms-tab-notice--view mb-4">
+                <i class="bi bi-eye-fill"></i>
+                <span>You can view your company information. Contact your administrator to make changes.</span>
+              </div>
+            <% } %>
+
+            <!-- READ-ONLY VIEW for company users -->
+            <% if (isCompanyUser) { %>
               <div class="row g-3">
-
                 <div class="col-md-6">
-                  <label class="form-label required">Company Name</label>
-                  <input type="text" name="company_name" id="cName" class="form-control"
-                         value="<%- H.escape(p.company_name||'') %>" required/>
-                  <div class="invalid-feedback" id="err-cName"></div>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Registration Number</label>
-                  <input type="text" name="registration_number" class="form-control"
-                         value="<%- H.escape(p.registration_number||'') %>"/>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Company Phone</label>
-                  <div id="orgPhoneWrap"></div>
-                  <input type="hidden" name="org_phone" id="orgPhone"
-                         value="<%- H.escape(p.org_phone||'') %>"/>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Website</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-globe"></i></span>
-                    <input type="url" name="org_website" class="form-control"
-                           value="<%- H.escape(p.org_website||'') %>"
-                           placeholder="https://yourcompany.com"/>
+                  <div class="sms-info-row">
+                    <div class="sms-info-row__label"><i class="bi bi-building me-2"></i>Company Name</div>
+                    <div class="sms-info-row__value"><%- H.escape(p.company_name||'—') %></div>
                   </div>
                 </div>
-
-                <!-- Address Proof -->
-                <div class="col-12">
-                  <label class="form-label">Address Proof</label>
-                  <% if (p.address_proof_url) { %>
-                    <div class="sms-proof-current mb-2">
-                      <div class="d-flex align-items-center gap-2 p-2 border rounded-2">
-                        <i class="bi bi-file-earmark-check-fill text-success fs-5"></i>
-                        <div class="flex-fill">
-                          <div class="small fw-medium">Current document</div>
-                          <div class="text-muted" style="font-size:11px;">Uploaded address proof</div>
-                        </div>
-                        <a href="<%- p.address_proof_url %>" target="_blank"
-                           class="btn btn-sm btn-outline-success">
-                          <i class="bi bi-eye me-1"></i>View
+                <div class="col-md-6">
+                  <div class="sms-info-row">
+                    <div class="sms-info-row__label"><i class="bi bi-hash me-2"></i>Registration Number</div>
+                    <div class="sms-info-row__value"><%- H.escape(p.registration_number||'—') %></div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="sms-info-row">
+                    <div class="sms-info-row__label"><i class="bi bi-telephone me-2"></i>Company Phone</div>
+                    <div class="sms-info-row__value"><%- H.escape(p.org_phone||'—') %></div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="sms-info-row">
+                    <div class="sms-info-row__label"><i class="bi bi-globe me-2"></i>Website</div>
+                    <div class="sms-info-row__value">
+                      <% if (p.org_website) { %>
+                        <a href="<%- H.escape(p.org_website) %>" target="_blank" class="text-primary">
+                          <%- H.escape(p.org_website) %>
+                        </a>
+                      <% } else { %>—<% } %>
+                    </div>
+                  </div>
+                </div>
+                <% if (p.address_proof_url) { %>
+                  <div class="col-12">
+                    <div class="sms-info-row">
+                      <div class="sms-info-row__label"><i class="bi bi-file-earmark-check me-2"></i>Address Proof</div>
+                      <div class="sms-info-row__value">
+                        <a href="<%- p.address_proof_url %>" target="_blank" class="btn btn-sm btn-outline-success">
+                          <i class="bi bi-eye me-1"></i>View Document
                         </a>
                       </div>
                     </div>
-                    <label class="form-label small text-muted">Upload new (replaces current):</label>
-                  <% } %>
-                  <input type="file" name="address_proof" id="orgProofFile"
-                         class="form-control"
-                         accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"/>
-                  <div class="form-hint">Accepted: JPG, PNG, PDF, DOC. Max 10MB.</div>
+                  </div>
+                <% } %>
+              </div>
+            <% } else { %>
+              <!-- EDITABLE FORM for org admins -->
+              <form id="frmCompany" novalidate autocomplete="off">
+                <div class="row g-3">
+
+                  <div class="col-md-6">
+                    <label class="form-label required">Company Name</label>
+                    <input type="text" name="company_name" id="cName" class="form-control"
+                           value="<%- H.escape(p.company_name||'') %>" required/>
+                    <div class="invalid-feedback" id="err-cName"></div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Registration Number</label>
+                    <input type="text" name="registration_number" class="form-control"
+                           value="<%- H.escape(p.registration_number||'') %>"/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Company Phone</label>
+                    <div id="orgPhoneWrap"></div>
+                    <input type="hidden" name="org_phone" id="orgPhone"
+                           value="<%- H.escape(p.org_phone||'') %>"/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Website</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-globe"></i></span>
+                      <input type="url" name="org_website" class="form-control"
+                             value="<%- H.escape(p.org_website||'') %>"
+                             placeholder="https://yourcompany.com"/>
+                    </div>
+                  </div>
+
+                  <!-- Address Proof -->
+                  <div class="col-12">
+                    <label class="form-label">Address Proof</label>
+                    <% if (p.address_proof_url) { %>
+                      <div class="sms-proof-current mb-2">
+                        <div class="d-flex align-items-center gap-2 p-2 border rounded-2">
+                          <i class="bi bi-file-earmark-check-fill text-success fs-5"></i>
+                          <div class="flex-fill">
+                            <div class="small fw-medium">Current document</div>
+                            <div class="text-muted" style="font-size:11px;">Uploaded address proof</div>
+                          </div>
+                          <a href="<%- p.address_proof_url %>" target="_blank"
+                             class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-eye me-1"></i>View
+                          </a>
+                        </div>
+                      </div>
+                      <label class="form-label small text-muted">Upload new (replaces current):</label>
+                    <% } %>
+                    <input type="file" name="address_proof" id="orgProofFile"
+                           class="form-control"
+                           accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"/>
+                    <div class="form-hint">Accepted: JPG, PNG, PDF, DOC. Max 10MB.</div>
+                  </div>
+
                 </div>
 
-              </div>
+                <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                  <button type="submit" id="btnCompany" class="btn btn-primary">
+                    <i class="bi bi-floppy me-1"></i>Save Company Details
+                  </button>
+                </div>
+              </form>
+            <% } %>
 
-              <div class="d-flex justify-content-end mt-4 pt-3 border-top">
-                <button type="submit" id="btnCompany" class="btn btn-primary">
-                  <i class="bi bi-floppy me-1"></i>Save Company Details
-                </button>
-              </div>
-            </form>
           </div>
         <% } %>
 
@@ -451,5 +511,18 @@ var isOrgAdmin   = p.is_org_admin == 1;
   </div>
 
 </div><!-- /row -->
+
+<!-- Profile data for JS — used by company form to pass required personal fields -->
+<script>
+  window.SMS_PROFILE = <%- JSON.stringify({
+    name:       p.name       || '',
+    phone:      p.phone      || '',
+    country_id: p.country_id || '',
+    state_id:   p.state_id   || '',
+    city_id:    p.city_id    || '',
+    zip_code:   p.zip_code   || '',
+    address:    p.address    || '',
+  }) %>;
+</script>
 
 <% block('scripts', '<script src="/js/common/location.js"></script><script src="/js/common/phone.js"></script><script src="/js/pages/profile.js"></script>') %>

@@ -22,6 +22,16 @@ $(function () {
         $('#' + id + ', [name="' + id + '"]').first().addClass('is-invalid');
     }
 
+    /* ── Custom tab switching (avoids tabler.min.js conflict) ── */
+    $(document).on('click', '.sms-profile-tab[data-sms-tab]', function (e) {
+        e.preventDefault();
+        var target = $(this).data('sms-tab');
+        $('.sms-profile-tab').removeClass('active');
+        $('.tab-pane').removeClass('active show');
+        $(this).addClass('active');
+        $('#' + target).addClass('active show');
+    });
+
     /* ── Avatar — click zone ──────────────────────── */
     $('#avatarClickZone').on('click', function (e) {
         /* Don't re-trigger if the click came FROM the file input itself */
@@ -199,6 +209,16 @@ $(function () {
                 btnReset($btn);
                 if (res.status === 200) {
                     toastr.success(res.message || 'Profile updated successfully.');
+                    /* Keep SMS_PROFILE in sync so company tab always has fresh values */
+                    if (window.SMS_PROFILE) {
+                        window.SMS_PROFILE.name       = data.name       || window.SMS_PROFILE.name;
+                        window.SMS_PROFILE.phone      = data.phone      || window.SMS_PROFILE.phone;
+                        window.SMS_PROFILE.country_id = data.country_id || window.SMS_PROFILE.country_id;
+                        window.SMS_PROFILE.state_id   = data.state_id   || window.SMS_PROFILE.state_id;
+                        window.SMS_PROFILE.city_id    = data.city_id    || window.SMS_PROFILE.city_id;
+                        window.SMS_PROFILE.zip_code   = data.zip_code   || window.SMS_PROFILE.zip_code;
+                        window.SMS_PROFILE.address    = data.address    || window.SMS_PROFILE.address;
+                    }
                     /* Update sidebar name if changed */
                     if (data.name) {
                         $('.sms-u-name').text(data.name);
@@ -214,7 +234,8 @@ $(function () {
     });
 
     /* ══════════════════════════════════════
-       COMPANY FORM — PUT /profile (with file upload for address proof)
+       COMPANY FORM — PUT /profile
+       API requires personal fields too, so we merge them in.
     ══════════════════════════════════════ */
     $('#frmCompany').on('submit', function (e) {
         e.preventDefault();
@@ -226,44 +247,70 @@ $(function () {
         var $btn = $('#btnCompany');
         btnLoad($btn, 'Saving…');
 
+        /* Build company-only fields */
+        var companyData = {};
+        $(this).serializeArray().forEach(function (f) { companyData[f.name] = f.value; });
+        if ($('#orgPhoneWrap').length) {
+            var orgPh = SMS_Phone.validate('#orgPhoneWrap');
+            companyData.org_phone = orgPh.valid ? orgPh.value : '';
+        }
+
+        /* API requires personal required fields.
+           Priority: live DOM values (user may have edited Profile tab)
+           Fallback: SMS_PROFILE = original server data (always populated) */
+        var sp = window.SMS_PROFILE || {};
+        var personalData = {
+            name:       ($('#pName').val()    || '').trim()  || sp.name       || '',
+            phone:      ($('#pPhone').val()   || '').trim()  || sp.phone      || '',
+            country_id: $('#pCountry').val()                 || sp.country_id || '',
+            state_id:   $('#pState').val()                   || sp.state_id   || '',
+            city_id:    $('#pCity').val()                    || sp.city_id    || '',
+            zip_code:   ($('#pZip').val()     || '').trim()  || sp.zip_code   || '',
+            address:    ($('#pAddress').val() || '').trim()  || sp.address    || '',
+        };
+
         var proofFile = document.getElementById('orgProofFile');
         var hasFile   = proofFile && proofFile.files.length > 0;
 
         if (hasFile) {
-            /* Use FormData for file upload */
-            var fd = new FormData(document.getElementById('frmCompany'));
-            /* Also include org_phone from widget */
-            if ($('#orgPhoneWrap').length) {
-                var orgPh = SMS_Phone.validate('#orgPhoneWrap');
-                fd.set('org_phone', orgPh.valid ? orgPh.value : '');
-            }
+            /* FormData for file upload — merge all required fields */
+            var fd = new FormData();
+            /* Add personal required fields */
+            Object.keys(personalData).forEach(function(k){ fd.append(k, personalData[k]); });
+            /* Add company fields */
+            $(this).serializeArray().forEach(function(f){ fd.append(f.name, f.value); });
+            if (companyData.org_phone !== undefined) fd.set('org_phone', companyData.org_phone);
+            fd.append('address_proof', proofFile.files[0]);
 
             $.ajax({
                 url: BASE_URL + '/profile', type: 'PUT',
                 data: fd, processData: false, contentType: false,
                 success: function (res) {
                     btnReset($btn);
-                    if (res.status === 200) toastr.success(res.message || 'Company details updated.');
-                    else toastr.error(res.message || 'Could not update company details.');
+                    if (res.status === 200) {
+                        toastr.success(res.message || 'Company details updated.');
+                    } else {
+                        var msg = res.errors ? res.errors.map(function(e){ return e.message||e; }).join('\n') : res.message;
+                        toastr.error(msg || 'Could not update company details.');
+                    }
                 },
                 error: function () { btnReset($btn); toastr.error('Network error.'); },
             });
         } else {
-            /* JSON for no-file update */
-            var data = {};
-            $(this).serializeArray().forEach(function (f) { data[f.name] = f.value; });
-            if ($('#orgPhoneWrap').length) {
-                var orgPh2 = SMS_Phone.validate('#orgPhoneWrap');
-                data.org_phone = orgPh2.valid ? orgPh2.value : '';
-            }
+            /* JSON — merge personal + company */
+            var data = Object.assign({}, personalData, companyData);
 
             $.ajax({
                 url: BASE_URL + '/profile', type: 'PUT',
                 contentType: 'application/json', data: JSON.stringify(data),
                 success: function (res) {
                     btnReset($btn);
-                    if (res.status === 200) toastr.success(res.message || 'Company details updated.');
-                    else toastr.error(res.message || 'Could not update company details.');
+                    if (res.status === 200) {
+                        toastr.success(res.message || 'Company details updated.');
+                    } else {
+                        var msg = res.errors ? res.errors.map(function(e){ return e.message||e; }).join('\n') : res.message;
+                        toastr.error(msg || 'Could not update company details.');
+                    }
                 },
                 error: function () { btnReset($btn); toastr.error('Network error.'); },
             });
