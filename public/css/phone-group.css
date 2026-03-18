@@ -1,110 +1,131 @@
 /* ============================================================
    phone-group.css · SMS Web · Country code + phone input
-   Include in BOTH auth.ejs layout and main.ejs layout
    ============================================================ */
 
-/* Phone group container */
+/* ── Outer container: single border wrapping both parts ── */
 .sms-phone-group {
     display: flex;
     align-items: stretch;
-    border: 1.5px solid #dce0e6;
-    border-radius: 9px;
+    border: 1.5px solid var(--tblr-border-color, #dce0e6);
+    border-radius: var(--tblr-border-radius, 8px);
+    background: var(--tblr-bg-surface, #fff);
     overflow: hidden;
     transition: border-color .15s, box-shadow .15s;
-    background: #fff;
+    width: 100%;
+    min-height: 38px;
 }
 .sms-phone-group:focus-within {
-    border-color: #0054a6;
-    box-shadow: 0 0 0 3px rgba(0,84,166,.13);
+    border-color: var(--tblr-primary, #0054a6);
+    box-shadow: 0 0 0 3px rgba(0,84,166,.1);
+}
+.sms-phone-group.is-invalid {
+    border-color: #d63939 !important;
+    box-shadow: 0 0 0 3px rgba(214,57,57,.1) !important;
 }
 
-/* Dial code part */
+/* ── Code picker (left part) ── */
 .sms-phone-code-wrap {
-    width: 130px;
+    width: 95px;      /* compact — shows "+91" not "IN  +91" */
     flex-shrink: 0;
-    border-right: 1.5px solid #e9ecef;
-    background: #f8f9fa;
+    border-right: 1.5px solid var(--tblr-border-color, #e9ecef);
+    background: var(--tblr-bg-surface-secondary, #f8f9fa);
+    position: relative;
 }
+
+/* Select2 inside code wrap */
 .sms-phone-code-wrap .select2-container {
     width: 100% !important;
 }
 .sms-phone-code-wrap .select2-container .select2-selection--single {
-    height: 44px;
+    height: 38px;
     border: none !important;
-    background: transparent;
-    border-radius: 0;
-    outline: none;
+    background: transparent !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
     display: flex;
     align-items: center;
-    padding: 0 8px;
+    padding: 0 4px 0 8px;
 }
 .sms-phone-code-wrap .select2-container .select2-selection__rendered {
     font-size: 13px;
+    font-weight: 700;
     font-family: monospace;
-    font-weight: 600;
-    color: #344054;
-    padding: 0;
-    line-height: 44px;
+    color: var(--tblr-body-color, #344054);
+    padding: 0 !important;
+    line-height: 38px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
 }
 .sms-phone-code-wrap .select2-container .select2-selection__arrow {
-    height: 44px;
+    height: 38px;
     top: 0;
-    right: 4px;
+    right: 2px;
+    width: 16px;
+}
+.sms-phone-code-wrap .select2-container .select2-selection__arrow b {
+    border-width: 4px 4px 0;
 }
 
-/* Number input part */
+/* ── Number input (right part) ── */
 .sms-phone-number-inp {
     flex: 1;
     min-width: 0;
     border: none;
     outline: none;
-    padding: 0 .75rem;
+    padding: 0 .6rem;
     font-size: 14px;
-    color: #344054;
+    color: var(--tblr-body-color, #344054);
     background: transparent;
-    height: 44px;
+    height: 38px;
+    width: 100%;
 }
-.sms-phone-number-inp::placeholder { color: #adb5bd; }
-
-/* Inside auth forms (.sms-input-group style match) */
-.sms-auth-form-wrap .sms-phone-group {
-    height: 46px;
-}
-.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection--single,
-.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection__rendered {
-    height: 46px;
-    line-height: 46px;
-}
-.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection__arrow {
-    height: 46px;
-}
-.sms-auth-form-wrap .sms-phone-number-inp {
-    height: 46px;
+.sms-phone-number-inp::placeholder {
+    color: var(--tblr-secondary, #adb5bd);
+    font-weight: 400;
 }
 
-/* Dropdown results */
-.select2-results__option {
+/* ── Dropdown results: show only code, no long country name ── */
+.sms-phone-code-drop .select2-results__option {
     font-size: 13px;
     font-family: monospace;
-    padding: 6px 10px;
+    padding: 5px 10px;
+    white-space: nowrap;
+}
+.sms-phone-code-drop .select2-search--dropdown {
+    padding: 6px;
+}
+.sms-phone-code-drop .select2-search__field {
+    border-radius: 5px;
+    font-size: 13px;
 }
 
-/* Error state */
-.sms-phone-group.is-invalid {
-    border-color: #d63939 !important;
-    box-shadow: 0 0 0 3px rgba(214,57,57,.12) !important;
+/* ── Dark mode ── */
+.theme-dark .sms-phone-group {
+    background: var(--tblr-bg-surface);
+    border-color: var(--tblr-border-color);
+}
+.theme-dark .sms-phone-code-wrap {
+    background: var(--tblr-bg-surface-secondary);
+    border-right-color: var(--tblr-border-color);
+}
+.theme-dark .sms-phone-code-wrap .select2-container .select2-selection__rendered {
+    color: var(--tblr-body-color);
+}
+.theme-dark .sms-phone-number-inp {
+    color: var(--tblr-body-color);
 }
 
-/* Inside Bootstrap .form-group (main panel) */
-.input-group .sms-phone-group {
-    border-radius: 8px;
-    border: 1.5px solid #dce0e6;
-}
+/* ── Auth forms (height match to sms-input) ── */
+.sms-auth-form-wrap .sms-phone-group { min-height: 46px; }
+.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection--single,
+.sms-auth-form-wrap .sms-phone-number-inp { height: 46px; }
+.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection__rendered { line-height: 46px; }
+.sms-auth-form-wrap .sms-phone-code-wrap .select2-container .select2-selection__arrow { height: 46px; }
 
-/* Responsive */
-@media (max-width: 380px) {
-    .sms-phone-code-wrap { width: 105px; }
-    .sms-phone-code-wrap .select2-container .select2-selection__rendered { font-size: 11px; }
-    .sms-phone-number-inp { font-size: 13px; }
+/* ── Responsive ── */
+@media (max-width: 400px) {
+    .sms-phone-code-wrap { width: 80px; }
+    .sms-phone-code-wrap .select2-container .select2-selection__rendered { font-size: 12px; }
+    .sms-phone-number-inp { font-size: 13px; padding: 0 .4rem; }
 }

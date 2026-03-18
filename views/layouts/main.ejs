@@ -2,12 +2,13 @@
 var s         = settings || {};
 var isDark    = s.dark_mode === '1';
 var isRTL     = s.direction === 'rtl';
+var collapsed = s.sidebar_collapsed === '1';
 var themeColor= s.theme_color  || '#0054a6';
 var fontSize  = s.font_size    || '14px';
 var curLang   = lang           || 'en';
 var _rmap     = {none:'0',sm:'4px',md:'8px',lg:'12px',xl:'16px'};
 var borderRad = _rmap[s.border_radius] || '8px';
-var bodyClass = 'antialiased' + (isDark ? ' theme-dark' : '');
+var bodyClass = 'antialiased' + (isDark ? ' theme-dark' : '') + (collapsed ? ' sms-sb-collapsed' : '');
 var htmlDir   = isRTL ? 'rtl' : 'ltr';
 %>
 <!DOCTYPE html>
@@ -19,7 +20,7 @@ var htmlDir   = isRTL ? 'rtl' : 'ltr';
 <title><%- page_title %> | <%- APP_NAME %></title>
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
 
-<!-- ALL LOCAL — no CDN, Bootstrap Icons only (tabler-icons removed - font path broken) -->
+<!-- ALL LOCAL — no CDN -->
 <link rel="stylesheet" href="/libs/css/tabler.min.css"/>
 <% if (isRTL) { %>
 <link rel="stylesheet" href="/libs/css/tabler-rtl.min.css"/>
@@ -31,6 +32,7 @@ var htmlDir   = isRTL ? 'rtl' : 'ltr';
 <link rel="stylesheet" href="/libs/css/toastr.min.css"/>
 <link rel="stylesheet" href="/libs/css/flatpickr.min.css"/>
 <link rel="stylesheet" href="/css/app.css"/>
+<link rel="stylesheet" href="/css/phone-group.css"/>
 
 <style>
 :root{
@@ -139,11 +141,181 @@ $(function(){ toastr.error("<%- (flash_error||'').replace(/\\/g,'\\\\').replace(
 
 $(function(){
   /* ── Sidebar: mobile open/close ── */
-  var $sb = $('.navbar-vertical'), $bd = $('#smsSidebarBackdrop');
-  $('#smsBtnMenu').on('click', function(e){ e.stopPropagation(); $sb.addClass('show'); $bd.addClass('show'); });
-  $bd.on('click', function(){ $sb.removeClass('show'); $bd.removeClass('show'); });
-  $sb.find('a.nav-link:not(.dropdown-toggle),a.dropdown-item').on('click',function(){
-    if($(window).width()<992){ $sb.removeClass('show'); $bd.removeClass('show'); }
+  /* ════════════════════════════════════════
+     SIDEBAR — Mobile + Desktop + Flyout/Tooltip
+  ════════════════════════════════════════ */
+  var $sb  = $('#smsSidebar');
+  var $bd  = $('#smsSidebarBackdrop');
+  var SB_KEY = 'sms_sb_collapsed';
+
+  /* ── Mobile: open / close ── */
+  function openMobileSb(){
+    $sb.addClass('sms-sidebar--open');
+    $bd.addClass('show');
+    $('body').css('overflow','hidden');
+  }
+  function closeMobileSb(){
+    $sb.removeClass('sms-sidebar--open');
+    $bd.removeClass('show');
+    $('body').css('overflow','');
+  }
+  $('#smsBtnMenu').on('click', function(e){ e.stopPropagation(); openMobileSb(); });
+  $bd.on('click', closeMobileSb);
+  $sb.on('click','.sms-nav__link:not([data-bs-toggle]),.sms-subnav__link,.sms-flyout__link',function(){
+    if($(window).width()<992){ closeMobileSb(); }
+  });
+
+  /* ── Desktop: collapse / expand ── */
+  var isCollapsed = localStorage.getItem(SB_KEY) === '1';
+
+  function setSidebarCollapsed(collapsed, save){
+    isCollapsed = collapsed;
+    if(collapsed){
+      $sb.addClass('sms-sidebar--collapsed');
+      $('body').addClass('sms-sb-collapsed');
+      $('#smsToggleIcon').removeClass('bi-layout-sidebar').addClass('bi-layout-sidebar-reverse');
+    } else {
+      $sb.removeClass('sms-sidebar--collapsed');
+      $('body').removeClass('sms-sb-collapsed');
+      $('#smsToggleIcon').removeClass('bi-layout-sidebar-reverse').addClass('bi-layout-sidebar');
+      /* Close any open flyout/tooltip when expanding */
+      hideAllFlyouts(false);
+    }
+    if(save){
+      localStorage.setItem(SB_KEY, collapsed ? '1' : '0');
+      $.post(BASE_URL+'/settings/theme',{sidebar_collapsed: collapsed?'1':'0'}).fail(function(){});
+    }
+  }
+
+  if($(window).width() >= 992){
+    $sb.css('transition','none');
+    setSidebarCollapsed(isCollapsed, false);
+    setTimeout(function(){ $sb.css('transition',''); }, 50);
+  }
+
+  $('#smsSidebarToggle').on('click', function(){
+    setSidebarCollapsed(!isCollapsed, true);
+  });
+
+  $(window).on('resize', function(){
+    if($(window).width() < 992){ closeMobileSb(); hideAllFlyouts(false); }
+    else { setSidebarCollapsed(isCollapsed, false); }
+  });
+
+  /* ════════════════════════════════════════
+     FLYOUT + TOOLTIP — collapsed sidebar
+     Key fixes:
+     1. Flyout/tooltip wrapper is flush with sidebar (no gap)
+     2. Click icon → pin flyout open (stays until click elsewhere)
+     3. Hover icon → show flyout, leave to flyout → keep open
+  ════════════════════════════════════════ */
+  var $pinnedFlyout  = null;   /* currently pinned (clicked) flyout */
+  var $hoveredFlyout = null;   /* currently hovered flyout */
+  var hideTimer      = null;
+
+  function showFlyout($flyout, $item) {
+    hideAllFlyouts(true);
+    var rect = $item[0].getBoundingClientRect();
+    $flyout.css({ top: rect.top + 'px', display: 'block' });
+    $hoveredFlyout = $flyout;
+  }
+
+  function hideAllFlyouts(keepPinned) {
+    clearTimeout(hideTimer);
+    $('.sms-flyout:visible').each(function(){
+      if(keepPinned && $(this).hasClass('sms-flyout--pinned')) return;
+      $(this).hide().removeClass('sms-flyout--pinned');
+    });
+    $('.sms-tooltip:visible').hide();
+    if(!keepPinned) { $pinnedFlyout = null; }
+    $hoveredFlyout = null;
+  }
+
+  /* Click outside → close pinned */
+  $(document).on('click.flyout', function(e){
+    if(!$(e.target).closest('.sms-flyout, .sms-nav__item').length){
+      hideAllFlyouts(false);
+    }
+  });
+
+  /* ── Flyout items (parent with children) ── */
+
+  /* Hover on nav item → show flyout */
+  $sb.on('mouseenter.flyout', '.sms-has-flyout', function(){
+    if(!isCollapsed || $(window).width() < 992) return;
+    clearTimeout(hideTimer);
+    var $item   = $(this);
+    var $flyout = $item.find('.sms-flyout');
+    if(!$flyout.length || $flyout.hasClass('sms-flyout--pinned')) return;
+    showFlyout($flyout, $item);
+  });
+
+  /* Leave nav item → start hide timer (cancelled if entering flyout panel) */
+  $sb.on('mouseleave.flyout', '.sms-has-flyout', function(e){
+    if(!isCollapsed) return;
+    var $flyout = $(this).find('.sms-flyout');
+    if($flyout.hasClass('sms-flyout--pinned')) return;
+    /* Small delay — mouse travelling to flyout panel */
+    hideTimer = setTimeout(function(){
+      if($hoveredFlyout && !$flyout.is(':hover')){
+        $flyout.hide();
+        $hoveredFlyout = null;
+      }
+    }, 150);
+  });
+
+  /* Mouse enters flyout panel → cancel hide */
+  $sb.on('mouseenter.flyout', '.sms-flyout', function(){
+    clearTimeout(hideTimer);
+    $hoveredFlyout = $(this);
+  });
+
+  /* Mouse leaves flyout panel → hide (unless pinned) */
+  $sb.on('mouseleave.flyout', '.sms-flyout', function(){
+    if($(this).hasClass('sms-flyout--pinned')) return;
+    var $f = $(this);
+    hideTimer = setTimeout(function(){ $f.hide(); $hoveredFlyout = null; }, 80);
+  });
+
+  /* Click icon → PIN flyout (stays open until click elsewhere) */
+  $sb.on('click.flyout', '.sms-has-flyout > .sms-nav__link', function(e){
+    if(!isCollapsed || $(window).width() < 992) return;
+    e.preventDefault(); e.stopPropagation();
+    var $item   = $(this).parent();
+    var $flyout = $item.find('.sms-flyout');
+    if(!$flyout.length) return;
+
+    if($flyout.hasClass('sms-flyout--pinned')){
+      /* Already pinned → unpin and close */
+      $flyout.hide().removeClass('sms-flyout--pinned');
+      $pinnedFlyout = null;
+    } else {
+      /* Unpin any previously pinned */
+      if($pinnedFlyout) {
+        $pinnedFlyout.hide().removeClass('sms-flyout--pinned');
+      }
+      showFlyout($flyout, $item);
+      $flyout.addClass('sms-flyout--pinned');
+      $pinnedFlyout = $flyout;
+    }
+  });
+
+  /* ── Tooltip items (no children) ── */
+  $sb.on('mouseenter.tooltip', '.sms-has-tooltip', function(){
+    if(!isCollapsed || $(window).width() < 992) return;
+    var $item    = $(this);
+    var $tooltip = $item.find('.sms-tooltip');
+    if(!$tooltip.length) return;
+    hideAllFlyouts(true);
+    var rect = $item[0].getBoundingClientRect();
+    $tooltip.css({
+      top: (rect.top + rect.height/2) + 'px',
+      transform: 'translateY(-50%)',
+      display: 'block'
+    });
+  });
+  $sb.on('mouseleave.tooltip', '.sms-has-tooltip', function(){
+    $(this).find('.sms-tooltip').hide();
   });
 
   /* ── Hide loader ── */

@@ -48,6 +48,16 @@ function formatDateSetting(date, settings) {
     return moment.utc(date).tz(getTZ(settings)).format(fmt);
 }
 
+// ── Format date+time based on user's date_format + time_format settings ──
+function formatDateTimeSetting(date, settings) {
+    if (!date) return '-';
+    const dateFmt  = (settings && settings.date_format)  ? settings.date_format  : 'DD/MM/YYYY';
+    const timeFmt  = (settings && settings.time_format)  ? settings.time_format  : '12h';
+    const timePart = timeFmt === '24h' ? 'HH:mm' : 'hh:mm A';
+    const fullFmt  = dateFmt + ' ' + timePart;
+    return moment.utc(date).tz(getTZ(settings)).format(fullFmt);
+}
+
 // ── Asset URL helper ─────────────────────────────
 function assetUrl(path) {
     const base = process.env.APP_URL || '';
@@ -92,4 +102,4 @@ function escape(str) {
         .replace(/"/g,  '&quot;')
         .replace(/'/g,  '&#39;');
 }
-module.exports = { formatDate, formatDateTime, formatTime, timeAgo, formatDateSetting, getTZ, assetUrl, truncate, currency, ucFirst, statusBadge, escape };
+module.exports = { formatDate, formatDateTime, formatTime, timeAgo, formatDateSetting, formatDateTimeSetting, getTZ, assetUrl, truncate, currency, ucFirst, statusBadge, escape };

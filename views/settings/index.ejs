@@ -1,8 +1,19 @@
 <%- layout('../layouts/main') %>
-
 <%
-var s    = userSettings || {};
-var colours = [
+var s = userSettings || {};
+
+var timezones = [
+  'Asia/Kolkata','Asia/Dubai','Asia/Singapore','Asia/Tokyo','Asia/Karachi',
+  'Asia/Dhaka','Asia/Bangkok','Asia/Shanghai','Asia/Seoul',
+  'Europe/London','Europe/Paris','Europe/Berlin','Europe/Rome','Europe/Madrid',
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'America/Sao_Paulo','America/Toronto','America/Vancouver',
+  'Africa/Cairo','Africa/Lagos','Africa/Nairobi',
+  'Australia/Sydney','Australia/Melbourne','Pacific/Auckland','Pacific/Honolulu',
+  'UTC',
+];
+
+var presetColors = [
   { label:'Blue',   value:'#0054a6' },
   { label:'Azure',  value:'#0ea5e9' },
   { label:'Indigo', value:'#4263eb' },
@@ -11,157 +22,202 @@ var colours = [
   { label:'Green',  value:'#2fb344' },
   { label:'Orange', value:'#f76707' },
   { label:'Red',    value:'#d63939' },
+  { label:'Pink',   value:'#e91e8c' },
 ];
-var timezones = [
-  'Asia/Kolkata','Asia/Dubai','Asia/Singapore','Asia/Tokyo',
-  'Europe/London','Europe/Paris','Europe/Berlin',
-  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
-  'Australia/Sydney','Pacific/Auckland',
-];
+var curColor = s.theme_color || '#0054a6';
+var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
 %>
 
-<div class="row g-3">
+<div class="row g-4">
 
-  <!-- ═══ LEFT: Appearance ═══════════════════════════════ -->
-  <div class="col-lg-8">
+  <!-- ═══ LEFT: Settings forms ═══════════════════════════════════ -->
+  <div class="col-xl-8 col-lg-7">
 
-    <!-- Card: Theme & Appearance -->
-    <div class="card mb-3">
+    <!-- ── Appearance ───────────────────────────────────────────── -->
+    <div class="card mb-4">
       <div class="card-header">
-        <div class="card-title"><i class="bi bi-palette me-2 text-primary"></i><%- t('settings.appearance') %></div>
-        <div class="card-options text-secondary small"><%- t('settings.changes_note') %></div>
+        <div class="card-title">
+          <i class="bi bi-palette me-2 text-primary"></i>
+          <%- t('settings.appearance') %>
+        </div>
+        <div class="card-options text-secondary" style="font-size:12px;">Live preview updates automatically</div>
       </div>
       <div class="card-body">
-        <div class="row g-3">
+        <div class="row g-4">
 
-          <!-- Accent Colour -->
+          <!-- Theme Colour — color picker + presets -->
           <div class="col-12">
-            <label class="form-label fw-semibold"><%- t('settings.theme_color') %></label>
-            <div class="d-flex flex-wrap gap-2" id="colourSwatches">
-              <% colours.forEach(function(c) { %>
+            <label class="form-label fw-semibold mb-2"><%- t('settings.theme_color') %></label>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <% presetColors.forEach(function(c) {
+                   var isActive = curColor === c.value;
+              %>
               <button type="button"
-                      class="sms-color-swatch <%- (s.theme_color === c.value || (!s.theme_color && c.value === '#0054a6')) ? 'active' : '' %>"
+                      class="sms-cp-swatch <%- isActive ? 'active' : '' %>"
                       data-color="<%- c.value %>"
                       style="background:<%- c.value %>;"
                       title="<%- c.label %>">
                 <i class="bi bi-check-lg"></i>
               </button>
-              <% }) %>
-              <label class="sms-color-swatch sms-color-custom" title="Custom"
-                     style="background:<%- !colours.some(function(c){return c.value===s.theme_color;}) && s.theme_color ? s.theme_color : '#e9ecef' %>;">
-                <i class="bi bi-eyedropper"></i>
-                <input type="color" id="customColorPicker" value="<%- s.theme_color || '#0054a6' %>"
-                       style="opacity:0;position:absolute;width:0;height:0;"/>
-              </label>
+              <% }); %>
+
+              <!-- Native color picker input (full spectrum) -->
+              <div class="sms-cp-picker-wrap <%- isCustom ? 'active' : '' %>" title="Custom colour">
+                <input type="color" id="fColorPicker"
+                       value="<%- curColor %>"
+                       class="sms-cp-native"/>
+                <i class="bi bi-eyedropper-fill sms-cp-picker-icon"></i>
+                <% if (isCustom) { %><span class="sms-cp-picker-label"><%- curColor %></span><% } %>
+              </div>
+
             </div>
-            <input type="hidden" name="theme_color" id="fThemeColor" value="<%- s.theme_color || '#0054a6' %>"/>
+            <input type="hidden" id="fThemeColor" name="theme_color" value="<%- curColor %>"/>
           </div>
 
-          <!-- Mode dropdown -->
-          <div class="col-md-4">
+          <!-- Mode -->
+          <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.dark_mode') %></label>
             <select class="form-select" id="fDarkMode" name="dark_mode">
-              <option value="0" <%- s.dark_mode != '1' ? 'selected' : '' %>>☀️ <%- t('theme.light') %></option>
-              <option value="1" <%- s.dark_mode == '1' ? 'selected' : '' %>>🌙 <%- t('theme.dark') %></option>
+              <option value="0" <%- s.dark_mode != '1' ? 'selected' : '' %>>☀️ Light</option>
+              <option value="1" <%- s.dark_mode == '1' ? 'selected' : '' %>>🌙 Dark</option>
             </select>
           </div>
 
-          <!-- Direction dropdown -->
-          <div class="col-md-4">
+          <!-- Direction -->
+          <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.direction') %></label>
             <select class="form-select" id="fDirection" name="direction">
-              <option value="ltr" <%- s.direction !== 'rtl' ? 'selected' : '' %>>⬅ LTR (Left to Right)</option>
-              <option value="rtl" <%- s.direction === 'rtl' ? 'selected' : '' %>>➡ RTL (Right to Left)</option>
+              <option value="ltr" <%- s.direction !== 'rtl' ? 'selected' : '' %>>⬅ LTR</option>
+              <option value="rtl" <%- s.direction === 'rtl' ? 'selected' : '' %>>➡ RTL</option>
             </select>
           </div>
 
-          <!-- Sidebar dropdown -->
-          <div class="col-md-4">
+          <!-- Sidebar Theme -->
+          <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.sidebar_style') %></label>
             <select class="form-select" id="fSidebarStyle" name="sidebar_style">
-              <option value="dark"  <%- s.sidebar_style !== 'light' ? 'selected' : '' %>>🌑 <%- t('settings.sidebar_dark') %></option>
-              <option value="light" <%- s.sidebar_style === 'light' ? 'selected' : '' %>>⬜ <%- t('settings.sidebar_light') %></option>
+              <option value="dark"  <%- s.sidebar_style !== 'light' ? 'selected' : '' %>>🌑 Dark</option>
+              <option value="light" <%- s.sidebar_style === 'light' ? 'selected' : '' %>>⬜ Light</option>
             </select>
           </div>
 
-          <!-- Border Radius dropdown -->
-          <div class="col-md-4">
+          <!-- Border Radius — visual buttons -->
+          <div class="col-12">
             <label class="form-label fw-semibold"><%- t('settings.border_radius') %></label>
-            <select class="form-select" id="fBorderRadius" name="border_radius">
-              <option value="none" <%- s.border_radius === 'none' ? 'selected' : '' %>>⬜ <%- t('theme.radius_none') %></option>
-              <option value="sm"   <%- s.border_radius === 'sm'   ? 'selected' : '' %>>▢ <%- t('theme.radius_sm') %></option>
-              <option value="md"   <%- (!s.border_radius || s.border_radius === 'md') ? 'selected' : '' %>>🔲 <%- t('theme.radius_md') %></option>
-              <option value="lg"   <%- s.border_radius === 'lg'   ? 'selected' : '' %>>◻ <%- t('theme.radius_lg') %></option>
-              <option value="xl"   <%- s.border_radius === 'xl'   ? 'selected' : '' %>>⭕ <%- t('theme.radius_xl') %></option>
-            </select>
+            <div class="d-flex flex-wrap gap-2">
+              <% var radii = [
+                { v:'none', label:'None',   rx:'0'   },
+                { v:'sm',   label:'Small',  rx:'4'   },
+                { v:'md',   label:'Medium', rx:'8'   },
+                { v:'lg',   label:'Large',  rx:'12'  },
+                { v:'xl',   label:'X-Large',rx:'16'  },
+              ];
+              var curRadius = s.border_radius || 'md';
+              radii.forEach(function(r){ %>
+              <button type="button"
+                      class="sms-radius-option <%- curRadius === r.v ? 'active' : '' %>"
+                      data-radius="<%- r.v %>">
+                <svg width="28" height="28" viewBox="0 0 28 28">
+                  <rect x="3" y="3" width="22" height="22"
+                        rx="<%- r.rx %>"
+                        fill="none" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span><%- r.label %></span>
+              </button>
+              <% }); %>
+            </div>
+            <input type="hidden" id="fBorderRadius" name="border_radius" value="<%- curRadius %>"/>
           </div>
 
-          <!-- Font Size dropdown -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold"><%- t('settings.font_size') %></label>
-            <select class="form-select" id="fFontSize" name="font_size">
-              <option value="12px" <%- s.font_size === '12px' ? 'selected' : '' %>>Small (12px)</option>
-              <option value="14px" <%- (!s.font_size || s.font_size === '14px') ? 'selected' : '' %>>Medium (14px)</option>
-              <option value="16px" <%- s.font_size === '16px' ? 'selected' : '' %>>Large (16px)</option>
-            </select>
+          <!-- Font Size — slider -->
+          <div class="col-12">
+            <label class="form-label fw-semibold d-flex justify-content-between">
+              <%- t('settings.font_size') %>
+              <span id="fFontSizeLabel" class="text-primary fw-bold"><%- s.font_size || '14px' %></span>
+            </label>
+            <div class="d-flex align-items-center gap-3">
+              <span class="text-muted" style="font-size:10px;white-space:nowrap;">10px</span>
+              <input type="range" class="form-range flex-fill" id="fFontSizeRange"
+                     min="10" max="30" step="1"
+                     value="<%- parseInt(s.font_size || '14') %>"/>
+              <span class="text-muted" style="font-size:14px;white-space:nowrap;">30px</span>
+            </div>
+            <input type="hidden" id="fFontSize" name="font_size" value="<%- s.font_size || '14px' %>"/>
           </div>
 
-        </div><!-- /row -->
+        </div>
       </div>
-    </div><!-- /card -->
+    </div>
 
-    <!-- Card: Localisation -->
-    <div class="card mb-3">
+    <!-- ── Localisation ─────────────────────────────────────────── -->
+    <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="bi bi-globe me-2 text-primary"></i><%- t('settings.localization') %></div>
+        <div class="card-title">
+          <i class="bi bi-globe me-2 text-primary"></i>
+          <%- t('settings.localization') %>
+        </div>
       </div>
       <div class="card-body">
-        <div class="row g-3">
+        <div class="row g-4">
 
-          <!-- Language dropdown -->
-          <div class="col-md-4">
+          <!-- Language -->
+          <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.language') %></label>
-            <select class="form-select" id="fLanguage" name="language">
+            <select class="form-select select2" id="fLanguage" name="language">
               <% (supportedLanguages || []).forEach(function(lng){ %>
               <option value="<%- lng.code %>"
                 <%- (s.language === lng.code || (!s.language && lng.code === 'en')) ? 'selected' : '' %>>
                 <%- lng.flag %> <%- lng.nativeName %>
               </option>
-              <% }) %>
+              <% }); %>
             </select>
           </div>
 
           <!-- Date Format -->
-          <div class="col-md-4">
+          <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.date_format') %></label>
-            <select name="date_format" class="form-select" id="fDateFormat">
-              <option value="DD/MM/YYYY" <%- (!s.date_format || s.date_format === 'DD/MM/YYYY') ? 'selected' : '' %>>DD/MM/YYYY</option>
-              <option value="MM/DD/YYYY" <%- s.date_format === 'MM/DD/YYYY' ? 'selected' : '' %>>MM/DD/YYYY</option>
-              <option value="YYYY-MM-DD" <%- s.date_format === 'YYYY-MM-DD' ? 'selected' : '' %>>YYYY-MM-DD</option>
-              <option value="DD MMM YYYY" <%- s.date_format === 'DD MMM YYYY' ? 'selected' : '' %>>DD MMM YYYY</option>
+            <select class="form-select" id="fDateFormat" name="date_format">
+              <option value="DD/MM/YYYY"   <%- (!s.date_format || s.date_format==='DD/MM/YYYY')   ? 'selected':'' %>>DD/MM/YYYY &nbsp; (31/01/2025)</option>
+              <option value="MM/DD/YYYY"   <%- s.date_format==='MM/DD/YYYY'   ? 'selected':'' %>>MM/DD/YYYY &nbsp; (01/31/2025)</option>
+              <option value="YYYY-MM-DD"   <%- s.date_format==='YYYY-MM-DD'   ? 'selected':'' %>>YYYY-MM-DD &nbsp; (2025-01-31)</option>
+              <option value="DD MMM YYYY"  <%- s.date_format==='DD MMM YYYY'  ? 'selected':'' %>>DD MMM YYYY &nbsp; (31 Jan 2025)</option>
+              <option value="DD MMMM YYYY" <%- s.date_format==='DD MMMM YYYY' ? 'selected':'' %>>DD MMMM YYYY &nbsp; (31 January 2025)</option>
+            </select>
+          </div>
+
+          <!-- Time Format — NEW -->
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-semibold">Time Format</label>
+            <select class="form-select" id="fTimeFormat" name="time_format">
+              <option value="12h" <%- (!s.time_format || s.time_format==='12h') ? 'selected':'' %>>12-hour &nbsp; (03:30 PM)</option>
+              <option value="24h" <%- s.time_format==='24h' ? 'selected':'' %>>24-hour &nbsp; (15:30)</option>
             </select>
           </div>
 
           <!-- Timezone -->
-          <div class="col-md-4">
+          <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.timezone') %></label>
-            <select name="timezone" class="form-select select2" id="fTimezone">
-              <% timezones.forEach(function(tz) { %>
+            <select class="form-select select2" id="fTimezone" name="timezone">
+              <% timezones.forEach(function(tz){ %>
               <option value="<%- tz %>"
-                <%- (s.timezone === tz || (!s.timezone && tz === 'Asia/Kolkata')) ? 'selected' : '' %>>
+                <%- (s.timezone===tz || (!s.timezone && tz==='Asia/Kolkata')) ? 'selected':'' %>>
                 <%- tz %>
               </option>
-              <% }) %>
+              <% }); %>
             </select>
           </div>
 
           <!-- Items per page -->
-          <div class="col-md-4">
+          <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.per_page') %></label>
-            <select name="items_per_page" class="form-select">
-              <% [10,15,25,50,100].forEach(function(n){ %>
-              <option value="<%- n %>" <%- (s.items_per_page == n || (!s.items_per_page && n === 15)) ? 'selected' : '' %>><%- n %> rows</option>
-              <% }) %>
+            <select class="form-select" name="items_per_page" id="fItemsPerPage">
+              <% [10,15,25,50,100,250,500,1000].forEach(function(n){ %>
+              <option value="<%- n %>"
+                <%- (s.items_per_page==n || (!s.items_per_page && n===15)) ? 'selected':'' %>>
+                <%- n %> rows
+              </option>
+              <% }); %>
+              <option value="all" <%- s.items_per_page==='all' ? 'selected':'' %>>All rows</option>
             </select>
           </div>
 
@@ -169,39 +225,75 @@ var timezones = [
       </div>
     </div>
 
-  </div><!-- /col-lg-8 -->
+  </div><!-- /col -->
 
-  <!-- ═══ RIGHT: Preview card ════════════════════════════ -->
-  <div class="col-lg-4">
-    <div class="card sticky-top" style="top:1rem;">
-      <div class="card-header">
-        <div class="card-title"><%- t('settings.preview') %></div>
-      </div>
-      <div class="card-body p-3">
-        <div id="themePreview">
-          <div class="sms-preview-nav mb-3" id="previewNav">
-            <div class="sms-preview-nav__brand">♻ SMS</div>
-            <div class="sms-preview-nav__items">
-              <div class="sms-preview-nav__item active">Dashboard</div>
-              <div class="sms-preview-nav__item">Users</div>
-              <div class="sms-preview-nav__item">Settings</div>
+  <!-- ═══ RIGHT: Live Preview ════════════════════════════════════ -->
+  <div class="col-xl-4 col-lg-5">
+    <div class="sms-preview-sticky">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-eye me-2 text-primary"></i>Live Preview</div>
+          <div class="card-options">
+            <span class="badge bg-success-lt" id="previewChangedBadge" style="display:none;">
+              <i class="bi bi-circle-fill me-1" style="font-size:7px;"></i>Changed
+            </span>
+          </div>
+        </div>
+
+        <!-- Preview viewport — simulates real UI -->
+        <div class="sms-preview-viewport" id="previewViewport">
+
+          <!-- Simulated sidebar -->
+          <div class="sms-pv-sidebar" id="pvSidebar">
+            <div class="sms-pv-brand">
+              <span class="sms-pv-brand-icon"><i class="bi bi-recycle"></i></span>
+              <span class="sms-pv-brand-name">SMS</span>
+            </div>
+            <div class="sms-pv-nav">
+              <div class="sms-pv-nav-item active"><i class="bi bi-speedometer2"></i><span>Dashboard</span></div>
+              <div class="sms-pv-nav-item"><i class="bi bi-people-fill"></i><span>Users</span></div>
+              <div class="sms-pv-nav-item"><i class="bi bi-gear-fill"></i><span>Settings</span></div>
+              <div class="sms-pv-nav-item"><i class="bi bi-shield-fill"></i><span>Roles</span></div>
             </div>
           </div>
-          <div class="sms-preview-card mb-2" id="previewCard">
-            <div class="sms-preview-card__header">
-              <span>Active Users</span>
-              <span class="sms-preview-badge">+12%</span>
+
+          <!-- Simulated main area -->
+          <div class="sms-pv-main">
+            <!-- Header bar -->
+            <div class="sms-pv-header" id="pvHeader">
+              <span class="sms-pv-header-title">Dashboard</span>
+              <span class="sms-pv-avatar" id="pvAvatar">A</span>
             </div>
-            <div class="sms-preview-card__value" id="previewValue">1,247</div>
+            <!-- Content -->
+            <div class="sms-pv-content">
+              <!-- Stat card -->
+              <div class="sms-pv-card" id="pvCard">
+                <div class="sms-pv-card-top">
+                  <span class="sms-pv-card-label">Active Users</span>
+                  <span class="sms-pv-badge" id="pvBadge">+12%</span>
+                </div>
+                <div class="sms-pv-card-val" id="pvVal">1,247</div>
+                <div class="sms-pv-bar"><div class="sms-pv-bar-fill" id="pvBar"></div></div>
+              </div>
+              <!-- Buttons -->
+              <div class="d-flex gap-1 mt-2">
+                <button class="sms-pv-btn sms-pv-btn--primary" id="pvBtnPrimary">Save</button>
+                <button class="sms-pv-btn sms-pv-btn--outline">Cancel</button>
+              </div>
+              <!-- Font sample -->
+              <div class="sms-pv-font-sample" id="pvFontSample">
+                <div class="sms-pv-font-label">Font size</div>
+                <div class="sms-pv-font-text" id="pvFontText">The quick brown fox</div>
+              </div>
+              <!-- DateTime sample -->
+              <div class="sms-pv-datetime" id="pvDatetime"></div>
+            </div>
           </div>
-          <div class="d-flex gap-2">
-            <button class="sms-preview-btn sms-preview-btn--primary" id="previewBtnPrimary">
-              <%- t('btn.save') %>
-            </button>
-            <button class="sms-preview-btn sms-preview-btn--outline">
-              <%- t('btn.cancel') %>
-            </button>
-          </div>
+
+        </div><!-- /viewport -->
+
+        <div class="card-footer text-muted" style="font-size:11px;">
+          <i class="bi bi-info-circle me-1"></i>Preview updates live as you change settings
         </div>
       </div>
     </div>
@@ -214,8 +306,7 @@ var timezones = [
   <button type="button" id="btnSettingsReset" class="btn btn-outline-secondary">
     <i class="bi bi-arrow-clockwise me-1"></i><%- t('settings.reset') %>
   </button>
-  <button type="button" id="btnSettingsSave" class="btn btn-primary"
-          data-loading="<%- t('btn.saving') %>">
+  <button type="button" id="btnSettingsSave" class="btn btn-primary">
     <i class="bi bi-floppy me-1"></i><%- t('settings.save') %>
   </button>
 </div>

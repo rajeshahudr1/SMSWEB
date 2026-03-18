@@ -137,3 +137,10 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+/.idea/.gitignore
+/.idea/encodings.xml
+/.idea/modules.xml
+/.idea/php.xml
+/.idea/SMSWEB.iml
+/SMSWEB.zip
+/.idea/vcs.xml

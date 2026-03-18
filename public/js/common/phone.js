@@ -149,17 +149,26 @@ window.SMS_Phone = (function ($) {
             $sel.append(opt);
         });
 
-        // Init Select2 on dial code dropdown
+        // Init Select2 on dial code dropdown — show ONLY "+91" in button, full text in dropdown
         try {
             if ($sel.data('select2')) $sel.select2('destroy');
             $sel.select2({
-                theme:          'bootstrap-5',
-                width:          '100%',
-                allowClear:     false,
-                dropdownParent: $('body'),
+                theme:             'bootstrap-5',
+                width:             '100%',
+                allowClear:        false,
+                dropdownParent:    $('body'),
+                dropdownCssClass:  'sms-phone-code-drop',
+                /* Selection box: just the code "+91" */
+                templateSelection: function (d) {
+                    if (!d.id) return d.text;
+                    var m = String(d.text).match(/\+\d+/);
+                    var code = m ? m[0] : d.text;
+                    return $('<span style="font-weight:700;font-family:monospace;letter-spacing:.5px;">' + code + '</span>');
+                },
+                /* Dropdown list: "IN  +91" for easy search */
                 templateResult: function (d) {
                     if (!d.id) return d.text;
-                    return $('<span style="font-family:monospace">' + d.text + '</span>');
+                    return $('<span style="font-family:monospace;font-size:12.5px;">' + d.text + '</span>');
                 },
             });
         } catch (e) {}
@@ -203,6 +212,8 @@ window.SMS_Phone = (function ($) {
         }
 
         $inp.val(initNumber);
+        /* Set initial maxlength based on parsed code */
+        $inp.attr('maxlength', DIGIT_RULES[initCode] || 15);
 
         /* Load countries (with cache) */
         function setup(countries) {
@@ -232,11 +243,21 @@ window.SMS_Phone = (function ($) {
             $hidden.val(num ? (code + num) : '').trigger('change');
         }
 
-        // Use Select2 event for code change
-        $sel.on('select2:select select2:unselect change', _updateHidden);
+        $sel.on('select2:select select2:unselect change', function () {
+            /* Update maxlength based on selected country */
+            var code   = $sel.val() || '';
+            var maxLen = DIGIT_RULES[code] || 15;
+            $inp.attr('maxlength', maxLen);
+            /* Trim if current value exceeds new limit */
+            var cur = $inp.val().replace(/\D/g, '');
+            if (cur.length > maxLen) $inp.val(cur.slice(0, maxLen));
+            _updateHidden();
+        });
         $inp.on('input', function () {
-            // Allow digits only
-            var v = $(this).val().replace(/\D/g, '');
+            // Allow digits only, enforce maxlength
+            var code   = $sel.val() || '';
+            var maxLen = DIGIT_RULES[code] || 15;
+            var v = $(this).val().replace(/\D/g, '').slice(0, maxLen);
             $(this).val(v);
             _updateHidden();
         });
