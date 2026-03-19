@@ -1,110 +1,228 @@
 <%
-var m = menu || null;
-var isEdit = !!m;
-var tablerIcons = ['ti-home','ti-users','ti-shield-lock','ti-key','ti-settings','ti-car','ti-box','ti-file-description','ti-gavel','ti-layout-dashboard','ti-menu-2','ti-adjustments','ti-user-circle','ti-building','ti-chart-bar','ti-report','ti-tools','ti-recycle','ti-weight','ti-certificate','ti-map-pin'];
+/* ─────────────────────────────────────────────────────
+   menus/form.ejs  — rendered as partial inside offcanvas
+   Called for both Add and Edit.
+   NOTE: No <script> block here — jQuery 4 does NOT execute
+   inline scripts inserted via .html(). All JS init is done
+   in menus.js → smsMenuFormInit() called after .html().
+───────────────────────────────────────────────────── */
+var m    = menu || null;
+var isE  = !!m;
+var preP = preselectedParent || null;
+
+// Determine selected parent id
+var selParent = isE ? (m.parent_id || '') : (preP ? preP.id : '');
+
+// Determine current level
+var curLevel = 1;
+if (preP)           curLevel = (preP.level || 1) + 1;
+if (isE && m.level) curLevel = m.level;
+
+// Level badge colour
+var LCOLORS = ['_bl1','_bl2','_bl3','_bl4','_bl5'];
+var LNAMES  = ['Main menu','Sub-menu','Child menu','L4 menu','L5 menu'];
+var lc = LCOLORS[Math.min(curLevel,5)-1] || '_bl5';
+var ln = LNAMES[Math.min(curLevel,5)-1]  || ('Level ' + curLevel);
+
+// Sort order: for add show next computed value, for edit show saved value
+var sortVal    = isE ? (m.sort_order || '') : (nextSortOrder || 1);
+var takenList  = (typeof takenOrders !== 'undefined' && Array.isArray(takenOrders))
+                 ? takenOrders.filter(function(n){ return n > 0; })
+                 : [];
+var takenStr   = takenList.length ? takenList.join(', ') : 'none';
+/* currentPanel = 'b2b' or 'b2c' — pre-selects the Panel dropdown */
+var curPanel   = (typeof currentPanel !== 'undefined') ? currentPanel : 'b2b';
+
+// Icon value — strip leading "ti " if admin previously saved with prefix
+var iconVal = '';
+if (isE && m.icon) {
+    iconVal = m.icon.replace(/^bi\s+/, '').replace(/^ti\s+/, '');
+}
+
+// Tabler icons available in picker
+var ICONS = [
+    'house-door','people','shield-lock','key','gear','car-front','box',
+    'file-text','briefcase','layout-wtf','list','sliders',
+    'person-circle','building','bar-chart','clipboard-data','tools','recycle',
+    'speedometer','patch-check','geo-alt','truck','box-seam','cash-coin',
+    'clipboard','database','stack','tag','bell','calendar',
+    'pie-chart','lock','envelope','telephone','star','cart',
+    'flag','gift','heart','info-circle','list-ul','pencil',
+    'plus','search','send','trash3','upload','speedometer2',
+    'file','folder','printer','download','arrow-clockwise','box-arrow-right',
+    'box-arrow-in-right','eye','eye-slash','pencil-square','copy','link-45deg','globe'
+];
 %>
-<form id="frmMenu" method="POST"
-      action="<%- isEdit ? BASE_URL + '/menus/' + m.uuid : BASE_URL + '/menus' %>"
-      data-uuid="<%- isEdit ? m.uuid : '' %>">
+
+<form id="frmMenu" data-uuid="<%- isE ? m.uuid : '' %>">
+
+  <!-- Level info bar -->
+  <div class="mb-3 px-3 py-2 rounded bg-body-secondary border d-flex align-items-center gap-3" id="lvlBar">
+    <span class="badge <%- lc %> rounded px-3 py-1" style="font-size:13px;" id="lvlBadge">
+      L<span id="lvlNum"><%- curLevel %></span>
+    </span>
+    <div>
+      <div class="fw-medium" style="font-size:13px;" id="lvlName"><%- ln %></div>
+      <% if (preP) { %>
+      <div class="text-muted" style="font-size:11.5px;">
+        <i class="bi bi-arrow-return-right me-1"></i>Inside: <strong><%- preP.title %></strong>
+      </div>
+      <% } %>
+    </div>
+  </div>
 
   <div class="row g-3">
 
     <!-- Title -->
     <div class="col-12">
-      <label class="form-label">Menu Title <span class="text-danger">*</span></label>
-      <input type="text" name="title" class="form-control"
-             value="<%- isEdit ? (m.title||'') : '' %>"
-             placeholder="e.g. Vehicle Intake" required/>
+      <label class="form-label fw-medium">Title <span class="text-danger">*</span></label>
+      <input type="text" name="title" class="form-control" required autofocus
+             value="<%- isE ? (m.title||'') : '' %>"
+             placeholder="e.g. Dashboard, Vehicle Intake…"/>
     </div>
 
     <!-- Icon -->
     <div class="col-12">
-      <label class="form-label">Icon <span class="text-danger">*</span></label>
+      <label class="form-label fw-medium">Icon <small class="text-muted fw-normal">(Bootstrap icon name, e.g. house-door)</small></label>
       <div class="input-group">
-        <span class="input-group-text" id="iconPreview">
-          <i class="ti <%- isEdit ? (m.icon||'ti-circle') : 'ti-circle' %>" id="iconPreviewI"></i>
+        <!-- Preview -->
+        <span class="input-group-text" id="iconPreviewWrap" style="min-width:48px;justify-content:center;">
+          <i class="bi <%- iconVal ? iconVal : 'circle' %>" id="iconPrev"
+             style="font-size:22px;color:var(--tblr-primary);"></i>
         </span>
-        <input type="text" name="icon" id="iconInput" class="form-control"
-               value="<%- isEdit ? (m.icon||'') : '' %>"
-               placeholder="bi bi-house-door-fill (Tabler icon class)"/>
-      </div>
-      <div class="d-flex flex-wrap gap-1 mt-2">
-        <% tablerIcons.forEach(function(ic){ %>
-        <button type="button" class="btn btn-xs btn-outline-secondary icon-pick p-1" data-icon="<%- ic %>" title="<%- ic %>">
-          <i class="ti <%- ic %>"></i>
+        <!-- Text input -->
+        <input type="text" name="icon" id="iconInp" class="form-control"
+               value="<%- iconVal %>"
+               placeholder="ti-home  (type or pick below)"/>
+        <!-- Toggle grid button -->
+        <button type="button" class="btn btn-outline-secondary" id="btnIconGrid"
+                title="Browse all icons">
+          <i class="bi bi-grid-3x3-gap"></i>
         </button>
-        <% }) %>
+      </div>
+      <!-- Icon picker grid — hidden by default, toggled by btnIconGrid -->
+      <div id="iconGrid" class="mt-2 p-2 border rounded bg-body"
+           style="display:none;max-height:160px;overflow-y:auto;">
+        <div class="d-flex flex-wrap gap-1" id="iconGridInner">
+          <% ICONS.forEach(function(ic){ %>
+          <button type="button" class="btn btn-sm btn-outline-secondary icon-pick p-1"
+                  data-icon="<%- ic %>" title="<%- ic %>"
+                  style="min-width:36px;min-height:36px;">
+            <i class="bi bi-<%- ic %>" style="font-size:17px;"></i>
+          </button>
+          <% }) %>
+        </div>
       </div>
     </div>
 
     <!-- Route path -->
     <div class="col-12">
-      <label class="form-label">Route Path</label>
+      <label class="form-label fw-medium">Route Path</label>
       <input type="text" name="route_path" class="form-control"
-             value="<%- isEdit ? (m.route_path||'') : '' %>"
-             placeholder="/vehicle/intake (leave blank for group headers)"/>
+             value="<%- isE ? (m.route_path||'') : '' %>"
+             placeholder="/dashboard  (blank = group header with no link)"/>
+      <div class="form-hint">Leave blank if this is a group header with no link.</div>
     </div>
 
-    <!-- Parent -->
-    <div class="col-sm-6">
-      <label class="form-label">Parent Menu</label>
-      <select name="parent_id" class="form-select select2">
-        <option value="">— Top Level —</option>
-        <% if (typeof allMenus !== 'undefined') { allMenus.filter(function(x){ return x.level <= 2 && (!isEdit || x.id !== m.id); }).forEach(function(mn){ %>
-        <option value="<%- mn.id %>" <%- isEdit && m.parent_id == mn.id ? 'selected':'' %>>
-          <%- '  '.repeat((mn.level||1)-1) %><%- mn.title %>
+    <!-- Parent menu -->
+    <div class="col-sm-7">
+      <label class="form-label fw-medium">Parent Menu</label>
+      <select name="parent_id" id="parentSel" class="form-select form-select-sm">
+        <option value="">— None (Top Level Main Menu) —</option>
+        <% if (typeof allMenus !== 'undefined' && Array.isArray(allMenus)) {
+          allMenus.forEach(function(mn) {
+            if (isE && mn.id === m.id) return; // skip self
+            var indent = '';
+            for (var i = 1; i < (mn.level||1); i++) indent += '　';
+            var isSel = String(mn.id) === String(selParent);
+        %>
+        <option value="<%- mn.id %>" <%- isSel ? 'selected' : '' %> data-level="<%- mn.level %>">
+          <%- indent %><%- mn.title %> (L<%- mn.level %>)
         </option>
-        <% }) } %>
+        <% }); } %>
       </select>
     </div>
 
-    <!-- Panel type -->
-    <div class="col-sm-6">
-      <label class="form-label">Panel Type</label>
-      <select name="panel_type" class="form-select">
-        <option value="b2b"  <%- (!isEdit || m.panel_type==='b2b')  ? 'selected':'' %>>B2B</option>
-        <option value="b2c"  <%- isEdit && m.panel_type==='b2c'  ? 'selected':'' %>>B2C</option>
-        <option value="both" <%- isEdit && m.panel_type==='both' ? 'selected':'' %>>Both</option>
+    <!-- Panel type — pre-selected from active tab (B2B or B2C) -->
+    <div class="col-sm-5">
+      <label class="form-label fw-medium">Panel</label>
+      <select name="panel_type" class="form-select form-select-sm">
+        <option value="b2b"  <%- (isE ? m.panel_type==='b2b'  : curPanel==='b2b')  ? 'selected':'' %>>B2B Only</option>
+        <option value="b2c"  <%- (isE ? m.panel_type==='b2c'  : curPanel==='b2c')  ? 'selected':'' %>>B2C Only</option>
+        <option value="both" <%- (isE ? m.panel_type==='both' : false)              ? 'selected':'' %>>Both Panels</option>
       </select>
+      <div class="form-hint">
+        Active tab: <span class="badge <%- curPanel==='b2b' ? 'bg-primary-lt text-primary' : 'bg-success-lt text-success' %>">
+          <%- curPanel.toUpperCase() %>
+        </span>
+      </div>
     </div>
 
     <!-- Permission key -->
     <div class="col-12">
-      <label class="form-label">Permission Key</label>
-      <input type="text" name="permission_key" class="form-control" list="permKeyList"
-             value="<%- isEdit ? (m.permission_key||'') : '' %>"
-             placeholder="e.g. view_vehicle_intake (blank = always visible)"/>
-      <datalist id="permKeyList">
-        <% if (typeof permGroups !== 'undefined') { Object.keys(permGroups).forEach(function(g){ permGroups[g].forEach(function(p){ %>
-        <option value="<%- p.name %>">
-        <% }) }) } %>
+      <label class="form-label fw-medium">Permission Key</label>
+      <input type="text" name="permission_key" class="form-control form-control-sm"
+             list="permList"
+             value="<%- isE ? (m.permission_key||'') : '' %>"
+             placeholder="e.g. view_vehicles  (blank = visible to all logged-in users)"/>
+      <datalist id="permList">
+        <%
+          /* permGroups = array of group-name strings from API e.g. ['Users','Roles'] */
+          if (Array.isArray(permGroups)) {
+            permGroups.forEach(function(name) { %>
+        <option value="<%- name %>">
+        <%  });
+          }
+        %>
       </datalist>
-      <div class="form-hint">Leave blank to show to all logged-in users.</div>
+      <div class="form-hint">Leave blank = always visible to logged-in users.</div>
     </div>
 
     <!-- Sort order -->
-    <div class="col-sm-6">
-      <label class="form-label">Sort Order</label>
-      <input type="number" name="sort_order" class="form-control"
-             value="<%- isEdit ? (m.sort_order||10) : 10 %>" min="0" step="10"/>
+    <div class="col-sm-5">
+      <label class="form-label fw-medium">Sort Order</label>
+      <input type="number" name="sort_order" id="sortOrderInp"
+             class="form-control form-control-sm"
+             value="<%- sortVal %>" min="1" step="1"
+             placeholder="Auto"
+             data-taken="<%- JSON.stringify(takenList) %>"/>
+      <div class="form-hint">
+        Each level starts from 1. Lower = appears first.
+        <% if (takenList.length) { %>
+        <br><span class="text-warning" style="font-size:11px;">
+          <i class="bi bi-exclamation-triangle"></i>
+          Already used at this level: <strong><%- takenStr %></strong>
+        </span>
+        <% } %>
+      </div>
+      <div class="invalid-feedback" id="sortOrderError"></div>
     </div>
 
-    <!-- Visibility -->
-    <div class="col-sm-6 d-flex align-items-end">
+    <!-- Toggles -->
+    <div class="col-sm-7 d-flex flex-column justify-content-end gap-2 pb-1">
       <label class="form-check form-switch mb-0">
-        <input type="checkbox" class="form-check-input" name="is_visible" value="1"
-               <%- (!isEdit || parseInt(m.is_visible)) ? 'checked':'' %>/>
-        <span class="form-check-label">Visible in sidebar</span>
+        <input class="form-check-input" type="checkbox" name="is_visible" value="1"
+               <%- (!isE || parseInt(m.is_visible)) ? 'checked':'' %>/>
+        <span class="form-check-label" style="font-size:13.5px;">Visible in sidebar</span>
+      </label>
+      <label class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" name="open_in_new_tab" value="1"
+               <%- isE && parseInt(m.open_in_new_tab) ? 'checked':'' %>/>
+        <span class="form-check-label" style="font-size:13.5px;">Open in new tab</span>
       </label>
     </div>
 
-  </div>
+  </div><!-- /row -->
 
-  <div class="mt-4 d-flex justify-content-end gap-2">
-    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">Cancel</button>
-    <button type="submit" class="btn btn-primary">
-      <i class="bi bi-floppy me-1"></i>
-      <%- isEdit ? 'Update Menu' : 'Create Menu' %>
+  <hr class="mt-3 mb-3"/>
+
+  <div class="d-flex justify-content-end gap-2">
+    <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="offcanvas">Cancel</button>
+    <button type="submit" class="btn btn-primary" id="frmSave">
+      <i class="bi bi-floppy me-1"></i><%- isE ? 'Update Menu' : 'Create Menu' %>
     </button>
   </div>
+
 </form>
+<!-- NO inline <script> — jQuery 4 does not execute scripts inserted via .html()
+     All form JS initialisation is done by smsMenuFormInit() in menus.js         -->

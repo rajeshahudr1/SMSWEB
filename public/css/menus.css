@@ -1,0 +1,250 @@
+/* ================================================================
+   menus.css  —  SMS Menu Manager styles
+   Place at: sms-web/public/css/menus.css
+================================================================ */
+
+/* ── Font — explicit system stack ── */
+.sms-hint, .sms-guide, .sms-guide *,
+.sms-row, .sms-ttl, #modalSort *, #modalMove *,
+#modalDelete *, #ocMenu *, .sort-item, #sortList, #moveTarget {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* ── Hint strip ── */
+.sms-hint { font-size: 12px; color: var(--tblr-text-muted); }
+
+/* ── Tree list ── */
+.sms-ul { list-style: none; padding: 0; margin: 0; }
+.sms-ul .sms-ul {
+  padding-left: 22px;
+  margin-left: 10px;
+  margin-top: 2px;
+  border-left: 2px solid var(--tblr-border-color);
+}
+.sms-ul .sms-ul > .sms-li::before {
+  content: '';
+  position: absolute;
+  left: -12px; top: 20px;
+  width: 10px; height: 1px;
+  background: var(--tblr-border-color);
+}
+.sms-li { position: relative; margin-bottom: 3px; }
+
+/* ── Row ── */
+.sms-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--tblr-border-color);
+  background: var(--tblr-bg-surface);
+  min-height: 42px;
+  transition: background .1s, box-shadow .1s;
+}
+.sms-row:hover {
+  background: var(--tblr-bg-surface-secondary);
+  box-shadow: 0 1px 5px rgba(0,0,0,.06);
+}
+
+/* Level left-border accent */
+.sms-l1 > .sms-row { border-left: 3px solid #206bc4; }
+.sms-l2 > .sms-row { border-left: 3px solid #0ca678; }
+.sms-l3 > .sms-row { border-left: 3px solid #ae3ec9; }
+.sms-l4 > .sms-row { border-left: 3px solid #f76707; }
+.sms-l5 > .sms-row { border-left: 3px solid #d63939; }
+
+/* Drag states */
+.sms-row.is-dragging { opacity: .25; }
+.sms-row.drag-over {
+  outline: 2px dashed var(--tblr-primary);
+  background: rgba(var(--tblr-primary-rgb), .05);
+}
+
+/* ── Drag grip handle ── */
+.sms-grip {
+  cursor: grab;
+  color: var(--tblr-text-muted);
+  font-size: 16px;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 3px;
+}
+.sms-grip:hover  { background: var(--tblr-border-color); }
+.sms-grip:active { cursor: grabbing; }
+
+/* ── Expand / collapse toggle button ──
+   NO data-bs-toggle="tooltip" — Bootstrap intercepts the click event on
+   any element with that attribute. Use native title="" only. */
+.sms-tog {
+  background: none;
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 4px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--tblr-text-muted);
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: background .1s;
+}
+.sms-tog:hover { background: var(--tblr-border-color); }
+
+/* Spacer where toggle would be (leaf nodes) */
+.sms-sp { width: 22px; flex-shrink: 0; }
+
+/* ── Menu icon ── */
+.sms-ico {
+  font-size: 17px;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  color: var(--tblr-primary);
+}
+
+/* ── Row title ── */
+.sms-ttl {
+  font-weight: 500;
+  font-size: 13.5px;
+  flex-grow: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--tblr-body-color);
+}
+
+/* ── Route path chip ── */
+.sms-path {
+  font-family: SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace !important;
+  font-size: 10.5px;
+  color: var(--tblr-text-muted);
+  background: var(--tblr-bg-surface-secondary);
+  border: 1px solid var(--tblr-border-color);
+  padding: 1px 5px;
+  border-radius: 4px;
+  max-width: 110px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Permission key chip ── */
+.sms-perm {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 10px;
+  background: rgba(248,152,34,.1);
+  color: #c87800;
+  border: 1px solid rgba(248,152,34,.2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+  max-width: 90px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Hidden badge ── */
+.sms-hid {
+  font-size: 10px;
+  color: var(--tblr-text-muted);
+  background: rgba(0,0,0,.06);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* Hidden row — dimmed */
+.sms-row.is-hidden { opacity: .45; }
+
+/* ── Action button group ── */
+.sms-acts {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+/* Compact size override for Tabler ghost buttons inside tree rows */
+.sms-acts .btn {
+  padding: 3px 6px;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 5px;
+}
+
+/* ── Children container — collapsible ── */
+.sms-kids.collapsed { display: none; }
+
+/* ── Level badge pill ── */
+.sms-lbadge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  min-width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.sms-lbadge-1 { background: rgba(32,107,196,.12); color: #206bc4; }
+.sms-lbadge-2 { background: rgba(12,166,120,.12); color: #0ca678; }
+.sms-lbadge-3 { background: rgba(174,62,201,.12); color: #ae3ec9; }
+.sms-lbadge-4 { background: rgba(247,103,7,.12);  color: #f76707; }
+.sms-lbadge-5 { background: rgba(214,57,57,.12);  color: #d63939; }
+
+/* ── Sort modal drag rows ── */
+.sort-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--tblr-bg-surface);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: grab;
+  font-size: 13px;
+  transition: box-shadow .1s;
+}
+.sort-item:hover  { box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.sort-item:active { cursor: grabbing; }
+.sort-item.si-over {
+  outline: 2px dashed var(--tblr-primary);
+  background: rgba(var(--tblr-primary-rgb), .04);
+}
+
+/* Sort number input */
+.sort-num {
+  width: 54px;
+  padding: 3px 7px;
+  font-size: 12px;
+  text-align: center;
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 4px;
+  background: var(--tblr-bg-surface);
+  color: var(--tblr-body-color);
+}
+
+/* ── Help panel icon badges ── */
+.sms-abtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.sms-abtn-green  { background: rgba(47,179,135,.13); color: #2fb387; }
+.sms-abtn-blue   { background: rgba(32,107,196,.13); color: #206bc4; }
+.sms-abtn-violet { background: rgba(174,62,201,.13); color: #ae3ec9; }
+.sms-abtn-orange { background: rgba(248,152,34,.13); color: #f89822; }
+.sms-abtn-teal   { background: rgba(12,166,120,.13); color: #0ca678; }
+.sms-abtn-red    { background: rgba(214,57,57,.13);  color: #d63939; }
+
+/* ── Responsive ── */
+@media (max-width: 576px) {
+  .sms-path, .sms-perm    { display: none !important; }
+  .sms-ul .sms-ul         { padding-left: 14px; margin-left: 6px; }
+  .sms-ttl                { font-size: 12.5px; }
+  .sms-acts .btn          { padding: 3px 5px; font-size: 12px; }
+}

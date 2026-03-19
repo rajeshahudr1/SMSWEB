@@ -1,90 +1,293 @@
 <%- layout('../layouts/main') %>
 
+<!-- ── Page header — standalone (no breadcrumbs in controller) ── -->
 <div class="page-header d-print-none mb-3">
   <div class="row align-items-center g-2">
     <div class="col">
       <h2 class="page-title mb-0">
-        <i class="bi bi-list me-2 text-primary"></i>Menu Manager
-        <span class="badge bg-danger-lt ms-2" style="font-size:11px;">Super Admin</span>
+        <i class="bi bi-diagram-3 me-2 text-primary"></i>Menu Manager
       </h2>
       <ol class="breadcrumb mt-1">
-        <li class="breadcrumb-item"><a href="/dashboard"><i class="bi bi-house-door-fill me-1"></i>Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
         <li class="breadcrumb-item active">Menu Manager</li>
       </ol>
     </div>
-    <div class="col-auto d-flex gap-2">
-      <div class="btn-group btn-group-sm me-2">
-        <button class="btn btn-outline-secondary active" data-panel="b2b" id="panelB2B">B2B</button>
-        <button class="btn btn-outline-secondary" data-panel="b2c" id="panelB2C">B2C</button>
+    <div class="col-auto d-flex flex-wrap gap-2 align-items-center">
+      <!-- B2B / B2C tab switch -->
+      <div class="btn-group btn-group-sm" id="panelGroup">
+        <button class="btn btn-primary active" data-panel="b2b">
+          <i class="bi bi-building me-1"></i>B2B
+        </button>
+        <button class="btn btn-outline-primary" data-panel="b2c">
+          <i class="bi bi-person me-1"></i>B2C
+        </button>
       </div>
-      <% if (can('add_menus')) { %>
-      <button class="btn btn-primary" id="btnAddMenu">
-        <i class="bi bi-plus-lg me-1"></i>
-        <span class="d-none d-sm-inline">Add Menu</span>
+      <!-- Expand / Collapse — NO data-bs-toggle so Bootstrap doesn't intercept click -->
+      <button class="btn btn-sm btn-outline-secondary" id="btnExpand" title="Expand all">
+        <i class="bi bi-chevron-bar-down"></i>
       </button>
-      <% } %>
+      <button class="btn btn-sm btn-outline-secondary" id="btnCollapse" title="Collapse all">
+        <i class="bi bi-chevron-bar-up"></i>
+      </button>
     </div>
   </div>
 </div>
 
-<div class="row row-cards">
+<!-- ── Main grid ── -->
+<div class="row g-3 align-items-start">
 
-  <!-- Menu Tree -->
-  <div class="col-md-7">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-circle me-2 text-primary"></i>Menu Tree</div>
-        <div class="card-options">
-          <span class="text-secondary small">Drag to reorder</span>
+  <!-- Tree column -->
+  <div class="col-xl-9 col-lg-8">
+    <div class="card shadow-sm">
+
+      <div class="card-header py-2">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-diagram-2 me-2 text-primary"></i>Menu Structure
+        </h3>
+        <div class="card-options gap-2">
+          <!-- Stats — shown after tree loads -->
+          <span id="statsBar" class="d-flex align-items-center gap-2" style="display:none;">
+            <span class="badge bg-secondary-lt rounded-pill" id="sBadgeTotal"></span>
+            <span class="badge bg-success-lt  rounded-pill" id="sBadgeVisible"></span>
+            <span class="badge bg-warning-lt  rounded-pill" id="sBadgeHidden" style="display:none;"></span>
+          </span>
+          <div class="vr d-none" id="statsVr"></div>
+          <!-- Sort top-level menus — always visible in card header -->
+          <button class="btn btn-sm btn-outline-secondary" id="btnSortMain"
+                  title="Sort / reorder main menus">
+            <i class="bi bi-sort-down-alt me-1"></i>Sort
+          </button>
+          <!-- Add main menu — always L1 -->
+          <button class="btn btn-sm btn-primary" id="btnAddMain"
+                  title="Add a new top-level main menu">
+            <i class="bi bi-plus-lg me-1"></i>Add Menu
+          </button>
         </div>
       </div>
-      <div class="card-body p-0">
-        <div id="menuTree" class="p-3">
-          <div class="text-center py-5 text-secondary">
-            <div class="spinner-border spinner-border-sm me-2 text-primary"></div>Loading...
-          </div>
-        </div>
+
+      <div class="px-3 py-2 bg-body-secondary border-top border-bottom sms-hint">
+        <i class="bi bi-grip-vertical"></i> Drag to reorder within same level
+        &nbsp;·&nbsp;
+        <i class="bi bi-plus-lg text-success"></i> Row <strong>+</strong> adds child inside
+        &nbsp;·&nbsp;
+        <i class="bi bi-arrows-move text-primary"></i> <strong>Move</strong> reparents anywhere
       </div>
+
+      <div class="card-body p-2" style="min-height:180px;">
+        <div id="treeLoading" class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…
+        </div>
+        <div id="treeRoot"></div>
+      </div>
+
     </div>
   </div>
 
-  <!-- Info panel -->
-  <div class="col-md-5">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-info-circle me-2"></i>Instructions</div>
+  <!-- Help column -->
+  <div class="col-xl-3 col-lg-4">
+
+    <!-- Level guide -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <h3 class="card-title" style="font-size:13px;">
+          <i class="bi bi-layers me-1 text-primary"></i>Level Guide
+        </h3>
       </div>
-      <div class="card-body">
-        <ul class="list-unstyled small text-secondary">
-          <li class="mb-2"><i class="bi bi-circle me-2 text-primary"></i>Drag items to reorder</li>
-          <li class="mb-2"><i class="bi bi-eye me-2 text-green"></i>Click eye icon to toggle visibility</li>
-          <li class="mb-2"><i class="bi bi-pencil me-2 text-orange"></i>Click edit to modify menu item</li>
-          <li class="mb-2"><i class="bi bi-trash3 me-2 text-danger"></i>Delete removes menu item</li>
-          <li class="mb-2"><i class="bi bi-lock me-2 text-secondary"></i>Permission key controls who sees the menu</li>
+      <div class="list-group list-group-flush sms-guide">
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-lbadge sms-lbadge-1">L1</span>
+          <div><div class="fw-medium" style="font-size:13px;">Main menu</div><small class="text-muted">Top-level group</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-lbadge sms-lbadge-2">L2</span>
+          <div><div class="fw-medium" style="font-size:13px;">Sub-menu</div><small class="text-muted">Inside main menu</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-lbadge sms-lbadge-3">L3</span>
+          <div><div class="fw-medium" style="font-size:13px;">Child menu</div><small class="text-muted">Inside sub-menu</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3 border-0">
+          <span class="sms-lbadge sms-lbadge-4">L4+</span>
+          <div><div class="fw-medium" style="font-size:13px;">Deep child</div><small class="text-muted">Unlimited nesting</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Button guide -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <h3 class="card-title" style="font-size:13px;">
+          <i class="bi bi-cursor me-1 text-primary"></i>Button Guide
+        </h3>
+      </div>
+      <div class="list-group list-group-flush sms-guide">
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-abtn sms-abtn-green"><i class="bi bi-plus-lg"></i></span>
+          <div><div class="fw-medium" style="font-size:12.5px;">Add child</div><small class="text-muted">Sub-menu inside this item</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-abtn sms-abtn-blue"><i class="bi bi-arrows-move"></i></span>
+          <div><div class="fw-medium" style="font-size:12.5px;">Move</div><small class="text-muted">Reparent to any level</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-abtn sms-abtn-violet"><i class="bi bi-sort-down-alt"></i></span>
+          <div><div class="fw-medium" style="font-size:12.5px;">Sort children</div><small class="text-muted">Reorder this item's children</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-abtn sms-abtn-orange"><i class="bi bi-pencil"></i></span>
+          <div><div class="fw-medium" style="font-size:12.5px;">Edit</div><small class="text-muted">Title, icon, route, permission</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3">
+          <span class="sms-abtn sms-abtn-teal"><i class="bi bi-eye"></i></span>
+          <div><div class="fw-medium" style="font-size:12.5px;">Visibility</div><small class="text-muted">Show/hide in sidebar</small></div>
+        </div>
+        <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3 border-0">
+          <span class="sms-abtn sms-abtn-red"><i class="bi bi-trash3"></i></span>
+          <div><div class="fw-medium" style="font-size:12.5px;">Delete</div><small class="text-muted">Remove + all sub-menus</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card shadow-sm" style="border-left:3px solid var(--tblr-primary)!important;">
+      <div class="card-body py-2 px-3 sms-guide">
+        <div class="fw-semibold text-primary mb-1" style="font-size:12.5px;">
+          <i class="bi bi-sort-up me-1"></i>Sorting Tips
+        </div>
+        <ul class="mb-0 ps-3 text-muted" style="font-size:12px;line-height:1.95;">
+          <li>Drag <i class="bi bi-grip-vertical"></i> to reorder within same parent</li>
+          <li>Row <strong>Sort</strong> button reorders that item's children</li>
+          <li>Top <strong>Sort</strong> button reorders main L1 menus</li>
+          <li>Each level has its own independent sort order</li>
         </ul>
-        <hr/>
-        <div class="small">
-          <div class="fw-semibold mb-1">Level indicators:</div>
-          <div class="d-flex flex-column gap-1">
-            <div><span class="badge bg-primary-lt me-1">L1</span> Group header (no link)</div>
-            <div><span class="badge bg-secondary-lt me-1">L2</span> Sub-menu item</div>
-            <div><span class="badge bg-light text-dark me-1">L3</span> Sub-child item</div>
-          </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════ Sort Modal ════════ -->
+<div class="modal fade" id="modalSort" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+    <div class="modal-content">
+      <div class="modal-header border-bottom py-3">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-sort-down-alt me-2 text-primary"></i>Sort Menu Items
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="mb-2 px-2 py-1 bg-body-secondary rounded border d-flex align-items-center gap-2"
+             style="font-size:12px;">
+          <i class="bi bi-arrow-return-right text-muted"></i>
+          Reordering children of: <strong id="sortParentName" class="ms-1"></strong>
         </div>
+        <p class="text-muted mb-2" style="font-size:11.5px;">
+          Drag rows up/down, or type numbers. Lower = appears first.
+        </p>
+        <div id="sortList" style="max-height:360px;overflow-y:auto;"></div>
+      </div>
+      <div class="modal-footer py-2 border-top">
+        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="btnSortSave">
+          <i class="bi bi-floppy me-1"></i>Save Order
+        </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Offcanvas form -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasMenu" style="width:440px;">
-  <div class="offcanvas-header border-bottom">
-    <h5 class="offcanvas-title" id="offcanvasTitle">Menu Item</h5>
+<!-- ════════ Move Modal ════════ -->
+<div class="modal fade" id="modalMove" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+    <div class="modal-content">
+      <div class="modal-header border-bottom py-3">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-arrows-move me-2 text-primary"></i>Move Menu Item
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="mb-3 px-3 py-2 rounded d-flex align-items-center gap-2"
+             style="background:rgba(32,107,196,.07);border:1px solid rgba(32,107,196,.2);">
+          <i class="bi bi-dot text-primary fs-4 flex-shrink-0"></i>
+          <div>
+            <div class="fw-semibold" id="moveItemName" style="font-size:13.5px;"></div>
+            <div class="text-muted" style="font-size:11.5px;">
+              Current parent: <span id="moveItemCurrent"></span>
+            </div>
+          </div>
+        </div>
+        <label class="form-label fw-medium mb-1">Move into</label>
+        <select id="moveTarget" class="form-select form-select-sm">
+          <option value="">— Top Level (becomes Main Menu L1) —</option>
+        </select>
+        <div class="mt-2 px-2 py-2 bg-body-secondary rounded border"
+             style="font-size:11.5px;color:var(--tblr-text-muted);">
+          <i class="bi bi-info-circle text-primary me-1"></i>
+          All children move with it. Levels recalculate automatically.
+          Self and descendants excluded from list.
+        </div>
+      </div>
+      <div class="modal-footer py-2 border-top">
+        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="btnMoveConfirm">
+          <i class="bi bi-check-lg me-1"></i>Confirm Move
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ Delete Confirm Modal ════════ -->
+<div class="modal fade" id="modalDelete" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-bottom py-3">
+        <h5 class="modal-title fw-semibold text-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <p class="mb-1" style="font-size:13.5px;">Delete <strong id="delItemName"></strong>?</p>
+        <div class="alert alert-warning py-2 mb-0 mt-2" style="font-size:12px;"
+             id="delHasKidsWarning">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          This will also delete all sub-menus inside it.
+        </div>
+        <p class="text-muted mt-2 mb-0" style="font-size:12px;">This cannot be undone.</p>
+      </div>
+      <div class="modal-footer py-2 border-top">
+        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="btnDeleteConfirm">
+          <i class="bi bi-trash3 me-1"></i>Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ Offcanvas: Add / Edit form ════════ -->
+<div class="offcanvas offcanvas-end shadow-lg" tabindex="-1" id="ocMenu"
+     style="width:min(520px,100vw);">
+  <div class="offcanvas-header border-bottom bg-body-secondary py-3">
+    <div>
+      <h5 class="offcanvas-title fw-semibold mb-0" id="ocTitle">Menu Item</h5>
+      <small class="text-muted d-block mt-1" id="ocSub"></small>
+    </div>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
   </div>
-  <div class="offcanvas-body" id="offcanvasBody">
-    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+  <div class="offcanvas-body p-3" id="ocBody">
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+    </div>
   </div>
 </div>
 
-<% block('scripts', '<script src="/js/pages/menus.js"></script>') %>
+<%
+/* Load menus.css then menus.js via the scripts block.
+   The layout only has a 'scripts' block (no 'styles' block),
+   so the link tag is injected there — valid in HTML5. */
+%>
+<% block('scripts', '<link rel="stylesheet" href="/css/menus.css"/><script src="/js/pages/menus.js"></script>') %>

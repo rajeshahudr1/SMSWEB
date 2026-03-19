@@ -73,8 +73,8 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
     <!-- User dropdown -->
     <div class="dropdown">
       <a href="#" class="sms-header__user" data-bs-toggle="dropdown">
-        <% if (user && user.profile_image) { %>
-        <span class="sms-header__avatar" style="background-image:url(<%- user.profile_image %>);background-size:cover;background-position:center;"></span>
+        <% if (user && (user.profile_image_url || user.profile_image)) { %>
+        <span class="sms-header__avatar" style="background-image:url(<%- user.profile_image_url || user.profile_image %>);background-size:cover;background-position:center;"></span>
         <% } else { %>
         <span class="sms-header__avatar sms-header__avatar--init">
           <%- user ? user.name.charAt(0).toUpperCase() : 'U' %>

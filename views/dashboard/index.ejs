@@ -107,8 +107,8 @@ var totalPerms   = s.total_permissions || 0;
     <div class="card h-100 sms-welcome-card">
       <div class="card-body d-flex align-items-center gap-4 flex-wrap p-4">
         <div class="sms-welcome-avatar">
-          <% if (user && user.profile_image) { %>
-          <img src="<%- user.profile_image %>" alt="avatar" class="w-100 h-100" style="object-fit:cover;border-radius:inherit;">
+          <% if (user && user.profile_image_url) { %>
+          <img src="<%- user.profile_image_url %>" alt="avatar" class="w-100 h-100" style="object-fit:cover;border-radius:inherit;">
           <% } else { %>
           <span class="sms-welcome-initial"><%- user ? user.name.charAt(0).toUpperCase() : 'A' %></span>
           <% } %>
@@ -218,8 +218,8 @@ var totalPerms   = s.total_permissions || 0;
             <tr>
               <td>
                 <div class="d-flex align-items-center gap-2">
-                  <% if (u.profile_image) { %>
-                  <span class="avatar avatar-sm" style="background-image:url(<%- u.profile_image %>)"></span>
+                  <% if (u.profile_image_url || u.profile_image) { %>
+                  <span class="avatar avatar-sm" style="background-image:url(<%- u.profile_image_url || u.profile_image %>)"></span>
                   <% } else { %>
                   <span class="avatar avatar-sm bg-primary-lt fw-bold" style="font-size:13px;">
                     <%- u.name.charAt(0).toUpperCase() %>
