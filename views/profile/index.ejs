@@ -2,11 +2,10 @@
 <%
 var p = profile || {};
 var isGoogleOnly    = p.auth_provider === 'google' && !p.password;
-var isOrgAdmin      = p.is_org_admin == 1;
-var isSuperAdmin    = p.is_super_admin == 1;
-/* Company user = has an org but is NOT the org admin and NOT super admin */
-var isCompanyUser   = !isSuperAdmin && !isOrgAdmin && !!p.organization_id;
-var showCompanyTab  = isOrgAdmin || isCompanyUser;
+var isOrgAdmin      = parseInt(p.is_org_admin) === 1;
+var isSuperAdmin    = parseInt(p.is_super_admin) === 1;
+/* Company tab: only super admin or org admin can see/edit company details */
+var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 %>
 
 <div class="row g-4">
@@ -53,24 +52,10 @@ var showCompanyTab  = isOrgAdmin || isCompanyUser;
           <span class="badge bg-primary-lt mb-1"><%- p.role_name %></span>
         <% } %>
         <br/>
-        <span class="badge <%- p.status==1 ? 'bg-success-lt' : 'bg-danger-lt' %>">
-          <span class="status-dot <%- p.status==1 ? 'bg-success' : 'bg-danger' %> me-1"></span>
-          <%- p.status==1 ? 'Active' : 'Inactive' %>
+        <span class="badge <%- parseInt(p.status)===1 ? 'bg-success-lt' : 'bg-danger-lt' %>">
+          <span class="status-dot <%- parseInt(p.status)===1 ? 'bg-success' : 'bg-danger' %> me-1"></span>
+          <%- parseInt(p.status)===1 ? 'Active' : 'Inactive' %>
         </span>
-      </div>
-
-      <!-- Stats row -->
-      <div class="card-footer p-0">
-        <div class="row g-0 text-center">
-          <div class="col-6 py-2 border-end">
-            <div class="fw-bold text-primary"><%- (p.panel_access||'').toUpperCase() || '—' %></div>
-            <div class="text-muted" style="font-size:11px;">Panel</div>
-          </div>
-          <div class="col-6 py-2">
-            <div class="fw-bold text-primary"><%- isOrgAdmin ? 'Admin' : 'User' %></div>
-            <div class="text-muted" style="font-size:11px;">Role</div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -140,7 +125,6 @@ var showCompanyTab  = isOrgAdmin || isCompanyUser;
             <a href="#tab-company" class="sms-profile-tab" data-sms-tab="tab-company">
               <span class="sms-profile-tab__icon"><i class="bi bi-building-fill"></i></span>
               <span class="sms-profile-tab__label">Company</span>
-              <% if (isCompanyUser) { %><span class="sms-profile-tab__badge">View</span><% } %>
             </a>
           <% } %>
           <a href="#tab-password" class="sms-profile-tab" data-sms-tab="tab-password">
@@ -295,91 +279,37 @@ var showCompanyTab  = isOrgAdmin || isCompanyUser;
         <% if (showCompanyTab) { %>
           <div class="tab-pane" id="tab-company">
 
-            <% if (isOrgAdmin) { %>
               <div class="sms-tab-notice sms-tab-notice--info mb-4">
                 <i class="bi bi-info-circle-fill"></i>
-                <span>Updating company details here will sync to your organisation profile.</span>
+                <span>Company location (country, state, city, address, ZIP) is taken from your <strong>Profile Info</strong> tab automatically.</span>
               </div>
-            <% } else { %>
-              <div class="sms-tab-notice sms-tab-notice--view mb-4">
-                <i class="bi bi-eye-fill"></i>
-                <span>You can view your company information. Contact your administrator to make changes.</span>
-              </div>
-            <% } %>
 
-            <!-- READ-ONLY VIEW for company users -->
-            <% if (isCompanyUser) { %>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <div class="sms-info-row">
-                    <div class="sms-info-row__label"><i class="bi bi-building me-2"></i>Company Name</div>
-                    <div class="sms-info-row__value"><%- H.escape(p.company_name||'—') %></div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="sms-info-row">
-                    <div class="sms-info-row__label"><i class="bi bi-hash me-2"></i>Registration Number</div>
-                    <div class="sms-info-row__value"><%- H.escape(p.registration_number||'—') %></div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="sms-info-row">
-                    <div class="sms-info-row__label"><i class="bi bi-telephone me-2"></i>Company Phone</div>
-                    <div class="sms-info-row__value"><%- H.escape(p.org_phone||'—') %></div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="sms-info-row">
-                    <div class="sms-info-row__label"><i class="bi bi-globe me-2"></i>Website</div>
-                    <div class="sms-info-row__value">
-                      <% if (p.org_website) { %>
-                        <a href="<%- H.escape(p.org_website) %>" target="_blank" class="text-primary">
-                          <%- H.escape(p.org_website) %>
-                        </a>
-                      <% } else { %>—<% } %>
-                    </div>
-                  </div>
-                </div>
-                <% if (p.address_proof_url) { %>
-                  <div class="col-12">
-                    <div class="sms-info-row">
-                      <div class="sms-info-row__label"><i class="bi bi-file-earmark-check me-2"></i>Address Proof</div>
-                      <div class="sms-info-row__value">
-                        <a href="<%- p.address_proof_url %>" target="_blank" class="btn btn-sm btn-outline-success">
-                          <i class="bi bi-eye me-1"></i>View Document
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                <% } %>
-              </div>
-            <% } else { %>
-              <!-- EDITABLE FORM for org admins -->
+              <!-- EDITABLE FORM for super admin / org admin -->
               <form id="frmCompany" novalidate autocomplete="off">
                 <div class="row g-3">
 
                   <div class="col-md-6">
-                    <label class="form-label required">Company Name</label>
+                    <label class="form-label fw-medium">Company Name <span class="text-danger">*</span></label>
                     <input type="text" name="company_name" id="cName" class="form-control"
                            value="<%- H.escape(p.company_name||'') %>" required/>
                     <div class="invalid-feedback" id="err-cName"></div>
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label">Registration Number</label>
+                    <label class="form-label fw-medium">Registration Number</label>
                     <input type="text" name="registration_number" class="form-control"
                            value="<%- H.escape(p.registration_number||'') %>"/>
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label">Company Phone</label>
+                    <label class="form-label fw-medium">Company Phone</label>
                     <div id="orgPhoneWrap"></div>
                     <input type="hidden" name="org_phone" id="orgPhone"
                            value="<%- H.escape(p.org_phone||'') %>"/>
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label">Website</label>
+                    <label class="form-label fw-medium">Website</label>
                     <div class="input-group">
                       <span class="input-group-text"><i class="bi bi-globe"></i></span>
                       <input type="url" name="org_website" class="form-control"
@@ -390,7 +320,7 @@ var showCompanyTab  = isOrgAdmin || isCompanyUser;
 
                   <!-- Address Proof -->
                   <div class="col-12">
-                    <label class="form-label">Address Proof</label>
+                    <label class="form-label fw-medium">Address Proof</label>
                     <% if (p.address_proof_url) { %>
                       <div class="sms-proof-current mb-2">
                         <div class="d-flex align-items-center gap-2 p-2 border rounded-2">
@@ -421,7 +351,6 @@ var showCompanyTab  = isOrgAdmin || isCompanyUser;
                   </button>
                 </div>
               </form>
-            <% } %>
 
           </div>
         <% } %>
@@ -515,13 +444,16 @@ var showCompanyTab  = isOrgAdmin || isCompanyUser;
 <!-- Profile data for JS — used by company form to pass required personal fields -->
 <script>
   window.SMS_PROFILE = <%- JSON.stringify({
-    name:       p.name       || '',
-    phone:      p.phone      || '',
-    country_id: p.country_id || '',
-    state_id:   p.state_id   || '',
-    city_id:    p.city_id    || '',
-    zip_code:   p.zip_code   || '',
-    address:    p.address    || '',
+    name:           p.name           || '',
+    phone:          p.phone          || '',
+    country_id:     p.country_id     || '',
+    state_id:       p.state_id       || '',
+    city_id:        p.city_id        || '',
+    zip_code:       p.zip_code       || '',
+    address:        p.address        || '',
+    isSuperAdmin:   isSuperAdmin,
+    isOrgAdmin:     isOrgAdmin,
+    showCompanyTab: showCompanyTab,
   }) %>;
 </script>
 

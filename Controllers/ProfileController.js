@@ -15,6 +15,16 @@ const upload = multer({
     },
 });
 
+/* ── Multer for address proof (accepts images + PDF, up to 10MB) ── */
+const proofUpload = multer({
+    dest: path.join(__dirname, '..', 'public', 'uploads', 'temp'),
+    limits: { fileSize: (parseInt(process.env.UPLOAD_MAX_ADDRESS_PROOF_MB) || 10) * 1024 * 1024 },
+    fileFilter(req, file, cb) {
+        if (/\.(jpg|jpeg|png|pdf|doc|docx)$/i.test(file.originalname)) cb(null, true);
+        else cb(new Error('Only JPG, PNG, PDF or DOC files are allowed.'));
+    },
+});
+
 exports.uploadMiddleware = upload.single('profile_image');
 
 /* ── Show profile page ── */
@@ -76,6 +86,30 @@ exports.changePassword = async (req, res) => {
     const result = await api.post('/profile/change-password', req.body, req.session.token);
     res.json({ status: result.status, message: result.message });
 };
+
+/* ── Upload address proof — POST /profile/upload-address-proof ── */
+exports.uploadAddressProof = [
+    (req, res, next) => {
+        proofUpload.single('address_proof')(req, res, (err) => {
+            if (err) return res.json({ status: 422, message: err.message || 'Upload error.' });
+            next();
+        });
+    },
+    async (req, res) => {
+        if (!req.file) return res.json({ status: 422, message: 'No file selected.' });
+
+        const FormData = require('form-data');
+        const fd = new FormData();
+        fd.append('address_proof', fs.createReadStream(req.file.path), {
+            filename:    req.file.originalname,
+            contentType: req.file.mimetype,
+        });
+
+        const result = await api.postForm('/profile/upload-address-proof', fd, req.session.token);
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
+        res.json({ status: result.status, message: result.message, data: result.data || null });
+    },
+];
 
 /* ── Set password (Google users) — POST /profile/set-password ── */
 exports.setPassword = async (req, res) => {

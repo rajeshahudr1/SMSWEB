@@ -255,9 +255,7 @@ $(function () {
             companyData.org_phone = orgPh.valid ? orgPh.value : '';
         }
 
-        /* API requires personal required fields.
-           Priority: live DOM values (user may have edited Profile tab)
-           Fallback: SMS_PROFILE = original server data (always populated) */
+        /* Merge personal required fields from Profile tab / SMS_PROFILE */
         var sp = window.SMS_PROFILE || {};
         var personalData = {
             name:       ($('#pName').val()    || '').trim()  || sp.name       || '',
@@ -269,52 +267,67 @@ $(function () {
             address:    ($('#pAddress').val() || '').trim()  || sp.address    || '',
         };
 
-        var proofFile = document.getElementById('orgProofFile');
-        var hasFile   = proofFile && proofFile.files.length > 0;
+        var data = Object.assign({}, personalData, companyData);
 
-        if (hasFile) {
-            /* FormData for file upload — merge all required fields */
-            var fd = new FormData();
-            /* Add personal required fields */
-            Object.keys(personalData).forEach(function(k){ fd.append(k, personalData[k]); });
-            /* Add company fields */
-            $(this).serializeArray().forEach(function(f){ fd.append(f.name, f.value); });
-            if (companyData.org_phone !== undefined) fd.set('org_phone', companyData.org_phone);
-            fd.append('address_proof', proofFile.files[0]);
+        $.ajax({
+            url: BASE_URL + '/profile', type: 'PUT',
+            contentType: 'application/json', data: JSON.stringify(data),
+            success: function (res) {
+                btnReset($btn);
+                if (res.status === 200) {
+                    toastr.success(res.message || 'Company details updated.');
+                } else {
+                    var msg = res.errors ? res.errors.map(function(e){ return e.message||e; }).join('\n') : res.message;
+                    toastr.error(msg || 'Could not update company details.');
+                }
+            },
+            error: function () { btnReset($btn); toastr.error('Network error.'); },
+        });
+    });
 
-            $.ajax({
-                url: BASE_URL + '/profile', type: 'PUT',
-                data: fd, processData: false, contentType: false,
-                success: function (res) {
-                    btnReset($btn);
-                    if (res.status === 200) {
-                        toastr.success(res.message || 'Company details updated.');
-                    } else {
-                        var msg = res.errors ? res.errors.map(function(e){ return e.message||e; }).join('\n') : res.message;
-                        toastr.error(msg || 'Could not update company details.');
+    /* ── Address proof — upload immediately on file select ── */
+    $('#orgProofFile').on('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) { toastr.error('File must be under 10MB.'); this.value = ''; return; }
+
+        var fd = new FormData();
+        fd.append('address_proof', file);
+
+        /* Show uploading state */
+        var $wrap = $(this).closest('.col-12');
+        var $hint = $wrap.find('.form-hint');
+        $hint.html('<span class="spinner-border spinner-border-sm me-1"></span>Uploading...');
+
+        $.ajax({
+            url: BASE_URL + '/profile/upload-address-proof',
+            type: 'POST', data: fd, processData: false, contentType: false,
+            success: function (res) {
+                if (res.status === 200) {
+                    toastr.success(res.message || 'Address proof uploaded.');
+                    var url = res.data && res.data.address_proof_url;
+                    /* Update the current proof display */
+                    if (url) {
+                        var proofHtml = '<div class="d-flex align-items-center gap-2 p-2 border rounded-2 mb-2">'
+                            + '<i class="bi bi-file-earmark-check-fill text-success fs-5"></i>'
+                            + '<div class="flex-fill"><div class="small fw-medium">Address proof uploaded</div>'
+                            + '<div class="text-muted" style="font-size:11px;">Just now</div></div>'
+                            + '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-success">'
+                            + '<i class="bi bi-eye me-1"></i>View</a></div>';
+                        $wrap.find('.sms-proof-current').remove();
+                        $wrap.prepend('<div class="sms-proof-current">' + proofHtml + '</div>');
                     }
-                },
-                error: function () { btnReset($btn); toastr.error('Network error.'); },
-            });
-        } else {
-            /* JSON — merge personal + company */
-            var data = Object.assign({}, personalData, companyData);
-
-            $.ajax({
-                url: BASE_URL + '/profile', type: 'PUT',
-                contentType: 'application/json', data: JSON.stringify(data),
-                success: function (res) {
-                    btnReset($btn);
-                    if (res.status === 200) {
-                        toastr.success(res.message || 'Company details updated.');
-                    } else {
-                        var msg = res.errors ? res.errors.map(function(e){ return e.message||e; }).join('\n') : res.message;
-                        toastr.error(msg || 'Could not update company details.');
-                    }
-                },
-                error: function () { btnReset($btn); toastr.error('Network error.'); },
-            });
-        }
+                    $hint.html('Accepted: JPG, PNG, PDF, DOC. Max 10MB.');
+                } else {
+                    toastr.error(res.message || 'Upload failed.');
+                    $hint.html('Accepted: JPG, PNG, PDF, DOC. Max 10MB.');
+                }
+            },
+            error: function () {
+                toastr.error('Upload failed. Network error.');
+                $hint.html('Accepted: JPG, PNG, PDF, DOC. Max 10MB.');
+            },
+        });
     });
 
     /* ══════════════════════════════════════

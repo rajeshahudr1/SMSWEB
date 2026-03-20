@@ -9,7 +9,8 @@ router.use(requireLogin);
 
 router.get( '/',                 Profile.index);
 router.put( '/',                 Profile.update);           // PUT — profile update
-router.post('/upload-image',     Profile.uploadImage);
+router.post('/upload-image',          Profile.uploadImage);
+router.post('/upload-address-proof',  Profile.uploadAddressProof);
 router.post('/change-password',  Profile.changePassword);  // POST — for users with password
 router.post('/set-password',     Profile.setPassword);     // POST — for Google users setting first password
 
