@@ -1,0 +1,200 @@
+<%- layout('../layouts/auth') %>
+
+<%
+var pg        = locals.pageData || null;
+var title     = pg ? pg.title   : 'Frequently Asked Questions';
+var content   = pg ? pg.content : '';
+var updatedAt = pg ? pg.updated_at : null;
+var hasData   = pg && pg.content && pg.content.trim().length > 10;
+%>
+
+<div class="sms-legal-wrap">
+<div class="sms-legal-container">
+
+  <!-- ═══ HEADER ════════════════════════════════════════════ -->
+  <div class="sms-legal-header" style="background:linear-gradient(145deg,#5b21b6 0%,#7c3aed 50%,#a78bfa 100%);">
+    <a href="/login" class="sms-legal-header__back">
+      <i class="bi bi-arrow-left-circle-fill" style="font-size:16px;"></i>
+      <span>Back to Login</span>
+    </a>
+    <div class="sms-legal-header__row">
+      <div class="sms-legal-header__icon">
+        <i class="bi bi-question-circle-fill" style="font-size:30px;"></i>
+      </div>
+      <div>
+        <h1><%- title %></h1>
+        <p>
+          <% if (updatedAt) { %>
+          <i class="bi bi-calendar3 me-1"></i>Last updated: <%- new Date(updatedAt).toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' }) %>
+          &nbsp;&middot;&nbsp;
+          <% } %>
+          <i class="bi bi-chat-dots me-1"></i>10 common questions answered
+        </p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3 flex-wrap">
+      <a href="/terms" class="sms-legal-pill">
+        <i class="bi bi-file-earmark-text me-1"></i> Terms &amp; Conditions
+      </a>
+      <a href="/privacy" class="sms-legal-pill">
+        <i class="bi bi-shield-lock me-1"></i> Privacy Policy
+      </a>
+      <a href="/faq" class="sms-legal-pill active">
+        <i class="bi bi-question-circle me-1"></i> FAQ
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══ BODY ══════════════════════════════════════════════ -->
+  <div class="sms-legal-body">
+
+    <% if (hasData) { %>
+      <%- content %>
+    <% } else { %>
+
+    <div class="sms-legal-highlight" style="border-left-color:#7c3aed;">
+      <strong>💡 Quick answers to common questions.</strong> Can't find what you're looking for?
+      Contact us at <a href="mailto:support@sms-platform.in">support@sms-platform.in</a> and we'll get back to you within 24 hours.
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>What is SMS Platform?</div>
+      <div class="sms-faq-a">SMS (Scrap Management System) is a digital platform for managing vehicle scrappage operations in India. It covers vehicle intake, weighbridge integration, inventory management, compliance documentation, and reporting — all in one place.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>Who can use the platform?</div>
+      <div class="sms-faq-a">The platform is designed for Registered Vehicle Scrapping Facilities (RVSF), scrap dealers, auto recyclers, and individual vehicle owners looking to scrap their vehicles legally under the MoRTH Vehicle Scrappage Policy 2021.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>How do I create an account?</div>
+      <div class="sms-faq-a">Click <strong>Create Account</strong> on the login page. You'll need your company name, email, phone number, and basic details. After signup, verify your email via the OTP sent to your inbox. You can also sign up using Google.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>Is my data secure?</div>
+      <div class="sms-faq-a">Yes. All data is encrypted with AES-256 at rest and TLS 1.3 in transit. We store data on servers in India (AWS Mumbai), run annual penetration tests, and maintain automated daily backups. See our <a href="/privacy">Privacy Policy</a> for full details.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>What is B2B vs B2C?</div>
+      <div class="sms-faq-a"><strong>B2B Panel:</strong> For scrapping facilities and businesses — full admin features.<br/><strong>B2C Panel:</strong> For individual vehicle owners — simplified interface to register vehicles for scrappage.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>Can I manage multiple users and roles?</div>
+      <div class="sms-faq-a">Yes. Organization admins can create unlimited users, define custom roles, and assign granular permissions per module.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>How does billing work?</div>
+      <div class="sms-faq-a">Subscription fees are billed monthly or annually in INR (exclusive of GST). You can upgrade, downgrade, or cancel at any time.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>Can I export my data?</div>
+      <div class="sms-faq-a">Yes. Export in CSV, Excel, or PDF from any module. Upon termination, a 30-day export window is provided.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>I forgot my password. What do I do?</div>
+      <div class="sms-faq-a">Click <strong>Forgot Password</strong> on the login page. You'll receive a reset link valid for 1 hour.</div>
+    </div>
+
+    <div class="sms-faq-item">
+      <div class="sms-faq-q"><i class="bi bi-patch-question-fill text-primary me-2"></i>How do I contact support?</div>
+      <div class="sms-faq-a">
+        <div class="d-flex flex-column gap-2 mt-1">
+          <span><i class="bi bi-envelope-fill text-primary me-2"></i><a href="mailto:support@sms-platform.in">support@sms-platform.in</a></span>
+          <span><i class="bi bi-telephone-fill text-primary me-2"></i>+91 79 XXXX XXXX (Mon–Fri, 10AM–6PM IST)</span>
+        </div>
+      </div>
+    </div>
+
+    <% } %>
+
+    <!-- ═══ FOOTER ════════════════════════════════════════════ -->
+    <div class="sms-lf">
+      <div class="sms-lf__btns">
+        <a href="/terms" class="sms-lf__btn sms-lf__btn--outline">
+          <i class="bi bi-file-earmark-text"></i>
+          <span>Terms &amp; Conditions</span>
+          <i class="bi bi-arrow-right sms-lf__arrow"></i>
+        </a>
+        <a href="/privacy" class="sms-lf__btn sms-lf__btn--outline">
+          <i class="bi bi-shield-lock"></i>
+          <span>Privacy Policy</span>
+          <i class="bi bi-arrow-right sms-lf__arrow"></i>
+        </a>
+        <a href="/login" class="sms-lf__btn sms-lf__btn--fill">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>Back to Login</span>
+          <i class="bi bi-arrow-right sms-lf__arrow"></i>
+        </a>
+      </div>
+      <div class="sms-lf__copy">&copy; <%= new Date().getFullYear() %> <%- APP_NAME %>. All rights reserved.</div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<button id="scrollTop" class="sms-scroll-top" title="Back to top"><i class="bi bi-chevron-up"></i></button>
+
+<style>
+.sms-legal-pill{display:inline-flex;align-items:center;padding:6px 14px;border-radius:50px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15)}
+.sms-legal-pill:hover{background:rgba(255,255,255,.2);color:#fff}
+.sms-legal-pill.active{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.35)}
+
+/* ── FAQ accordion style ── */
+.sms-faq-item{border:1px solid #e9ecef;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:12px;transition:all .2s}
+.sms-faq-item:hover{border-color:#c9d5e2;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.sms-faq-q{font-size:15px;font-weight:700;color:#1a2332;display:flex;align-items:center}
+.sms-faq-a{font-size:14px;color:#4a5568;line-height:1.8;margin-top:10px;padding-left:30px}
+.sms-faq-a a{color:#7c3aed}
+
+/* ── Footer ── */
+.sms-lf{margin-top:3rem;padding-top:2rem;border-top:2px solid #eef4ff}
+.sms-lf__copy{text-align:center;color:#94a3b8;font-size:12px;margin-top:1.5rem}
+.sms-lf__btns{display:flex;gap:14px;flex-wrap:wrap}
+.sms-lf__btn{
+  flex:1;min-width:180px;
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 24px;border-radius:12px;
+  font-size:14px;font-weight:600;color:#fff !important;
+  text-decoration:none;transition:all .25s;cursor:pointer;
+}
+.sms-lf__arrow{margin-left:auto;opacity:.6;font-size:13px;transition:transform .25s,opacity .25s}
+.sms-lf__btn:hover .sms-lf__arrow{transform:translateX(4px);opacity:1}
+.sms-lf__btn:hover{transform:translateY(-2px);color:#fff !important}
+
+.sms-lf__btn--fill{
+  background:linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%);
+  box-shadow:0 4px 15px rgba(124,58,237,.3);border:none;
+}
+.sms-lf__btn--fill:hover{box-shadow:0 8px 25px rgba(124,58,237,.4)}
+
+.sms-lf__btn--outline{
+  background:linear-gradient(135deg,#334155 0%,#475569 100%);
+  box-shadow:0 4px 15px rgba(51,65,85,.2);border:none;
+}
+.sms-lf__btn--outline:hover{box-shadow:0 8px 25px rgba(51,65,85,.3)}
+
+.sms-scroll-top{
+  position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;
+  background:#7c3aed;color:#fff;border:none;font-size:18px;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);cursor:pointer;transition:all .2s;z-index:99;
+}
+.sms-scroll-top:hover{background:#5b21b6;transform:translateY(-2px)}
+.sms-scroll-top.show{display:flex}
+
+@media(max-width:575px){
+  .sms-lf__btns{flex-direction:column}
+  .sms-lf__btn{min-width:unset;justify-content:center}
+}
+</style>
+<script>
+$(function(){var $s=$('#scrollTop');$(window).on('scroll',function(){$(window).scrollTop()>300?$s.addClass('show'):$s.removeClass('show');});$s.on('click',function(){$('html,body').animate({scrollTop:0},400);});});
+</script>

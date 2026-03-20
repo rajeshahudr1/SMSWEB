@@ -39,6 +39,9 @@ var hasData   = pg && pg.content && pg.content.trim().length > 10;
       <a href="/privacy" class="sms-legal-pill active">
         <i class="bi bi-shield-lock me-1"></i> Privacy Policy
       </a>
+      <a href="/faq" class="sms-legal-pill">
+        <i class="bi bi-question-circle me-1"></i> FAQ
+      </a>
     </div>
   </div>
 
@@ -201,7 +204,7 @@ var hasData   = pg && pg.content && pg.content.trim().length > 10;
 }
 .sms-lf__arrow{margin-left:auto;opacity:.6;font-size:13px;transition:transform .25s,opacity .25s}
 .sms-lf__btn:hover .sms-lf__arrow{transform:translateX(4px);opacity:1}
-.sms-lf__btn:hover{transform:translateY(-2px);color:#fff}
+.sms-lf__btn:hover{transform:translateY(-2px);color:#fff !important}
 
 .sms-lf__btn--fill{
   background:linear-gradient(135deg,#059669 0%,#10b981 100%);

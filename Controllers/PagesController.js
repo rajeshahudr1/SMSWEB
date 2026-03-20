@@ -81,3 +81,24 @@ exports.privacyPublic = async (req, res) => {
         pageData:      pageData,
     });
 };
+
+// ── Public: FAQ page ────────────────────────────────────────
+exports.faqPublic = async (req, res) => {
+    let pageData = null;
+    try {
+        const result = await api.get('/pages/public/faq');
+        if (result && result.status === 200 && result.data) {
+            pageData = result.data;
+        }
+    } catch (err) {
+        console.log('[faqPublic] API error:', err.message);
+    }
+    res.render('auth/faq', {
+        page_title:    'FAQ',
+        APP_NAME:      process.env.APP_NAME || 'SMS',
+        BASE_URL:      '',
+        flash_success: null,
+        flash_error:   null,
+        pageData:      pageData,
+    });
+};

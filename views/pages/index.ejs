@@ -21,7 +21,7 @@
     <% if (pages && pages.length > 0) { %>
     <div class="row g-3">
       <% pages.forEach(function(pg) { %>
-      <div class="col-md-6">
+      <div class="col-lg-4 col-md-6">
         <div class="card border shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex align-items-start gap-3">
@@ -35,6 +35,10 @@
                 <% } else if (pg.slug === 'privacy') { %>
                 <span class="avatar avatar-lg rounded-3 bg-green-lt">
                   <i class="bi bi-shield-lock" style="font-size:24px;"></i>
+                </span>
+                <% } else if (pg.slug === 'faq') { %>
+                <span class="avatar avatar-lg rounded-3 bg-purple-lt">
+                  <i class="bi bi-question-circle" style="font-size:24px;"></i>
                 </span>
                 <% } else { %>
                 <span class="avatar avatar-lg rounded-3 bg-azure-lt">

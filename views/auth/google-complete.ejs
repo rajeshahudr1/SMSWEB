@@ -27,15 +27,15 @@
 
       <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-4"
            style="background:#eef4ff;border:1.5px solid #b8d0f8;">
-        <% if (locals.google_picture) { %>
+        <% if (google_picture) { %>
         <img src="<%- google_picture %>" width="44" height="44"
              style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="Avatar"/>
         <% } else { %>
         <div style="width:44px;height:44px;border-radius:50%;background:#0054a6;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;"><i class="bi bi-person-fill"></i></div>
         <% } %>
         <div style="min-width:0;">
-          <div class="fw-semibold" style="font-size:14px;"><%- locals.google_name || '' %></div>
-          <div class="text-secondary" style="font-size:12px;"><%- locals.google_email || '' %></div>
+          <div class="fw-semibold" style="font-size:14px;"><%- google_name || '' %></div>
+          <div class="text-secondary" style="font-size:12px;"><%- google_email || '' %></div>
         </div>
         <span class="badge bg-success-lt ms-auto" style="white-space:nowrap;"><i class="bi bi-check-circle me-1"></i>Google Verified</span>
       </div>
@@ -44,7 +44,7 @@
       <p class="sms-auth-subtitle">Set up your company to start using SMS</p>
 
       <form id="frmGoogleComplete" novalidate>
-        <input type="hidden" id="gcTempToken" value="<%= locals.temp_token || '' %>"/>
+        <input type="hidden" id="gcTempToken" value="<%= temp_token || '' %>"/>
 
         <div class="mb-3">
           <label class="sms-label">Company / Organisation Name <span class="text-danger">*</span></label>

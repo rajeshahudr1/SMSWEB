@@ -32,5 +32,6 @@ router.get('/logout', Auth.logout);
 // ── Legal pages — dynamic from DB ─────────────────────────
 router.get('/terms',   Pages.termsPublic);
 router.get('/privacy', Pages.privacyPublic);
+router.get('/faq',     Pages.faqPublic);
 
 module.exports = router;
