@@ -22,10 +22,14 @@
 
       <div class="vr d-none d-sm-block" style="height:20px;opacity:.2;"></div>
 
-      <!-- View toggle -->
-      <div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-secondary active" id="btnViewGroup" title="Grouped view"><i class="bi bi-collection"></i></button>
-        <button class="btn btn-outline-secondary" id="btnViewFlat" title="Flat table"><i class="bi bi-list-ul"></i></button>
+      <!-- View toggle — pill style -->
+      <div class="sms-view-toggle">
+        <button class="sms-view-btn active" id="btnViewGroup" title="Grouped by menu">
+          <i class="bi bi-grid-3x3-gap"></i><span class="d-none d-md-inline">Grouped</span>
+        </button>
+        <button class="sms-view-btn" id="btnViewFlat" title="Flat table">
+          <i class="bi bi-table"></i><span class="d-none d-md-inline">Table</span>
+        </button>
       </div>
 
       <% if (can('add_permissions')) { %>
@@ -36,28 +40,28 @@
     </div>
   </div>
 
-  <!-- ── Filters: search + group + action ── -->
+  <!-- ── Filters: search + menu + action ── -->
   <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
-    <div class="row g-2 align-items-center">
-      <div class="col">
-        <div class="input-group input-group-sm input-group-flat">
-          <span class="input-group-text"><i class="bi bi-search" style="font-size:13px;"></i></span>
-          <input type="text" class="form-control" id="searchInput" placeholder="Search name or key…"/>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <div class="flex-fill" style="min-width:140px;max-width:280px;">
+        <div class="input-icon">
+          <span class="input-icon-addon"><i class="bi bi-search" style="font-size:14px;"></i></span>
+          <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search name or key…"/>
         </div>
       </div>
-      <div class="col-auto d-none d-md-block">
-        <select class="form-select form-select-sm" id="filterGroup" style="min-width:140px;">
+      <div style="min-width:180px;" class="d-none d-md-block">
+        <select class="form-select form-select-sm" id="filterGroup">
           <option value="">All Menus</option>
         </select>
       </div>
-      <div class="col-auto">
-        <select class="form-select form-select-sm" id="filterAction" style="min-width:110px;">
+      <div style="min-width:140px;">
+        <select class="form-select form-select-sm" id="filterAction">
           <option value="">All Actions</option>
         </select>
       </div>
-      <div class="col-auto">
-        <button class="btn btn-sm btn-ghost-secondary" id="btnClearFilters" title="Clear filters"><i class="bi bi-x-lg"></i></button>
-      </div>
+      <button class="btn btn-sm btn-ghost-secondary" id="btnClearFilters" title="Clear all filters">
+        <i class="bi bi-x-circle me-1"></i><span class="d-none d-sm-inline">Clear</span>
+      </button>
     </div>
   </div>
 

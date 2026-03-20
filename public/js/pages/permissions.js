@@ -13,9 +13,18 @@ var _panel     = 'b2b';
 var _grouped   = true;
 var _page      = 1;
 var _pp        = 50;
-var _actions   = [];       /* from API: [{value,label,color,icon}] */
 var _menus     = [];       /* from API: flat list of menus for current panel */
 var _allPerms  = [];       /* cache of loaded permissions for edit lookup */
+
+/* ── Hardcoded fallback — used if API /actions call fails ── */
+var _actions = [
+    { value: 'view',   label: 'View',   color: 'azure',  icon: 'bi-eye'      },
+    { value: 'add',    label: 'Add',    color: 'green',  icon: 'bi-plus-lg'  },
+    { value: 'edit',   label: 'Edit',   color: 'orange', icon: 'bi-pencil'   },
+    { value: 'delete', label: 'Delete', color: 'red',    icon: 'bi-trash3'   },
+    { value: 'export', label: 'Export', color: 'purple', icon: 'bi-download' },
+    { value: 'import', label: 'Import', color: 'teal',   icon: 'bi-upload'   },
+];
 
 /* ── helpers ─────────────────────────────────────────── */
 function _actionColor(action) {
@@ -36,21 +45,34 @@ function _filters() {
 ══════════════════════════════════════════════════════════ */
 function loadActions(cb) {
     $.get(BASE_URL + '/permissions/actions', function(res) {
-        _actions = (res && res.status === 200) ? (res.data || []) : [];
-        /* Fill filter dropdown */
-        var fOpts = '<option value="">All Actions</option>';
-        _actions.forEach(function(a) {
-            fOpts += '<option value="' + a.value + '">' + a.label + '</option>';
-        });
-        $('#filterAction').html(fOpts);
-        /* Fill modal form dropdown */
-        var mOpts = '';
-        _actions.forEach(function(a) {
-            mOpts += '<option value="' + a.value + '">' + a.label + '</option>';
-        });
-        $('#fldAction').html(mOpts);
+        if (res && res.status === 200 && Array.isArray(res.data) && res.data.length) {
+            _actions = res.data;
+        }
+        /* else: keep hardcoded _actions fallback */
+        _fillActionOptions();
+        _initSelect2Action();
+        if (cb) cb();
+    }).fail(function() {
+        /* API unavailable — use hardcoded _actions */
+        _fillActionOptions();
+        _initSelect2Action();
         if (cb) cb();
     });
+}
+
+function _fillActionOptions() {
+    /* Fill filter dropdown */
+    var fOpts = '<option value="">All Actions</option>';
+    _actions.forEach(function(a) {
+        fOpts += '<option value="' + a.value + '">' + a.label + '</option>';
+    });
+    $('#filterAction').html(fOpts);
+    /* Fill modal form dropdown */
+    var mOpts = '';
+    _actions.forEach(function(a) {
+        mOpts += '<option value="' + a.value + '">' + a.label + '</option>';
+    });
+    $('#fldAction').html(mOpts);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -65,26 +87,129 @@ function loadMenus(cb) {
 }
 
 function _populateMenuDropdowns() {
-    /* ── Modal menu dropdown (level-wise indented) ── */
     var mOpts = '<option value="">— Select Menu —</option>';
-    _menus.forEach(function(m) {
-        var indent = '';
-        for (var i = 1; i < (m.level || 1); i++) indent += '\u00a0\u00a0\u00a0\u00a0';
-        var lvl = 'L' + (m.level || 1);
-        var icon = (m.icon || '').replace(/^bi\s+/, '').replace(/^ti\s+/, '');
-        mOpts += '<option value="' + m.id + '" data-title="' + H.esc(m.title) + '">'
-            + indent + (icon ? '' : '') + H.esc(m.title) + '  (' + lvl + ')'
-            + '</option>';
-    });
-    $('#fldMenuId').html(mOpts);
-
-    /* ── Filter group dropdown (same menus, flat) ── */
     var gOpts = '<option value="">All Menus</option>';
     _menus.forEach(function(m) {
-        gOpts += '<option value="' + H.esc(m.title) + '">' + H.esc(m.title) + '</option>';
+        var lvl  = m.level || 1;
+        var indent = '';
+        for (var i = 1; i < lvl; i++) indent += '\u00a0\u00a0\u00a0\u00a0';
+        var title = H.esc(m.title);
+        mOpts += '<option value="' + m.id + '">' + indent + title + '  (L' + lvl + ')</option>';
+        gOpts += '<option value="' + H.esc(m.title) + '">' + indent + title + '  (L' + lvl + ')</option>';
     });
-    var cur = $('#filterGroup').val();
-    $('#filterGroup').html(gOpts).val(cur);
+
+    /* Modal menu select — just fill HTML, Select2 inits when modal opens */
+    var curMenu = $('#fldMenuId').val();
+    $('#fldMenuId').html(mOpts);
+    if (curMenu) $('#fldMenuId').val(curMenu);
+
+    /* Filter group select — fill + init Select2 */
+    var curGroup = $('#filterGroup').val();
+    $('#filterGroup').html(gOpts);
+    if (curGroup) $('#filterGroup').val(curGroup);
+    _initSelect2Filters();
+}
+
+/* ── Select2 custom template: icon + title + level badge ── */
+function _s2MenuTemplate(state) {
+    if (!state.id) return state.text;
+    /* Find menu in our cached _menus array by id */
+    var m = _menus.find(function(x){ return String(x.id) === String(state.id); });
+    /* Fallback: try matching by title (for filter dropdown which uses title as value) */
+    if (!m) m = _menus.find(function(x){ return x.title === state.id; });
+    if (!m) return state.text;
+
+    var lvl    = m.level || 1;
+    var icon   = (m.icon || '').replace(/^bi\s+/, '').replace(/^ti\s+/, '') || 'circle';
+    var indent = '';
+    for (var i = 1; i < lvl; i++) indent += '<span style="display:inline-block;width:16px;"></span>';
+
+    var html = '<span style="display:inline-flex;align-items:center;line-height:1.4;">'
+        + indent
+        + '<i class="bi bi-' + H.esc(icon) + '" style="font-size:13px;color:var(--tblr-primary);width:18px;text-align:center;margin-right:5px;flex-shrink:0;"></i>'
+        + '<span style="margin-right:5px;">' + H.esc(m.title) + '</span>'
+        + '<span class="badge bg-secondary-lt" style="font-size:9px;">L' + lvl + '</span>'
+        + '</span>';
+    return $(html);
+}
+
+/* ── Select2 template for action dropdown: icon + colored badge ── */
+function _s2ActionTemplate(state) {
+    if (!state.id) return state.text;
+    /* Find action in our _actions array */
+    var a = _actions.find(function(x){ return x.value === state.id; });
+    if (!a) return state.text;
+
+    var icon = a.icon || '';
+    var iconHtml = icon
+        ? '<i class="bi ' + H.esc(icon) + '" style="font-size:11px;margin-right:3px;"></i>'
+        : '';
+
+    var html = '<span style="display:inline-flex;align-items:center;">'
+        + '<span class="badge bg-' + a.color + '-lt" style="font-size:10.5px;padding:3px 8px;">'
+        + iconHtml + H.esc(a.label)
+        + '</span></span>';
+    return $(html);
+}
+
+/* ── Init Select2: filter bar action only ── */
+function _initSelect2Action() {
+    try {
+        if ($('#filterAction').data('select2')) $('#filterAction').select2('destroy');
+    } catch(e){}
+    $('#filterAction').select2({
+        theme: 'bootstrap-5',
+        allowClear: true,
+        placeholder: 'All Actions',
+        templateResult: _s2ActionTemplate,
+        templateSelection: _s2ActionTemplate,
+        width: '100%',
+        minimumResultsForSearch: -1,
+    });
+}
+
+/* ── Init Select2: filter bar all dropdowns ── */
+function _initSelect2Filters() {
+    try {
+        if ($('#filterGroup').data('select2')) $('#filterGroup').select2('destroy');
+    } catch(e){}
+    $('#filterGroup').select2({
+        theme: 'bootstrap-5',
+        allowClear: true,
+        placeholder: 'All Menus',
+        templateResult: _s2MenuTemplate,
+        templateSelection: _s2MenuTemplate,
+        width: '100%',
+    });
+    _initSelect2Action();
+}
+
+/* ── Init Select2: modal menu + action dropdowns ── */
+function _initSelect2Modal() {
+    try {
+        if ($('#fldMenuId').data('select2')) $('#fldMenuId').select2('destroy');
+    } catch(e){}
+    $('#fldMenuId').select2({
+        theme: 'bootstrap-5',
+        placeholder: '— Select Menu —',
+        templateResult: _s2MenuTemplate,
+        templateSelection: _s2MenuTemplate,
+        width: '100%',
+        dropdownParent: $('#modalPerm .modal-content'),
+    });
+
+    try {
+        if ($('#fldAction').data('select2')) $('#fldAction').select2('destroy');
+    } catch(e){}
+    $('#fldAction').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select Action',
+        templateResult: _s2ActionTemplate,
+        templateSelection: _s2ActionTemplate,
+        width: '100%',
+        minimumResultsForSearch: -1,
+        dropdownParent: $('#modalPerm .modal-content'),
+    });
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -208,12 +333,13 @@ function _updatePanelDisplay(panel) {
 }
 
 function _autoDisplayName() {
-    var $menu   = $('#fldMenuId option:selected');
-    var $action = $('#fldAction option:selected');
-    if (!$menu.val() || !$action.val()) return;
-    var menuTitle  = $menu.data('title') || $menu.text().trim().replace(/\s*\(L\d+\)$/, '').trim();
-    var actionLabel = $action.text().trim();
-    $('#fldDisplayName').val(actionLabel + ' ' + menuTitle);
+    var menuId = $('#fldMenuId').val();
+    var action = $('#fldAction').val();
+    if (!menuId || !action) return;
+    var m = _menus.find(function(x){ return String(x.id) === String(menuId); });
+    var a = _actions.find(function(x){ return x.value === action; });
+    if (!m || !a) return;
+    $('#fldDisplayName').val(a.label + ' ' + m.title);
 }
 
 function openAddPerm() {
@@ -222,10 +348,12 @@ function openAddPerm() {
     $('#permKeyRow').hide();
     $('#modalPermTitle').html('<i class="bi bi-key me-2 text-primary"></i>Add Permission');
     $('#btnPermSave').html('<i class="bi bi-floppy me-1"></i>Create');
-    $('#fldAction').val('view');
     _updatePanelDisplay();
-    /* Refresh menus for current panel */
+    /* Refresh menus for current panel, then init Select2 and show */
     loadMenus(function() {
+        _initSelect2Modal();
+        $('#fldMenuId').val('').trigger('change.select2');
+        $('#fldAction').val('view').trigger('change.select2');
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPerm')).show();
     });
 }
@@ -241,30 +369,35 @@ function openEditPerm(uuid) {
     $('#editUuid').val(uuid);
     $('#modalPermTitle').html('<i class="bi bi-pencil me-2 text-primary"></i>Edit Permission');
     $('#btnPermSave').html('<i class="bi bi-floppy me-1"></i>Update');
-
-    /* Panel: show existing value (locked) */
     _updatePanelDisplay(p.panel_type || _panel);
 
-    /* Load menus for the permission's panel, then fill fields */
     var menuPanel = p.panel_type || _panel;
     $.get(BASE_URL + '/permissions/menus', { panel_type: menuPanel }, function(res) {
         var editMenus = (res && res.status === 200) ? (res.data || []) : _menus;
+
+        /* Temporarily set _menus so the Select2 template can find items */
+        var savedMenus = _menus;
+        _menus = editMenus;
+
         var mOpts = '<option value="">— Select Menu —</option>';
         editMenus.forEach(function(m) {
+            var lvl = m.level || 1;
             var indent = '';
-            for (var i = 1; i < (m.level || 1); i++) indent += '\u00a0\u00a0\u00a0\u00a0';
-            var lvl = 'L' + (m.level || 1);
+            for (var i = 1; i < lvl; i++) indent += '\u00a0\u00a0\u00a0\u00a0';
             var sel = (p.menu_id && String(m.id) === String(p.menu_id)) ? ' selected' : '';
-            mOpts += '<option value="' + m.id + '" data-title="' + H.esc(m.title) + '"' + sel + '>'
-                + indent + H.esc(m.title) + '  (' + lvl + ')</option>';
+            mOpts += '<option value="' + m.id + '"' + sel + '>'
+                + indent + H.esc(m.title) + '  (L' + lvl + ')</option>';
         });
         $('#fldMenuId').html(mOpts);
-
-        /* Fill remaining fields */
         $('#fldAction').val(p.action || 'view');
         $('#fldDisplayName').val(p.display_name || '');
         $('#permKeyDisplay').val(p.name || '');
         $('#permKeyRow').show();
+
+        _initSelect2Modal();
+
+        /* Restore _menus for filter bar (only if panel is different) */
+        if (menuPanel !== _panel) _menus = savedMenus;
 
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPerm')).show();
     });
@@ -354,13 +487,15 @@ $('#panelGroup').on('click', '.sms-panel-btn', function() {
 ══════════════════════════════════════════════════════════ */
 $('#btnViewGroup').on('click', function() {
     _grouped = true;
-    $(this).addClass('active'); $('#btnViewFlat').removeClass('active');
+    $('.sms-view-btn').removeClass('active');
+    $(this).addClass('active');
     $('#groupedView').removeClass('d-none'); $('#flatView').addClass('d-none');
     loadGrouped();
 });
 $('#btnViewFlat').on('click', function() {
     _grouped = false;
-    $(this).addClass('active'); $('#btnViewGroup').removeClass('active');
+    $('.sms-view-btn').removeClass('active');
+    $(this).addClass('active');
     $('#groupedView').addClass('d-none'); $('#flatView').removeClass('d-none');
     loadFlat();
 });
@@ -383,13 +518,16 @@ $(function() {
         st = setTimeout(function() { _page = 1; loadAll(); }, 380);
     });
 
-    /* Filter change */
-    $('#filterGroup, #filterAction').on('change', function() { _page = 1; loadAll(); });
+    /* Filter change — Select2 triggers 'change' natively */
+    $(document).on('change', '#filterGroup, #filterAction', function() { _page = 1; loadAll(); });
 
-    /* Clear filters */
+    /* Clear filters — reset Select2 values properly */
     $('#btnClearFilters').on('click', function() {
-        $('#filterGroup, #filterAction').val('');
         $('#searchInput').val('');
+        if ($('#filterGroup').data('select2'))  $('#filterGroup').val('').trigger('change.select2');
+        else $('#filterGroup').val('');
+        if ($('#filterAction').data('select2')) $('#filterAction').val('').trigger('change.select2');
+        else $('#filterAction').val('');
         _page = 1;
         loadAll();
     });
