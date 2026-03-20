@@ -3,7 +3,11 @@
 const api  = require('../helpers/api');
 
 // ── helpers ──────────────────────────────────────────────
-const getRoles = (token) => api.get('/roles?per_page=200', token).then(r => r.status === 200 ? r.data.data || r.data : []);
+// Load roles for DDL — always exclude is_super_role (nobody assigns super admin via UI)
+const getRoles = (token) => api.get('/roles?per_page=200', token).then(r => {
+    const roles = r.status === 200 ? (r.data.data || r.data) : [];
+    return Array.isArray(roles) ? roles.filter(role => !role.is_super_role) : [];
+});
 
 // ── List page ─────────────────────────────────────────────
 exports.index = async (req, res) => {
@@ -109,6 +113,12 @@ exports.create = async (req, res) => {
         breadcrumbs: [{ name:'Dashboard',url:'/dashboard'},{name:'Users',url:'/users'},{name:'Add User',url:''}],
         user: null, roles, countries,
     });
+};
+
+// ── View data (AJAX — for view modal with user + perms + menus) ─────
+exports.viewData = async (req, res) => {
+    const result = await api.get('/users/' + req.params.uuid + '/view', req.session.token);
+    res.json(result);
 };
 
 // ── Edit form ────────────────────────────────────────────────

@@ -68,4 +68,13 @@ function injectLocals(req, res, next) {
     next();
 }
 
-module.exports = { requireLogin, guestOnly, requirePermission, injectLocals };
+function requireSuperAdmin(req, res, next) {
+    if (req.session && req.session.user && req.session.user.is_super_admin) return next();
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+        return res.status(403).json({ status: 403, success: false, message: 'Access denied. Super admin only.' });
+    }
+    req.flash('error', 'This section is restricted to super administrators.');
+    res.redirect('/dashboard');
+}
+
+module.exports = { requireLogin, guestOnly, requirePermission, requireSuperAdmin, injectLocals };

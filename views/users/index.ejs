@@ -1,135 +1,81 @@
 <%- layout('../layouts/main') %>
 
-<div class="page-header">
-  <div class="row align-items-center g-2">
-    <div class="col">
-      <div class="page-pretitle"><a href="/dashboard">Dashboard</a></div>
-      <h2 class="page-title"><i class="bi bi-people-fill me-2 text-primary"></i>Users</h2>
-    </div>
-    <div class="col-auto d-flex gap-2 flex-wrap">
-      <% if (can('view_users')) { %>
-      <div class="dropdown">
-        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-          <i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Export</span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-          <li><a class="dropdown-item" id="expCsv" href="#"><i class="bi bi-file-text me-2 text-success"></i>CSV</a></li>
-          <li><a class="dropdown-item" id="expExcel" href="#"><i class="bi bi-circle me-2 text-success"></i>Excel</a></li>
-          <% if (can('add_users')) { %>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" id="btnImport" href="#"><i class="bi bi-upload me-2 text-primary"></i>Import CSV/Excel</a></li>
-          <% } %>
-        </ul>
-      </div>
-      <% } %>
+<div class="card shadow-sm">
+
+  <!-- ── Card header ── -->
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto">
+        <i class="bi bi-people-fill me-2 text-primary"></i>Users
+        <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span>
+      </h3>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;" title="Rows per page"></select>
       <% if (can('add_users')) { %>
-      <a href="/users/create" class="btn btn-primary">
+      <a href="/users/create" class="btn btn-sm btn-primary" title="Create new user">
         <i class="bi bi-person-plus me-1"></i><span class="d-none d-sm-inline">Add User</span>
       </a>
       <% } %>
     </div>
   </div>
-</div>
 
-<!-- Filters -->
-<div class="card mb-3">
-  <div class="card-body py-3">
-    <div class="row g-2 align-items-end">
-      <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" class="form-control" id="searchInput" placeholder="Search name, email, phone…"/>
-        </div>
+  <!-- ── Filters ── -->
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-4 col-lg-3">
+        <input type="text" class="form-control form-control-sm sms-filter-search" id="searchInput"
+               placeholder="&#128269;  Search name, email, phone…"/>
       </div>
-      <div class="col-6 col-sm-4 col-md-2">
-        <select class="form-select" id="filterRole">
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" id="filterRole" style="width:100%;">
           <option value="">All Roles</option>
           <% if (typeof roles !== 'undefined') { roles.forEach(function(r){ %>
-          <option value="<%- r.id %>"><%- r.name %></option>
+          <option value="<%- r.id %>" data-name="<%- r.name %>"><%- r.name %></option>
           <% }) } %>
         </select>
       </div>
-      <div class="col-6 col-sm-4 col-md-2">
-        <select class="form-select" id="filterStatus">
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" id="filterStatus" style="width:100%;">
           <option value="">All Status</option>
           <option value="1">Active</option>
           <option value="0">Inactive</option>
         </select>
       </div>
-      <div class="col-6 col-sm-4 col-md-2">
-        <select class="form-select" id="filterPanel">
-          <option value="">All Panels</option>
-          <option value="b2b">B2B</option>
-          <option value="b2c">B2C</option>
-        </select>
-      </div>
-      <div class="col-6 col-sm-4 col-md-2">
-        <select class="form-select" id="filterVerified">
-          <option value="">All</option>
-          <option value="1">Verified</option>
-          <option value="0">Unverified</option>
-        </select>
-      </div>
       <div class="col-auto">
-        <button class="btn btn-outline-secondary" id="btnClearFilters" title="Clear filters">
+        <button class="btn btn-sm btn-outline-secondary sms-filter-clear" id="btnClearFilters" title="Clear all filters">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Bulk bar -->
-<div id="bulkBar" class="d-none mb-2">
-  <div class="sms-bulk-bar rounded">
-    <span class="fw-semibold"><span id="bulkCount">0</span> selected</span>
-    <button class="btn btn-sm btn-white ms-auto" onclick="bulkAction('activate')">
-      <i class="bi bi-check-lg me-1 text-success"></i>Activate
-    </button>
-    <button class="btn btn-sm btn-white" onclick="bulkAction('deactivate')">
-      <i class="bi bi-circle me-1 text-warning"></i>Deactivate
-    </button>
-    <button class="btn btn-sm btn-white" onclick="bulkAction('delete')">
-      <i class="bi bi-trash3 me-1 text-danger"></i>Delete
-    </button>
-    <button class="btn btn-sm btn-ghost-white" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
-  </div>
-</div>
-
-<!-- Table card -->
-<div class="card">
-  <div class="card-header">
-    <div class="card-title">
-      All Users
-      <span class="badge bg-primary-lt ms-2" id="badgeTotal">–</span>
-    </div>
-    <div class="card-options">
-      <select class="form-select form-select-sm" id="perPageSel" style="width:80px;">
-        <option value="10">10</option>
-        <option value="15" selected>15</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-      </select>
+  <!-- ── Bulk bar ── -->
+  <div id="bulkBar" class="d-none">
+    <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
+      <span class="fw-semibold"><span id="bulkCount">0</span> selected</span>
+      <button class="btn btn-sm btn-white ms-auto" onclick="bulkAction('delete')" title="Delete selected users">
+        <i class="bi bi-trash3 me-1 text-danger"></i>Delete
+      </button>
+      <button class="btn btn-sm btn-ghost-white" id="btnClearBulk" title="Clear selection"><i class="bi bi-x-lg"></i></button>
     </div>
   </div>
 
+  <!-- ── Table ── -->
   <div class="table-responsive">
-    <table class="table table-hover table-vcenter">
+    <table class="table table-hover table-vcenter mb-0">
       <thead>
         <tr>
-          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll"/></th>
+          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll" title="Select all"/></th>
           <th style="width:36px;" class="text-muted">#</th>
-          <th class="sortable" data-field="name">Name <i class="bi bi-circle text-muted small"></i></th>
-          <th class="d-none d-md-table-cell sortable" data-field="email">Email <i class="bi bi-circle text-muted small"></i></th>
+          <th class="sortable" data-field="name">Name <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="d-none d-md-table-cell sortable" data-field="email">Email <i class="bi bi-arrow-down-up text-muted small"></i></th>
           <th class="d-none d-lg-table-cell">Phone</th>
           <th class="d-none d-sm-table-cell">Role</th>
-          <th class="d-none d-md-table-cell">Panel</th>
-          <th>Status</th>
-          <th class="text-end" style="width:90px;">Actions</th>
+          <th class="sortable" data-field="status">Status <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="text-end" style="width:120px;">Actions</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="9" class="text-center py-5 text-muted">
+        <tr><td colspan="8" class="text-center py-5 text-muted">
           <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…
         </td></tr>
       </tbody>
@@ -142,37 +88,24 @@
   </div>
 </div>
 
-<!-- Import modal -->
-<div class="modal fade" id="modalImport" tabindex="-1">
-  <div class="modal-dialog">
+<!-- ════════ View User Modal — full width, split layout ════════ -->
+<div class="modal fade" id="modalViewUser" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width:960px;">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Import Users</h5>
+      <div class="modal-header border-bottom py-3">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-person-badge me-2 text-primary"></i>User Details
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <div class="alert alert-info alert-sm">
-          <strong>CSV columns:</strong> name, email, phone, password, panel (b2b/b2c)
-        </div>
-        <div class="sms-dropzone" id="importDropzone">
-          <input type="file" id="importFile" accept=".csv,.xlsx,.xls" style="display:none;"/>
-          <i class="bi bi-circle d-block mb-2 text-muted" style="font-size:40px;"></i>
-          <p class="mb-1 text-secondary">Drag & drop or <a href="#" class="text-primary" id="importBrowse">browse</a></p>
-          <p class="mb-0 text-muted small">CSV or Excel · max 5 MB</p>
-        </div>
-        <div id="importFileList" class="mt-2"></div>
-        <div class="progress d-none mt-2" id="importProgress" style="height:4px;">
-          <div class="progress-bar progress-bar-striped progress-bar-animated" id="importBar"></div>
-        </div>
+      <div class="modal-body p-0" id="viewUserBody">
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-primary" id="btnDoImport" disabled>
-          <i class="bi bi-upload me-1"></i>Import
-        </button>
+      <div class="modal-footer py-2 border-top">
+        <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
 </div>
 
-<% block('scripts', '<script src="/js/pages/users.js"></script>') %>
+<% block('scripts', '<link rel="stylesheet" href="/css/permissions.css"/><script src="/js/pages/users.js"></script>') %>

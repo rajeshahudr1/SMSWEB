@@ -6,44 +6,39 @@ var formAction = isEdit ? '/users/' + u.uuid : '/users';
 var pageTitle  = isEdit ? 'Edit User' : 'Add User';
 %>
 
-<div class="page-header">
-  <div class="row align-items-center">
-    <div class="col">
-      <div class="page-pretitle">
-        <a href="/dashboard">Dashboard</a> / <a href="/users">Users</a>
-      </div>
-      <h2 class="page-title"><%- pageTitle %></h2>
-    </div>
-    <div class="col-auto">
-      <a href="/users" class="btn btn-outline-secondary">
-        <i class="bi bi-circle me-1"></i>Back to Users
-      </a>
-    </div>
-  </div>
+<!-- ── Back bar ── -->
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/users" class="btn btn-sm btn-outline-secondary" title="Back to Users list">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+  <h3 class="mb-0" style="font-size:16px;">
+    <i class="bi bi-person-fill me-2 text-primary"></i><%- pageTitle %>
+  </h3>
 </div>
 
 <form id="frmUser" method="POST" action="<%- formAction %>" novalidate>
-<div class="row g-4">
+<div class="row g-3">
 
   <!-- Left column: core fields -->
   <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-person me-2"></i>User Information</div>
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;">
+          <i class="bi bi-person me-1 text-primary"></i>User Information
+        </div>
       </div>
       <div class="card-body">
         <div class="row g-3">
 
           <div class="col-md-6">
-            <label class="form-label required">Full Name</label>
-            <input type="text" name="name" class="form-control"
+            <label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required autofocus
                    value="<%- isEdit ? (u.name||'') : '' %>"
-                   placeholder="Full name" required/>
-            <div class="invalid-feedback">Please enter full name.</div>
+                   placeholder="Full name"/>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label <%- !isEdit ? 'required' : '' %>">Email</label>
+            <label class="form-label fw-medium">Email <% if (!isEdit) { %><span class="text-danger">*</span><% } %></label>
             <input type="email" name="email" class="form-control"
                    value="<%- isEdit ? (u.email||'') : '' %>"
                    placeholder="user@company.com"
@@ -52,27 +47,27 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
           </div>
 
           <div class="col-md-6">
-            <label class="form-label <%- !isEdit ? 'required' : '' %>">Password</label>
+            <label class="form-label fw-medium">Password <% if (!isEdit) { %><span class="text-danger">*</span><% } %></label>
             <div class="input-group">
               <input type="password" name="password" id="fPwd" class="form-control"
                      placeholder="<%- isEdit ? 'Leave blank to keep current' : 'Min 8 characters' %>"
                      <%- isEdit ? '' : 'required minlength="8"' %>/>
-              <button type="button" class="btn btn-outline-secondary btn-pwd-toggle">
+              <button type="button" class="btn btn-outline-secondary btn-pwd-toggle" title="Toggle visibility">
                 <i class="bi bi-eye"></i>
               </button>
             </div>
           </div>
 
+          <!-- Phone with country code -->
           <div class="col-md-6">
-            <label class="form-label">Phone</label>
-            <input type="text" name="phone" class="form-control"
-                   value="<%- isEdit ? (u.phone||'') : '' %>"
-                   placeholder="+91 98765 43210"/>
+            <label class="form-label fw-medium">Phone</label>
+            <input type="hidden" name="phone" id="phoneHidden" value="<%- isEdit ? (u.phone||'') : '' %>"/>
+            <div id="phoneWrap"></div>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">Role</label>
-            <select name="role_id" class="form-select select2">
+            <label class="form-label fw-medium">Role</label>
+            <select name="role_id" id="selRole" class="form-select" style="width:100%;">
               <option value="">— No Role —</option>
               <% if (typeof roles !== 'undefined') { roles.forEach(function(r){ %>
               <option value="<%- r.id %>" <%- isEdit && u.role_id==r.id ? 'selected':'' %>><%- r.name %></option>
@@ -80,18 +75,9 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
             </select>
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Panel Access</label>
-            <select name="panel_access" class="form-select">
-              <option value="b2b"  <%- (!isEdit||u.panel_access==='b2b')  ? 'selected':'' %>>B2B</option>
-              <option value="b2c"  <%- isEdit&&u.panel_access==='b2c'  ? 'selected':'' %>>B2C</option>
-              <option value="both" <%- isEdit&&u.panel_access==='both' ? 'selected':'' %>>Both</option>
-            </select>
-          </div>
-
           <% if (isEdit) { %>
           <div class="col-md-6">
-            <label class="form-label">Status</label>
+            <label class="form-label fw-medium">Status</label>
             <select name="status" class="form-select">
               <option value="1" <%- parseInt(u.status) ? 'selected':'' %>>Active</option>
               <option value="0" <%- !parseInt(u.status) ? 'selected':'' %>>Inactive</option>
@@ -104,58 +90,63 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
     </div>
 
     <!-- Location -->
-    <div class="card mt-4">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-geo-alt-fill me-2"></i>Location</div>
+    <div class="card mt-3 shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;">
+          <i class="bi bi-geo-alt-fill me-1 text-primary"></i>Location
+        </div>
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="form-label">Country</label>
-            <select name="country_id" class="form-select select2" id="sCountry">
-              <option value="">— Country —</option>
+            <label class="form-label fw-medium">Country</label>
+            <select name="country_id" id="sCountry" class="form-select" style="width:100%;">
+              <option value="">— Select Country —</option>
               <% if (typeof countries !== 'undefined') { countries.forEach(function(c){ %>
-              <option value="<%- c.id %>" <%- isEdit&&u.country_id==c.id ? 'selected':'' %>><%- c.name %></option>
+              <option value="<%- c.id %>"
+                <% if (isEdit && u.country_id == c.id) { %>selected<% } %>><%- c.name %></option>
               <% }) } %>
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label">State</label>
-            <select name="state_id" class="form-select" id="sState">
-              <option value="">— State —</option>
+            <label class="form-label fw-medium">State</label>
+            <select name="state_id" id="sState" class="form-select" style="width:100%;">
+              <option value="">— Select State —</option>
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label">City</label>
-            <select name="city_id" class="form-select" id="sCity">
-              <option value="">— City —</option>
+            <label class="form-label fw-medium">City</label>
+            <select name="city_id" id="sCity" class="form-select" style="width:100%;">
+              <option value="">— Select City —</option>
             </select>
           </div>
           <div class="col-md-8">
-            <label class="form-label">Address</label>
+            <label class="form-label fw-medium">Address</label>
             <input type="text" name="address" class="form-control"
-                   value="<%- isEdit ? (u.address||'') : '' %>"/>
+                   value="<%- isEdit ? (u.address||'') : '' %>" placeholder="Street address"/>
           </div>
           <div class="col-md-4">
-            <label class="form-label">ZIP Code</label>
+            <label class="form-label fw-medium">ZIP Code</label>
             <input type="text" name="zip_code" class="form-control"
-                   value="<%- isEdit ? (u.zip_code||'') : '' %>"/>
+                   value="<%- isEdit ? (u.zip_code||'') : '' %>" placeholder="ZIP / Postal code"/>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Right column: extra info + settings -->
+  <!-- Right column -->
   <div class="col-lg-4">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-circle me-2"></i>Personal Details</div>
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;">
+          <i class="bi bi-person-badge me-1 text-primary"></i>Personal Details
+        </div>
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-12">
-            <label class="form-label">Gender</label>
+            <label class="form-label fw-medium">Gender</label>
             <select name="gender" class="form-select">
               <option value="">— Select —</option>
               <option value="male"   <%- isEdit&&u.gender==='male'   ? 'selected':'' %>>Male</option>
@@ -164,18 +155,18 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label">Date of Birth</label>
+            <label class="form-label fw-medium">Date of Birth</label>
             <input type="date" name="dob" class="form-control"
                    value="<%- isEdit&&u.dob ? String(u.dob).slice(0,10) : '' %>"/>
           </div>
           <div class="col-12">
-            <label class="form-label">Aadhar Number</label>
+            <label class="form-label fw-medium">Aadhar Number</label>
             <input type="text" name="aadhar_no" class="form-control"
                    value="<%- isEdit ? (u.aadhar_no||'') : '' %>"
                    placeholder="12-digit" maxlength="12"/>
           </div>
           <div class="col-12">
-            <label class="form-label">PAN Number</label>
+            <label class="form-label fw-medium">PAN Number</label>
             <input type="text" name="pan_no" class="form-control text-uppercase"
                    value="<%- isEdit ? (u.pan_no||'') : '' %>"
                    placeholder="ABCDE1234F" maxlength="10"/>
@@ -184,9 +175,11 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
       </div>
     </div>
 
-    <div class="card mt-4">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-shield me-2"></i>Access</div>
+    <div class="card mt-3 shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;">
+          <i class="bi bi-shield-check me-1 text-primary"></i>Access
+        </div>
       </div>
       <div class="card-body">
         <label class="form-check form-switch">
@@ -194,19 +187,18 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
                  <%- isEdit&&parseInt(u.is_org_admin) ? 'checked':'' %>/>
           <span class="form-check-label fw-medium">Organisation Admin</span>
         </label>
-        <div class="form-hint">Bypasses all permission checks.</div>
+        <div class="form-hint">Bypasses all permission checks within this org.</div>
       </div>
     </div>
 
     <!-- Action buttons -->
-    <div class="card mt-4">
-      <div class="card-body">
+    <div class="card mt-3 shadow-sm">
+      <div class="card-body py-3">
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary" id="btnSubmit">
-            <i class="bi bi-floppy me-1"></i>
-            <%- isEdit ? 'Update User' : 'Create User' %>
+          <button type="submit" class="btn btn-primary" id="btnSubmit" title="<%- isEdit ? 'Update user' : 'Create new user' %>">
+            <i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update User' : 'Create User' %>
           </button>
-          <a href="/users" class="btn btn-outline-secondary">
+          <a href="/users" class="btn btn-outline-secondary" title="Discard and go back">
             <i class="bi bi-x-lg me-1"></i>Cancel
           </a>
         </div>
@@ -217,4 +209,14 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
 </div>
 </form>
 
-<% block('scripts', "<script>\n$(function(){\n  // Init location cascade\n  initLocationCascade(document);\n  initSelect2('.select2');\n\n  // Form submit\n  $('#frmUser').on('submit', function(e){\n    e.preventDefault();\n    var $btn = $('#btnSubmit');\n    btnLoading($btn);\n    var fd = new FormData(this);\n    smsAjax({\n      url:  $(this).attr('action'),\n      method: 'POST',\n      data: fd, fd: true,\n      btn: $btn,\n      success: function(r){\n        if(r.status===200||r.status===201){\n          toastr.success(r.message||'Saved.');\n          setTimeout(function(){ window.location='/users'; }, 800);\n        } else {\n          toastr.error(r.message||'Error saving.');\n          btnReset($btn);\n        }\n      }\n    });\n  });\n});\n</script>") %>
+<!-- Pass server data to JS without backticks -->
+<script>
+window._FORM_DATA = {
+  isEdit:     <%= isEdit ? 'true' : 'false' %>,
+  country_id: <%= isEdit && u.country_id ? u.country_id : 0 %>,
+  state_id:   <%= isEdit && u.state_id   ? u.state_id   : 0 %>,
+  city_id:    <%= isEdit && u.city_id    ? u.city_id    : 0 %>
+};
+</script>
+
+<% block('scripts', '<script src="/js/common/phone.js"></script><script src="/js/pages/users-form.js"></script>') %>

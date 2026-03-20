@@ -6,23 +6,23 @@
 const express = require('express');
 const router  = express.Router();
 const C       = require('../Controllers/MenusController');
-const { requireLogin, requirePermission } = require('../Middlewares/auth');
+const { requireLogin, requireSuperAdmin } = require('../Middlewares/auth');
 
 router.use(requireLogin);
 
 /* ── Fixed-string routes FIRST ─────────────────────── */
-router.get( '/',            requirePermission('view_menus'),   C.index);
-router.get( '/data',        requirePermission('view_menus'),   C.getData);
-router.get( '/flat',        requirePermission('view_menus'),   C.getFlat);
-router.get( '/create',      requirePermission('add_menus'),    C.create);
-router.post('/',            requirePermission('add_menus'),    C.store);
-router.post('/reorder',     requirePermission('edit_menus'),   C.reorder);   // ← BEFORE /:uuid
+router.get( '/',            requireSuperAdmin,   C.index);
+router.get( '/data',        requireSuperAdmin,   C.getData);
+router.get( '/flat',        requireSuperAdmin,   C.getFlat);
+router.get( '/create',      requireSuperAdmin,    C.create);
+router.post('/',            requireSuperAdmin,    C.store);
+router.post('/reorder',     requireSuperAdmin,   C.reorder);   // ← BEFORE /:uuid
 
 /* ── Param routes AFTER ────────────────────────────── */
-router.get( '/:uuid/edit',              requirePermission('edit_menus'),   C.edit);
-router.post('/:uuid',                   requirePermission('edit_menus'),   C.update);
-router.post('/:uuid/delete',            requirePermission('delete_menus'), C.destroy);
-router.post('/:uuid/toggle-visibility', requirePermission('edit_menus'),   C.toggleVisibility);
-router.post('/:uuid/move',              requirePermission('edit_menus'),   C.move);
+router.get( '/:uuid/edit',              requireSuperAdmin,   C.edit);
+router.post('/:uuid',                   requireSuperAdmin,   C.update);
+router.post('/:uuid/delete',            requireSuperAdmin, C.destroy);
+router.post('/:uuid/toggle-visibility', requireSuperAdmin,   C.toggleVisibility);
+router.post('/:uuid/move',              requireSuperAdmin,   C.move);
 
 module.exports = router;

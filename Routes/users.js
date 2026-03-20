@@ -38,6 +38,7 @@ router.post('/bulk-action',            requirePermission('edit_users'),   Users.
 // ── CRUD ──
 router.get( '/create',                 requirePermission('add_users'),    Users.create);
 router.post('/',                       requirePermission('add_users'),    Users.store);
+router.get( '/:uuid/view-data',        requirePermission('view_users'),   Users.viewData);
 router.get( '/:uuid/edit',             requirePermission('edit_users'),   Users.edit);
 router.post('/:uuid',                  requirePermission('edit_users'),   Users.update);
 router.post('/:uuid/toggle-status',    requirePermission('edit_users'),   Users.toggleStatus);

@@ -153,8 +153,34 @@ function initLocationCascade(ctx) {
     });
 }
 
+/* ── Global date formatter — reads SMS_SETTINGS.date_format ── */
+var SMS_MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var SMS_MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+/**
+ * smsFormatDate(dateStr)
+ * Formats a date string (ISO/DB) using the format from SMS_SETTINGS.date_format.
+ * Supported: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, DD MMM YYYY, DD MMMM YYYY
+ */
+function smsFormatDate(dateStr) {
+    if (!dateStr) return '—';
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr).slice(0, 10);
+    var dd   = String(d.getDate()).padStart(2, '0');
+    var mm   = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear();
+    var fmt  = (typeof SMS_SETTINGS !== 'undefined' && SMS_SETTINGS.date_format) ? SMS_SETTINGS.date_format : 'DD/MM/YYYY';
+    switch (fmt) {
+        case 'MM/DD/YYYY':   return mm + '/' + dd + '/' + yyyy;
+        case 'YYYY-MM-DD':   return yyyy + '-' + mm + '-' + dd;
+        case 'DD MMM YYYY':  return dd + ' ' + SMS_MONTHS_SHORT[d.getMonth()] + ' ' + yyyy;
+        case 'DD MMMM YYYY': return dd + ' ' + SMS_MONTHS_FULL[d.getMonth()] + ' ' + yyyy;
+        default:             return dd + '/' + mm + '/' + yyyy;
+    }
+}
+
 /* ── Global per-page options (must match settings page) ── */
-var SMS_PER_PAGE_OPTIONS = [5,10, 15, 25, 50, 100, 250, 500, 1000];
+var SMS_PER_PAGE_OPTIONS = [10, 15, 25, 50, 100, 250, 500, 1000];
 
 /**
  * smsInitPerPage(selector)
