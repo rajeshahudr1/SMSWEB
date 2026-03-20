@@ -1,0 +1,125 @@
+/* ================================================================
+   permissions.css  —  SMS Permissions Manager styles
+================================================================ */
+
+/* ── B2B / B2C panel pill toggle ── */
+.sms-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--tblr-bg-surface-secondary, #f0f2f5);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.sms-panel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tblr-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: all .2s ease;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.sms-panel-btn i { font-size: 13px; transition: color .2s ease; }
+.sms-panel-btn:hover:not(.active) {
+  color: var(--tblr-body-color);
+  background: rgba(var(--tblr-primary-rgb), .06);
+}
+.sms-panel-btn.active {
+  background: var(--tblr-primary);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(var(--tblr-primary-rgb), .35);
+}
+.sms-panel-btn.active i { color: #fff; }
+.theme-dark .sms-panel-toggle {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.08);
+}
+.theme-dark .sms-panel-btn:hover:not(.active) {
+  background: rgba(255,255,255,.08);
+}
+
+/* ── Permission group ── */
+.sms-perm-group {
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.sms-perm-group__header {
+  display: flex;
+  align-items: center;
+  padding: 9px 14px;
+  background: var(--tblr-bg-surface-secondary);
+  border-bottom: 1px solid var(--tblr-border-color);
+}
+.sms-perm-group__body {
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* ── Permission chip ── */
+.sms-perm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 6px;
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 6px;
+  background: var(--tblr-bg-surface);
+  font-size: 13px;
+  transition: background .1s, box-shadow .1s;
+}
+.sms-perm-chip:hover {
+  background: var(--tblr-bg-surface-secondary);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.sms-perm-chip__name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.sms-perm-chip__key {
+  font-size: 10px;
+  color: var(--tblr-text-muted);
+  background: var(--tblr-bg-surface-secondary);
+  border: 1px solid var(--tblr-border-color);
+  padding: 1px 5px;
+  border-radius: 3px;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sms-perm-chip__acts {
+  display: flex;
+  gap: 1px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.sms-perm-chip:hover .sms-perm-chip__acts { opacity: 1; }
+.sms-perm-chip__acts .btn {
+  padding: 2px 5px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 576px) {
+  .sms-perm-chip__key  { display: none !important; }
+  .sms-perm-chip__acts { opacity: 1; }
+  .sms-perm-chip       { font-size: 12px; }
+}

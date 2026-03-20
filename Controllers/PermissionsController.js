@@ -5,7 +5,7 @@ exports.index = async (req, res) => {
     res.render('permissions/index', {
         page_title: 'Permissions',
         activeLink: 'permissions',
-        breadcrumbs: [{ name:'Dashboard',url:'/dashboard'},{name:'Permissions',url:'/permissions'}],
+        breadcrumbs: [],
     });
 };
 
@@ -15,28 +15,26 @@ exports.getData = async (req, res) => {
     res.json(result);
 };
 
-exports.create = async (req, res) => {
-    const groups = await api.get('/permissions/groups', req.session.token);
-    res.render('permissions/form', {
-        page_title:'Add Permission', activeLink:'permissions',
-        breadcrumbs:[{name:'Dashboard',url:'/dashboard'},{name:'Permissions',url:'/permissions'},{name:'Add',url:''}],
-        permission: null,
-        groups: groups.status === 200 ? groups.data : [],
-    });
+// Proxy: GET /permissions/actions → API /permissions/actions
+exports.getActions = async (req, res) => {
+    const result = await api.get('/permissions/actions', req.session.token);
+    res.json(result);
 };
 
+// Proxy: GET /permissions/menus → API /permissions/menus
+exports.getMenus = async (req, res) => {
+    const result = await api.get('/permissions/menus', req.session.token, req.query);
+    res.json(result);
+};
+
+// Keep for backward compat (old route /permissions/create)
+exports.create = async (req, res) => {
+    res.redirect('/permissions');
+};
+
+// Keep for backward compat (old route /:uuid/edit)
 exports.edit = async (req, res) => {
-    const [permRes, groupsRes] = await Promise.all([
-        api.get('/permissions/' + req.params.uuid, req.session.token),
-        api.get('/permissions/groups', req.session.token),
-    ]);
-    if (permRes.status !== 200) return res.send('<div class="alert alert-danger m-3">Permission not found.</div>');
-    res.render('permissions/form', {
-        page_title:'Edit Permission', activeLink:'permissions',
-        breadcrumbs:[{name:'Dashboard',url:'/dashboard'},{name:'Permissions',url:'/permissions'},{name:'Edit',url:''}],
-        permission: permRes.data,
-        groups: groupsRes.status === 200 ? groupsRes.data : [],
-    });
+    res.redirect('/permissions');
 };
 
 exports.store = async (req, res) => {
