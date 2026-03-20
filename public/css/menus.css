@@ -248,3 +248,56 @@
   .sms-ttl                { font-size: 12.5px; }
   .sms-acts .btn          { padding: 3px 5px; font-size: 12px; }
 }
+
+/* ── B2B / B2C panel pill toggle ── */
+.sms-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--tblr-bg-surface-secondary, #f0f2f5);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.sms-panel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tblr-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: all .2s ease;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.sms-panel-btn i {
+  font-size: 13px;
+  transition: color .2s ease;
+}
+.sms-panel-btn:hover:not(.active) {
+  color: var(--tblr-body-color);
+  background: rgba(var(--tblr-primary-rgb), .06);
+}
+.sms-panel-btn.active {
+  background: var(--tblr-primary);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(var(--tblr-primary-rgb), .35);
+}
+.sms-panel-btn.active i {
+  color: #fff;
+}
+/* Dark mode adjustments */
+.theme-dark .sms-panel-toggle {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.08);
+}
+.theme-dark .sms-panel-btn:hover:not(.active) {
+  background: rgba(255,255,255,.08);
+}

@@ -1406,7 +1406,7 @@ body.sms-sb-collapsed .page-wrapper { margin-left: var(--sb-w-col) !important; }
    ================================================================ */
 
 /* Remove page-header breadcrumb from profile (header is in topbar) */
-.page-header { display: none; }
+/*.page-header { display: none; }*/
 
 /* ── Avatar upload zone ── */
 .sms-avatar-upload-wrap {

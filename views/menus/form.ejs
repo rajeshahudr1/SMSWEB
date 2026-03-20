@@ -143,18 +143,23 @@ var ICONS = [
       </select>
     </div>
 
-    <!-- Panel type — pre-selected from active tab (B2B or B2C) -->
+    <!-- Panel type — locked: add=active tab, edit=existing value, not changeable -->
+    <%
+      var panelVal  = isE ? (m.panel_type || curPanel) : curPanel;
+      var panelLbl  = panelVal === 'both' ? 'Both Panels' : (panelVal.toUpperCase() + ' Only');
+      var panelBg   = panelVal === 'b2c' ? 'bg-success-lt text-success' : 'bg-primary-lt text-primary';
+      var panelIcon = panelVal === 'b2c' ? 'bi-person' : 'bi-building';
+    %>
     <div class="col-sm-5">
       <label class="form-label fw-medium">Panel</label>
-      <select name="panel_type" class="form-select form-select-sm">
-        <option value="b2b"  <%- (isE ? m.panel_type==='b2b'  : curPanel==='b2b')  ? 'selected':'' %>>B2B Only</option>
-        <option value="b2c"  <%- (isE ? m.panel_type==='b2c'  : curPanel==='b2c')  ? 'selected':'' %>>B2C Only</option>
-        <option value="both" <%- (isE ? m.panel_type==='both' : false)              ? 'selected':'' %>>Both Panels</option>
-      </select>
-      <div class="form-hint">
-        Active tab: <span class="badge <%- curPanel==='b2b' ? 'bg-primary-lt text-primary' : 'bg-success-lt text-success' %>">
-          <%- curPanel.toUpperCase() %>
+      <input type="hidden" name="panel_type" value="<%- panelVal %>"/>
+      <div class="form-control form-control-sm bg-body-secondary d-flex align-items-center gap-2" style="pointer-events:none;">
+        <span class="badge <%- panelBg %> px-2">
+          <i class="bi <%- panelIcon %> me-1"></i><%- panelLbl %>
         </span>
+      </div>
+      <div class="form-hint">
+        <% if (isE) { %>Inherited from menu. To change panel, recreate the menu.<% } else { %>Set from active tab. Switch tab to create for other panel.<% } %>
       </div>
     </div>
 

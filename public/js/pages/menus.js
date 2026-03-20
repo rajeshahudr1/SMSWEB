@@ -730,9 +730,9 @@ $('#btnSortSave').on('click', function(){
 /* ════════════════════════════════════════════════════════════
    PANEL TABS
 ════════════════════════════════════════════════════════════ */
-$('#panelGroup').on('click', '[data-panel]', function(){
-    $('#panelGroup .btn').removeClass('btn-primary active').addClass('btn-outline-primary');
-    $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+$('#panelGroup').on('click', '.sms-panel-btn', function(){
+    $('#panelGroup .sms-panel-btn').removeClass('active');
+    $(this).addClass('active');
     _panel = $(this).data('panel');
     loadTree();
     /* Update Add button label to reflect current panel */
