@@ -73,7 +73,7 @@ function buildPagination(pg, onPage) {
     if (!pg || pg.last_page <= 1) return '';
     var html = '<nav><ul class="pagination pagination-sm mb-0 flex-wrap">';
     html += '<li class="page-item ' + (pg.current_page <= 1 ? 'disabled' : '') + '">' +
-            '<a class="page-link" href="#" data-p="' + (pg.current_page - 1) + '"><i class="ti ti-chevron-left"></i></a></li>';
+        '<a class="page-link" href="#" data-p="' + (pg.current_page - 1) + '"><i class="ti ti-chevron-left"></i></a></li>';
 
     var pages = [], prev = 0;
     for (var i = 1; i <= pg.last_page; i++) {
@@ -87,11 +87,11 @@ function buildPagination(pg, onPage) {
             html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
         } else {
             html += '<li class="page-item ' + (p === pg.current_page ? 'active' : '') + '">' +
-                    '<a class="page-link" href="#" data-p="' + p + '">' + p + '</a></li>';
+                '<a class="page-link" href="#" data-p="' + p + '">' + p + '</a></li>';
         }
     });
     html += '<li class="page-item ' + (pg.current_page >= pg.last_page ? 'disabled' : '') + '">' +
-            '<a class="page-link" href="#" data-p="' + (pg.current_page + 1) + '"><i class="ti ti-chevron-right"></i></a></li>';
+        '<a class="page-link" href="#" data-p="' + (pg.current_page + 1) + '"><i class="ti ti-chevron-right"></i></a></li>';
     html += '</ul></nav>';
 
     // Bind after insert
@@ -151,6 +151,29 @@ function initLocationCascade(ctx) {
             if ($city.hasClass('select2-hidden-accessible')) $city.trigger('change');
         });
     });
+}
+
+/* ── Global per-page options (must match settings page) ── */
+var SMS_PER_PAGE_OPTIONS = [5,10, 15, 25, 50, 100, 250, 500, 1000];
+
+/**
+ * smsInitPerPage(selector)
+ * Populates a per-page <select> with options from SMS_PER_PAGE_OPTIONS.
+ * Reads current value from SMS_SETTINGS.items_per_page.
+ * Includes "All" option. Use on any listing page.
+ */
+function smsInitPerPage(selector) {
+    var $sel = $(selector || '#perPageSel');
+    if (!$sel.length) return 15;
+    var current = (typeof SMS_SETTINGS !== 'undefined' && SMS_SETTINGS.items_per_page)
+        ? SMS_SETTINGS.items_per_page : '15';
+    var html = '';
+    SMS_PER_PAGE_OPTIONS.forEach(function(n) {
+        html += '<option value="' + n + '"' + (String(n) === String(current) ? ' selected' : '') + '>' + n + ' rows</option>';
+    });
+    html += '<option value="all"' + (current === 'all' ? ' selected' : '') + '>All rows</option>';
+    $sel.html(html);
+    return current === 'all' ? 99999 : (parseInt(current) || 15);
 }
 
 /* ── Global DOM ready ── */

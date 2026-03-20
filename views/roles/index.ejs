@@ -1,85 +1,61 @@
 <%- layout('../layouts/main') %>
 
-<div class="page-header">
-  <div class="row align-items-center g-2">
-    <div class="col">
-      <div class="page-pretitle"><a href="/dashboard">Dashboard</a></div>
-      <h2 class="page-title"><i class="bi bi-circle me-2 text-primary"></i>Roles</h2>
-    </div>
-    <div class="col-auto">
+<div class="card shadow-sm">
+
+  <!-- ── Card header ── -->
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto">
+        <i class="bi bi-shield-check me-2 text-primary"></i>Roles
+        <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span>
+      </h3>
+
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;" title="Rows per page"></select>
+
       <% if (can('add_roles')) { %>
-      <a href="/roles/create" class="btn btn-primary">
+      <a href="/roles/create" class="btn btn-sm btn-primary" title="Create a new role">
         <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Add Role</span>
       </a>
       <% } %>
     </div>
   </div>
-</div>
 
-<!-- Filters -->
-<div class="card mb-3">
-  <div class="card-body py-3">
-    <div class="row g-2 align-items-end">
-      <div class="col-12 col-sm-6 col-md-4">
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" class="form-control" id="searchInput" placeholder="Search roles…"/>
-        </div>
+  <!-- ── Filters ── -->
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-5 col-md-4">
+        <input type="text" class="form-control form-control-sm sms-filter-search" id="searchInput"
+               placeholder="&#128269;  Search roles…"/>
       </div>
-      <div class="col-6 col-sm-4 col-md-2">
-        <select class="form-select" id="filterPanel">
-          <option value="">All Panels</option>
-          <option value="b2b">B2B</option>
-          <option value="b2c">B2C</option>
-        </select>
-      </div>
-      <div class="col-6 col-sm-4 col-md-2">
-        <select class="form-select" id="filterStatus">
+      <div class="col-6 col-sm-3 col-md-2">
+        <select class="form-select form-select-sm" id="filterStatus" style="width:100%;">
           <option value="">All Status</option>
           <option value="1">Active</option>
           <option value="0">Inactive</option>
         </select>
       </div>
       <div class="col-auto">
-        <button class="btn btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button>
+        <button class="btn btn-sm btn-outline-secondary sms-filter-clear" id="btnClearFilters" title="Clear all filters">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
-      <% if (can('view_roles')) { %>
-      <div class="col-auto ms-auto">
-        <a href="/roles/export?format=csv" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-download me-1"></i>Export CSV
-        </a>
-      </div>
-      <% } %>
-    </div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <div class="card-title">All Roles <span class="badge bg-primary-lt ms-2" id="badgeTotal">–</span></div>
-    <div class="card-options">
-      <select class="form-select form-select-sm" id="perPageSel" style="width:80px;">
-        <option value="10">10</option>
-        <option value="15" selected>15</option>
-        <option value="25">25</option>
-      </select>
     </div>
   </div>
 
+  <!-- ── Table ── -->
   <div class="table-responsive">
-    <table class="table table-hover table-vcenter">
+    <table class="table table-hover table-vcenter mb-0">
       <thead>
         <tr>
           <th style="width:36px;" class="text-muted">#</th>
-          <th class="sortable" data-field="name">Role Name <i class="bi bi-circle text-muted small"></i></th>
-          <th class="d-none d-sm-table-cell">Panel</th>
+          <th class="sortable" data-field="name">Role Name <i class="bi bi-arrow-down-up text-muted small"></i></th>
           <th class="d-none d-md-table-cell">Permissions</th>
           <th>Status</th>
           <th class="text-end" style="width:100px;">Actions</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="6" class="text-center py-5 text-muted">
+        <tr><td colspan="5" class="text-center py-5 text-muted">
           <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…
         </td></tr>
       </tbody>
@@ -92,4 +68,4 @@
   </div>
 </div>
 
-<% block('scripts', '<script src="/js/pages/roles.js"></script>') %>
+<% block('scripts', '<link rel="stylesheet" href="/css/permissions.css"/><script src="/js/pages/roles.js"></script>') %>

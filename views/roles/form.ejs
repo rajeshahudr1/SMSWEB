@@ -5,49 +5,61 @@ var isEdit = !!r;
 var assignedIds = isEdit && r.permissions ? r.permissions.map(function(p){ return parseInt(p.id); }) : [];
 var formAction  = isEdit ? '/roles/' + r.uuid : '/roles';
 var pageTitle   = isEdit ? 'Edit Role' : 'Add Role';
+
+/* Split permissions by panel for B2B/B2C tabs */
+var b2bGroups = {};
+var b2cGroups = {};
+var b2bCount  = 0;
+var b2cCount  = 0;
+if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions).length) {
+    Object.keys(permissions).forEach(function(groupName) {
+        permissions[groupName].forEach(function(p) {
+            if (p.panel_type === 'b2b' || p.panel_type === 'both') {
+                if (!b2bGroups[groupName]) b2bGroups[groupName] = [];
+                b2bGroups[groupName].push(p);
+                b2bCount++;
+            }
+            if (p.panel_type === 'b2c' || p.panel_type === 'both') {
+                if (!b2cGroups[groupName]) b2cGroups[groupName] = [];
+                b2cGroups[groupName].push(p);
+                b2cCount++;
+            }
+        });
+    });
+}
 %>
 
-<div class="page-header">
-  <div class="row align-items-center">
-    <div class="col">
-      <div class="page-pretitle"><a href="/dashboard">Dashboard</a> / <a href="/roles">Roles</a></div>
-      <h2 class="page-title"><%- pageTitle %></h2>
-    </div>
-    <div class="col-auto">
-      <a href="/roles" class="btn btn-outline-secondary">
-        <i class="bi bi-circle me-1"></i>Back
-      </a>
-    </div>
-  </div>
+<!-- ── Back bar ── -->
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/roles" class="btn btn-sm btn-outline-secondary" title="Back to Roles list">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+  <h3 class="mb-0" style="font-size:16px;">
+    <i class="bi bi-shield-check me-2 text-primary"></i><%- pageTitle %>
+  </h3>
 </div>
 
 <form id="frmRole" method="POST" action="<%- formAction %>" novalidate>
-<div class="row g-4">
+<div class="row g-3">
 
+  <!-- Left: Role details -->
   <div class="col-lg-4">
-    <!-- Role details -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-shield me-2"></i>Role Details</div>
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;">
+          <i class="bi bi-info-circle me-1 text-primary"></i>Role Details
+        </div>
       </div>
       <div class="card-body">
         <div class="mb-3">
-          <label class="form-label required">Role Name</label>
-          <input type="text" name="name" class="form-control"
+          <label class="form-label fw-medium">Role Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" required autofocus
                  value="<%- isEdit ? (r.name||'') : '' %>"
-                 placeholder="e.g. Yard Manager" required/>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Panel Type</label>
-          <select name="panel_type" class="form-select">
-            <option value="b2b"  <%- (!isEdit||r.panel_type==='b2b')  ? 'selected':'' %>>B2B</option>
-            <option value="b2c"  <%- isEdit&&r.panel_type==='b2c'  ? 'selected':'' %>>B2C</option>
-            <option value="both" <%- isEdit&&r.panel_type==='both' ? 'selected':'' %>>Both</option>
-          </select>
+                 placeholder="e.g. Yard Manager, Buyer…"/>
         </div>
         <% if (isEdit) { %>
         <div class="mb-3">
-          <label class="form-label">Status</label>
+          <label class="form-label fw-medium">Status</label>
           <select name="status" class="form-select">
             <option value="1" <%- parseInt(r.status) ? 'selected':'' %>>Active</option>
             <option value="0" <%- !parseInt(r.status) ? 'selected':'' %>>Inactive</option>
@@ -55,68 +67,135 @@ var pageTitle   = isEdit ? 'Edit Role' : 'Add Role';
         </div>
         <% } %>
         <div class="mb-0">
-          <label class="form-label">Description</label>
+          <label class="form-label fw-medium">Description</label>
           <textarea name="description" class="form-control" rows="3"
-                    placeholder="Optional description"><%- isEdit ? (r.description||'') : '' %></textarea>
+                    placeholder="Optional description…"><%- isEdit ? (r.description||'') : '' %></textarea>
         </div>
       </div>
     </div>
 
     <!-- Save card -->
-    <div class="card mt-4">
-      <div class="card-body">
+    <div class="card mt-3 shadow-sm">
+      <div class="card-body py-3">
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary" id="btnSubmit">
+          <button type="submit" class="btn btn-primary" id="btnSubmit" title="<%- isEdit ? 'Update this role' : 'Create new role' %>">
             <i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update Role' : 'Create Role' %>
           </button>
-          <a href="/roles" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+          <a href="/roles" class="btn btn-outline-secondary" title="Discard and go back"><i class="bi bi-x-lg me-1"></i>Cancel</a>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Right: Permissions with B2B/B2C tabs -->
   <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-key me-2"></i>Permissions</div>
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;">
+          <i class="bi bi-key me-1 text-primary"></i>Permissions
+        </div>
         <div class="card-options gap-2">
-          <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll">Select All</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearAll">Clear All</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll" title="Select all permissions in active tab">Select All</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearAll" title="Clear all permissions in active tab">Clear All</button>
         </div>
       </div>
-      <div class="card-body p-0" style="max-height:600px;overflow-y:auto;">
-        <% if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions).length) { %>
-        <% Object.keys(permissions).forEach(function(groupName){ %>
-        <div class="border-bottom">
-          <div class="d-flex align-items-center justify-content-between px-4 py-2 bg-light">
-            <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;"><%- groupName %></span>
-            <label class="form-check mb-0">
-              <input type="checkbox" class="form-check-input group-toggle" data-group="<%- groupName %>"/>
-              <span class="form-check-label small">All</span>
-            </label>
-          </div>
-          <div class="row g-0 px-4 py-3">
-            <% permissions[groupName].forEach(function(p){ %>
-            <div class="col-12 col-sm-6 col-lg-4 mb-2">
-              <label class="form-check d-flex align-items-center gap-2 mb-0">
-                <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
-                       name="permission_ids[]" value="<%- p.id %>" data-group="<%- groupName %>"
-                       <%- assignedIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
-                <span class="form-check-label" style="font-size:12.5px;">
-                  <span class="badge badge-sm me-1
-                    <%- p.action==='view'?'bg-azure-lt':p.action==='add'?'bg-green-lt':p.action==='edit'?'bg-orange-lt':p.action==='delete'?'bg-red-lt':'bg-secondary-lt' %>"
-                        style="font-size:9.5px;"><%- p.action %></span>
-                  <%- p.display_name %>
-                </span>
-              </label>
+
+      <!-- B2B / B2C Tabs -->
+      <div class="card-body p-0">
+        <ul class="nav nav-tabs px-3 pt-2" role="tablist" id="permTabs">
+          <li class="nav-item">
+            <button class="nav-link active d-flex align-items-center gap-2" data-bs-toggle="tab" data-bs-target="#tabB2B" type="button" role="tab">
+              <i class="bi bi-building"></i>
+              B2B Permissions
+              <span class="badge bg-primary-lt rounded-pill" style="font-size:10px;"><%- b2bCount %></span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link d-flex align-items-center gap-2" data-bs-toggle="tab" data-bs-target="#tabB2C" type="button" role="tab">
+              <i class="bi bi-person"></i>
+              B2C Permissions
+              <span class="badge bg-success-lt rounded-pill" style="font-size:10px;"><%- b2cCount %></span>
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" style="max-height:550px;overflow-y:auto;">
+
+          <!-- B2B Tab -->
+          <div class="tab-pane fade show active" id="tabB2B" role="tabpanel">
+            <% if (Object.keys(b2bGroups).length) { %>
+            <% Object.keys(b2bGroups).forEach(function(groupName){ %>
+            <div class="border-bottom">
+              <div class="d-flex align-items-center justify-content-between px-4 py-2 bg-light">
+                <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;"><%- groupName %></span>
+                <label class="form-check mb-0">
+                  <input type="checkbox" class="form-check-input group-toggle" data-group="b2b_<%- groupName %>"/>
+                  <span class="form-check-label small">All</span>
+                </label>
+              </div>
+              <div class="row g-0 px-4 py-2">
+                <% b2bGroups[groupName].forEach(function(p){
+                     var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
+                     var color  = aColor[p.action] || 'secondary';
+                %>
+                <div class="col-12 col-sm-6 col-lg-4 mb-2">
+                  <label class="form-check d-flex align-items-center gap-2 mb-0">
+                    <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
+                           name="permission_ids[]" value="<%- p.id %>" data-group="b2b_<%- groupName %>"
+                           <%- assignedIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                    <span class="form-check-label" style="font-size:12.5px;">
+                      <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
+                      <%- p.display_name %>
+                    </span>
+                  </label>
+                </div>
+                <% }) %>
+              </div>
             </div>
             <% }) %>
+            <% } else { %>
+            <div class="text-center text-muted py-5">No B2B permissions found.</div>
+            <% } %>
           </div>
+
+          <!-- B2C Tab -->
+          <div class="tab-pane fade" id="tabB2C" role="tabpanel">
+            <% if (Object.keys(b2cGroups).length) { %>
+            <% Object.keys(b2cGroups).forEach(function(groupName){ %>
+            <div class="border-bottom">
+              <div class="d-flex align-items-center justify-content-between px-4 py-2 bg-light">
+                <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;"><%- groupName %></span>
+                <label class="form-check mb-0">
+                  <input type="checkbox" class="form-check-input group-toggle" data-group="b2c_<%- groupName %>"/>
+                  <span class="form-check-label small">All</span>
+                </label>
+              </div>
+              <div class="row g-0 px-4 py-2">
+                <% b2cGroups[groupName].forEach(function(p){
+                     var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
+                     var color  = aColor[p.action] || 'secondary';
+                %>
+                <div class="col-12 col-sm-6 col-lg-4 mb-2">
+                  <label class="form-check d-flex align-items-center gap-2 mb-0">
+                    <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
+                           name="permission_ids[]" value="<%- p.id %>" data-group="b2c_<%- groupName %>"
+                           <%- assignedIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                    <span class="form-check-label" style="font-size:12.5px;">
+                      <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
+                      <%- p.display_name %>
+                    </span>
+                  </label>
+                </div>
+                <% }) %>
+              </div>
+            </div>
+            <% }) %>
+            <% } else { %>
+            <div class="text-center text-muted py-5">No B2C permissions found.</div>
+            <% } %>
+          </div>
+
         </div>
-        <% }) %>
-        <% } else { %>
-        <div class="text-center text-muted py-5">No permissions found.</div>
-        <% } %>
       </div>
     </div>
   </div>
@@ -124,4 +203,44 @@ var pageTitle   = isEdit ? 'Edit Role' : 'Add Role';
 </div>
 </form>
 
-<% block('scripts', "<script>\n$(function(){\n  $('#frmRole').on('submit', function(e){\n    e.preventDefault();\n    var $btn = $('#btnSubmit');\n    btnLoading($btn);\n    smsAjax({\n      url: $(this).attr('action'),\n      data: $(this).serialize(),\n      btn: $btn,\n      success: function(r){\n        if(r.status===200||r.status===201){\n          toastr.success(r.message||'Saved.');\n          setTimeout(function(){ window.location='/roles'; }, 800);\n        } else {\n          toastr.error(r.message||'Error.');\n          btnReset($btn);\n        }\n      }\n    });\n  });\n});\n</script>") %>
+<% block('scripts', `<script>
+$(function(){
+  /* ── Select All / Clear All — scoped to active tab ── */
+  $('#btnSelectAll').on('click', function(){
+    var activeTab = $('#permTabs .nav-link.active').attr('data-bs-target');
+    $(activeTab).find('.perm-check').prop('checked', true);
+    $(activeTab).find('.group-toggle').prop('checked', true);
+  });
+  $('#btnClearAll').on('click', function(){
+    var activeTab = $('#permTabs .nav-link.active').attr('data-bs-target');
+    $(activeTab).find('.perm-check').prop('checked', false);
+    $(activeTab).find('.group-toggle').prop('checked', false);
+  });
+
+  /* ── Group toggle — scoped by prefixed group name ── */
+  $(document).on('change', '.group-toggle', function(){
+    var g = $(this).data('group');
+    $('.perm-check[data-group="'+g+'"]').prop('checked', $(this).is(':checked'));
+  });
+
+  /* ── Submit ── */
+  $('#frmRole').on('submit', function(e){
+    e.preventDefault();
+    var $btn = $('#btnSubmit');
+    /* Do NOT call btnLoading here — smsAjax handles it via btn option */
+    smsAjax({
+      url: $(this).attr('action'),
+      data: $(this).serialize(),
+      btn: $btn,
+      success: function(r){
+        if(r.status===200||r.status===201){
+          toastr.success(r.message||'Saved.');
+          setTimeout(function(){ window.location='/roles'; }, 800);
+        } else {
+          toastr.error(r.message||'Error.');
+        }
+      }
+    });
+  });
+});
+</script>`) %>
