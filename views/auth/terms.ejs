@@ -1,22 +1,53 @@
 <%- layout('../layouts/auth') %>
 
+<%
+var pg        = locals.pageData || null;
+var title     = pg ? pg.title   : 'Terms & Conditions';
+var content   = pg ? pg.content : '';
+var updatedAt = pg ? pg.updated_at : null;
+var hasData   = pg && pg.content && pg.content.trim().length > 10;
+%>
+
 <div class="sms-legal-wrap">
 <div class="sms-legal-container">
 
+  <!-- ═══ HEADER ════════════════════════════════════════════ -->
   <div class="sms-legal-header">
     <a href="/login" class="sms-legal-header__back">
-      <i class="bi bi-circle"></i> Back to Login
+      <i class="bi bi-arrow-left-circle-fill" style="font-size:16px;"></i>
+      <span>Back to Login</span>
     </a>
     <div class="sms-legal-header__row">
-      <div class="sms-legal-header__icon">📋</div>
-      <div>
-        <h1>Terms &amp; Conditions</h1>
-        <p><i class="bi bi-calendar me-1"></i>Effective: 1 March 2025 &nbsp;·&nbsp; <i class="bi bi-clock me-1"></i>~8 min read</p>
+      <div class="sms-legal-header__icon">
+        <i class="bi bi-file-earmark-text-fill" style="font-size:30px;"></i>
       </div>
+      <div>
+        <h1><%- title %></h1>
+        <p>
+          <% if (updatedAt) { %>
+          <i class="bi bi-calendar3 me-1"></i>Last updated: <%- new Date(updatedAt).toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' }) %>
+          &nbsp;&middot;&nbsp;
+          <% } %>
+          <i class="bi bi-clock me-1"></i>~8 min read
+        </p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3 flex-wrap">
+      <a href="/terms" class="sms-legal-pill active">
+        <i class="bi bi-file-earmark-text me-1"></i> Terms &amp; Conditions
+      </a>
+      <a href="/privacy" class="sms-legal-pill">
+        <i class="bi bi-shield-lock me-1"></i> Privacy Policy
+      </a>
     </div>
   </div>
 
+  <!-- ═══ BODY ══════════════════════════════════════════════ -->
   <div class="sms-legal-body">
+
+    <% if (hasData) { %>
+      <%- content %>
+    <% } else { %>
 
     <div class="sms-legal-highlight">
       <strong>📌 Please read carefully.</strong> By accessing or using the SMS (Scrap Management System) Platform,
@@ -40,7 +71,7 @@
     </div>
 
     <h3 id="t1"><span class="sec-num">01</span> Acceptance of Terms</h3>
-    <p>These Terms and Conditions ("Terms") form a legally binding agreement between you and <strong>SMS Platform Pvt. Ltd.</strong> ("Company," "we," "us," or "our") governing your access to and use of the Scrap Management System web application, APIs, and all related services (the "Platform").</p>
+    <p>These Terms and Conditions ("Terms") form a legally binding agreement between you and <strong><%- APP_NAME %></strong> ("Company," "we," "us," or "our") governing your access to and use of the Scrap Management System web application, APIs, and all related services (the "Platform").</p>
     <p>By creating an account or using the Platform, you acknowledge you have read, understood, and agree to be bound by these Terms.</p>
 
     <h3 id="t2"><span class="sec-num">02</span> Description of Service</h3>
@@ -53,13 +84,12 @@
       <li>B2B management for Registered Vehicle Scrapping Facilities (RVSF)</li>
       <li>B2C portal for individual vehicle owners</li>
       <li>Role-based access control, audit logs, and reporting</li>
-      <li>VAHAN portal integration for real-time vehicle data</li>
     </ul>
 
     <h3 id="t3"><span class="sec-num">03</span> User Registration &amp; Accounts</h3>
     <p><strong>3.1 Accuracy:</strong> You must provide accurate, complete, and current information during registration including your organisation name, yard registration number, and valid email address.</p>
-    <p><strong>3.2 Security:</strong> You are responsible for maintaining confidentiality of your credentials. Notify us immediately at <a href="mailto:security@sms-platform.in">security@sms-platform.in</a> of any unauthorised access.</p>
-    <p><strong>3.3 Eligibility:</strong> You must be at least 18 years of age and authorised to conduct commercial operations in India. The Platform is intended for registered scrappage facilities or individuals with legitimate vehicle disposal needs.</p>
+    <p><strong>3.2 Security:</strong> You are responsible for maintaining confidentiality of your credentials. Notify us immediately of any unauthorised access.</p>
+    <p><strong>3.3 Eligibility:</strong> You must be at least 18 years of age and authorised to conduct commercial operations in India.</p>
     <p><strong>3.4 Suspension:</strong> We may suspend accounts that violate these Terms, engage in fraudulent activity, or misuse the Platform.</p>
 
     <h3 id="t4"><span class="sec-num">04</span> Acceptable Use Policy</h3>
@@ -71,11 +101,10 @@
       <li>Scrape data using automated tools without written consent</li>
       <li>Violate any applicable Indian law, RTO regulation, or MoRTH guideline</li>
       <li>Use another user's account without explicit permission</li>
-      <li>Resell or sublicense access to the Platform without prior written approval</li>
     </ul>
 
     <h3 id="t5"><span class="sec-num">05</span> Intellectual Property</h3>
-    <p>The Platform and all original content, features, functionality, algorithms, and technology are the exclusive property of SMS Platform Pvt. Ltd. You retain ownership of data you submit. By submitting data, you grant us a non-exclusive licence to process it solely for providing services to you.</p>
+    <p>The Platform and all original content, features, functionality, algorithms, and technology are the exclusive property of the Company. You retain ownership of data you submit. By submitting data, you grant us a non-exclusive licence to process it solely for providing services to you.</p>
 
     <h3 id="t6"><span class="sec-num">06</span> Data &amp; Privacy</h3>
     <p>Your use is also governed by our <a href="/privacy">Privacy Policy</a>, incorporated by reference. We comply with the Information Technology Act 2000 and applicable Indian data protection regulations.</p>
@@ -84,7 +113,7 @@
     <p>Subscription fees are billed in advance on a monthly or annual cycle. All amounts are in INR and exclusive of applicable GST. Refunds are issued at our sole discretion in cases of service failure attributable to the Platform.</p>
 
     <h3 id="t8"><span class="sec-num">08</span> Limitation of Liability</h3>
-    <p>To the maximum extent permitted by law, SMS Platform Pvt. Ltd. shall not be liable for indirect, incidental, special, or consequential damages. Our total liability is limited to amounts paid in the preceding 12 months.</p>
+    <p>To the maximum extent permitted by law, the Company shall not be liable for indirect, incidental, special, or consequential damages. Our total liability is limited to amounts paid in the preceding 12 months.</p>
 
     <h3 id="t9"><span class="sec-num">09</span> Termination</h3>
     <p>Either party may terminate with 30 days' written notice. Upon termination, a data export option is available for 30 days, after which data may be permanently deleted per our retention policy.</p>
@@ -95,36 +124,98 @@
     <h3 id="t11"><span class="sec-num">11</span> Contact Us</h3>
     <div class="row g-3 mt-1">
       <div class="col-md-4">
-        <div class="text-center p-3 rounded-3" style="background:#f8fafc; border:1px solid #e9ecef;">
-          <i class="bi bi-envelope" style="font-size:26px; color:#0054a6; display:block; margin-bottom:6px;"></i>
+        <div class="text-center p-3 rounded-3" style="background:#f8fafc;border:1px solid #e9ecef;">
+          <i class="bi bi-envelope-fill" style="font-size:26px;color:#0054a6;display:block;margin-bottom:6px;"></i>
           <div class="fw-semibold small mb-1">Email</div>
           <a href="mailto:legal@sms-platform.in" class="text-primary small">legal@sms-platform.in</a>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="text-center p-3 rounded-3" style="background:#f8fafc; border:1px solid #e9ecef;">
-          <i class="bi bi-circle" style="font-size:26px; color:#0054a6; display:block; margin-bottom:6px;"></i>
+        <div class="text-center p-3 rounded-3" style="background:#f8fafc;border:1px solid #e9ecef;">
+          <i class="bi bi-telephone-fill" style="font-size:26px;color:#0054a6;display:block;margin-bottom:6px;"></i>
           <div class="fw-semibold small mb-1">Phone</div>
           <span class="text-secondary small">+91 79 XXXX XXXX</span>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="text-center p-3 rounded-3" style="background:#f8fafc; border:1px solid #e9ecef;">
-          <i class="bi bi-geo-alt-fill" style="font-size:26px; color:#0054a6; display:block; margin-bottom:6px;"></i>
+        <div class="text-center p-3 rounded-3" style="background:#f8fafc;border:1px solid #e9ecef;">
+          <i class="bi bi-geo-alt-fill" style="font-size:26px;color:#0054a6;display:block;margin-bottom:6px;"></i>
           <div class="fw-semibold small mb-1">Office</div>
           <span class="text-secondary small">Ahmedabad, Gujarat – 380001</span>
         </div>
       </div>
     </div>
 
-    <div class="sms-legal-footer">
-      <span class="text-muted small">© <%= new Date().getFullYear() %> SMS Platform Pvt. Ltd.</span>
-      <div class="d-flex gap-3 align-items-center">
-        <a href="/privacy" class="text-primary small">Privacy Policy</a>
-        <a href="/login" class="btn btn-primary btn-sm"><i class="bi bi-box-arrow-in-right me-1"></i>Back to Login</a>
+    <% } %>
+
+    <!-- ═══ FOOTER ════════════════════════════════════════════ -->
+    <div class="sms-lf">
+      <div class="sms-lf__btns">
+        <a href="/privacy" class="sms-lf__btn sms-lf__btn--outline">
+          <i class="bi bi-shield-lock"></i>
+          <span>Privacy Policy</span>
+          <i class="bi bi-arrow-right sms-lf__arrow"></i>
+        </a>
+        <a href="/login" class="sms-lf__btn sms-lf__btn--fill">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>Back to Login</span>
+          <i class="bi bi-arrow-right sms-lf__arrow"></i>
+        </a>
       </div>
+      <div class="sms-lf__copy">&copy; <%= new Date().getFullYear() %> <%- APP_NAME %>. All rights reserved.</div>
     </div>
 
   </div>
 </div>
 </div>
+
+<button id="scrollTop" class="sms-scroll-top" title="Back to top"><i class="bi bi-chevron-up"></i></button>
+
+<style>
+.sms-legal-pill{display:inline-flex;align-items:center;padding:6px 14px;border-radius:50px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15)}
+.sms-legal-pill:hover{background:rgba(255,255,255,.2);color:#fff}
+.sms-legal-pill.active{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.35)}
+
+.sms-lf{margin-top:3rem;padding-top:2rem;border-top:2px solid #eef4ff}
+.sms-lf__copy{text-align:center;color:#94a3b8;font-size:12px;margin-top:1.5rem}
+.sms-lf__btns{display:flex;gap:14px;flex-wrap:wrap}
+.sms-lf__btn{
+  flex:1;min-width:200px;
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 24px;border-radius:12px;
+  font-size:14px;font-weight:600;color:#fff !important;
+  text-decoration:none;transition:all .25s;cursor:pointer;
+}
+.sms-lf__arrow{margin-left:auto;opacity:.6;font-size:13px;transition:transform .25s,opacity .25s}
+.sms-lf__btn:hover .sms-lf__arrow{transform:translateX(4px);opacity:1}
+.sms-lf__btn:hover{transform:translateY(-2px);color:#fff}
+
+.sms-lf__btn--fill{
+  background:linear-gradient(135deg,#0054a6 0%,#0070d4 100%);
+  box-shadow:0 4px 15px rgba(0,84,166,.3);border:none;
+}
+.sms-lf__btn--fill:hover{box-shadow:0 8px 25px rgba(0,84,166,.4);color:#fff}
+
+.sms-lf__btn--outline{
+  background:linear-gradient(135deg,#334155 0%,#475569 100%);
+  box-shadow:0 4px 15px rgba(51,65,85,.2);border:none;
+}
+.sms-lf__btn--outline:hover{box-shadow:0 8px 25px rgba(51,65,85,.3);color:#fff}
+
+.sms-scroll-top{
+  position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;
+  background:#0054a6;color:#fff;border:none;font-size:18px;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);cursor:pointer;transition:all .2s;z-index:99;
+}
+.sms-scroll-top:hover{background:#003d7a;transform:translateY(-2px)}
+.sms-scroll-top.show{display:flex}
+
+@media(max-width:575px){
+  .sms-lf__btns{flex-direction:column}
+  .sms-lf__btn{min-width:unset;justify-content:center}
+}
+</style>
+<script>
+$(function(){var $s=$('#scrollTop');$(window).on('scroll',function(){$(window).scrollTop()>300?$s.addClass('show'):$s.removeClass('show');});$s.on('click',function(){$('html,body').animate({scrollTop:0},400);});});
+</script>

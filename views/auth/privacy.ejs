@@ -1,45 +1,75 @@
 <%- layout('../layouts/auth') %>
 
+<%
+var pg        = locals.pageData || null;
+var title     = pg ? pg.title   : 'Privacy Policy';
+var content   = pg ? pg.content : '';
+var updatedAt = pg ? pg.updated_at : null;
+var hasData   = pg && pg.content && pg.content.trim().length > 10;
+%>
+
 <div class="sms-legal-wrap">
 <div class="sms-legal-container">
 
-  <div class="sms-legal-header">
+  <!-- ═══ HEADER ════════════════════════════════════════════ -->
+  <div class="sms-legal-header" style="background:linear-gradient(145deg,#065f46 0%,#059669 50%,#34d399 100%);">
     <a href="/login" class="sms-legal-header__back">
-      <i class="bi bi-circle"></i> Back to Login
+      <i class="bi bi-arrow-left-circle-fill" style="font-size:16px;"></i>
+      <span>Back to Login</span>
     </a>
     <div class="sms-legal-header__row">
-      <div class="sms-legal-header__icon">🔐</div>
-      <div>
-        <h1>Privacy Policy</h1>
-        <p><i class="bi bi-calendar me-1"></i>Effective: 1 March 2025 &nbsp;·&nbsp; <i class="bi bi-clock me-1"></i>~6 min read</p>
+      <div class="sms-legal-header__icon">
+        <i class="bi bi-shield-lock-fill" style="font-size:30px;"></i>
       </div>
+      <div>
+        <h1><%- title %></h1>
+        <p>
+          <% if (updatedAt) { %>
+          <i class="bi bi-calendar3 me-1"></i>Last updated: <%- new Date(updatedAt).toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' }) %>
+          &nbsp;&middot;&nbsp;
+          <% } %>
+          <i class="bi bi-clock me-1"></i>~6 min read
+        </p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3 flex-wrap">
+      <a href="/terms" class="sms-legal-pill">
+        <i class="bi bi-file-earmark-text me-1"></i> Terms &amp; Conditions
+      </a>
+      <a href="/privacy" class="sms-legal-pill active">
+        <i class="bi bi-shield-lock me-1"></i> Privacy Policy
+      </a>
     </div>
   </div>
 
+  <!-- ═══ BODY ══════════════════════════════════════════════ -->
   <div class="sms-legal-body">
 
-    <div class="sms-legal-highlight">
+    <% if (hasData) { %>
+      <%- content %>
+    <% } else { %>
+
+    <div class="sms-legal-highlight" style="border-left-color:#059669;">
       <strong>🔒 Your privacy matters to us.</strong> SMS Platform collects only what is necessary, uses it solely
       for service delivery, and never sells your data to third parties. All data is stored in India on
       encrypted infrastructure.
     </div>
 
-    <!-- At a glance cards -->
     <div class="sms-data-cards">
-      <div class="sms-data-card" style="background:#eef4ff; border-color:#c9deff;">
-        <div style="font-size:28px; margin-bottom:6px;">🚫</div>
+      <div class="sms-data-card" style="background:#eef4ff;border-color:#c9deff;">
+        <div style="font-size:28px;margin-bottom:6px;">🚫</div>
         <div class="fw-semibold small" style="color:#0054a6;">No Data Selling</div>
       </div>
-      <div class="sms-data-card" style="background:#f0fdf4; border-color:#bbf7d0;">
-        <div style="font-size:28px; margin-bottom:6px;">🔒</div>
+      <div class="sms-data-card" style="background:#f0fdf4;border-color:#bbf7d0;">
+        <div style="font-size:28px;margin-bottom:6px;">🔒</div>
         <div class="fw-semibold small" style="color:#065f46;">256-bit Encryption</div>
       </div>
-      <div class="sms-data-card" style="background:#fefce8; border-color:#fde68a;">
-        <div style="font-size:28px; margin-bottom:6px;">🇮🇳</div>
+      <div class="sms-data-card" style="background:#fefce8;border-color:#fde68a;">
+        <div style="font-size:28px;margin-bottom:6px;">🇮🇳</div>
         <div class="fw-semibold small" style="color:#92400e;">India Data Residency</div>
       </div>
-      <div class="sms-data-card" style="background:#fdf4ff; border-color:#e9d5ff;">
-        <div style="font-size:28px; margin-bottom:6px;">⚙️</div>
+      <div class="sms-data-card" style="background:#fdf4ff;border-color:#e9d5ff;">
+        <div style="font-size:28px;margin-bottom:6px;">⚙️</div>
         <div class="fw-semibold small" style="color:#6b21a8;">You Control Data</div>
       </div>
     </div>
@@ -95,7 +125,7 @@
     </ul>
 
     <h3 id="p5"><span class="sec-num">05</span> Cookies &amp; Tracking</h3>
-    <p>We use <strong>strictly necessary session cookies</strong> to maintain your login state. We do not use advertising cookies or third-party tracking pixels. Disabling cookies in your browser may affect Platform functionality.</p>
+    <p>We use <strong>strictly necessary session cookies</strong> to maintain your login state. We do not use advertising cookies or third-party tracking pixels.</p>
 
     <h3 id="p6"><span class="sec-num">06</span> Your Rights</h3>
     <ul>
@@ -120,23 +150,85 @@
     <p>As required under the IT (Reasonable Security Practices) Rules 2011:</p>
     <div class="sms-legal-info-box">
       <div class="fw-bold mb-1">Data Protection / Grievance Officer</div>
-      <div class="text-secondary small mb-3">SMS Platform Pvt. Ltd.</div>
+      <div class="text-secondary small mb-3"><%- APP_NAME %></div>
       <div class="d-flex flex-column gap-2">
-        <span class="small"><i class="bi bi-envelope text-primary me-2"></i><a href="mailto:grievance@sms-platform.in">grievance@sms-platform.in</a></span>
-        <span class="small"><i class="bi bi-circle text-primary me-2"></i>+91 79 XXXX XXXX (Mon–Fri, 10AM–6PM IST)</span>
+        <span class="small"><i class="bi bi-envelope-fill text-primary me-2"></i><a href="mailto:grievance@sms-platform.in">grievance@sms-platform.in</a></span>
+        <span class="small"><i class="bi bi-telephone-fill text-primary me-2"></i>+91 79 XXXX XXXX (Mon–Fri, 10AM–6PM IST)</span>
         <span class="small"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Ahmedabad, Gujarat – 380001, India</span>
-        <span class="small text-secondary"><i class="bi bi-clock text-primary me-2"></i>Response within 30 days of receipt</span>
+        <span class="small text-secondary"><i class="bi bi-clock-fill text-primary me-2"></i>Response within 30 days of receipt</span>
       </div>
     </div>
 
-    <div class="sms-legal-footer">
-      <span class="text-muted small">© <%= new Date().getFullYear() %> SMS Platform Pvt. Ltd.</span>
-      <div class="d-flex gap-3 align-items-center">
-        <a href="/terms" class="text-primary small">Terms &amp; Conditions</a>
-        <a href="/login" class="btn btn-primary btn-sm"><i class="bi bi-box-arrow-in-right me-1"></i>Back to Login</a>
+    <% } %>
+
+    <!-- ═══ FOOTER ════════════════════════════════════════════ -->
+    <div class="sms-lf">
+      <div class="sms-lf__btns">
+        <a href="/terms" class="sms-lf__btn sms-lf__btn--outline">
+          <i class="bi bi-file-earmark-text"></i>
+          <span>Terms &amp; Conditions</span>
+          <i class="bi bi-arrow-right sms-lf__arrow"></i>
+        </a>
+        <a href="/login" class="sms-lf__btn sms-lf__btn--fill">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>Back to Login</span>
+          <i class="bi bi-arrow-right sms-lf__arrow"></i>
+        </a>
       </div>
+      <div class="sms-lf__copy">&copy; <%= new Date().getFullYear() %> <%- APP_NAME %>. All rights reserved.</div>
     </div>
 
   </div>
 </div>
 </div>
+
+<button id="scrollTop" class="sms-scroll-top" title="Back to top"><i class="bi bi-chevron-up"></i></button>
+
+<style>
+.sms-legal-pill{display:inline-flex;align-items:center;padding:6px 14px;border-radius:50px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15)}
+.sms-legal-pill:hover{background:rgba(255,255,255,.2);color:#fff}
+.sms-legal-pill.active{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.35)}
+
+.sms-lf{margin-top:3rem;padding-top:2rem;border-top:2px solid #eef4ff}
+.sms-lf__copy{text-align:center;color:#94a3b8;font-size:12px;margin-top:1.5rem}
+.sms-lf__btns{display:flex;gap:14px;flex-wrap:wrap}
+.sms-lf__btn{
+  flex:1;min-width:200px;
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 24px;border-radius:12px;
+  font-size:14px;font-weight:600;color:#fff !important;
+  text-decoration:none;transition:all .25s;cursor:pointer;
+}
+.sms-lf__arrow{margin-left:auto;opacity:.6;font-size:13px;transition:transform .25s,opacity .25s}
+.sms-lf__btn:hover .sms-lf__arrow{transform:translateX(4px);opacity:1}
+.sms-lf__btn:hover{transform:translateY(-2px);color:#fff}
+
+.sms-lf__btn--fill{
+  background:linear-gradient(135deg,#059669 0%,#10b981 100%);
+  box-shadow:0 4px 15px rgba(5,150,105,.3);border:none;
+}
+.sms-lf__btn--fill:hover{box-shadow:0 8px 25px rgba(5,150,105,.4);color:#fff}
+
+.sms-lf__btn--outline{
+  background:linear-gradient(135deg,#334155 0%,#475569 100%);
+  box-shadow:0 4px 15px rgba(51,65,85,.2);border:none;
+}
+.sms-lf__btn--outline:hover{box-shadow:0 8px 25px rgba(51,65,85,.3);color:#fff}
+
+.sms-scroll-top{
+  position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;
+  background:#059669;color:#fff;border:none;font-size:18px;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);cursor:pointer;transition:all .2s;z-index:99;
+}
+.sms-scroll-top:hover{background:#047857;transform:translateY(-2px)}
+.sms-scroll-top.show{display:flex}
+
+@media(max-width:575px){
+  .sms-lf__btns{flex-direction:column}
+  .sms-lf__btn{min-width:unset;justify-content:center}
+}
+</style>
+<script>
+$(function(){var $s=$('#scrollTop');$(window).on('scroll',function(){$(window).scrollTop()>300?$s.addClass('show'):$s.removeClass('show');});$s.on('click',function(){$('html,body').animate({scrollTop:0},400);});});
+</script>

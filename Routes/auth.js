@@ -3,6 +3,7 @@
 const express = require('express');
 const router  = express.Router();
 const Auth    = require('../Controllers/AuthController');
+const Pages   = require('../Controllers/PagesController');
 const { guestOnly } = require('../Middlewares/auth');
 
 // ── Guest-only pages ──────────────────────────────────────
@@ -28,8 +29,8 @@ router.post('/reset-password',          guestOnly, Auth.resetPost);
 // ── Logout ────────────────────────────────────────────────
 router.get('/logout', Auth.logout);
 
-module.exports = router;
+// ── Legal pages — dynamic from DB ─────────────────────────
+router.get('/terms',   Pages.termsPublic);
+router.get('/privacy', Pages.privacyPublic);
 
-// ── Static legal pages ─────────────────────────────────────
-router.get('/terms',   (req, res) => res.render('auth/terms',   { page_title:'Terms & Conditions', APP_NAME: process.env.APP_NAME||'SMS', BASE_URL:'', flash_success:null, flash_error:null }));
-router.get('/privacy', (req, res) => res.render('auth/privacy', { page_title:'Privacy Policy',      APP_NAME: process.env.APP_NAME||'SMS', BASE_URL:'', flash_success:null, flash_error:null }));
+module.exports = router;
