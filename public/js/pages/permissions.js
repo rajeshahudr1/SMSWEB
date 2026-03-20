@@ -154,62 +154,67 @@ function _s2ActionTemplate(state) {
 
 /* ── Init Select2: filter bar action only ── */
 function _initSelect2Action() {
-    try {
-        if ($('#filterAction').data('select2')) $('#filterAction').select2('destroy');
-    } catch(e){}
-    $('#filterAction').select2({
+    var $el = $('#filterAction');
+    if (!$el.length) return;
+    try { if ($el.data('select2')) $el.select2('destroy'); } catch(e){}
+    $el.select2({
         theme: 'bootstrap-5',
         allowClear: true,
         placeholder: 'All Actions',
         templateResult: _s2ActionTemplate,
         templateSelection: _s2ActionTemplate,
-        width: '100%',
+        width: 'resolve',
         minimumResultsForSearch: -1,
     });
 }
 
 /* ── Init Select2: filter bar all dropdowns ── */
 function _initSelect2Filters() {
-    try {
-        if ($('#filterGroup').data('select2')) $('#filterGroup').select2('destroy');
-    } catch(e){}
-    $('#filterGroup').select2({
-        theme: 'bootstrap-5',
-        allowClear: true,
-        placeholder: 'All Menus',
-        templateResult: _s2MenuTemplate,
-        templateSelection: _s2MenuTemplate,
-        width: '100%',
-    });
+    var $grp = $('#filterGroup');
+    if ($grp.length) {
+        try { if ($grp.data('select2')) $grp.select2('destroy'); } catch(e){}
+        $grp.select2({
+            theme: 'bootstrap-5',
+            allowClear: true,
+            placeholder: 'All Menus',
+            templateResult: _s2MenuTemplate,
+            templateSelection: _s2MenuTemplate,
+            width: 'resolve',
+        });
+    }
     _initSelect2Action();
 }
 
 /* ── Init Select2: modal menu + action dropdowns ── */
 function _initSelect2Modal() {
-    try {
-        if ($('#fldMenuId').data('select2')) $('#fldMenuId').select2('destroy');
-    } catch(e){}
-    $('#fldMenuId').select2({
-        theme: 'bootstrap-5',
-        placeholder: '— Select Menu —',
-        templateResult: _s2MenuTemplate,
-        templateSelection: _s2MenuTemplate,
-        width: '100%',
-        dropdownParent: $('#modalPerm .modal-content'),
-    });
+    var $parent = $('#modalPerm .modal-content');
 
-    try {
-        if ($('#fldAction').data('select2')) $('#fldAction').select2('destroy');
-    } catch(e){}
-    $('#fldAction').select2({
-        theme: 'bootstrap-5',
-        placeholder: 'Select Action',
-        templateResult: _s2ActionTemplate,
-        templateSelection: _s2ActionTemplate,
-        width: '100%',
-        minimumResultsForSearch: -1,
-        dropdownParent: $('#modalPerm .modal-content'),
-    });
+    var $menu = $('#fldMenuId');
+    if ($menu.length) {
+        try { if ($menu.data('select2')) $menu.select2('destroy'); } catch(e){}
+        $menu.select2({
+            theme: 'bootstrap-5',
+            placeholder: '— Select Menu —',
+            templateResult: _s2MenuTemplate,
+            templateSelection: _s2MenuTemplate,
+            width: '100%',
+            dropdownParent: $parent,
+        });
+    }
+
+    var $act = $('#fldAction');
+    if ($act.length) {
+        try { if ($act.data('select2')) $act.select2('destroy'); } catch(e){}
+        $act.select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Select Action',
+            templateResult: _s2ActionTemplate,
+            templateSelection: _s2ActionTemplate,
+            width: '100%',
+            minimumResultsForSearch: -1,
+            dropdownParent: $parent,
+        });
+    }
 }
 
 /* ══════════════════════════════════════════════════════════

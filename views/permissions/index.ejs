@@ -42,26 +42,26 @@
 
   <!-- ── Filters: search + menu + action ── -->
   <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
-    <div class="d-flex gap-2 align-items-center flex-wrap">
-      <div class="flex-fill" style="min-width:140px;max-width:280px;">
-        <div class="input-icon">
-          <span class="input-icon-addon"><i class="bi bi-search" style="font-size:14px;"></i></span>
-          <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search name or key…"/>
-        </div>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-4 col-lg-3">
+        <input type="text" class="form-control form-control-sm sms-filter-search" id="searchInput"
+               placeholder="&#128269;  Search name or key…"/>
       </div>
-      <div style="min-width:180px;" class="d-none d-md-block">
-        <select class="form-select form-select-sm" id="filterGroup">
+      <div class="col-6 col-sm-3 col-lg-3">
+        <select class="form-select form-select-sm" id="filterGroup" style="width:100%;">
           <option value="">All Menus</option>
         </select>
       </div>
-      <div style="min-width:140px;">
-        <select class="form-select form-select-sm" id="filterAction">
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" id="filterAction" style="width:100%;">
           <option value="">All Actions</option>
         </select>
       </div>
-      <button class="btn btn-sm btn-ghost-secondary" id="btnClearFilters" title="Clear all filters">
-        <i class="bi bi-x-circle me-1"></i><span class="d-none d-sm-inline">Clear</span>
-      </button>
+      <div class="col-auto">
+        <button class="btn btn-sm btn-outline-secondary sms-filter-clear" id="btnClearFilters" title="Clear all filters">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -117,7 +117,7 @@
             <!-- Menu (replaces Group / Module text input) -->
             <div class="col-12">
               <label class="form-label fw-medium">Menu <span class="text-danger">*</span></label>
-              <select name="menu_id" id="fldMenuId" class="form-select" required>
+              <select name="menu_id" id="fldMenuId" class="form-select" required style="width:100%;">
                 <option value="">— Select Menu —</option>
               </select>
               <div class="form-hint">Permissions are linked to a menu. Select which menu this permission belongs to.</div>
@@ -126,7 +126,7 @@
             <!-- Action (dynamic from API enum) -->
             <div class="col-sm-6">
               <label class="form-label fw-medium">Action <span class="text-danger">*</span></label>
-              <select name="action" id="fldAction" class="form-select" required></select>
+              <select name="action" id="fldAction" class="form-select" required style="width:100%;"></select>
             </div>
 
             <!-- Panel Type (locked to active tab) -->
