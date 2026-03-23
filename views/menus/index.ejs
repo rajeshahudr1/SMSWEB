@@ -67,7 +67,7 @@
 
       <div class="card-body p-2" style="min-height:180px;">
         <div id="treeLoading" class="text-center py-5 text-muted">
-          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div><%- t("general.loading") %>
         </div>
         <div id="treeRoot"></div>
       </div>
@@ -135,7 +135,7 @@
         </div>
         <div class="list-group-item d-flex align-items-center gap-2 py-2 px-3 border-0">
           <span class="sms-abtn sms-abtn-red"><i class="bi bi-trash3"></i></span>
-          <div><div class="fw-medium" style="font-size:12.5px;">Delete</div><small class="text-muted">Remove + all sub-menus</small></div>
+          <div><div class="fw-medium" style="font-size:12.5px;"><%- t("btn.delete") %></div><small class="text-muted">Remove + all sub-menus</small></div>
         </div>
       </div>
     </div>
@@ -180,7 +180,7 @@
         <div id="sortList" style="max-height:360px;overflow-y:auto;"></div>
       </div>
       <div class="modal-footer py-2 border-top">
-        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t("btn.cancel") %></button>
         <button class="btn btn-primary btn-sm" id="btnSortSave">
           <i class="bi bi-floppy me-1"></i>Save Order
         </button>
@@ -222,7 +222,7 @@
         </div>
       </div>
       <div class="modal-footer py-2 border-top">
-        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t("btn.cancel") %></button>
         <button class="btn btn-primary btn-sm" id="btnMoveConfirm">
           <i class="bi bi-check-lg me-1"></i>Confirm Move
         </button>
@@ -251,7 +251,7 @@
         <p class="text-muted mt-2 mb-0" style="font-size:12px;">This cannot be undone.</p>
       </div>
       <div class="modal-footer py-2 border-top">
-        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t("btn.cancel") %></button>
         <button class="btn btn-danger btn-sm" id="btnDeleteConfirm">
           <i class="bi bi-trash3 me-1"></i>Yes, Delete
         </button>
@@ -265,7 +265,7 @@
      style="width:min(520px,100vw);">
   <div class="offcanvas-header border-bottom bg-body-secondary py-3">
     <div>
-      <h5 class="offcanvas-title fw-semibold mb-0" id="ocTitle">Menu Item</h5>
+      <h5 class="offcanvas-title fw-semibold mb-0" id="ocTitle"><%- t("menus.menu_item") %></h5>
       <small class="text-muted d-block mt-1" id="ocSub"></small>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>

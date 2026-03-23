@@ -61,9 +61,9 @@ exports.saveTheme = async (req, res) => {
 // Updates language in DB via API, then refreshes session.settings.
 // Requires login because we need a token to call the API.
 exports.setLanguage = async (req, res) => {
-    const lang      = req.body.lang || req.query.lang || 'en';
+    const lang      = req.body.lang || req.query.lang || 'en-US';
     const supported = (await i18n.fetchSupportedLanguages()).map(l => l.code);
-    const safeLang  = supported.includes(lang) ? lang : 'en';
+    const safeLang  = supported.includes(lang) ? lang : 'en-US';
 
     // Persist to DB via API (requires login token)
     if (req.session.token) {

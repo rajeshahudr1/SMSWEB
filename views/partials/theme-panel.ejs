@@ -111,11 +111,15 @@ var colors = [
     <div class="sms-tp-section">
       <div class="sms-tp-label">Language</div>
       <div class="tp-group">
-        <% (SUPPORTED_LANGUAGES||[]).forEach(function(l){ %>
-        <button type="button" class="tp-btn <%- _lg===l.code?'active':'' %>" data-lang="<%- l.code %>">
-          <%- l.flag %> <%- l.nativeName %>
+        <button type="button" class="tp-btn active" data-bs-toggle="modal" data-bs-target="#langModal"
+                style="width:100%;justify-content:center;">
+          <%
+            var _curLObj = (SUPPORTED_LANGUAGES||[]).find(function(x){return x.code===_lg;});
+          %>
+          <%- _curLObj ? _curLObj.flag : '🌐' %>
+          <%- _curLObj ? _curLObj.nativeName : _lg %>
+          <i class="bi bi-pencil ms-2" style="font-size:11px;opacity:.5;"></i>
         </button>
-        <% }) %>
       </div>
     </div>
 

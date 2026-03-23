@@ -1,7 +1,7 @@
 <div class="modal-dialog modal-sm modal-dialog-centered">
     <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title">Delete User</h5>
+            <h5 class="modal-title"><%- t("users.delete") %></h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body py-4 text-center">
@@ -9,7 +9,7 @@
                 <div class="modal-icon mb-3">
                     <i class="ti ti-trash text-danger" style="font-size:48px;"></i>
                 </div>
-                <h5>Are you sure?</h5>
+                <h5><%- t("general.are_you_sure") %></h5>
                 <p class="text-secondary">
                     Delete user <strong><%- user.name %></strong>?<br/>
                     This action cannot be undone.
@@ -21,7 +21,7 @@
         <% if (user) { %>
             <div class="modal-footer">
                 <button class="btn btn-link link-secondary me-auto"
-                        data-bs-dismiss="modal">Cancel</button>
+                        data-bs-dismiss="modal"><%- t("btn.cancel") %></button>
                 <button class="btn btn-danger"
                         id="btnDeleteConfirm"
                         data-uuid="<%- user.uuid %>"

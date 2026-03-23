@@ -35,11 +35,11 @@ async function injectLocals(req, res, next) {
         const menus       = sess.menus       || [];
 
         // ── Language from session.settings only (DB-backed, no cookies) ──
-        const lang = settings.language || 'en';
+        const lang = settings.language || 'en-US';
 
         // Preload translations + languages list from API (cached 5 min)
         await i18n.preloadLanguage(lang);
-        if (lang !== 'en') await i18n.preloadLanguage('en');
+        if (lang !== 'en-US') await i18n.preloadLanguage('en-US');
 
         const t        = i18n.getTranslator(lang);
         const langDict = i18n.getDict(lang);

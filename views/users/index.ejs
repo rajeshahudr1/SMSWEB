@@ -12,7 +12,7 @@
       <select class="form-select form-select-sm" id="perPageSel" style="width:100px;" title="Rows per page"></select>
       <% if (can('add_users')) { %>
       <a href="/users/create" class="btn btn-sm btn-primary" title="Create new user">
-        <i class="bi bi-person-plus me-1"></i><span class="d-none d-sm-inline">Add User</span>
+        <i class="bi bi-person-plus me-1"></i><span class="d-none d-sm-inline"><%- t("users.add") %></span>
       </a>
       <% } %>
     </div>
@@ -27,7 +27,7 @@
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
         <select class="form-select form-select-sm" id="filterRole" style="width:100%;">
-          <option value="">All Roles</option>
+          <option value=""><%- t("general.all") %> <%- t("nav.roles") %></option>
           <% if (typeof roles !== 'undefined') { roles.forEach(function(r){ %>
           <option value="<%- r.id %>" data-name="<%- r.name %>"><%- r.name %></option>
           <% }) } %>
@@ -35,9 +35,9 @@
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
         <select class="form-select form-select-sm" id="filterStatus" style="width:100%;">
-          <option value="">All Status</option>
-          <option value="1">Active</option>
-          <option value="0">Inactive</option>
+          <option value=""><%- t("general.all") %> <%- t("users.status") %></option>
+          <option value="1"><%- t("users.active") %></option>
+          <option value="0"><%- t("users.inactive") %></option>
         </select>
       </div>
       <div class="col-auto">
@@ -66,17 +66,17 @@
         <tr>
           <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll" title="Select all"/></th>
           <th style="width:36px;" class="text-muted">#</th>
-          <th class="sortable" data-field="name">Name <i class="bi bi-arrow-down-up text-muted small"></i></th>
-          <th class="d-none d-md-table-cell sortable" data-field="email">Email <i class="bi bi-arrow-down-up text-muted small"></i></th>
-          <th class="d-none d-lg-table-cell">Phone</th>
-          <th class="d-none d-sm-table-cell">Role</th>
-          <th class="sortable" data-field="status">Status <i class="bi bi-arrow-down-up text-muted small"></i></th>
-          <th class="text-end" style="width:120px;">Actions</th>
+          <th class="sortable" data-field="name"><%- t("users.name") %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="d-none d-md-table-cell sortable" data-field="email"><%- t("users.email") %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="d-none d-lg-table-cell"><%- t("users.phone") %></th>
+          <th class="d-none d-sm-table-cell"><%- t("users.role") %></th>
+          <th class="sortable" data-field="status"><%- t("users.status") %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="text-end" style="width:120px;"><%- t("general.actions") %></th>
         </tr>
       </thead>
       <tbody id="tableBody">
         <tr><td colspan="8" class="text-center py-5 text-muted">
-          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div><%- t("general.loading") %>
         </td></tr>
       </tbody>
     </table>
@@ -102,7 +102,7 @@
         <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
       </div>
       <div class="modal-footer py-2 border-top">
-        <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t("btn.close") %></button>
       </div>
     </div>
   </div>

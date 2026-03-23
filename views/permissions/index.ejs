@@ -25,16 +25,16 @@
       <!-- View toggle — pill style -->
       <div class="sms-view-toggle">
         <button class="sms-view-btn active" id="btnViewGroup" title="Grouped by menu">
-          <i class="bi bi-grid-3x3-gap"></i><span class="d-none d-md-inline">Grouped</span>
+          <i class="bi bi-grid-3x3-gap"></i><span class="d-none d-md-inline"><%- t("general.grouped") %></span>
         </button>
         <button class="sms-view-btn" id="btnViewFlat" title="Flat table">
-          <i class="bi bi-table"></i><span class="d-none d-md-inline">Table</span>
+          <i class="bi bi-table"></i><span class="d-none d-md-inline"><%- t("general.table") %></span>
         </button>
       </div>
 
       <% if (can('add_permissions')) { %>
       <button class="btn btn-sm btn-primary" id="btnAddPerm">
-        <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Add Permission</span>
+        <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline"<%- t("permissions.add") %></span>
       </button>
       <% } %>
     </div>
@@ -49,12 +49,12 @@
       </div>
       <div class="col-6 col-sm-3 col-lg-3">
         <select class="form-select form-select-sm" id="filterGroup" style="width:100%;">
-          <option value="">All Menus</option>
+          <option value=""><%- t("general.all") %> <%- t("nav.menus") %></option>
         </select>
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
         <select class="form-select form-select-sm" id="filterAction" style="width:100%;">
-          <option value="">All Actions</option>
+          <option value=""><%- t("general.all") %> <%- t("general.actions") %></option>
         </select>
       </div>
       <div class="col-auto">
@@ -69,7 +69,7 @@
   <div id="groupedView">
     <div class="card-body p-3" id="permGroups">
       <div class="text-center py-5 text-muted">
-        <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…
+        <div class="spinner-border spinner-border-sm text-primary me-2"></div><%- t("general.loading") %>
       </div>
     </div>
   </div>
@@ -81,12 +81,12 @@
         <thead>
           <tr>
             <th style="width:36px;" class="text-muted">#</th>
-            <th>Permission Key</th>
-            <th class="d-none d-sm-table-cell">Display Name</th>
-            <th class="d-none d-md-table-cell">Menu / Group</th>
-            <th class="d-none d-md-table-cell">Action</th>
-            <th>Panel</th>
-            <th class="text-end" style="width:80px;">Actions</th>
+            <th><%- t("permissions.key") %></th>
+            <th class="d-none d-sm-table-cell"><%- t("permissions.display_name") %></th>
+            <th class="d-none d-md-table-cell"><%- t("permissions.menu_group") %></th>
+            <th class="d-none d-md-table-cell"><%- t("permissions.action") %></th>
+            <th><%- t("users.panel") %></th>
+            <th class="text-end" style="width:80px;"><%- t("general.actions") %></th>
           </tr>
         </thead>
         <tbody id="flatTableBody"></tbody>
@@ -116,7 +116,7 @@
 
             <!-- Menu (replaces Group / Module text input) -->
             <div class="col-12">
-              <label class="form-label fw-medium">Menu <span class="text-danger">*</span></label>
+              <label class="form-label fw-medium"><%- t("menus.title") %> <span class="text-danger">*</span></label>
               <select name="menu_id" id="fldMenuId" class="form-select" required style="width:100%;">
                 <option value="">— Select Menu —</option>
               </select>
@@ -125,13 +125,13 @@
 
             <!-- Action (dynamic from API enum) -->
             <div class="col-sm-6">
-              <label class="form-label fw-medium">Action <span class="text-danger">*</span></label>
+              <label class="form-label fw-medium"><%- t("permissions.action") %> <span class="text-danger">*</span></label>
               <select name="action" id="fldAction" class="form-select" required style="width:100%;"></select>
             </div>
 
             <!-- Panel Type (locked to active tab) -->
             <div class="col-sm-6">
-              <label class="form-label fw-medium">Panel</label>
+              <label class="form-label fw-medium"><%- t("users.panel") %></label>
               <input type="hidden" name="panel_type" id="fldPanelType"/>
               <div class="form-control bg-body-secondary d-flex align-items-center gap-2" id="panelDisplay"
                    style="pointer-events:none;min-height:38px;"></div>
@@ -139,7 +139,7 @@
 
             <!-- Display Name (auto-generated, editable) -->
             <div class="col-12">
-              <label class="form-label fw-medium">Display Name <span class="text-danger">*</span></label>
+              <label class="form-label fw-medium"><%- t("permissions.display_name") %> <span class="text-danger">*</span></label>
               <input type="text" name="display_name" id="fldDisplayName" class="form-control" required
                      placeholder="Auto-generated from menu + action"/>
               <div class="form-hint">Auto-filled. You can edit if needed.</div>
@@ -147,7 +147,7 @@
 
             <!-- Permission Key (readonly, edit only) -->
             <div class="col-12" id="permKeyRow" style="display:none;">
-              <label class="form-label fw-medium">Permission Key</label>
+              <label class="form-label fw-medium"><%- t("permissions.key") %></label>
               <input type="text" class="form-control form-control-sm bg-body-secondary" id="permKeyDisplay" readonly/>
               <div class="form-hint">Auto-generated. Cannot be changed.</div>
             </div>
@@ -155,7 +155,7 @@
           </div>
         </div>
         <div class="modal-footer py-2 border-top">
-          <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t("btn.cancel") %></button>
           <button type="submit" class="btn btn-primary btn-sm" id="btnPermSave">
             <i class="bi bi-floppy me-1"></i>Create
           </button>

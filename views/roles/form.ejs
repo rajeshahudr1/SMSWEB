@@ -55,22 +55,22 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
       </div>
       <div class="card-body">
         <div class="mb-3">
-          <label class="form-label fw-medium">Role Name <span class="text-danger">*</span></label>
+          <label class="form-label fw-medium"><%- t("roles.name") %> <span class="text-danger">*</span></label>
           <input type="text" name="name" class="form-control" required autofocus
                  value="<%- isEdit ? (r.name||'') : '' %>"
                  placeholder="e.g. Yard Manager, Buyer…"/>
         </div>
         <% if (isEdit) { %>
         <div class="mb-3">
-          <label class="form-label fw-medium">Status</label>
+          <label class="form-label fw-medium"><%- t("users.status") %></label>
           <select name="status" class="form-select">
-            <option value="1" <%- parseInt(r.status) ? 'selected':'' %>>Active</option>
-            <option value="0" <%- !parseInt(r.status) ? 'selected':'' %>>Inactive</option>
+            <option value="1" <%- parseInt(r.status) ? 'selected':'' %>><%- t("users.active") %></option>
+            <option value="0" <%- !parseInt(r.status) ? 'selected':'' %>><%- t("users.inactive") %></option>
           </select>
         </div>
         <% } %>
         <div class="mb-0">
-          <label class="form-label fw-medium">Description</label>
+          <label class="form-label fw-medium"><%- t("form.description") %></label>
           <textarea name="description" class="form-control" rows="3"
                     placeholder="Optional description…"><%- isEdit ? (r.description||'') : '' %></textarea>
         </div>
@@ -84,7 +84,7 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
           <button type="submit" class="btn btn-primary" id="btnSubmit" title="<%- isEdit ? 'Update this role' : 'Create new role' %>">
             <i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update Role' : 'Create Role' %>
           </button>
-          <a href="/roles" class="btn btn-outline-secondary" title="Discard and go back"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+          <a href="/roles" class="btn btn-outline-secondary" title="Discard and go back"><i class="bi bi-x-lg me-1"></i><%- t("btn.cancel") %></a>
         </div>
       </div>
     </div>
@@ -98,8 +98,8 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
           <i class="bi bi-key me-1 text-primary"></i>Permissions
         </div>
         <div class="card-options gap-2">
-          <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll" title="Select all permissions in active tab">Select All</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearAll" title="Clear all permissions in active tab">Clear All</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll" title="Select all permissions in active tab"><%- t("btn.select_all") %></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearAll" title="Clear all permissions in active tab"><%- t("btn.clear_all") %></button>
         </div>
       </div>
 

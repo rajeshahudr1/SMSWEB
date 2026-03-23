@@ -166,7 +166,7 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
             <select class="form-select select2" id="fLanguage" name="language">
               <% (supportedLanguages || []).forEach(function(lng){ %>
               <option value="<%- lng.code %>"
-                <%- (s.language === lng.code || (!s.language && lng.code === 'en')) ? 'selected' : '' %>>
+                <%- (s.language === lng.code || (!s.language && lng.code === 'en-US')) ? 'selected' : '' %>>
                 <%- lng.flag %> <%- lng.nativeName %>
               </option>
               <% }); %>

@@ -65,7 +65,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
         <div class="card-body py-3">
           <div class="d-flex align-items-center gap-2 mb-2">
             <i class="bi bi-file-earmark-check-fill text-success"></i>
-            <span class="fw-semibold small">Address Proof</span>
+            <span class="fw-semibold small"><%- t("form.address_proof") %></span>
           </div>
           <a href="<%- p.address_proof_url %>" target="_blank"
              class="btn btn-sm btn-outline-success w-100">
@@ -119,12 +119,12 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
         <div class="sms-profile-tabs" id="profileTabs">
           <a href="#tab-info" class="sms-profile-tab active" data-sms-tab="tab-info">
             <span class="sms-profile-tab__icon"><i class="bi bi-person-fill"></i></span>
-            <span class="sms-profile-tab__label">Profile Info</span>
+            <span class="sms-profile-tab__label"><%- t("profile.info") %></span>
           </a>
           <% if (showCompanyTab) { %>
             <a href="#tab-company" class="sms-profile-tab" data-sms-tab="tab-company">
               <span class="sms-profile-tab__icon"><i class="bi bi-building-fill"></i></span>
-              <span class="sms-profile-tab__label">Company</span>
+              <span class="sms-profile-tab__label"><%- t("profile.company") %></span>
             </a>
           <% } %>
           <a href="#tab-password" class="sms-profile-tab" data-sms-tab="tab-password">
@@ -143,7 +143,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- Name -->
               <div class="col-md-6">
-                <label class="form-label required">Full Name</label>
+                <label class="form-label required"><%- t("form.full_name") %></label>
                 <input type="text" name="name" id="pName" class="form-control"
                        value="<%- H.escape(p.name||'') %>"
                        placeholder="Your full name" required/>
@@ -152,7 +152,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- Email (readonly) -->
               <div class="col-md-6">
-                <label class="form-label">Email</label>
+                <label class="form-label"><%- t("form.email") %></label>
                 <input type="email" class="form-control" value="<%- p.email||'' %>"
                        readonly tabindex="-1"
                        style="background:var(--tblr-bg-surface-secondary,#f8fafc);cursor:default;"/>
@@ -161,7 +161,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- Phone -->
               <div class="col-md-6">
-                <label class="form-label required">Phone</label>
+                <label class="form-label required"><%- t("users.phone") %></label>
                 <div id="pPhoneWrap"></div>
                 <input type="hidden" name="phone" id="pPhone" value="<%- H.escape(p.phone||'') %>"/>
                 <div class="invalid-feedback d-block" id="err-pPhone"></div>
@@ -169,25 +169,25 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- Gender -->
               <div class="col-md-6">
-                <label class="form-label">Gender</label>
+                <label class="form-label"><%- t("form.gender") %></label>
                 <select name="gender" class="form-select">
                   <option value="">— Select —</option>
-                  <option value="male"   <%- p.gender==='male'   ? 'selected':'' %>>Male</option>
-                  <option value="female" <%- p.gender==='female' ? 'selected':'' %>>Female</option>
-                  <option value="other"  <%- p.gender==='other'  ? 'selected':'' %>>Other</option>
+                  <option value="male"   <%- p.gender==='male'   ? 'selected':'' %>><%- t("form.male") %></option>
+                  <option value="female" <%- p.gender==='female' ? 'selected':'' %>><%- t("form.female") %></option>
+                  <option value="other"  <%- p.gender==='other'  ? 'selected':'' %>><%- t("form.other") %></option>
                 </select>
               </div>
 
               <!-- DOB -->
               <div class="col-md-6">
-                <label class="form-label">Date of Birth</label>
+                <label class="form-label"><%- t("form.dob") %></label>
                 <input type="date" name="dob" class="form-control"
                        value="<%- p.dob ? String(p.dob).slice(0,10) : '' %>"/>
               </div>
 
               <!-- PAN -->
               <div class="col-md-6">
-                <label class="form-label">PAN Number</label>
+                <label class="form-label"><%- t("form.pan") %></label>
                 <input type="text" name="pan_no" class="form-control text-uppercase"
                        value="<%- H.escape(p.pan_no||'') %>"
                        placeholder="ABCDE1234F" maxlength="10"
@@ -197,7 +197,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- Aadhar -->
               <div class="col-md-6">
-                <label class="form-label">Aadhar Number</label>
+                <label class="form-label"><%- t("form.aadhar") %></label>
                 <input type="text" name="aadhar_no" id="pAadhar" class="form-control"
                        value="<%- H.escape(p.aadhar_no||'') %>"
                        placeholder="XXXX XXXX XXXX" maxlength="14"/>
@@ -208,14 +208,14 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
               <div class="col-12">
                 <div class="d-flex align-items-center gap-2 my-1">
                   <i class="bi bi-geo-alt-fill text-primary"></i>
-                  <span class="fw-semibold small text-muted text-uppercase" style="letter-spacing:.5px;">Location</span>
+                  <span class="fw-semibold small text-muted text-uppercase" style="letter-spacing:.5px;"><%- t("form.location") %></span>
                   <hr class="flex-fill m-0"/>
                 </div>
               </div>
 
               <!-- Country -->
               <div class="col-md-4">
-                <label class="form-label required">Country</label>
+                <label class="form-label required"><%- t("form.country") %></label>
                 <select name="country_id" id="pCountry" class="form-select select2-location" required>
                   <option value="">— Select Country —</option>
                 </select>
@@ -224,7 +224,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- State -->
               <div class="col-md-4">
-                <label class="form-label required">State</label>
+                <label class="form-label required"><%- t("form.state") %></label>
                 <select name="state_id" id="pState" class="form-select" required disabled>
                   <option value="">— Select State —</option>
                 </select>
@@ -233,7 +233,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- City -->
               <div class="col-md-4">
-                <label class="form-label required">City</label>
+                <label class="form-label required"><%- t("form.city") %></label>
                 <select name="city_id" id="pCity" class="form-select" required disabled>
                   <option value="">— Select City —</option>
                 </select>
@@ -242,7 +242,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- ZIP -->
               <div class="col-md-4">
-                <label class="form-label required">ZIP / Postal Code</label>
+                <label class="form-label required"><%- t("form.zip_code") %></label>
                 <input type="text" name="zip_code" id="pZip" class="form-control"
                        value="<%- H.escape(p.zip_code||'') %>"
                        placeholder="400001" required maxlength="10"/>
@@ -251,7 +251,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <!-- Address -->
               <div class="col-12">
-                <label class="form-label required">Address</label>
+                <label class="form-label required"><%- t("form.address") %></label>
                 <textarea name="address" id="pAddress" class="form-control" rows="2"
                           placeholder="Plot No, Street, Area, Landmark" required><%- H.escape(p.address||'') %></textarea>
                 <div class="invalid-feedback" id="err-pAddress"></div>
@@ -281,7 +281,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
               <div class="sms-tab-notice sms-tab-notice--info mb-4">
                 <i class="bi bi-info-circle-fill"></i>
-                <span>Company location (country, state, city, address, ZIP) is taken from your <strong>Profile Info</strong> tab automatically.</span>
+                <span>Company location (country, state, city, address, ZIP) is taken from your <strong><%- t("profile.info") %></strong> tab automatically.</span>
               </div>
 
               <!-- EDITABLE FORM for super admin / org admin -->
@@ -289,27 +289,27 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
                 <div class="row g-3">
 
                   <div class="col-md-6">
-                    <label class="form-label fw-medium">Company Name <span class="text-danger">*</span></label>
+                    <label class="form-label fw-medium"><%- t("form.company_name") %> <span class="text-danger">*</span></label>
                     <input type="text" name="company_name" id="cName" class="form-control"
                            value="<%- H.escape(p.company_name||'') %>" required/>
                     <div class="invalid-feedback" id="err-cName"></div>
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label fw-medium">Registration Number</label>
+                    <label class="form-label fw-medium"><%- t("form.reg_number") %></label>
                     <input type="text" name="registration_number" class="form-control"
                            value="<%- H.escape(p.registration_number||'') %>"/>
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label fw-medium">Company Phone</label>
+                    <label class="form-label fw-medium"><%- t("form.company_phone") %></label>
                     <div id="orgPhoneWrap"></div>
                     <input type="hidden" name="org_phone" id="orgPhone"
                            value="<%- H.escape(p.org_phone||'') %>"/>
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label fw-medium">Website</label>
+                    <label class="form-label fw-medium"><%- t("form.website") %></label>
                     <div class="input-group">
                       <span class="input-group-text"><i class="bi bi-globe"></i></span>
                       <input type="url" name="org_website" class="form-control"
@@ -320,7 +320,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
                   <!-- Address Proof -->
                   <div class="col-12">
-                    <label class="form-label fw-medium">Address Proof</label>
+                    <label class="form-label fw-medium"><%- t("form.address_proof") %></label>
                     <% if (p.address_proof_url) { %>
                       <div class="sms-proof-current mb-2">
                         <div class="d-flex align-items-center gap-2 p-2 border rounded-2">
@@ -371,7 +371,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
               <!-- Current password (only for local auth) -->
               <% if (!isGoogleOnly) { %>
                 <div class="col-12">
-                  <label class="form-label required">Current Password</label>
+                  <label class="form-label required"><%- t("form.current_password") %></label>
                   <div class="input-group">
                     <input type="password" name="current_password" id="curPwd"
                            class="form-control" placeholder="Enter current password" required/>
@@ -384,7 +384,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
               <% } %>
 
               <div class="col-12">
-                <label class="form-label required">New Password</label>
+                <label class="form-label required"><%- t("form.new_password") %></label>
                 <div class="input-group">
                   <input type="password" name="<%= isGoogleOnly ? 'new_password' : 'password' %>"
                          id="newPwd" class="form-control"
@@ -404,7 +404,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
               </div>
 
               <div class="col-12">
-                <label class="form-label required">Confirm New Password</label>
+                <label class="form-label required"><%- t("form.confirm_password") %></label>
                 <div class="input-group">
                   <input type="password" name="confirm_password" id="confPwd"
                          class="form-control" placeholder="Repeat new password" required/>

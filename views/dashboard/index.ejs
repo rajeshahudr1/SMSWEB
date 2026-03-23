@@ -26,7 +26,7 @@ var totalPerms   = s.total_permissions || 0;
           </span>
         </div>
         <div class="sms-stat-card__val"><%- totalUsers.toLocaleString() %></div>
-        <div class="sms-stat-card__label">Total Users</div>
+        <div class="sms-stat-card__label"><%- t("dash.total_users") %></div>
         <div class="sms-stat-card__bar">
           <div class="sms-stat-card__bar-fill" style="width:<%- Math.min(totalUsers*5,100) %>%"></div>
         </div>
@@ -47,7 +47,7 @@ var totalPerms   = s.total_permissions || 0;
           </span>
         </div>
         <div class="sms-stat-card__val"><%- vehiclesToday.toLocaleString() || 24 %></div>
-        <div class="sms-stat-card__label">Vehicles Today</div>
+        <div class="sms-stat-card__label"><%- t("dash.vehicles_today") %></div>
         <div class="sms-stat-card__bar">
           <div class="sms-stat-card__bar-fill" style="width:70%"></div>
         </div>
@@ -68,7 +68,7 @@ var totalPerms   = s.total_permissions || 0;
           </span>
         </div>
         <div class="sms-stat-card__val"><%- totalRoles.toLocaleString() %></div>
-        <div class="sms-stat-card__label">Active Roles</div>
+        <div class="sms-stat-card__label"><%- t("dash.active_roles") %></div>
         <div class="sms-stat-card__bar">
           <div class="sms-stat-card__bar-fill" style="width:<%- Math.min(totalRoles*15,100) %>%"></div>
         </div>
@@ -89,7 +89,7 @@ var totalPerms   = s.total_permissions || 0;
           </span>
         </div>
         <div class="sms-stat-card__val"><%- totalPerms.toLocaleString() %></div>
-        <div class="sms-stat-card__label">Permissions</div>
+        <div class="sms-stat-card__label"><%- t("nav.permissions") %></div>
         <div class="sms-stat-card__bar">
           <div class="sms-stat-card__bar-fill" style="width:85%"></div>
         </div>
@@ -99,263 +99,6 @@ var totalPerms   = s.total_permissions || 0;
 
 </div>
 
-<!-- ══ ROW 2 — Welcome + Monthly overview ══════════════════ -->
-<div class="row g-3 mb-4">
-
-  <!-- Welcome banner -->
-  <div class="col-lg-8">
-    <div class="card h-100 sms-welcome-card">
-      <div class="card-body d-flex align-items-center gap-4 flex-wrap p-4">
-        <div class="sms-welcome-avatar">
-          <% if (user && user.profile_image_url) { %>
-          <img src="<%- user.profile_image_url %>" alt="avatar" class="w-100 h-100" style="object-fit:cover;border-radius:inherit;">
-          <% } else { %>
-          <span class="sms-welcome-initial"><%- user ? user.name.charAt(0).toUpperCase() : 'A' %></span>
-          <% } %>
-          <span class="sms-welcome-online"></span>
-        </div>
-        <div class="flex-fill">
-          <div class="sms-welcome-greeting">
-            Good <%= (new Date().getHours()<12)?'Morning':(new Date().getHours()<17)?'Afternoon':'Evening' %> 👋
-          </div>
-          <h3 class="sms-welcome-name"><%- user ? user.name : 'Admin' %></h3>
-          <div class="sms-welcome-meta">
-            <span class="sms-meta-pill sms-meta-pill--green">
-              <i class="bi bi-circle-fill"></i>
-              <%- user && user.is_org_admin ? 'Administrator' : 'Staff User' %>
-            </span>
-            <span class="sms-meta-pill">
-              <i class="bi bi-building"></i>
-              SMS Platform
-            </span>
-            <span class="sms-meta-pill">
-              <i class="bi bi-display"></i>
-              <%- user && user.panel_access ? user.panel_access.toUpperCase() : 'B2B' %> Panel
-            </span>
-          </div>
-        </div>
-        <div class="d-flex flex-column gap-2 ms-auto">
-          <a href="/users/create" class="btn btn-primary btn-sm px-3">
-            <i class="bi bi-person-plus me-1"></i>Add User
-          </a>
-          <a href="/profile" class="btn btn-outline-secondary btn-sm px-3">
-            <i class="bi bi-pencil me-1"></i>Edit Profile
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scrap overview mini chart -->
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-bar-chart-line me-2 text-primary"></i>This Month</div>
-        <div class="card-options"><span class="badge bg-success-lt">+18% vs last</span></div>
-      </div>
-      <div class="card-body py-3 px-4">
-        <div class="sms-mini-stats">
-          <div class="sms-mini-stat">
-            <div class="sms-mini-stat__val text-blue">142</div>
-            <div class="sms-mini-stat__label">Intakes</div>
-          </div>
-          <div class="sms-mini-stat-div"></div>
-          <div class="sms-mini-stat">
-            <div class="sms-mini-stat__val text-green">₹4.2L</div>
-            <div class="sms-mini-stat__label">Revenue</div>
-          </div>
-          <div class="sms-mini-stat-div"></div>
-          <div class="sms-mini-stat">
-            <div class="sms-mini-stat__val text-orange">89</div>
-            <div class="sms-mini-stat__label">Processed</div>
-          </div>
-        </div>
-
-        <!-- Sparkline bars (pure CSS demo) -->
-        <div class="sms-sparkline mt-3">
-          <% var bars=[40,65,45,80,55,90,70,85,60,95,75,100]; %>
-          <% bars.forEach(function(h,i){ %>
-          <div class="sms-spark-bar" style="height:<%- h %>%;background:<%- i===11?'var(--tblr-primary)':'rgba(var(--tblr-primary-rgb),.25)' %>"></div>
-          <% }); %>
-        </div>
-        <div class="d-flex justify-content-between mt-1">
-          <span class="text-muted" style="font-size:10px;">Mar 7</span>
-          <span class="text-muted" style="font-size:10px;">Today</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ══ ROW 3 — Recent Users + Activity + Quick Access ══════ -->
-<div class="row g-3 mb-4">
-
-  <!-- Recent Users table -->
-  <div class="col-lg-7">
-    <div class="card h-100">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-people me-2 text-primary"></i>Recent Users</div>
-        <div class="card-options">
-          <a href="/users" class="btn btn-sm btn-primary">
-            <i class="bi bi-arrow-right me-1"></i>View All
-          </a>
-        </div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-vcenter table-hover card-table mb-0">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th class="d-none d-md-table-cell">Role</th>
-              <th class="d-none d-sm-table-cell">Panel</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (recentUsers && recentUsers.length) { %>
-            <% recentUsers.forEach(function(u){ %>
-            <tr>
-              <td>
-                <div class="d-flex align-items-center gap-2">
-                  <% if (u.profile_image_url || u.profile_image) { %>
-                  <span class="avatar avatar-sm" style="background-image:url(<%- u.profile_image_url || u.profile_image %>)"></span>
-                  <% } else { %>
-                  <span class="avatar avatar-sm bg-primary-lt fw-bold" style="font-size:13px;">
-                    <%- u.name.charAt(0).toUpperCase() %>
-                  </span>
-                  <% } %>
-                  <div>
-                    <div class="fw-medium" style="font-size:13px;"><%- u.name %></div>
-                    <div class="text-muted" style="font-size:11px;"><%- u.email %></div>
-                  </div>
-                </div>
-              </td>
-              <td class="d-none d-md-table-cell">
-                <span class="badge bg-secondary-lt"><%- u.role_name || '—' %></span>
-              </td>
-              <td class="d-none d-sm-table-cell">
-                <span class="badge bg-blue-lt text-uppercase" style="font-size:10px;"><%- u.panel_access || 'b2b' %></span>
-              </td>
-              <td>
-                <% if (parseInt(u.status)) { %>
-                <span class="badge bg-success-lt">
-                  <span class="status-dot status-dot-animated bg-success me-1"></span>Active
-                </span>
-                <% } else { %>
-                <span class="badge bg-danger-lt">Inactive</span>
-                <% } %>
-              </td>
-            </tr>
-            <% }); %>
-            <% } else { %>
-            <!-- Demo rows when no API data -->
-            <% var demoUsers = [
-              {name:'Raj Patel',    email:'raj@sms.com',    role:'Super Admin',  panel:'both',  status:1},
-              {name:'Priya Shah',   email:'priya@sms.com',  role:'Yard Manager', panel:'b2b',   status:1},
-              {name:'Amit Kumar',   email:'amit@sms.com',   role:'Operator',     panel:'b2b',   status:1},
-              {name:'Neha Verma',   email:'neha@sms.com',   role:'Buyer',        panel:'b2b',   status:0},
-              {name:'Sonal Mehta',  email:'sonal@sms.com',  role:'B2C Customer', panel:'b2c',   status:1},
-            ]; %>
-            <% demoUsers.forEach(function(u,i){ var colors=['blue','green','orange','purple','teal']; %>
-            <tr>
-              <td>
-                <div class="d-flex align-items-center gap-2">
-                  <span class="avatar avatar-sm bg-<%- colors[i] %>-lt fw-bold" style="font-size:13px;">
-                    <%- u.name.charAt(0) %>
-                  </span>
-                  <div>
-                    <div class="fw-medium" style="font-size:13px;"><%- u.name %></div>
-                    <div class="text-muted" style="font-size:11px;"><%- u.email %></div>
-                  </div>
-                </div>
-              </td>
-              <td class="d-none d-md-table-cell">
-                <span class="badge bg-secondary-lt"><%- u.role %></span>
-              </td>
-              <td class="d-none d-sm-table-cell">
-                <span class="badge bg-blue-lt text-uppercase" style="font-size:10px;"><%- u.panel %></span>
-              </td>
-              <td>
-                <% if (u.status) { %>
-                <span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>Active</span>
-                <% } else { %>
-                <span class="badge bg-danger-lt">Inactive</span>
-                <% } %>
-              </td>
-            </tr>
-            <% }); %>
-            <% } %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right col: Activity feed + Quick modules -->
-  <div class="col-lg-5">
-
-    <!-- Quick access modules -->
-    <div class="card mb-3">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Quick Access</div>
-      </div>
-      <div class="card-body p-3">
-        <div class="row g-2">
-          <%
-          var quickMods = [
-            { icon:'bi-people-fill',    label:'Users',       url:'/users',       color:'blue'   },
-            { icon:'bi-shield-check',   label:'Roles',       url:'/roles',       color:'green'  },
-            { icon:'bi-key-fill',       label:'Permissions', url:'/permissions', color:'orange' },
-            { icon:'bi-menu-button-wide', label:'Menus',     url:'/menus',       color:'purple' },
-            { icon:'bi-gear-fill',      label:'Settings',    url:'/settings',    color:'teal'   },
-            { icon:'bi-person-circle',  label:'Profile',     url:'/profile',     color:'indigo' },
-          ];
-          quickMods.forEach(function(m){ %>
-          <div class="col-4">
-            <a href="<%- m.url %>" class="sms-quick-card">
-              <span class="sms-quick-card__icon sms-quick-card__icon--<%- m.color %>">
-                <i class="bi <%- m.icon %>"></i>
-              </span>
-              <span class="sms-quick-card__label"><%- m.label %></span>
-            </a>
-          </div>
-          <% }); %>
-        </div>
-      </div>
-    </div>
-
-    <!-- Activity feed -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="bi bi-activity me-2 text-primary"></i>Recent Activity</div>
-      </div>
-      <div class="sms-activity">
-        <%
-        var acts = [
-          { icon:'bi-person-check-fill',  color:'green',  text:'New user <strong>Priya Shah</strong> registered', time:'2 min ago'  },
-          { icon:'bi-shield-fill-check',  color:'blue',   text:'Role <strong>Yard Manager</strong> permissions updated', time:'45 min ago' },
-          { icon:'bi-truck-front-fill',   color:'orange', text:'Vehicle <strong>GJ01AB1234</strong> intake recorded', time:'2 hr ago'   },
-          { icon:'bi-key-fill',           color:'purple', text:'<strong>12 permissions</strong> synced to roles', time:'4 hr ago'   },
-          { icon:'bi-gear-fill',          color:'teal',   text:'System settings updated by <strong>Admin</strong>', time:'Yesterday'  },
-        ];
-        acts.forEach(function(a){ %>
-        <div class="sms-activity__item">
-          <div class="sms-activity__dot sms-activity__dot--<%- a.color %>">
-            <i class="bi <%- a.icon %>"></i>
-          </div>
-          <div class="sms-activity__body">
-            <div class="sms-activity__text"><%- a.text %></div>
-            <div class="sms-activity__time"><%- a.time %></div>
-          </div>
-        </div>
-        <% }); %>
-      </div>
-    </div>
-
-  </div>
-</div>
-
 <!-- ══ ROW 4 — Scrap module pipeline (demo) ════════════════ -->
 <div class="row g-3">
 
@@ -363,7 +106,7 @@ var totalPerms   = s.total_permissions || 0;
   <div class="col-lg-8">
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="bi bi-arrow-right-circle me-2 text-primary"></i>Vehicle Pipeline — Today</div>
+        <div class="card-title"><i class="bi bi-arrow-right-circle me-2 text-primary"></i><%- t("dash.vehicle_pipeline") %></div>
         <div class="card-options">
           <span class="badge bg-primary-lt">Demo Data</span>
         </div>
@@ -398,7 +141,7 @@ var totalPerms   = s.total_permissions || 0;
   <div class="col-lg-4">
     <div class="card h-100">
       <div class="card-header">
-        <div class="card-title"><i class="bi bi-heart-pulse me-2 text-primary"></i>System Health</div>
+        <div class="card-title"><i class="bi bi-heart-pulse me-2 text-primary"></i><%- t("dash.system_health") %></div>
       </div>
       <div class="card-body">
         <div class="sms-health">

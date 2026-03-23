@@ -24,33 +24,18 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
              <%- s.dark_mode==='1' ? 'checked' : '' %> role="switch"/>
     </label>
 
-    <!-- Language -->
-    <div class="dropdown">
-      <a href="#" class="sms-header__btn d-flex align-items-center gap-1" data-bs-toggle="dropdown">
-        <span style="font-size:16px;"><%- curLangObj ? curLangObj.flag : '🌐' %></span>
-        <span class="d-none d-xl-inline small fw-medium"><%- curLangObj ? curLangObj.nativeName : 'EN' %></span>
-        <i class="bi bi-chevron-down text-muted" style="font-size:10px;"></i>
-      </a>
-      <div class="dropdown-menu dropdown-menu-end shadow" style="min-width:160px;">
-        <h6 class="dropdown-header text-uppercase">Language</h6>
-        <% (SUPPORTED_LANGUAGES||[]).forEach(function(lng){ %>
-        <a href="#" class="dropdown-item d-flex align-items-center gap-2 sms-lang-btn
-                           <%- curLang===lng.code?'active':'' %>" data-lang="<%- lng.code %>">
-          <span><%- lng.flag %></span>
-          <div>
-            <div class="fw-medium" style="font-size:13px;"><%- lng.nativeName %></div>
-            <div class="text-muted" style="font-size:11px;"><%- lng.name %></div>
-          </div>
-          <% if(curLang===lng.code){ %><i class="bi bi-check-lg ms-auto text-primary"></i><% } %>
-        </a>
-        <% }) %>
-      </div>
-    </div>
+    <!-- Language — opens search modal -->
+    <button type="button" class="sms-header__btn d-flex align-items-center gap-1" id="btnLangDesktop"
+            data-bs-toggle="modal" data-bs-target="#langModal" title="Change language">
+      <span style="font-size:16px;"><%- curLangObj ? curLangObj.flag : '🌐' %></span>
+      <span class="d-none d-xl-inline small fw-medium"><%- curLangObj ? curLangObj.nativeName : 'EN' %></span>
+      <i class="bi bi-chevron-down text-muted" style="font-size:10px;"></i>
+    </button>
 
     <!-- Theme panel -->
-<!--    <button class="sms-header__btn sms-header__icon-btn" id="smsBtnTheme" title="Customise">-->
-<!--      <i class="bi bi-sliders"></i>-->
-<!--    </button>-->
+    <button class="sms-header__btn sms-header__icon-btn" id="smsBtnTheme" title="Customise">
+      <i class="bi bi-sliders"></i>
+    </button>
 
     <!-- Notifications -->
     <div class="dropdown">
@@ -110,20 +95,10 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
   </button>
   <div class="flex-fill fw-semibold text-truncate" style="font-size:15px;"><%- page_title %></div>
 
-  <!-- Mobile lang -->
-  <div class="dropdown">
-    <button class="sms-topbar__btn" data-bs-toggle="dropdown">
-      <span style="font-size:16px;"><%- curLangObj ? curLangObj.flag : '🌐' %></span>
-    </button>
-    <div class="dropdown-menu dropdown-menu-end shadow">
-      <% (SUPPORTED_LANGUAGES||[]).forEach(function(lng){ %>
-      <a href="#" class="dropdown-item sms-lang-btn <%- curLang===lng.code?'active':'' %>"
-         data-lang="<%- lng.code %>">
-        <span class="me-2"><%- lng.flag %></span><%- lng.nativeName %>
-      </a>
-      <% }) %>
-    </div>
-  </div>
+  <!-- Mobile lang — opens same modal -->
+  <button type="button" class="sms-topbar__btn" data-bs-toggle="modal" data-bs-target="#langModal">
+    <span style="font-size:16px;"><%- curLangObj ? curLangObj.flag : '🌐' %></span>
+  </button>
 
   <!-- Mobile theme -->
   <button class="sms-topbar__btn" id="smsBtnThemeMobile">
@@ -156,3 +131,73 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
     </div>
   </div>
 </div>
+
+<!-- ══ Language Picker Modal — shared by desktop + mobile ═════════ -->
+<div class="modal fade" id="langModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2 border-bottom">
+        <h5 class="modal-title fw-semibold" style="font-size:14px;">
+          <i class="bi bi-translate me-2 text-primary"></i><%- t ? t('settings.language') : 'Language' %>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="px-3 pt-2 pb-1">
+        <input type="text" class="form-control form-control-sm" id="langSearchInput"
+               placeholder="&#128269; Search language…" autocomplete="off">
+      </div>
+      <div class="modal-body p-0" style="max-height:350px;overflow-y:auto;">
+        <div class="list-group list-group-flush" id="langListBody">
+          <% (SUPPORTED_LANGUAGES||[]).forEach(function(lng){ %>
+          <a href="#" class="list-group-item list-group-item-action sms-lang-btn d-flex align-items-center gap-2 py-2 px-3
+                            <%- curLang===lng.code ? 'active' : '' %>"
+             data-lang="<%- lng.code %>"
+             data-search="<%- (lng.name + ' ' + lng.nativeName + ' ' + lng.code).toLowerCase() %>">
+            <span style="font-size:18px;"><%- lng.flag %></span>
+            <div class="flex-fill" style="min-width:0;">
+              <div class="fw-medium text-truncate" style="font-size:13px;"><%- lng.nativeName %></div>
+              <div class="text-muted text-truncate" style="font-size:11px;"><%- lng.name %> (<%- lng.code %>)</div>
+            </div>
+            <% if(curLang===lng.code){ %><i class="bi bi-check-lg text-primary"></i><% } %>
+          </a>
+          <% }) %>
+        </div>
+        <div class="text-center text-muted py-3 d-none" id="langNoResult" style="font-size:13px;">
+          <i class="bi bi-search me-1"></i>No language found
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ── Language search filter ── */
+  var searchInp = document.getElementById('langSearchInput');
+  var listBody  = document.getElementById('langListBody');
+  var noResult  = document.getElementById('langNoResult');
+  if (searchInp && listBody) {
+    searchInp.addEventListener('input', function(){
+      var q = this.value.toLowerCase().trim();
+      var items = listBody.querySelectorAll('.sms-lang-btn');
+      var visible = 0;
+      items.forEach(function(item){
+        var match = !q || (item.dataset.search || '').indexOf(q) !== -1;
+        item.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      if (noResult) noResult.classList.toggle('d-none', visible > 0);
+    });
+  }
+  /* Auto-focus search when modal opens */
+  var langModal = document.getElementById('langModal');
+  if (langModal) {
+    langModal.addEventListener('shown.bs.modal', function(){
+      if (searchInp) { searchInp.value = ''; searchInp.dispatchEvent(new Event('input')); searchInp.focus(); }
+      /* Scroll active item into view */
+      var active = listBody.querySelector('.sms-lang-btn.active');
+      if (active) active.scrollIntoView({ block: 'center', behavior: 'instant' });
+    });
+  }
+})();
+</script>

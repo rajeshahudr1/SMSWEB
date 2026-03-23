@@ -12,10 +12,10 @@
         </h3>
       </div>
       <div class="col">
-        <select id="langSelect" class="form-select form-select-sm">
+        <select id="langSelect" class="form-select form-select-sm select2" style="width:100%;">
           <option value="">-- <%- t('lang.select') %> --</option>
           <% languages.forEach(function(l) { %>
-            <option value="<%= l.code %>"><%= l.flag %> <%= l.name %> (<%= l.nativeName %>)</option>
+            <option value="<%= l.code %>" data-flag="<%= l.flag %>"><%= l.flag %>  <%= l.name %> (<%= l.nativeName %>)</option>
           <% }) %>
         </select>
       </div>
@@ -133,14 +133,23 @@
   </div>
 </div>
 
-<!-- ═══ Load CSS + JS via block ═══════════════════════════ -->
+<!-- ═══ Load CSS via block ═══════════════════════════ -->
 <% block('scripts', '<link rel="stylesheet" href="/css/languages.css"/>') %>
 
 <script>
-(function(){
+/* Wait for jQuery + Select2 (loaded by layout after body) */
+(function waitForJQ(){
+  if(typeof jQuery==='undefined'){setTimeout(waitForJQ,30);return;}
+  jQuery(function(){
+    if(typeof jQuery.fn.select2==='undefined'){
+      var w=setInterval(function(){if(typeof jQuery.fn.select2!=='undefined'){clearInterval(w);initLangPage();}},30);
+    } else { initLangPage(); }
+  });
+})();
+
+function initLangPage(){
     var curLang='', enD={}, trD={}, flt='all', lName='';
 
-    var $sel   = document.getElementById('langSelect');
     var $sTop  = document.getElementById('btnSaveTop');
     var $sBot  = document.getElementById('btnSaveBottom');
     var $hBtns = document.getElementById('headerBtns');
@@ -153,10 +162,20 @@
     function show(){ for(var i=0;i<arguments.length;i++) arguments[i].classList.remove('d-none'); }
     function hide(){ for(var i=0;i<arguments.length;i++) arguments[i].classList.add('d-none'); }
 
-    $sel.addEventListener('change', function(){
-        if(!this.value){ hide($hBtns,$tb,$ed,$bb); show($mt); return; }
-        lName = this.options[this.selectedIndex].text;
-        load(this.value);
+    /* Init Select2 */
+    $('#langSelect').select2({
+      theme: 'bootstrap-5',
+      placeholder: '-- <%- t("lang.select") %> --',
+      allowClear: true,
+      width: '100%'
+    });
+
+    /* Select2 change */
+    $('#langSelect').on('change', function(){
+        var val = $(this).val();
+        if(!val){ hide($hBtns,$tb,$ed,$bb); show($mt); return; }
+        lName = $(this).find('option:selected').text();
+        load(val);
     });
 
     async function load(c){
@@ -321,5 +340,5 @@
     }
     function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
     function escA(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-})();
+}
 </script>

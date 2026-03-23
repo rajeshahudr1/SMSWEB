@@ -18,6 +18,12 @@ const transCache = {};  // { code: { data: {}, loadedAt: ts } }
 let langListCache = { data: null, loadedAt: 0 };
 
 // ── Fallback (used only if API is unreachable on first request) ──
+// ── Get base language code from cached list ──
+function getBaseLang() {
+    if (langListCache.data && langListCache.data.length) return langListCache.data[0].code;
+    return "en-US";
+}
+
 const FALLBACK_EN = {
     'nav.dashboard': 'Dashboard', 'nav.users': 'Users', 'nav.roles': 'Roles',
     'nav.settings': 'Settings', 'nav.profile': 'My Profile', 'nav.logout': 'Logout',
@@ -96,19 +102,19 @@ function getTranslationsSync(code) {
  */
 async function preloadLanguage(code) {
     await fetchSupportedLanguages();
-    await getTranslationsAsync(code || 'en');
+    await getTranslationsAsync(code || getBaseLang());
 }
 
 function getTranslator(lang) {
-    const dict = getTranslationsSync(lang || 'en');
-    const base = getTranslationsSync('en');
+    const dict = getTranslationsSync(lang || getBaseLang());
+    const base = getTranslationsSync(getBaseLang());
     return function t(key, fallback) {
         return dict[key] || base[key] || fallback || key;
     };
 }
 
 function getDict(lang) {
-    return Object.assign({}, getTranslationsSync('en'), getTranslationsSync(lang || 'en'));
+    return Object.assign({}, getTranslationsSync(getBaseLang()), getTranslationsSync(lang || getBaseLang()));
 }
 
 /**

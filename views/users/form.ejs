@@ -31,14 +31,14 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
         <div class="row g-3">
 
           <div class="col-md-6">
-            <label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>
+            <label class="form-label fw-medium"><%- t("form.full_name") %> <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control" required autofocus
                    value="<%- isEdit ? (u.name||'') : '' %>"
                    placeholder="Full name"/>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-medium">Email <% if (!isEdit) { %><span class="text-danger">*</span><% } %></label>
+            <label class="form-label fw-medium"><%- t("users.email") %> <% if (!isEdit) { %><span class="text-danger">*</span><% } %></label>
             <input type="email" name="email" class="form-control"
                    value="<%- isEdit ? (u.email||'') : '' %>"
                    placeholder="user@company.com"
@@ -47,7 +47,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-medium">Password <% if (!isEdit) { %><span class="text-danger">*</span><% } %></label>
+            <label class="form-label fw-medium"><%- t("form.password") %> <% if (!isEdit) { %><span class="text-danger">*</span><% } %></label>
             <div class="input-group">
               <input type="password" name="password" id="fPwd" class="form-control"
                      placeholder="<%- isEdit ? 'Leave blank to keep current' : 'Min 8 characters' %>"
@@ -60,13 +60,13 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
 
           <!-- Phone with country code -->
           <div class="col-md-6">
-            <label class="form-label fw-medium">Phone</label>
+            <label class="form-label fw-medium"><%- t("users.phone") %></label>
             <input type="hidden" name="phone" id="phoneHidden" value="<%- isEdit ? (u.phone||'') : '' %>"/>
             <div id="phoneWrap"></div>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-medium">Role</label>
+            <label class="form-label fw-medium"><%- t("users.role") %></label>
             <select name="role_id" id="selRole" class="form-select" style="width:100%;">
               <option value="">— No Role —</option>
               <% if (typeof roles !== 'undefined') { roles.forEach(function(r){ %>
@@ -77,10 +77,10 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
 
           <% if (isEdit) { %>
           <div class="col-md-6">
-            <label class="form-label fw-medium">Status</label>
+            <label class="form-label fw-medium"><%- t("users.status") %></label>
             <select name="status" class="form-select">
-              <option value="1" <%- parseInt(u.status) ? 'selected':'' %>>Active</option>
-              <option value="0" <%- !parseInt(u.status) ? 'selected':'' %>>Inactive</option>
+              <option value="1" <%- parseInt(u.status) ? 'selected':'' %>><%- t("users.active") %></option>
+              <option value="0" <%- !parseInt(u.status) ? 'selected':'' %>><%- t("users.inactive") %></option>
             </select>
           </div>
           <% } %>
@@ -99,34 +99,34 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="form-label fw-medium">Country</label>
+            <label class="form-label fw-medium"><%- t("form.country") %></label>
             <select name="country_id" id="sCountry" class="form-select" style="width:100%;">
               <option value="">— Select Country —</option>
               <% if (typeof countries !== 'undefined') { countries.forEach(function(c){ %>
               <option value="<%- c.id %>"
-                <% if (isEdit && u.country_id == c.id) { %>selected<% } %>><%- c.name %></option>
+                <% if (isEdit && u.country_id == c.id) { %><%- t("general.selected") %><% } %>><%- c.name %></option>
               <% }) } %>
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-medium">State</label>
+            <label class="form-label fw-medium"><%- t("form.state") %></label>
             <select name="state_id" id="sState" class="form-select" style="width:100%;">
               <option value="">— Select State —</option>
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-medium">City</label>
+            <label class="form-label fw-medium"><%- t("form.city") %></label>
             <select name="city_id" id="sCity" class="form-select" style="width:100%;">
               <option value="">— Select City —</option>
             </select>
           </div>
           <div class="col-md-8">
-            <label class="form-label fw-medium">Address</label>
+            <label class="form-label fw-medium"><%- t("form.address") %></label>
             <input type="text" name="address" class="form-control"
                    value="<%- isEdit ? (u.address||'') : '' %>" placeholder="Street address"/>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-medium">ZIP Code</label>
+            <label class="form-label fw-medium"><%- t("form.zip_code") %></label>
             <input type="text" name="zip_code" class="form-control"
                    value="<%- isEdit ? (u.zip_code||'') : '' %>" placeholder="ZIP / Postal code"/>
           </div>
@@ -146,27 +146,27 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
       <div class="card-body">
         <div class="row g-3">
           <div class="col-12">
-            <label class="form-label fw-medium">Gender</label>
+            <label class="form-label fw-medium"><%- t("form.gender") %></label>
             <select name="gender" class="form-select">
               <option value="">— Select —</option>
-              <option value="male"   <%- isEdit&&u.gender==='male'   ? 'selected':'' %>>Male</option>
-              <option value="female" <%- isEdit&&u.gender==='female' ? 'selected':'' %>>Female</option>
-              <option value="other"  <%- isEdit&&u.gender==='other'  ? 'selected':'' %>>Other</option>
+              <option value="male"   <%- isEdit&&u.gender==='male'   ? 'selected':'' %>><%- t("form.male") %></option>
+              <option value="female" <%- isEdit&&u.gender==='female' ? 'selected':'' %>><%- t("form.female") %></option>
+              <option value="other"  <%- isEdit&&u.gender==='other'  ? 'selected':'' %>><%- t("form.other") %></option>
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label fw-medium">Date of Birth</label>
+            <label class="form-label fw-medium"><%- t("form.dob") %></label>
             <input type="date" name="dob" class="form-control"
                    value="<%- isEdit&&u.dob ? String(u.dob).slice(0,10) : '' %>"/>
           </div>
           <div class="col-12">
-            <label class="form-label fw-medium">Aadhar Number</label>
+            <label class="form-label fw-medium"><%- t("form.aadhar") %></label>
             <input type="text" name="aadhar_no" class="form-control"
                    value="<%- isEdit ? (u.aadhar_no||'') : '' %>"
                    placeholder="12-digit" maxlength="12"/>
           </div>
           <div class="col-12">
-            <label class="form-label fw-medium">PAN Number</label>
+            <label class="form-label fw-medium"><%- t("form.pan") %></label>
             <input type="text" name="pan_no" class="form-control text-uppercase"
                    value="<%- isEdit ? (u.pan_no||'') : '' %>"
                    placeholder="ABCDE1234F" maxlength="10"/>
@@ -185,7 +185,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
         <label class="form-check form-switch">
           <input type="checkbox" class="form-check-input" name="is_org_admin" value="1"
                  <%- isEdit&&parseInt(u.is_org_admin) ? 'checked':'' %>/>
-          <span class="form-check-label fw-medium">Organisation Admin</span>
+          <span class="form-check-label fw-medium"><%- t("form.org_admin") %></span>
         </label>
         <div class="form-hint">Bypasses all permission checks within this org.</div>
       </div>
