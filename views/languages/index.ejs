@@ -11,20 +11,20 @@
           <i class="bi bi-translate me-2 text-primary"></i><%- t('lang.title') %>
         </h3>
       </div>
-      <div class="col">
-        <select id="langSelect" class="form-select form-select-sm select2" style="width:100%;">
+      <div class="col-12 col-sm">
+        <select id="langSelect" class="form-select select2" style="width:100%;">
           <option value="">-- <%- t('lang.select') %> --</option>
           <% languages.forEach(function(l) { %>
-            <option value="<%= l.code %>" data-flag="<%= l.flag %>"><%= l.flag %>  <%= l.name %> (<%= l.nativeName %>)</option>
+            <option value="<%= l.code %>"><%= l.flag %>  <%= l.name %> (<%= l.nativeName %>)</option>
           <% }) %>
         </select>
       </div>
-      <div class="col-auto d-none" id="headerBtns">
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openAddKeyModal()">
+      <div class="col-12 col-sm-auto d-none" id="headerBtns">
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="smsLangAddKey()">
             <i class="bi bi-plus-lg me-1"></i><span class="d-none d-md-inline">Add Key</span>
           </button>
-          <button type="button" class="btn btn-sm btn-primary" id="btnSaveTop" onclick="saveTranslations()">
+          <button type="button" class="btn btn-sm btn-primary" id="btnSaveTop" onclick="smsLangSave()">
             <i class="bi bi-check-lg me-1"></i><%- t('btn.save') %>
           </button>
         </div>
@@ -32,28 +32,49 @@
     </div>
   </div>
 
-  <!-- Row 2: Stats + Search + Filter -->
+  <!-- Row 2: Toolbar -->
   <div id="toolbarRow" class="d-none">
     <div class="px-3 py-2 border-bottom bg-light">
-      <!-- Line 1: Search full width + filter -->
+
+      <!-- Line 1: Search + filter -->
       <div class="row g-2 align-items-center mb-2">
         <div class="col">
           <input type="text" id="searchInput" class="form-control form-control-sm"
-                 placeholder="Search keys or values…" oninput="filterKeys()">
+                 placeholder="Search keys or values…" oninput="smsLangFilter()">
         </div>
         <div class="col-auto">
           <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-secondary active" data-filter="all" onclick="setFilter('all',this)">All</button>
-            <button class="btn btn-sm btn-outline-secondary" data-filter="translated" onclick="setFilter('translated',this)"><i class="bi bi-check2 text-success me-1"></i>Done</button>
-            <button class="btn btn-sm btn-outline-secondary" data-filter="missing" onclick="setFilter('missing',this)"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Missing</button>
+            <button class="btn btn-sm btn-outline-secondary active" data-filter="all" onclick="smsLangSetFilter('all',this)">All</button>
+            <button class="btn btn-sm btn-outline-secondary" data-filter="translated" onclick="smsLangSetFilter('translated',this)"><i class="bi bi-check2 text-success me-1"></i>Done</button>
+            <button class="btn btn-sm btn-outline-secondary" data-filter="missing" onclick="smsLangSetFilter('missing',this)"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Missing</button>
           </div>
         </div>
       </div>
-      <!-- Line 2: Stat badges -->
-      <div class="d-flex gap-2 flex-wrap">
-        <span class="badge bg-secondary-lt"><i class="bi bi-key me-1"></i><span id="statTotal">0</span> Total</span>
-        <span class="badge bg-success-lt"><i class="bi bi-check-circle me-1"></i><span id="statTranslated">0</span> Done</span>
-        <span class="badge bg-warning-lt"><i class="bi bi-exclamation-triangle me-1"></i><span id="statMissing">0</span> Missing</span>
+
+      <!-- Line 2: Stats + AI Translate buttons + Provider -->
+      <div class="row g-2 align-items-center">
+        <div class="col-auto d-flex gap-1 flex-wrap">
+          <span class="badge bg-secondary-lt"><i class="bi bi-key me-1"></i><span id="statTotal">0</span> Total</span>
+          <span class="badge bg-success-lt"><i class="bi bi-check-circle me-1"></i><span id="statTranslated">0</span> Done</span>
+          <span class="badge bg-warning-lt"><i class="bi bi-exclamation-triangle me-1"></i><span id="statMissing">0</span> Missing</span>
+        </div>
+        <div class="col"></div>
+        <div class="col-auto d-flex gap-2 flex-wrap">
+          <!-- AI Provider selector -->
+          <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white">
+            <span class="text-muted" style="font-size:11px;">AI:</span>
+            <a href="#" class="badge bg-primary-lt sms-ai-provider active" data-provider="openai" style="font-size:11px;text-decoration:none;">ChatGPT</a>
+            <a href="#" class="badge bg-secondary-lt sms-ai-provider" data-provider="gemini" style="font-size:11px;text-decoration:none;">Gemini</a>
+          </div>
+          <!-- Translate Missing -->
+          <button type="button" class="btn btn-sm btn-outline-success sms-ai-btn" id="btnTrMissing" onclick="smsLangTrMissing()">
+            <i class="bi bi-robot me-1"></i>Translate Missing
+          </button>
+          <!-- Translate All -->
+          <button type="button" class="btn btn-sm btn-outline-primary sms-ai-btn" id="btnTrAll" onclick="smsLangTrAll()">
+            <i class="bi bi-translate me-1"></i>Translate All
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -86,10 +107,10 @@
         </div>
         <div class="col-auto">
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openAddKeyModal()">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="smsLangAddKey()">
               <i class="bi bi-plus-lg me-1"></i><span class="d-none d-md-inline">Add Key</span>
             </button>
-            <button type="button" class="btn btn-sm btn-primary" id="btnSaveBottom" onclick="saveTranslations()">
+            <button type="button" class="btn btn-sm btn-primary" id="btnSaveBottom" onclick="smsLangSave()">
               <i class="bi bi-check-lg me-1"></i><%- t('btn.save') %>
             </button>
           </div>
@@ -127,218 +148,11 @@
       </div>
       <div class="modal-footer py-2">
         <button type="button" class="btn btn-sm" data-bs-dismiss="modal"><%- t('btn.cancel') %></button>
-        <button type="button" class="btn btn-sm btn-primary" onclick="submitAddKey()"><i class="bi bi-plus-lg me-1"></i>Add Key</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="smsLangSubmitKey()"><i class="bi bi-plus-lg me-1"></i>Add Key</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══ Load CSS via block ═══════════════════════════ -->
-<% block('scripts', '<link rel="stylesheet" href="/css/languages.css"/>') %>
-
-<script>
-/* Wait for jQuery + Select2 (loaded by layout after body) */
-(function waitForJQ(){
-  if(typeof jQuery==='undefined'){setTimeout(waitForJQ,30);return;}
-  jQuery(function(){
-    if(typeof jQuery.fn.select2==='undefined'){
-      var w=setInterval(function(){if(typeof jQuery.fn.select2!=='undefined'){clearInterval(w);initLangPage();}},30);
-    } else { initLangPage(); }
-  });
-})();
-
-function initLangPage(){
-    var curLang='', enD={}, trD={}, flt='all', lName='';
-
-    var $sTop  = document.getElementById('btnSaveTop');
-    var $sBot  = document.getElementById('btnSaveBottom');
-    var $hBtns = document.getElementById('headerBtns');
-    var $tb    = document.getElementById('toolbarRow');
-    var $ld    = document.getElementById('editorLoading');
-    var $mt    = document.getElementById('editorEmpty');
-    var $ed    = document.getElementById('editorContainer');
-    var $bb    = document.getElementById('bottomBar');
-
-    function show(){ for(var i=0;i<arguments.length;i++) arguments[i].classList.remove('d-none'); }
-    function hide(){ for(var i=0;i<arguments.length;i++) arguments[i].classList.add('d-none'); }
-
-    /* Init Select2 */
-    $('#langSelect').select2({
-      theme: 'bootstrap-5',
-      placeholder: '-- <%- t("lang.select") %> --',
-      allowClear: true,
-      width: '100%'
-    });
-
-    /* Select2 change */
-    $('#langSelect').on('change', function(){
-        var val = $(this).val();
-        if(!val){ hide($hBtns,$tb,$ed,$bb); show($mt); return; }
-        lName = $(this).find('option:selected').text();
-        load(val);
-    });
-
-    async function load(c){
-        curLang=c; hide($mt,$ed,$bb); show($ld);
-        try {
-            var r = await(await fetch('/languages/'+c)).json();
-            if(r.status!==200){ alert(r.message); return; }
-            enD = r.data.en||{}; trD = r.data.translations||{};
-            upStats(r.data.totalKeys, r.data.translated);
-            render();
-            hide($ld); show($ed,$hBtns,$tb,$bb);
-        } catch(e){ console.error(e); hide($ld); show($mt); }
-    }
-
-    function upStats(t,d){
-        document.getElementById('statTotal').textContent     = t;
-        document.getElementById('statTranslated').textContent = d;
-        document.getElementById('statMissing').textContent    = t-d;
-        document.getElementById('bottomInfo').textContent     = lName+' — '+d+'/'+t+' translated';
-    }
-
-    var LBL = {
-        nav:'Navigation', btn:'Buttons', dash:'Dashboard', users:'Users', roles:'Roles',
-        settings:'Settings', theme:'Theme', auth:'Authentication', general:'General',
-        lang:'Language', permissions:'Permissions', menus:'Menus'
-    };
-
-    function render(){
-        var grp = {};
-        Object.keys(enD).forEach(function(k){ var g=k.split('.')[0]; (grp[g]=grp[g]||[]).push(k); });
-
-        var h = '';
-        Object.keys(grp).sort().forEach(function(g){
-            var keys = grp[g];
-            var lbl  = LBL[g] || g.charAt(0).toUpperCase()+g.slice(1);
-            var miss = keys.filter(function(k){ return !(trD[k]||'').trim(); }).length;
-
-            h += '<div class="card shadow-sm mb-2 sms-lang-grp" data-g="'+g+'">';
-            h += '<div class="card-header d-flex align-items-center gap-2" onclick="tog(this)">';
-            h += '  <i class="bi bi-chevron-down sms-chv"></i>';
-            h += '  <span class="fw-semibold small">'+lbl+'</span>';
-            h += '  <span class="badge bg-secondary-lt">'+keys.length+'</span>';
-            h += miss
-                ? '  <span class="badge bg-warning-lt">'+miss+' missing</span>'
-                : '  <span class="badge bg-success-lt"><i class="bi bi-check2"></i></span>';
-            h += '  <code class="text-muted ms-auto d-none d-sm-inline small">'+g+'.*</code>';
-            h += '</div>';
-
-            h += '<div class="sms-grp-body">';
-            h += '<div class="table-responsive">';
-            h += '<table class="table table-hover table-vcenter mb-0">';
-            h += '<thead><tr>';
-            h += '  <th class="w-25 text-muted small text-uppercase">Key</th>';
-            h += '  <th class="text-muted small text-uppercase d-none d-md-table-cell sms-col-en">English</th>';
-            h += '  <th class="text-muted small text-uppercase">Translation</th>';
-            h += '</tr></thead>';
-            h += '<tbody>';
-
-            keys.forEach(function(k){
-                var ev = enD[k]||'', tv = trD[k]||'', em = !tv.trim();
-                var sk = k.includes('.') ? k.split('.').slice(1).join('.') : k;
-                h += '<tr class="sms-trow'+(em?' sms-row-miss':'')+'" data-k="'+k+'" data-d="'+(em?0:1)+'">';
-                h += '  <td><code class="text-muted">'+sk+'</code></td>';
-                h += '  <td class="text-muted d-none d-md-table-cell">'+esc(ev)+'</td>';
-                h += '  <td><input type="text" class="sms-tinput" data-k="'+k+'" value="'+escA(tv)+'"';
-                h += '    placeholder="'+escA(ev)+'" oninput="drt(this)"></td>';
-                h += '</tr>';
-            });
-
-            h += '</tbody></table></div></div></div>';
-        });
-        $ed.innerHTML = h;
-    }
-
-    /* ── Helpers ── */
-    window.drt = function(inp){
-        inp.classList.add('is-dirty');
-        var r = inp.closest('.sms-trow');
-        if(inp.value.trim()){ r.classList.remove('sms-row-miss'); r.dataset.d='1'; }
-        else { r.classList.add('sms-row-miss'); r.dataset.d='0'; }
-    };
-    window.tog = function(hd){
-        hd.nextElementSibling.classList.toggle('d-none');
-        hd.querySelector('.sms-chv').classList.toggle('shut');
-    };
-    window.filterKeys = function(){
-        var q = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('.sms-trow').forEach(function(r){
-            var k = r.dataset.k.toLowerCase();
-            var v = (r.querySelector('.sms-tinput')||{}).value||'';
-            var e = (enD[r.dataset.k]||'').toLowerCase();
-            var mq = !q || k.includes(q) || v.toLowerCase().includes(q) || e.includes(q);
-            var mf = flt==='all'||(flt==='translated'&&r.dataset.d==='1')||(flt==='missing'&&r.dataset.d==='0');
-            r.style.display = (mq&&mf)?'':'none';
-        });
-        document.querySelectorAll('.sms-lang-grp').forEach(function(c){
-            c.style.display = c.querySelectorAll('.sms-trow:not([style*="display: none"])').length?'':'none';
-        });
-    };
-    window.setFilter = function(f,b){
-        flt=f;
-        document.querySelectorAll('[data-filter]').forEach(function(x){x.classList.remove('active');});
-        b.classList.add('active'); filterKeys();
-    };
-
-    /* ── Save ── */
-    var SV = '<i class="bi bi-check-lg me-1"></i><%- t("btn.save") %>';
-    var SG = '<span class="spinner-border spinner-border-sm me-1"></span><%- t("btn.saving") %>';
-    window.saveTranslations = async function(){
-        var inps = document.querySelectorAll('.sms-tinput'), tr={};
-        inps.forEach(function(i){tr[i.dataset.k]=i.value;});
-        [$sTop,$sBot].forEach(function(b){b.disabled=true;b.innerHTML=SG;});
-        try{
-            var j = await(await fetch('/languages/'+curLang,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({translations:tr})})).json();
-            if(j.status===200){
-                if(j.data) upStats(j.data.totalKeys,j.data.translated);
-                inps.forEach(function(i){i.classList.remove('is-dirty');});
-                toast('success',j.message||'Saved!');
-            } else toast('error',j.message||'Error');
-        } catch(e){console.error(e);toast('error','Save failed');}
-        [$sTop,$sBot].forEach(function(b){b.disabled=false;b.innerHTML=SV;});
-    };
-
-    /* ── Add Key ── */
-    var addM;
-    window.openAddKeyModal = function(){
-        var gs=[], seen={};
-        Object.keys(enD).forEach(function(k){var g=k.split('.')[0];if(!seen[g]){seen[g]=1;gs.push(g);}});
-        gs.sort();
-        var s=document.getElementById('newKeyGroup');
-        s.innerHTML='<option value="">Select group…</option>'+gs.map(function(g){return '<option value="'+g+'">'+g+'</option>';}).join('');
-        document.getElementById('newKeyName').value='';
-        document.getElementById('newKeyValue').value='';
-        upPrev();
-        if(!addM)addM=new bootstrap.Modal(document.getElementById('addKeyModal'));
-        addM.show();
-    };
-    document.getElementById('newKeyGroup').addEventListener('change',upPrev);
-    document.getElementById('newKeyName').addEventListener('input',upPrev);
-    function upPrev(){
-        var g=document.getElementById('newKeyGroup').value||'group';
-        var n=document.getElementById('newKeyName').value.trim().toLowerCase().replace(/\s+/g,'_')||'key_name';
-        document.getElementById('newKeyPrefix').textContent=g+'.';
-        document.getElementById('newKeyPreview').textContent=g+'.'+n;
-    }
-    window.submitAddKey = async function(){
-        var g=document.getElementById('newKeyGroup').value;
-        var n=document.getElementById('newKeyName').value.trim().toLowerCase().replace(/\s+/g,'_');
-        var v=document.getElementById('newKeyValue').value.trim();
-        if(!g){toast('error','Select a group');return;}
-        if(!n){toast('error','Enter a key name');return;}
-        try{
-            var j=await(await fetch('/languages/add-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:g+'.'+n,value:v})})).json();
-            if(j.status===200){toast('success',j.message);if(addM)addM.hide();load(curLang);}
-            else toast('error',j.message||'Error');
-        }catch(e){console.error(e);toast('error','Failed');}
-    };
-
-    function toast(t,m){
-        if(typeof Swal!=='undefined') Swal.fire({icon:t==='error'?'error':'success',title:m,timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
-        else alert(m);
-    }
-    function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-    function escA(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-}
-</script>
+<!-- ═══ Load CSS + JS via block (after jQuery) ═══════════ -->
+<% block('scripts', '<link rel="stylesheet" href="/css/languages.css"/><script src="/js/pages/languages.js"></script>') %>

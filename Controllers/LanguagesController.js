@@ -50,6 +50,29 @@ exports.addKey = async (req, res) => {
  */
 exports.removeKey = async (req, res) => {
     const result = await api.del('/languages/remove-key', req.session.token);
-    // For delete with body, use post as fallback
+    res.json(result);
+};
+
+/**
+ * GET /languages/ai-config — Which AI providers are configured (AJAX)
+ */
+exports.aiConfig = async (req, res) => {
+    const result = await api.get('/languages/ai-config', req.session.token);
+    res.json(result);
+};
+
+/**
+ * POST /languages/translate-all — AI translate all empty keys (AJAX)
+ */
+exports.translateAll = async (req, res) => {
+    const result = await api.post('/languages/translate-all', req.body, req.session.token);
+    res.json(result);
+};
+
+/**
+ * POST /languages/translate-single — AI translate one key (AJAX)
+ */
+exports.translateSingle = async (req, res) => {
+    const result = await api.post('/languages/translate-single', req.body, req.session.token);
     res.json(result);
 };
