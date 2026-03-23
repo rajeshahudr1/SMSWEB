@@ -32,6 +32,8 @@ async function buildSession(req, d) {
     req.session.permissions = d.permissions || [];
     req.session.menus       = d.menus       || [];
     req.session.settings    = d.settings    || {};
+
+    console.log("menus",d.menus )
     return new Promise(r => req.session.save(r));
 }
 

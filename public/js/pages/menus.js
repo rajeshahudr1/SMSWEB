@@ -469,10 +469,30 @@ function _submitOC($f){
     /* Client-side: warn if sort_order conflicts at same level */
     var $sortInp = $f.find('#sortOrderInp');
     var sortVal  = parseInt($sortInp.val()) || 0;
-    var taken    = [];
-    try { taken = JSON.parse($sortInp.data('taken') || '[]'); } catch(e){}
+    var taken = [];
+
+    try {
+        var rawTaken = $sortInp.data('taken');
+
+        if (Array.isArray(rawTaken)) {
+            taken = rawTaken;
+        }
+        else if (typeof rawTaken === 'string') {
+            taken = JSON.parse(rawTaken || '[]');
+        }
+        else if (rawTaken) {
+            taken = Object.values(rawTaken);
+        }
+    } catch(e) {
+        taken = [];
+    }
     var $sortErr = $f.find('#sortOrderError');
-    if (sortVal > 0 && taken.indexOf(sortVal) !== -1){
+    if (
+        sortVal > 0 &&
+        Array.isArray(taken) &&
+        taken.indexOf(sortVal) !== -1
+    )
+    {
         $sortInp.addClass('is-invalid');
         $sortErr.text('Sort order ' + sortVal + ' is already used at this level. Choose a different number.');
         $sortInp.focus();

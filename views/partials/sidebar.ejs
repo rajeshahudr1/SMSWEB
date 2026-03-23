@@ -7,42 +7,14 @@ var TI_TO_BI = {
   'ti-layout-dashboard' : 'bi-speedometer2',
   'ti-dashboard'        : 'bi-speedometer2',
   'ti-car'              : 'bi-car-front-fill',
-  'ti-car-garage'       : 'bi-building-fill',
-  'ti-truck'            : 'bi-truck',
-  'ti-plane'            : 'bi-airplane',
   'ti-settings'         : 'bi-gear-fill',
-  'ti-adjustments'      : 'bi-sliders',
-  'ti-weight'           : 'bi-speedometer',
-  'ti-recycle'          : 'bi-recycle',
-  'ti-tools'            : 'bi-tools',
-  'ti-gavel'            : 'bi-hammer',
-  'ti-file-description' : 'bi-file-earmark-text-fill',
-  'ti-file-text'        : 'bi-file-earmark-text-fill',
-  'ti-certificate'      : 'bi-patch-check-fill',
-  'ti-report'           : 'bi-file-earmark-bar-graph',
-  'ti-shield'           : 'bi-shield-fill',
-  'ti-shield-check'     : 'bi-shield-fill-check',
-  'ti-shield-lock'      : 'bi-shield-fill-lock',
   'ti-users'            : 'bi-people-fill',
   'ti-user'             : 'bi-person-fill',
-  'ti-user-circle'      : 'bi-person-circle',
   'ti-lock'             : 'bi-lock-fill',
   'ti-key'              : 'bi-key-fill',
-  'ti-menu-2'           : 'bi-list',
-  'ti-menu'             : 'bi-list',
-  'ti-box'              : 'bi-box-fill',
-  'ti-boxes'            : 'bi-boxes',
-  'ti-map-pin'          : 'bi-geo-alt-fill',
-  'ti-map'              : 'bi-map-fill',
-  'ti-cash'             : 'bi-cash-stack',
-  'ti-coin'             : 'bi-coin',
   'ti-chart-bar'        : 'bi-bar-chart-fill',
-  'ti-chart-line'       : 'bi-graph-up',
-  'ti-bell'             : 'bi-bell-fill',
-  'ti-mail'             : 'bi-envelope-fill',
   'ti-home'             : 'bi-house-fill',
-  'ti-star'             : 'bi-star-fill',
-  'ti-circle'           : 'bi-circle',
+  'ti-circle'           : 'bi-circle'
 };
 
 function resolveIcon(raw) {
@@ -50,10 +22,12 @@ function resolveIcon(raw) {
   raw = raw.trim();
   if (raw.startsWith('bi-') || raw.startsWith('bi '))
     return raw.startsWith('bi ') ? raw : 'bi ' + raw;
+
   var tiName = raw.replace(/^ti\s+/, '').trim();
   if (!tiName.startsWith('ti-')) tiName = 'ti-' + tiName;
+
   var mapped = TI_TO_BI[tiName];
-  return mapped ? 'bi ' + mapped : 'bi ' + tiName.replace('ti-', 'bi-');
+  return mapped ? 'bi ' + mapped : 'bi bi-circle';
 }
 %>
 
@@ -72,148 +46,151 @@ function resolveIcon(raw) {
     </a>
   </div>
 
-  <!-- Nav -->
   <div class="sms-sidebar__scroll">
+
     <nav class="sms-nav">
       <ul class="sms-nav__list">
 
         <% if (menus && menus.length > 0) { %>
-        <% menus.forEach(function(group) { %>
 
-          <% if (group.children && group.children.length > 0) {
-               var anyChild = group.children.some(function(c){
-                 return !c.permission_key || can(c.permission_key);
-               });
-               if (!anyChild) return;
-          %>
+          <% menus.forEach(function(group){ %>
 
-            <!-- Section label (hidden when collapsed) -->
-            <li class="sms-nav__label"><span><%- group.title %></span></li>
+            <% if (group.children && group.children.length > 0) { %>
 
-            <% group.children.forEach(function(child) {
-                 if (child.permission_key && !can(child.permission_key)) return;
-                 var childIcon = resolveIcon(child.icon);
-                 var hasChildren = child.children && child.children.length > 0;
-            %>
+              <li class="sms-nav__label">
+                <span><%- group.title %></span>
+              </li>
 
-              <% if (hasChildren) {
-                   var subId = 'sub-' + child.id;
-                   var isSub = child.children.some(function(s){
-                     return s.route_path && activeLink === s.route_path.replace('/','');
-                   });
-              %>
-                <!-- Parent with sub-items -->
-                <li class="sms-nav__item sms-has-flyout">
-                  <!-- Normal expanded link -->
-                  <a class="sms-nav__link sms-nav__link--drop <%- isSub ? 'active' : '' %>"
-                     href="#<%- subId %>"
-                     data-bs-toggle="collapse"
-                     aria-expanded="<%- isSub ? 'true' : 'false' %>"
-                     data-label="<%- child.title %>">
-                    <span class="sms-nav__icon"><i class="<%- childIcon %>"></i></span>
-                    <span class="sms-nav__text"><%- child.title %></span>
-                    <i class="bi bi-chevron-down sms-nav__arrow"></i>
-                  </a>
+              <% group.children.forEach(function(child){ %>
 
-                  <!-- Collapsed-mode: flyout panel -->
-                  <div class="sms-flyout">
-                    <div class="sms-flyout__panel">
-                      <div class="sms-flyout__header">
-                        <i class="sms-flyout__header-icon <%- childIcon %>"></i>
-                        <%- child.title %>
-                      </div>
-                      <ul class="sms-flyout__list">
-                        <% child.children.forEach(function(sub){
-                             if (sub.permission_key && !can(sub.permission_key)) return;
-                             var isSubActive = activeLink === (sub.route_path||'').replace('/','');
-                        %>
-                        <li>
-                          <a class="sms-flyout__link <%- isSubActive ? 'active' : '' %>"
-                             href="<%- sub.route_path %>">
-                            <span class="sms-flyout__dot <%- isSubActive ? 'active' : '' %>"></span>
-                            <%- sub.title %>
-                          </a>
-                        </li>
+                <% var childIcon = resolveIcon(child.icon); %>
+                <% var hasChildren = child.children && child.children.length > 0; %>
+
+                <% if (hasChildren) { %>
+
+                  <% var subId = 'sub-' + child.id; %>
+
+                  <li class="sms-nav__item sms-has-flyout">
+
+                    <a class="sms-nav__link sms-nav__link--drop"
+                       href="#<%- subId %>"
+                       data-bs-toggle="collapse">
+
+                        <span class="sms-nav__icon">
+                            <i class="<%- childIcon %>"></i>
+                        </span>
+
+                      <span class="sms-nav__text">
+                            <%- child.title %>
+                        </span>
+
+                      <i class="bi bi-chevron-down sms-nav__arrow"></i>
+                    </a>
+
+                    <div class="collapse" id="<%- subId %>">
+
+                      <ul class="sms-subnav">
+
+                        <% child.children.forEach(function(sub){ %>
+
+                          <li>
+                            <a class="sms-subnav__link"
+                               href="<%- sub.route_path %>">
+
+                              <span class="sms-subnav__dot"></span>
+
+                              <span class="sms-nav__text">
+                                            <%- sub.title %>
+                                        </span>
+
+                            </a>
+                          </li>
+
                         <% }); %>
+
                       </ul>
+
                     </div>
-                  </div>
 
-                  <!-- Expanded mode: normal collapse -->
-                  <div class="collapse <%- isSub ? 'show' : '' %>" id="<%- subId %>">
-                    <ul class="sms-subnav">
-                      <% child.children.forEach(function(sub){
-                           if (sub.permission_key && !can(sub.permission_key)) return;
-                           var isSubActive = activeLink === (sub.route_path||'').replace('/','');
-                      %>
-                      <li>
-                        <a class="sms-subnav__link <%- isSubActive ? 'active' : '' %>"
-                           href="<%- sub.route_path %>">
-                          <span class="sms-subnav__dot"></span>
-                          <span class="sms-nav__text"><%- sub.title %></span>
-                        </a>
-                      </li>
-                      <% }); %>
-                    </ul>
-                  </div>
-                </li>
+                  </li>
 
-              <% } else { %>
-                <!-- Simple link — tooltip when collapsed -->
-                <% var isActive = activeLink === (child.route_path||'').replace('/',''); %>
-                <li class="sms-nav__item sms-has-tooltip">
-                  <a class="sms-nav__link <%- isActive ? 'active' : '' %>"
-                     href="<%- child.route_path || '#' %>"
-                     data-label="<%- child.title %>">
-                    <span class="sms-nav__icon"><i class="<%- childIcon %>"></i></span>
-                    <span class="sms-nav__text"><%- child.title %></span>
-                  </a>
-                  <!-- Tooltip for collapsed state -->
-                  <div class="sms-tooltip"><div class="sms-tooltip__inner"><%- child.title %></div></div>
-                </li>
-              <% } %>
+                <% } else { %>
 
-            <% }); %>
+                  <li class="sms-nav__item">
 
-          <% } else { %>
+                    <a class="sms-nav__link"
+                       href="<%- child.route_path || '#' %>">
 
-            <% if (group.permission_key && !can(group.permission_key)) return; %>
-            <% var topIcon = resolveIcon(group.icon); %>
-            <% var isTopActive = activeLink === (group.route_path||'').replace('/',''); %>
+                        <span class="sms-nav__icon">
+                            <i class="<%- childIcon %>"></i>
+                        </span>
 
-            <!-- Top-level single item -->
-            <li class="sms-nav__item sms-has-tooltip">
-              <a class="sms-nav__link <%- isTopActive ? 'active' : '' %>"
-                 href="<%- group.route_path || '#' %>"
-                 data-label="<%- group.title %>">
-                <span class="sms-nav__icon"><i class="<%- topIcon %>"></i></span>
-                <span class="sms-nav__text"><%- group.title %></span>
-              </a>
-              <!-- Tooltip for collapsed state -->
-              <div class="sms-tooltip"><div class="sms-tooltip__inner"><%- group.title %></div></div>
-            </li>
+                      <span class="sms-nav__text">
+                            <%- child.title %>
+                        </span>
 
-          <% } %>
+                    </a>
 
-        <% }); %>
+                  </li>
+
+                <% } %>
+
+              <% }); %>
+
+            <% } else { %>
+
+              <% var topIcon = resolveIcon(group.icon); %>
+
+              <li class="sms-nav__item">
+
+                <a class="sms-nav__link"
+                   href="<%- group.route_path || '#' %>">
+
+                <span class="sms-nav__icon">
+                    <i class="<%- topIcon %>"></i>
+                </span>
+
+                  <span class="sms-nav__text">
+                    <%- group.title %>
+                </span>
+
+                </a>
+
+              </li>
+
+            <% } %>
+
+          <% }); %>
+
         <% } %>
 
-          <% /* ── Super Admin Only: Legal Pages ── */ %>
-          <% if (user && user.is_super_admin) { %>
-            <li class="sms-nav__label"><span>Legal</span></li>
-            <li class="sms-nav__item sms-has-tooltip">
-              <a class="sms-nav__link <%- activeLink === 'pages' ? 'active' : '' %>"
-                 href="/pages"
-                 data-label="Legal Pages">
-                <span class="sms-nav__icon"><i class="bi bi-file-earmark-ruled"></i></span>
-                <span class="sms-nav__text">Legal Pages</span>
-              </a>
-              <div class="sms-tooltip"><div class="sms-tooltip__inner">Legal Pages</div></div>
-            </li>
-          <% } %>
+        <% if (user && user.is_super_admin) { %>
+
+          <li class="sms-nav__label">
+            <span>Legal</span>
+          </li>
+
+          <li class="sms-nav__item">
+
+            <a class="sms-nav__link" href="/pages">
+
+<span class="sms-nav__icon">
+<i class="bi bi-file-earmark-ruled"></i>
+</span>
+
+              <span class="sms-nav__text">
+Legal Pages
+</span>
+
+            </a>
+
+          </li>
+
+        <% } %>
 
       </ul>
     </nav>
+
   </div>
 
 </aside>
