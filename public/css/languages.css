@@ -1,0 +1,108 @@
+/* ================================================================
+   languages.css — Language Manager page
+   ================================================================ */
+
+/* ── Filter button group ── */
+.sms-lang-grp-filter .btn.active {
+  background: var(--tblr-primary);
+  border-color: var(--tblr-primary);
+  color: #fff;
+}
+
+/* ── Bottom sticky bar ── */
+.sms-lang-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+/* ── Group card headers ── */
+.sms-lang-grp > .card-header {
+  padding: .5rem .75rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+.sms-lang-grp > .card-header:hover {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+/* ── Chevron toggle ── */
+.sms-lang-grp .sms-chv {
+  font-size: 11px;
+  transition: transform .15s;
+  display: inline-block;
+}
+.sms-lang-grp .sms-chv.shut {
+  transform: rotate(-90deg);
+}
+
+/* ── Table full width ── */
+.sms-lang-grp .table {
+  width: 100%;
+  margin: 0;
+}
+.sms-lang-grp .sms-col-en {
+  width: 30%;
+}
+
+/* ── Empty state icon ── */
+.sms-lang-empty-icon {
+  font-size: 48px;
+  opacity: .2;
+}
+
+/* ── Translation input ── */
+.sms-lang-grp .sms-tinput {
+  display: block;
+  width: 100%;
+  font-size: 13px;
+  padding: .3rem .5rem;
+  line-height: 1.5;
+  border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  background: transparent;
+  color: var(--tblr-body-color);
+  transition: border-color .15s, box-shadow .15s;
+  outline: 0;
+}
+.sms-lang-grp .sms-tinput:focus {
+  border-color: var(--tblr-primary);
+  box-shadow: 0 0 0 .2rem rgba(var(--tblr-primary-rgb), .1);
+}
+.sms-lang-grp .sms-tinput.is-dirty {
+  border-color: var(--tblr-primary) !important;
+  background: rgba(var(--tblr-primary-rgb), .03);
+}
+
+/* ── Missing translation row ── */
+.sms-lang-grp .sms-row-miss {
+  background: #fffbeb;
+}
+.sms-lang-grp .sms-row-miss .sms-tinput {
+  border-color: #d4a017;
+}
+.sms-lang-grp .sms-row-miss .sms-tinput::placeholder {
+  color: #a67c00;
+  opacity: .7;
+}
+
+/* ── Mobile: stack table rows ── */
+@media (max-width: 575.98px) {
+  .sms-lang-grp .table thead {
+    display: none;
+  }
+  .sms-lang-grp .table tbody tr {
+    display: block;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--tblr-border-color);
+  }
+  .sms-lang-grp .table tbody td {
+    display: block;
+    width: 100% !important;
+    padding: .1rem 0;
+    border: 0;
+  }
+  .sms-lang-grp .table tbody td:nth-child(2) {
+    margin-bottom: .25rem;
+  }
+}
