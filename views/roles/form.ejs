@@ -3,6 +3,9 @@
 var r      = typeof role !== 'undefined' ? role : null;
 var isEdit = !!r;
 var assignedIds = isEdit && r.permissions ? r.permissions.map(function(p){ return parseInt(p.id); }) : [];
+// ✅ Use panel-specific arrays instead of combined
+var assignedB2BIds = isEdit && r.b2b_permission_ids ? r.b2b_permission_ids.map(function(id){ return parseInt(id); }) : [];
+var assignedB2CIds = isEdit && r.b2c_permission_ids ? r.b2c_permission_ids.map(function(id){ return parseInt(id); }) : [];
 var formAction  = isEdit ? '/roles/' + r.uuid : '/roles';
 var pageTitle   = isEdit ? 'Edit Role' : 'Add Role';
 
@@ -141,8 +144,8 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
                 <div class="col-12 col-sm-6 col-lg-4 mb-2">
                   <label class="form-check d-flex align-items-center gap-2 mb-0">
                     <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
-                           name="permission_ids[]" value="<%- p.id %>" data-group="b2b_<%- groupName %>"
-                           <%- assignedIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                           name="b2b_permission_ids[]" value="<%- p.id %>" data-group="b2b_<%- groupName %>"
+                            <%- assignedB2BIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
                     <span class="form-check-label" style="font-size:12.5px;">
                       <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
                       <%- p.display_name %>
@@ -166,6 +169,7 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
               <div class="d-flex align-items-center justify-content-between px-4 py-2 bg-light">
                 <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;"><%- groupName %></span>
                 <label class="form-check mb-0">
+                  <!-- B2C group toggle -->
                   <input type="checkbox" class="form-check-input group-toggle" data-group="b2c_<%- groupName %>"/>
                   <span class="form-check-label small">All</span>
                 </label>
@@ -178,8 +182,8 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
                 <div class="col-12 col-sm-6 col-lg-4 mb-2">
                   <label class="form-check d-flex align-items-center gap-2 mb-0">
                     <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
-                           name="permission_ids[]" value="<%- p.id %>" data-group="b2c_<%- groupName %>"
-                           <%- assignedIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                           name="b2c_permission_ids[]" value="<%- p.id %>" data-group="b2c_<%- groupName %>"
+                            <%- assignedB2CIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
                     <span class="form-check-label" style="font-size:12.5px;">
                       <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
                       <%- p.display_name %>
@@ -224,23 +228,32 @@ $(function(){
   });
 
   /* ── Submit ── */
-  $('#frmRole').on('submit', function(e){
-    e.preventDefault();
-    var $btn = $('#btnSubmit');
-    /* Do NOT call btnLoading here — smsAjax handles it via btn option */
-    smsAjax({
-      url: $(this).attr('action'),
-      data: $(this).serialize(),
-      btn: $btn,
-      success: function(r){
-        if(r.status===200||r.status===201){
-          toastr.success(r.message||'Saved.');
-          setTimeout(function(){ window.location='/roles'; }, 800);
-        } else {
-          toastr.error(r.message||'Error.');
-        }
+$('#frmRole').on('submit', function(e){
+  e.preventDefault();
+  var $btn = $('#btnSubmit');
+  var formData = $(this).serializeArray();
+
+  // ✅ Ensure b2b_permission_ids[] always present
+  var hasB2B = formData.some(function(f){ return f.name === 'b2b_permission_ids[]'; });
+  if (!hasB2B) formData.push({ name: 'b2b_permission_ids[]', value: '' });
+
+  // ✅ Ensure b2c_permission_ids[] always present
+  var hasB2C = formData.some(function(f){ return f.name === 'b2c_permission_ids[]'; });
+  if (!hasB2C) formData.push({ name: 'b2c_permission_ids[]', value: '' });
+
+  smsAjax({
+    url: $(this).attr('action'),
+    data: $.param(formData),
+    btn: $btn,
+    success: function(r){
+      if(r.status===200||r.status===201){
+        toastr.success(r.message||'Saved.');
+        setTimeout(function(){ window.location='/roles'; }, 800);
+      } else {
+        toastr.error(r.message||'Error.');
       }
-    });
+    }
   });
+});
 });
 </script>`) %>

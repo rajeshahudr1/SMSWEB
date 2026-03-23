@@ -61,6 +61,7 @@ exports.signupPage = (req, res) => res.render('auth/signup', { page_title: 'Crea
 exports.loginPost = async (req, res) => {
     const { email, password, panel } = req.body;
     const result = await api.post('/auth/login', { email, password, panel: panel || 'b2b' });
+    console.log('result',result)
     if (result.status === 200 && result.data) {
         await buildSession(req, result.data);
         return res.json({ status: 200, message: 'Login successful.' });

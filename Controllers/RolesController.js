@@ -66,19 +66,23 @@ exports.edit = async (req, res) => {
  */
 function _fixBody(body) {
     const fixed = Object.assign({}, body);
-    // Map permission_ids[] → permission_ids
-    if (fixed['permission_ids[]'] && !fixed.permission_ids) {
-        const raw = fixed['permission_ids[]'];
-        fixed.permission_ids = Array.isArray(raw) ? raw.map(Number) : [Number(raw)];
-        delete fixed['permission_ids[]'];
+
+    // Helper to parse permission array
+    function parseIds(key) {
+        const raw = fixed[key + '[]'] || fixed[key];
+        delete fixed[key + '[]'];
+        if (!raw) return [];
+        const arr = Array.isArray(raw) ? raw : [raw];
+        return [...new Set(arr.map(Number).filter(n => !isNaN(n) && n > 0))];
     }
-    // Ensure permission_ids is always an array of integers
-    if (fixed.permission_ids && !Array.isArray(fixed.permission_ids)) {
-        fixed.permission_ids = [Number(fixed.permission_ids)];
-    }
-    if (Array.isArray(fixed.permission_ids)) {
-        fixed.permission_ids = fixed.permission_ids.map(Number).filter(n => !isNaN(n) && n > 0);
-    }
+
+    fixed.b2b_permission_ids = parseIds('b2b_permission_ids');
+    fixed.b2c_permission_ids = parseIds('b2c_permission_ids');
+
+    // Remove old key if exists
+    delete fixed.permission_ids;
+    delete fixed['permission_ids[]'];
+
     return fixed;
 }
 
@@ -89,7 +93,10 @@ exports.store = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
+    console.log('RAW BODY:', req.body);  // add this
     const body   = _fixBody(req.body);
+    console.log('FIXED BODY:', body);   // add this
+    console.log('body',body)
     const result = await api.put('/roles/' + req.params.uuid, body, req.session.token);
     res.json({ status: result.status, message: result.message, data: result.data || null });
 };

@@ -40,7 +40,9 @@ function loadRoles() {
             var status = parseInt(r.status)
                 ? '<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>Active</span>'
                 : '<span class="badge bg-danger-lt">Inactive</span>';
-            var permCount = r.permission_count || 0;
+            var permCount     = r.permission_count     || 0;
+            var b2bCount      = r.b2b_permission_count || 0;
+            var b2cCount      = r.b2c_permission_count || 0;
             var editable  = r.is_editable !== false; /* API sends is_editable flag */
 
             var actions = '';
@@ -60,7 +62,10 @@ function loadRoles() {
                 (r.description ? '<div class="text-muted small text-truncate" style="max-width:250px;">' + H.esc(r.description) + '</div>' : '') +
                 '</td>' +
                 '<td class="d-none d-md-table-cell">' +
-                '<span class="badge bg-secondary-lt" title="' + permCount + ' permissions assigned">' + permCount + ' perms</span>' +
+                '<div class="d-flex gap-1 flex-wrap">' +
+                '<span class="badge bg-primary-lt" title="' + b2bCount + ' B2B permissions"><i class="bi bi-building me-1"></i>' + b2bCount + ' B2B</span>' +
+                '<span class="badge bg-success-lt" title="' + b2cCount + ' B2C permissions"><i class="bi bi-person me-1"></i>' + b2cCount + ' B2C</span>' +
+                '</div>' +
                 '</td>' +
                 '<td>' + status + '</td>' +
                 '<td class="text-end">' + actions + '</td></tr>';
