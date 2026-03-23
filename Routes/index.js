@@ -15,6 +15,7 @@ router.use('/profile',     require('./profile'));
 router.use('/settings',    require('./settings'));
 router.use('/locations',   require('./location'));
 router.use('/pages',       require('./pages'));
+router.use('/languages',   require('./languages'));
 
 // Root redirect
 router.get('/', (req, res) => {

@@ -1,0 +1,346 @@
+<%- layout('../layouts/main') %>
+
+<!-- ═══ Page Header ═══════════════════════════════════════ -->
+<div class="card shadow-sm mb-3">
+
+  <!-- Row 1: Title + Language select -->
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2">
+      <h3 class="card-title mb-0 me-auto">
+        <i class="bi bi-translate me-2 text-primary"></i><%- t('lang.title') %>
+      </h3>
+      <select id="langSelect" class="form-select form-select-sm" style="width:230px;">
+        <option value="">-- <%- t('lang.select') %> --</option>
+        <% languages.forEach(function(l) { %>
+          <option value="<%= l.code %>"><%= l.flag %>&nbsp; <%= l.name %> (<%= l.nativeName %>)</option>
+        <% }) %>
+      </select>
+    </div>
+  </div>
+
+  <!-- Row 2: Toolbar — Stats | Search | Filter | Buttons (hidden until language selected) -->
+  <div id="toolbarRow" class="d-none border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="px-3 py-2">
+      <!-- Top line: badges + buttons -->
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-secondary-lt"><i class="bi bi-key me-1"></i><span id="statTotal">0</span></span>
+        <span class="badge bg-success-lt"><i class="bi bi-check-circle me-1"></i><span id="statTranslated">0</span></span>
+        <span class="badge bg-warning-lt"><i class="bi bi-exclamation-triangle me-1"></i><span id="statMissing">0</span></span>
+        <div class="ms-auto d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAddKeyTop" onclick="openAddKeyModal()">
+            <i class="bi bi-plus-lg me-1"></i>Add Key
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" id="btnSaveTop" onclick="saveTranslations()">
+            <i class="bi bi-check-lg me-1"></i><%- t('btn.save') %>
+          </button>
+        </div>
+      </div>
+      <!-- Bottom line: search + filter -->
+      <div class="d-flex align-items-center gap-2">
+        <div class="flex-fill">
+          <input type="text" id="searchInput" class="form-control form-control-sm"
+                 placeholder="&#128269;  <%- t('lang.search_ph') %>" oninput="filterKeys()">
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-secondary active" data-filter="all" onclick="setFilter('all',this)">All</button>
+          <button class="btn btn-outline-success" data-filter="translated" onclick="setFilter('translated',this)">Done</button>
+          <button class="btn btn-outline-warning" data-filter="missing" onclick="setFilter('missing',this)">Missing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Empty / Loading ═══════════════════════════════════ -->
+<div id="editorLoading" class="card shadow-sm d-none">
+  <div class="card-body text-center py-5">
+    <div class="spinner-border text-primary mb-2"></div>
+    <div class="text-muted"><%- t('general.loading') %></div>
+  </div>
+</div>
+<div id="editorEmpty" class="card shadow-sm">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-translate text-muted" style="font-size:48px;opacity:.2;"></i>
+    <div class="text-muted mt-3">Pick a language from the dropdown to start editing</div>
+  </div>
+</div>
+
+<!-- ═══ Translation Groups ════════════════════════════════ -->
+<div id="editorContainer" class="d-none"></div>
+
+<!-- ═══ Bottom Save Bar ═══════════════════════════════════ -->
+<div id="bottomBar" class="d-none mt-3">
+  <div class="card shadow-sm sms-lang-sticky">
+    <div class="card-body py-2 d-flex align-items-center gap-3">
+      <span class="text-muted small flex-fill">
+        <i class="bi bi-info-circle me-1"></i><span id="bottomInfo">—</span>
+      </span>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openAddKeyModal()">
+        <i class="bi bi-plus-lg me-1"></i>Add Key
+      </button>
+      <button type="button" class="btn btn-sm btn-primary" id="btnSaveBottom" onclick="saveTranslations()">
+        <i class="bi bi-check-lg me-1"></i><%- t('btn.save') %>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Add Key Modal ═════════════════════════════════════ -->
+<div class="modal modal-blur fade" id="addKeyModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-primary"></i>Add New Key</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Group</label>
+          <select id="newKeyGroup" class="form-select form-select-sm">
+            <option value="">Select group…</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Key Name</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text" id="newKeyPrefix">group.</span>
+            <input type="text" class="form-control" id="newKeyName" placeholder="my_key_name">
+          </div>
+          <div class="form-text">Preview: <code id="newKeyPreview">—</code></div>
+        </div>
+        <div class="mb-0">
+          <label class="form-label small fw-semibold">English Value</label>
+          <input type="text" class="form-control form-control-sm" id="newKeyValue" placeholder="Default English text">
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm" data-bs-dismiss="modal"><%- t('btn.cancel') %></button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="submitAddKey()">
+          <i class="bi bi-plus-lg me-1"></i>Add Key
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Styles ════════════════════════════════════════════ -->
+<style>
+.sms-lang-sticky { position:sticky; bottom:0; z-index:10; }
+
+/* Group cards */
+.sms-lg .card-header { padding:.45rem .75rem; transition:background .15s; }
+.sms-lg .card-header:hover { background:var(--tblr-bg-surface-secondary); }
+
+/* Table */
+.sms-lg table { margin:0; table-layout:fixed; border-collapse:collapse; }
+.sms-lg table colgroup .c1 { width:24%; }
+.sms-lg table colgroup .c2 { width:32%; }
+.sms-lg table colgroup .c3 { width:44%; }
+.sms-lg table thead th {
+  font-size:10px; text-transform:uppercase; letter-spacing:.6px;
+  color:var(--tblr-muted); background:var(--tblr-bg-surface-secondary);
+  padding:.3rem .6rem; border-bottom:1px solid var(--tblr-border-color);
+}
+.sms-lg table tbody td {
+  padding:.3rem .6rem; vertical-align:middle; border-bottom:1px solid var(--tblr-border-color-translucent);
+}
+.sms-lg table tbody td:first-child code { font-size:11.5px; color:var(--tblr-muted); }
+.sms-lg table tbody td:nth-child(2) { font-size:12.5px; color:var(--tblr-muted); }
+
+/* Input */
+.sms-lg .tinp {
+  display:block; width:100%; font-size:13px;
+  padding:.25rem .5rem;
+  border:1px solid var(--tblr-border-color);
+  border-radius:var(--tblr-border-radius-sm);
+  background:transparent;
+  color:var(--tblr-body-color);
+  transition:border-color .15s,box-shadow .15s;
+  outline:0;
+}
+.sms-lg .tinp:focus {
+  border-color:var(--tblr-primary);
+  box-shadow:0 0 0 .15rem rgba(var(--tblr-primary-rgb),.12);
+}
+.sms-lg .tinp.dirty { border-color:var(--tblr-primary)!important; background:rgba(var(--tblr-primary-rgb),.04); }
+
+/* Missing row */
+.sms-lg .tr-m { background:#fffbeb; }
+.sms-lg .tr-m .tinp { border-color:#d4a017; }
+.sms-lg .tr-m .tinp::placeholder { color:#a67c00; opacity:.7; }
+
+/* Chevron */
+.chv { transition:transform .15s; display:inline-block; font-size:11px; }
+.chv.shut { transform:rotate(-90deg); }
+.cursor-pointer { cursor:pointer; }
+</style>
+
+<!-- ═══ Script ════════════════════════════════════════════ -->
+<script>
+(function(){
+    let curLang='',enD={},trD={},flt='all',lName='';
+
+    const $sel=$('#langSelect')[0]||document.getElementById('langSelect');
+    const $sTop=document.getElementById('btnSaveTop');
+    const $sBot=document.getElementById('btnSaveBottom');
+    const $tb=document.getElementById('toolbarRow');
+    const $ld=document.getElementById('editorLoading');
+    const $mt=document.getElementById('editorEmpty');
+    const $ed=document.getElementById('editorContainer');
+    const $bb=document.getElementById('bottomBar');
+
+    function show(){for(var i=0;i<arguments.length;i++)arguments[i].classList.remove('d-none');}
+    function hide(){for(var i=0;i<arguments.length;i++)arguments[i].classList.add('d-none');}
+
+    document.getElementById('langSelect').addEventListener('change',function(){
+        if(!this.value){hide($tb,$ed,$bb);show($mt);return;}
+        lName=this.options[this.selectedIndex].text;
+        load(this.value);
+    });
+
+    async function load(c){
+        curLang=c; hide($mt,$ed,$bb); show($ld);
+        try{
+            const r=await(await fetch('/languages/'+c)).json();
+            if(r.status!==200){alert(r.message);return;}
+            enD=r.data.en||{}; trD=r.data.translations||{};
+            upStats(r.data.totalKeys,r.data.translated);
+            render();
+            hide($ld); show($ed,$tb,$bb);
+        }catch(e){console.error(e);hide($ld);show($mt);}
+    }
+
+    function upStats(t,d){
+        document.getElementById('statTotal').textContent=t;
+        document.getElementById('statTranslated').textContent=d;
+        document.getElementById('statMissing').textContent=t-d;
+        document.getElementById('bottomInfo').textContent=lName+' — '+d+'/'+t+' translated';
+    }
+
+    const LBL={nav:'Navigation',btn:'Buttons',dash:'Dashboard',users:'Users',roles:'Roles',
+        settings:'Settings',theme:'Theme',auth:'Authentication',general:'General',
+        lang:'Language',permissions:'Permissions',menus:'Menus'};
+
+    function render(){
+        const grp={};
+        Object.keys(enD).forEach(k=>{const g=k.split('.')[0];(grp[g]=grp[g]||[]).push(k);});
+        let h='';
+        Object.keys(grp).sort().forEach(g=>{
+            const keys=grp[g],lbl=LBL[g]||g.charAt(0).toUpperCase()+g.slice(1);
+            const miss=keys.filter(k=>!(trD[k]||'').trim()).length;
+
+            h+=`<div class="card shadow-sm mb-2 sms-lg" data-g="${g}">
+              <div class="card-header cursor-pointer d-flex align-items-center gap-2" onclick="tog(this)">
+                <i class="bi bi-chevron-down chv"></i>
+                <span class="fw-semibold" style="font-size:13px">${lbl}</span>
+                <span class="badge bg-secondary-lt" style="font-size:10px">${keys.length}</span>
+                ${miss?`<span class="badge bg-warning-lt" style="font-size:10px">${miss} missing</span>`
+                       :`<span class="badge bg-success-lt" style="font-size:10px"><i class="bi bi-check2"></i></span>`}
+                <code class="text-muted ms-auto" style="font-size:10px">${g}.*</code>
+              </div>
+              <div class="grp-bd">
+                <table>
+                  <colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+                  <thead><tr><th>Key</th><th>English</th><th>Translation</th></tr></thead>
+                  <tbody>`;
+
+            keys.forEach(k=>{
+                const ev=enD[k]||'',tv=trD[k]||'',em=!tv.trim();
+                const sk=k.includes('.')?k.split('.').slice(1).join('.'):k;
+                h+=`<tr class="trow ${em?'tr-m':''}" data-k="${k}" data-d="${em?0:1}">
+                  <td><code>${sk}</code></td>
+                  <td>${esc(ev)}</td>
+                  <td><input type="text" class="tinp" data-k="${k}" value="${escA(tv)}"
+                      placeholder="${escA(ev)}" oninput="drt(this)"></td>
+                </tr>`;
+            });
+            h+=`</tbody></table></div></div>`;
+        });
+        $ed.innerHTML=h;
+    }
+
+    window.drt=function(inp){
+        inp.classList.add('dirty');
+        const r=inp.closest('.trow');
+        if(inp.value.trim()){r.classList.remove('tr-m');r.dataset.d='1';}
+        else{r.classList.add('tr-m');r.dataset.d='0';}
+    };
+    window.tog=function(hd){
+        hd.nextElementSibling.classList.toggle('d-none');
+        hd.querySelector('.chv').classList.toggle('shut');
+    };
+    window.filterKeys=function(){
+        const q=document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.trow').forEach(r=>{
+            const k=r.dataset.k.toLowerCase(),v=(r.querySelector('.tinp')||{}).value||'',e=(enD[r.dataset.k]||'').toLowerCase();
+            const mq=!q||k.includes(q)||v.toLowerCase().includes(q)||e.includes(q);
+            const mf=flt==='all'||(flt==='translated'&&r.dataset.d==='1')||(flt==='missing'&&r.dataset.d==='0');
+            r.style.display=(mq&&mf)?'':'none';
+        });
+        document.querySelectorAll('.sms-lg').forEach(c=>{
+            c.style.display=c.querySelectorAll('.trow:not([style*="display: none"])').length?'':'none';
+        });
+    };
+    window.setFilter=function(f,b){
+        flt=f;
+        document.querySelectorAll('[data-filter]').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');filterKeys();
+    };
+
+    /* ── Save ── */
+    const SV='<i class="bi bi-check-lg me-1"></i><%- t("btn.save") %>';
+    const SG='<span class="spinner-border spinner-border-sm me-1"></span><%- t("btn.saving") %>';
+
+    window.saveTranslations=async function(){
+        const inps=document.querySelectorAll('.tinp'),tr={};
+        inps.forEach(i=>{tr[i.dataset.k]=i.value;});
+        [$sTop,$sBot].forEach(b=>{b.disabled=true;b.innerHTML=SG;});
+        try{
+            const j=await(await fetch('/languages/'+curLang,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({translations:tr})})).json();
+            if(j.status===200){
+                if(j.data)upStats(j.data.totalKeys,j.data.translated);
+                inps.forEach(i=>i.classList.remove('dirty'));
+                toast('success',j.message||'Saved!');
+            }else toast('error',j.message||'Error');
+        }catch(e){console.error(e);toast('error','Save failed');}
+        [$sTop,$sBot].forEach(b=>{b.disabled=false;b.innerHTML=SV;});
+    };
+
+    /* ── Add Key Modal ── */
+    let addM;
+    window.openAddKeyModal=function(){
+        const gs=[...new Set(Object.keys(enD).map(k=>k.split('.')[0]))].sort();
+        const s=document.getElementById('newKeyGroup');
+        s.innerHTML='<option value="">Select group…</option>'+gs.map(g=>`<option value="${g}">${g}</option>`).join('');
+        document.getElementById('newKeyName').value='';
+        document.getElementById('newKeyValue').value='';
+        upPreview();
+        if(!addM)addM=new bootstrap.Modal(document.getElementById('addKeyModal'));
+        addM.show();
+    };
+    document.getElementById('newKeyGroup').addEventListener('change',upPreview);
+    document.getElementById('newKeyName').addEventListener('input',upPreview);
+    function upPreview(){
+        const g=document.getElementById('newKeyGroup').value||'group';
+        const n=document.getElementById('newKeyName').value.trim().toLowerCase().replace(/\s+/g,'_')||'key_name';
+        document.getElementById('newKeyPrefix').textContent=g+'.';
+        document.getElementById('newKeyPreview').textContent=g+'.'+n;
+    }
+    window.submitAddKey=async function(){
+        const g=document.getElementById('newKeyGroup').value;
+        const n=document.getElementById('newKeyName').value.trim().toLowerCase().replace(/\s+/g,'_');
+        const v=document.getElementById('newKeyValue').value.trim();
+        if(!g){toast('error','Select a group');return;}
+        if(!n){toast('error','Enter a key name');return;}
+        try{
+            const j=await(await fetch('/languages/add-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:g+'.'+n,value:v})})).json();
+            if(j.status===200){toast('success',j.message);if(addM)addM.hide();load(curLang);}
+            else toast('error',j.message||'Error');
+        }catch(e){console.error(e);toast('error','Failed');}
+    };
+
+    function toast(t,m){if(typeof Swal!=='undefined')Swal.fire({icon:t==='error'?'error':'success',title:m,timer:2500,showConfirmButton:false,toast:true,position:'top-end'});else alert(m);}
+    function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    function escA(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+})();
+</script>

@@ -14,7 +14,7 @@ exports.index = async (req, res) => {
             { name: res.locals.t('settings.title'), url: '/settings' },
         ],
         userSettings:       (result.status === 200) ? result.data : req.session.settings || {},
-        supportedLanguages: i18n.SUPPORTED_LANGUAGES,
+        supportedLanguages: await i18n.fetchSupportedLanguages(),
     });
 };
 
@@ -62,7 +62,7 @@ exports.saveTheme = async (req, res) => {
 // Requires login because we need a token to call the API.
 exports.setLanguage = async (req, res) => {
     const lang      = req.body.lang || req.query.lang || 'en';
-    const supported = i18n.SUPPORTED_LANGUAGES.map(l => l.code);
+    const supported = (await i18n.fetchSupportedLanguages()).map(l => l.code);
     const safeLang  = supported.includes(lang) ? lang : 'en';
 
     // Persist to DB via API (requires login token)

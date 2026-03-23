@@ -26,46 +26,58 @@ function requirePermission(permissionName) {
     };
 }
 
-function injectLocals(req, res, next) {
-    const sess        = req.session;
-    const user        = sess.user        || null;
-    const settings    = sess.settings    || {};
-    const permissions = sess.permissions || [];
-    const menus       = sess.menus       || [];
+async function injectLocals(req, res, next) {
+    try {
+        const sess        = req.session;
+        const user        = sess.user        || null;
+        const settings    = sess.settings    || {};
+        const permissions = sess.permissions || [];
+        const menus       = sess.menus       || [];
 
-    // ── Language from session.settings only (DB-backed, no cookies) ──
-    const lang     = settings.language || 'en';
-    const t        = i18n.getTranslator(lang);
-    const langDict = i18n.getDict(lang);
+        // ── Language from session.settings only (DB-backed, no cookies) ──
+        const lang = settings.language || 'en';
 
-    res.locals.APP_NAME            = process.env.APP_NAME || 'SMS';
-    res.locals.BASE_URL            = process.env.APP_URL  || '';
-    res.locals.user                = user;
-    res.locals.settings            = settings;
-    res.locals.permissions         = permissions;
-    res.locals.menus               = menus;
-    res.locals.activeLink          = '';
-    res.locals.page_title          = '';
-    res.locals.breadcrumbs         = [];
-    res.locals.lang                = lang;
-    res.locals.t                   = t;
-    res.locals.SUPPORTED_LANGUAGES = i18n.SUPPORTED_LANGUAGES;
-    res.locals.langDict_json       = JSON.stringify(langDict);
-    res.locals.isRTL               = settings.direction === 'rtl';
+        // Preload translations + languages list from API (cached 5 min)
+        await i18n.preloadLanguage(lang);
+        if (lang !== 'en') await i18n.preloadLanguage('en');
 
-    const radiusMap = { none: '0', sm: '4px', md: '8px', lg: '12px', xl: '16px' };
-    res.locals.borderRadius = radiusMap[settings.border_radius] || '8px';
+        const t        = i18n.getTranslator(lang);
+        const langDict = i18n.getDict(lang);
 
-    res.locals.can = function (perm) {
-        if (!user) return false;
-        if (user.is_super_admin || user.is_org_admin) return true;
-        return permissions.includes(perm);
-    };
+        // Fetch supported languages from API (NOT hardcoded)
+        const supportedLanguages = await i18n.fetchSupportedLanguages();
 
-    res.locals.flash_success = req.flash('success')[0] || null;
-    res.locals.flash_error   = req.flash('error')[0]   || null;
+        res.locals.APP_NAME            = process.env.APP_NAME || 'SMS';
+        res.locals.BASE_URL            = process.env.APP_URL  || '';
+        res.locals.user                = user;
+        res.locals.settings            = settings;
+        res.locals.permissions         = permissions;
+        res.locals.menus               = menus;
+        res.locals.activeLink          = '';
+        res.locals.page_title          = '';
+        res.locals.breadcrumbs         = [];
+        res.locals.lang                = lang;
+        res.locals.t                   = t;
+        res.locals.SUPPORTED_LANGUAGES = supportedLanguages;
+        res.locals.langDict_json       = JSON.stringify(langDict);
+        res.locals.isRTL               = settings.direction === 'rtl';
 
-    next();
+        const radiusMap = { none: '0', sm: '4px', md: '8px', lg: '12px', xl: '16px' };
+        res.locals.borderRadius = radiusMap[settings.border_radius] || '8px';
+
+        res.locals.can = function (perm) {
+            if (!user) return false;
+            if (user.is_super_admin || user.is_org_admin) return true;
+            return permissions.includes(perm);
+        };
+
+        res.locals.flash_success = req.flash('success')[0] || null;
+        res.locals.flash_error   = req.flash('error')[0]   || null;
+
+        next();
+    } catch (err) {
+        next(err);
+    }
 }
 
 function requireSuperAdmin(req, res, next) {
