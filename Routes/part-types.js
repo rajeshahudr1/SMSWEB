@@ -11,6 +11,8 @@ router.get('/export',                  requirePermission('export_part_types'), C
 router.post('/export',                 requirePermission('export_part_types'), Ctrl.exportData);
 router.post('/import',                 requirePermission('import_part_types'), Ctrl.importData);
 router.post('/import/single',          requirePermission('import_part_types'), Ctrl.importSingleRow);
+router.get('/ai-config',               Ctrl.aiConfig);
+router.post('/translate',              Ctrl.translate);
 router.post('/bulk-action',            requirePermission('edit_part_types'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_part_types'),    Ctrl.create);
 router.post('/',                       requirePermission('add_part_types'),    Ctrl.store);

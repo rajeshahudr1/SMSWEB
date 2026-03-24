@@ -77,3 +77,14 @@ exports.exportData = async (req, res) => {
 exports.importData = [(r,s,n) => { tempImport.single('file')(r,s,(e) => { if (e) return s.json({ status: 422, message: e.message }); n(); }); }, async (req, res) => {
     try { if (!req.file) return res.json({ status: 422, message: 'No file.' }); const fd = new FormData(); fd.append('file', fs.createReadStream(req.file.path), { filename: req.file.originalname, contentType: req.file.mimetype }); const r = await api.postForm('/part-types/import/upload', fd, req.session.token); clean(req.file); return res.json(r); } catch(e) { clean(req.file); return res.json({ status: 500, message: 'Failed.' }); }
 }];
+
+// AI Translation
+exports.aiConfig = async (req, res) => {
+    const result = await api.get('/part-types/ai-config', req.session.token);
+    res.json(result);
+};
+
+exports.translate = async (req, res) => {
+    const result = await api.post('/part-types/translate', req.body, req.session.token);
+    res.json(result);
+};

@@ -66,7 +66,12 @@ var displayImg = pt && pt.display_image_url ? pt.display_image_url : '';
     <% if (langs.length > 0) { %>
     <div class="card mt-3 shadow-sm">
       <div class="card-header py-2">
-        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-translate me-1 text-primary"></i><%- t('part_types.translations') %> <span class="badge bg-primary-lt ms-1" style="font-size:10px;"><%- langs.length %> <%- t('general.languages') %></span></div>
+        <div class="card-title mb-0 d-flex align-items-center" style="font-size:14px;">
+          <span><i class="bi bi-translate me-1 text-primary"></i><%- t('part_types.translations') %> <span class="badge bg-primary-lt ms-1" style="font-size:10px;"><%- langs.length %> <%- t('general.languages') %></span></span>
+          <button type="button" class="btn btn-sm btn-outline-info ms-auto d-none ai-translate-btn" id="btnTranslateAll" title="AI Translate All">
+            <i class="bi bi-stars me-1"></i>Translate All
+          </button>
+        </div>
       </div>
       <div class="card-body">
         <p class="text-muted small mb-3"><%- t('part_types.translations_hint') %></p>
@@ -78,7 +83,13 @@ var displayImg = pt && pt.display_image_url ? pt.display_image_url : '';
               <% if (lang.native_name) { %><span class="text-muted ms-1" style="font-size:11px;">(<%- lang.native_name %>)</span><% } %>
               <% if (lang.is_default) { %><span class="badge bg-warning-lt ms-1" style="font-size:9px;"><%- t('master_lang.default') %></span><% } %>
             </label>
-            <input type="text" name="trans_<%- lang.id %>" class="form-control" value="<%= transMap[lang.id] || '' %>" placeholder="<%- lang.name %>"/>
+            <input type="text" name="trans_<%- lang.id %>" class="form-control" value="<%= transMap[lang.id] || '' %>" placeholder="<%- lang.name %>"
+                   data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"/>
+            <button type="button" class="btn btn-sm btn-ghost-info mt-1 d-none ai-translate-btn ai-single-btn"
+                    data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"
+                    title="Translate to <%- lang.name %> using AI">
+              <i class="bi bi-stars me-1"></i><span class="d-none d-sm-inline">AI</span>
+            </button>
           </div>
           <% }) %>
         </div>
@@ -150,6 +161,8 @@ var displayImg = pt && pt.display_image_url ? pt.display_image_url : '';
 <div class="modal fade" id="modalImageForm" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:600px;"><div class="modal-content"><div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0"><i class="bi bi-image me-2 text-primary"></i><span id="imgPopupTitle"><%- t('part_types.image_preview') %></span></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-3" id="imgPopupBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div></div></div></div>
 
 <script>
-window._FORM_DATA = { isEdit: <%= isEdit ? 'true' : 'false' %>, langIds: [<%= langs.map(function(l){ return l.id; }).join(',') %>] };
+window._FORM_DATA = { isEdit: <%= isEdit ? 'true' : 'false' %>, langIds: [<%= langs.map(function(l){ return l.id; }).join(',') %>],
+  langs: <%- JSON.stringify(langs.map(function(l){ return {id:l.id, name:l.name, code:l.code}; })) %>
+};
 </script>
 <% block('scripts', '<script src="/js/pages/part-types-form.js"></script>') %>
