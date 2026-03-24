@@ -51,7 +51,7 @@
         </div>
       </div>
 
-      <!-- Line 2: Stats + AI Translate buttons + Provider -->
+      <!-- Line 2: Stats + AI Translate buttons -->
       <div class="row g-2 align-items-center">
         <div class="col-auto d-flex gap-1 flex-wrap">
           <span class="badge bg-secondary-lt"><i class="bi bi-key me-1"></i><span id="statTotal">0</span> Total</span>
@@ -59,13 +59,9 @@
           <span class="badge bg-warning-lt"><i class="bi bi-exclamation-triangle me-1"></i><span id="statMissing">0</span> Missing</span>
         </div>
         <div class="col"></div>
-        <div class="col-auto d-flex gap-2 flex-wrap">
-          <!-- AI Provider selector -->
-          <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white">
-            <span class="text-muted" style="font-size:11px;">AI:</span>
-            <a href="#" class="badge bg-primary-lt sms-ai-provider active" data-provider="openai" style="font-size:11px;text-decoration:none;">ChatGPT</a>
-            <a href="#" class="badge bg-secondary-lt sms-ai-provider" data-provider="gemini" style="font-size:11px;text-decoration:none;">Gemini</a>
-          </div>
+        <div class="col-auto gap-2 flex-wrap" id="aiButtonsWrap" style="display:none;">
+          <!-- AI Provider badge (read-only, shows what's configured) -->
+          <span class="badge bg-info-lt" id="aiProviderBadge" style="font-size:11px;"><i class="bi bi-robot me-1"></i>AI</span>
           <!-- Translate Missing -->
           <button type="button" class="btn btn-sm btn-outline-success sms-ai-btn" id="btnTrMissing" onclick="smsLangTrMissing()">
             <i class="bi bi-robot me-1"></i>Translate Missing

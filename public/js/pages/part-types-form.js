@@ -13,8 +13,8 @@ $(function() {
         $.get(BASE_URL + '/part-types/ai-config', function(res) {
             if (!res || res.status !== 200 || !res.data) return;
             _aiConfig = res.data;
-            if (_aiConfig.openai || _aiConfig.gemini) {
-                // Show all AI translate buttons
+            /* Only show AI buttons if AI translation is enabled globally */
+            if (_aiConfig.enabled && (_aiConfig.openai || _aiConfig.gemini)) {
                 $('.ai-translate-btn').removeClass('d-none');
             }
         });
@@ -34,7 +34,7 @@ $(function() {
         var origHtml = $btn.html();
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Translating…');
 
-        var provider = _aiConfig.gemini ? 'gemini' : 'openai';
+        var provider = (_aiConfig && _aiConfig.provider) ? _aiConfig.provider : (_aiConfig.gemini ? 'gemini' : 'openai');
 
         $.ajax({
             url: BASE_URL + '/part-types/translate',
@@ -83,7 +83,7 @@ $(function() {
         var origHtml = $btn.html();
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
-        var provider = _aiConfig.gemini ? 'gemini' : 'openai';
+        var provider = (_aiConfig && _aiConfig.provider) ? _aiConfig.provider : (_aiConfig.gemini ? 'gemini' : 'openai');
 
         $.ajax({
             url: BASE_URL + '/part-types/translate',

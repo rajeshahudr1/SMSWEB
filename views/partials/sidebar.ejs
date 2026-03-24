@@ -2,7 +2,6 @@
 var sbTheme  = (settings && settings.sidebar_style === 'light') ? 'light' : 'dark';
 var collapsed = (settings && settings.sidebar_collapsed === '1');
 
-/* ti-* → Bootstrap Icons mapping */
 var TI_TO_BI = {
   'ti-layout-dashboard' : 'bi-speedometer2',
   'ti-dashboard'        : 'bi-speedometer2',
@@ -22,12 +21,23 @@ function resolveIcon(raw) {
   raw = raw.trim();
   if (raw.startsWith('bi-') || raw.startsWith('bi '))
     return raw.startsWith('bi ') ? raw : 'bi ' + raw;
-
   var tiName = raw.replace(/^ti\s+/, '').trim();
   if (!tiName.startsWith('ti-')) tiName = 'ti-' + tiName;
-
   var mapped = TI_TO_BI[tiName];
   return mapped ? 'bi ' + mapped : 'bi bi-circle';
+}
+
+/**
+ * menuLabel(item)
+ * Returns translated title if translation_key exists,
+ * falls back to item.title (DB value).
+ */
+function menuLabel(item) {
+  if (item.translation_key) {
+    var translated = t(item.translation_key);
+    if (translated && translated !== item.translation_key) return translated;
+  }
+  return item.title || '';
 }
 %>
 
@@ -47,150 +57,126 @@ function resolveIcon(raw) {
   </div>
 
   <div class="sms-sidebar__scroll">
-
     <nav class="sms-nav">
       <ul class="sms-nav__list">
 
         <% if (menus && menus.length > 0) { %>
-
           <% menus.forEach(function(group){ %>
 
+            <%/* ── GROUP WITH CHILDREN (e.g. Administration, Masters) ── */%>
             <% if (group.children && group.children.length > 0) { %>
 
               <li class="sms-nav__label">
-                <span><%- group.title %></span>
+                <span><%- menuLabel(group) %></span>
               </li>
 
               <% group.children.forEach(function(child){ %>
-
                 <% var childIcon = resolveIcon(child.icon); %>
+                <% var childLabel = menuLabel(child); %>
                 <% var hasChildren = child.children && child.children.length > 0; %>
 
                 <% if (hasChildren) { %>
-
+                  <%/* ── PARENT WITH SUB-CHILDREN → collapse + flyout ── */%>
                   <% var subId = 'sub-' + child.id; %>
 
                   <li class="sms-nav__item sms-has-flyout">
-
                     <a class="sms-nav__link sms-nav__link--drop"
                        href="#<%- subId %>"
                        data-bs-toggle="collapse">
-
-                        <span class="sms-nav__icon">
-                            <i class="<%- childIcon %>"></i>
-                        </span>
-
-                      <span class="sms-nav__text">
-                            <%- child.title %>
-                        </span>
-
+                      <span class="sms-nav__icon"><i class="<%- childIcon %>"></i></span>
+                      <span class="sms-nav__text"><%- childLabel %></span>
                       <i class="bi bi-chevron-down sms-nav__arrow"></i>
                     </a>
 
+                    <%/* Normal expanded subnav (Bootstrap collapse) */%>
                     <div class="collapse" id="<%- subId %>">
-
                       <ul class="sms-subnav">
-
                         <% child.children.forEach(function(sub){ %>
-
-                          <li>
-                            <a class="sms-subnav__link"
-                               href="<%- sub.route_path %>">
-
-                              <span class="sms-subnav__dot"></span>
-
-                              <span class="sms-nav__text">
-                                            <%- sub.title %>
-                                        </span>
-
-                            </a>
-                          </li>
-
+                        <li>
+                          <a class="sms-subnav__link" href="<%- sub.route_path %>">
+                            <span class="sms-subnav__dot"></span>
+                            <span class="sms-nav__text"><%- menuLabel(sub) %></span>
+                          </a>
+                        </li>
                         <% }); %>
-
                       </ul>
-
                     </div>
 
+                    <%/* Flyout panel — shown when sidebar is collapsed */%>
+                    <div class="sms-flyout">
+                      <div class="sms-flyout__panel">
+                        <div class="sms-flyout__header">
+                          <i class="<%- childIcon %> sms-flyout__header-icon"></i>
+                          <%- childLabel %>
+                        </div>
+                        <ul class="sms-flyout__list">
+                          <% child.children.forEach(function(sub){ %>
+                          <li>
+                            <a class="sms-flyout__link" href="<%- sub.route_path %>">
+                              <span class="sms-flyout__dot"></span>
+                              <%- menuLabel(sub) %>
+                            </a>
+                          </li>
+                          <% }); %>
+                        </ul>
+                      </div>
+                    </div>
                   </li>
 
                 <% } else { %>
-
-                  <li class="sms-nav__item">
-
-                    <a class="sms-nav__link"
-                       href="<%- child.route_path || '#' %>">
-
-                        <span class="sms-nav__icon">
-                            <i class="<%- childIcon %>"></i>
-                        </span>
-
-                      <span class="sms-nav__text">
-                            <%- child.title %>
-                        </span>
-
+                  <%/* ── SIMPLE LINK (no children) → tooltip ── */%>
+                  <li class="sms-nav__item sms-has-tooltip">
+                    <a class="sms-nav__link" href="<%- child.route_path || '#' %>">
+                      <span class="sms-nav__icon"><i class="<%- childIcon %>"></i></span>
+                      <span class="sms-nav__text"><%- childLabel %></span>
                     </a>
-
+                    <%/* Tooltip — shown when sidebar is collapsed */%>
+                    <div class="sms-tooltip">
+                      <div class="sms-tooltip__inner"><%- childLabel %></div>
+                    </div>
                   </li>
-
                 <% } %>
 
               <% }); %>
 
             <% } else { %>
-
+              <%/* ── TOP-LEVEL SIMPLE LINK (e.g. Dashboard) → tooltip ── */%>
               <% var topIcon = resolveIcon(group.icon); %>
+              <% var topLabel = menuLabel(group); %>
 
-              <li class="sms-nav__item">
-
-                <a class="sms-nav__link"
-                   href="<%- group.route_path || '#' %>">
-
-                <span class="sms-nav__icon">
-                    <i class="<%- topIcon %>"></i>
-                </span>
-
-                  <span class="sms-nav__text">
-                    <%- group.title %>
-                </span>
-
+              <li class="sms-nav__item sms-has-tooltip">
+                <a class="sms-nav__link" href="<%- group.route_path || '#' %>">
+                  <span class="sms-nav__icon"><i class="<%- topIcon %>"></i></span>
+                  <span class="sms-nav__text"><%- topLabel %></span>
                 </a>
-
+                <div class="sms-tooltip">
+                  <div class="sms-tooltip__inner"><%- topLabel %></div>
+                </div>
               </li>
 
             <% } %>
 
           <% }); %>
-
         <% } %>
 
+        <%/* ── Legal Pages (super admin only) ── */%>
         <% if (user && user.is_super_admin) { %>
-
           <li class="sms-nav__label">
-            <span>Legal</span>
+            <span><%- t('nav.legal') || 'Legal' %></span>
           </li>
-
-          <li class="sms-nav__item">
-
+          <li class="sms-nav__item sms-has-tooltip">
             <a class="sms-nav__link" href="/pages">
-
-<span class="sms-nav__icon">
-<i class="bi bi-file-earmark-ruled"></i>
-</span>
-
-              <span class="sms-nav__text">
-Legal Pages
-</span>
-
+              <span class="sms-nav__icon"><i class="bi bi-file-earmark-ruled"></i></span>
+              <span class="sms-nav__text"><%- t('nav.legal_pages') || 'Legal Pages' %></span>
             </a>
-
+            <div class="sms-tooltip">
+              <div class="sms-tooltip__inner"><%- t('nav.legal_pages') || 'Legal Pages' %></div>
+            </div>
           </li>
-
         <% } %>
 
       </ul>
     </nav>
-
   </div>
 
 </aside>

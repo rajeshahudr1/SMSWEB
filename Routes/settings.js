@@ -5,14 +5,18 @@ const router   = express.Router();
 const Settings = require('../Controllers/SettingsController');
 const { requireLogin } = require('../Middlewares/auth');
 
-// All settings routes require login — language saved to DB needs a token
 router.use(requireLogin);
 
-router.get( '/',          Settings.index);
-router.post('/user',      Settings.saveUser);
-router.post('/org',       Settings.saveOrg);
-router.post('/theme',     Settings.saveTheme);     // theme panel quick save
-router.post('/language',  Settings.setLanguage);   // language switcher (header dropdown)
-router.get( '/language',  Settings.setLanguage);   // language switcher (GET fallback)
+router.get( '/',              Settings.index);
+router.post('/user',          Settings.saveUser);
+router.post('/org',           Settings.saveOrg);
+router.post('/theme',         Settings.saveTheme);
+router.post('/language',      Settings.setLanguage);
+router.get( '/language',      Settings.setLanguage);
+
+// AI Configuration
+router.get( '/ai-config',     Settings.getAiConfig);
+router.post('/ai-config',     Settings.saveAiConfig);
+router.post('/ai-validate',   Settings.validateAiKey);
 
 module.exports = router;

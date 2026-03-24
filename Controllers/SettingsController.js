@@ -5,7 +5,11 @@ const i18n = require('../helpers/i18n');
 
 // ── Show settings page ────────────────────────────
 exports.index = async (req, res) => {
-    const result = await api.get('/settings', req.session.token);
+    const [result, aiResult] = await Promise.all([
+        api.get('/settings', req.session.token),
+        api.get('/settings/ai-config', req.session.token),
+    ]);
+
     res.render('settings/index', {
         page_title:  res.locals.t('settings.title'),
         activeLink:  'settings',
@@ -14,6 +18,7 @@ exports.index = async (req, res) => {
             { name: res.locals.t('settings.title'), url: '/settings' },
         ],
         userSettings:       (result.status === 200) ? result.data : req.session.settings || {},
+        aiConfig:           (aiResult.status === 200) ? aiResult.data : {},
         supportedLanguages: await i18n.fetchSupportedLanguages(),
     });
 };
@@ -22,7 +27,6 @@ exports.index = async (req, res) => {
 exports.saveUser = async (req, res) => {
     const result = await api.post('/settings/user', req.body, req.session.token);
     if (result.status === 200) {
-        // Merge into session so next page render picks up changes without a fresh API call
         req.session.settings = Object.assign(req.session.settings || {}, req.body);
         await new Promise(r => req.session.save(r));
     }
@@ -36,7 +40,6 @@ exports.saveOrg = async (req, res) => {
 };
 
 // ── Quick theme save (theme panel + header dark toggle) ──
-// Only whitelisted keys accepted — all saved to DB via API
 exports.saveTheme = async (req, res) => {
     const ALLOWED = [
         'theme_color', 'dark_mode', 'direction', 'border_radius',
@@ -58,14 +61,11 @@ exports.saveTheme = async (req, res) => {
 };
 
 // ── Change language (DB only — no cookies) ────────
-// Updates language in DB via API, then refreshes session.settings.
-// Requires login because we need a token to call the API.
 exports.setLanguage = async (req, res) => {
     const lang      = req.body.lang || req.query.lang || 'en-US';
     const supported = (await i18n.fetchSupportedLanguages()).map(l => l.code);
     const safeLang  = supported.includes(lang) ? lang : 'en-US';
 
-    // Persist to DB via API (requires login token)
     if (req.session.token) {
         const result = await api.post('/settings/user', { language: safeLang }, req.session.token);
         if (result.status === 200) {
@@ -74,15 +74,35 @@ exports.setLanguage = async (req, res) => {
             await new Promise(r => req.session.save(r));
         }
     } else {
-        // Fallback: store in session only (guest — no DB persistence)
         req.session.settings          = req.session.settings || {};
         req.session.settings.language = safeLang;
         await new Promise(r => req.session.save(r));
     }
 
-    // Return JSON (AJAX) or redirect back
     if (req.xhr || (req.headers.accept || '').includes('json')) {
         return res.json({ status: 200, lang: safeLang });
     }
     res.redirect(req.headers.referer || '/dashboard');
+};
+
+// ═════════════════════════════════════════════════════
+//  AI CONFIGURATION — Proxy to API
+// ═════════════════════════════════════════════════════
+
+// GET /settings/ai-config — Fetch AI config (AJAX)
+exports.getAiConfig = async (req, res) => {
+    const result = await api.get('/settings/ai-config', req.session.token);
+    res.json(result);
+};
+
+// POST /settings/ai-config — Save AI config (AJAX)
+exports.saveAiConfig = async (req, res) => {
+    const result = await api.post('/settings/ai-config', req.body, req.session.token);
+    res.json(result);
+};
+
+// POST /settings/ai-validate — Validate AI key (AJAX)
+exports.validateAiKey = async (req, res) => {
+    const result = await api.post('/settings/ai-validate', req.body, req.session.token);
+    res.json(result);
 };

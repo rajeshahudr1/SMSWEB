@@ -218,3 +218,112 @@ $(function () {
     updatePreview();
     $('#previewChangedBadge').hide();
 });
+
+/* ══════════════════════════════════════════════════════
+   AI Configuration — Settings Page
+   ══════════════════════════════════════════════════════ */
+
+/* Toggle AI settings panel visibility */
+$(document).on('change', '#fAiEnabled', function () {
+    var enabled = $(this).is(':checked');
+    if (enabled) {
+        $('#aiSettingsPanel').slideDown(200);
+        $('#aiDisabledNotice').slideUp(200);
+    } else {
+        $('#aiSettingsPanel').slideUp(200);
+        $('#aiDisabledNotice').slideDown(200);
+    }
+});
+
+/* Toggle password visibility for API key fields */
+window.toggleKeyVis = function (btn) {
+    var $inp = $(btn).closest('.input-group').find('input');
+    var isPass = $inp.attr('type') === 'password';
+    $inp.attr('type', isPass ? 'text' : 'password');
+    $(btn).find('i').toggleClass('bi-eye bi-eye-slash');
+};
+
+/* Validate an AI API key */
+window.validateAiKey = function (provider) {
+    var key, model, $btn, $status;
+
+    if (provider === 'openai') {
+        key    = $('#fAiOpenaiKey').val().trim();
+        model  = $('#fAiOpenaiModel').val().trim();
+        $btn   = $('#btnValidateOpenai');
+        $status = $('#openaiStatus');
+    } else {
+        key    = $('#fAiGeminiKey').val().trim();
+        model  = $('#fAiGeminiModel').val().trim();
+        $btn   = $('#btnValidateGemini');
+        $status = $('#geminiStatus');
+    }
+
+    if (!key) {
+        toastr.error('Please enter an API key first.');
+        return;
+    }
+
+    var origHtml = $btn.html();
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Validating...');
+    $status.html('').removeClass('text-success text-danger');
+
+    $.ajax({
+        url: BASE_URL + '/settings/ai-validate',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ provider: provider, api_key: key, model: model }),
+        success: function (res) {
+            $btn.prop('disabled', false).html(origHtml);
+            if (res.status === 200) {
+                $status.html('<i class="bi bi-check-circle-fill text-success me-1"></i>Valid!').addClass('text-success');
+                toastr.success(res.message || 'API key is valid!');
+            } else {
+                $status.html('<i class="bi bi-x-circle-fill text-danger me-1"></i>Invalid').addClass('text-danger');
+                toastr.error(res.message || 'Validation failed.');
+            }
+        },
+        error: function () {
+            $btn.prop('disabled', false).html(origHtml);
+            $status.html('<i class="bi bi-x-circle-fill text-danger me-1"></i>Error').addClass('text-danger');
+            toastr.error('Network error while validating.');
+        }
+    });
+};
+
+/* Save AI Configuration */
+window.saveAiConfig = function () {
+    var $btn = $('#btnSaveAiConfig');
+    var origHtml = $btn.html();
+
+    var data = {
+        ai_translation_enabled: $('#fAiEnabled').is(':checked') ? '1' : '0',
+        ai_provider:            $('#fAiProvider').val(),
+        ai_openai_key:          $('#fAiOpenaiKey').val().trim(),
+        ai_openai_model:        $('#fAiOpenaiModel').val().trim() || 'gpt-4o-mini',
+        ai_gemini_key:          $('#fAiGeminiKey').val().trim(),
+        ai_gemini_model:        $('#fAiGeminiModel').val().trim() || 'gemini-2.5-flash',
+    };
+
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+
+    $.ajax({
+        url: BASE_URL + '/settings/ai-config',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function (res) {
+            $btn.prop('disabled', false).html(origHtml);
+            if (res.status === 200) {
+                toastr.success(res.message || 'AI configuration saved.');
+                $('#openaiStatus, #geminiStatus').html('');
+            } else {
+                toastr.error(res.message || 'Failed to save AI config.');
+            }
+        },
+        error: function () {
+            $btn.prop('disabled', false).html(origHtml);
+            toastr.error('Network error while saving.');
+        }
+    });
+};

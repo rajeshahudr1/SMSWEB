@@ -150,7 +150,7 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
     </div>
 
     <!-- ── Localisation ─────────────────────────────────────────── -->
-    <div class="card">
+    <div class="card mb-4">
       <div class="card-header">
         <div class="card-title">
           <i class="bi bi-globe me-2 text-primary"></i>
@@ -166,7 +166,7 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
             <select class="form-select select2" id="fLanguage" name="language">
               <% (supportedLanguages || []).forEach(function(lng){ %>
               <option value="<%- lng.code %>"
-                <%- (s.language === lng.code || (!s.language && lng.code === 'en-US')) ? 'selected' : '' %>>
+                <%- (s.language === lng.code || (!s.language && lng.code === 'en')) ? 'selected' : '' %>>
                 <%- lng.flag %> <%- lng.nativeName %>
               </option>
               <% }); %>
@@ -216,6 +216,122 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
         </div>
       </div>
     </div>
+
+    <% if (user && (user.is_super_admin || user.is_org_admin)) { %>
+    <!-- ── AI Configuration (Admin Only) ───────────────────────── -->
+    <div class="card mb-4" id="aiConfigCard">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="bi bi-robot me-2 text-primary"></i>
+          <%- t('settings.ai_config') %>
+        </div>
+        <div class="card-options">
+          <span class="badge bg-info-lt" style="font-size:10px;"><i class="bi bi-shield-lock me-1"></i>Admin Only</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3"><%- t('settings.ai_config_desc') %></p>
+        <div class="row g-4">
+
+          <!-- AI Translation Toggle -->
+          <div class="col-12">
+            <label class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" id="fAiEnabled"
+                     <%- (aiConfig && aiConfig.enabled) ? 'checked' : '' %>>
+              <span class="form-check-label fw-semibold"><%- t('settings.ai_enabled') %></span>
+            </label>
+            <div class="form-hint"><%- t('settings.ai_enabled_hint') %></div>
+          </div>
+
+          <!-- AI Settings Panel (shown when enabled) -->
+          <div class="col-12" id="aiSettingsPanel" style="<%- (aiConfig && aiConfig.enabled) ? '' : 'display:none;' %>">
+            <div class="row g-3">
+
+              <!-- Default Provider -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold"><%- t('settings.ai_provider') %></label>
+                <select class="form-select" id="fAiProvider">
+                  <option value="openai"  <%- (!aiConfig || aiConfig.provider !== 'gemini') ? 'selected' : '' %>>ChatGPT (OpenAI)</option>
+                  <option value="gemini"  <%- (aiConfig && aiConfig.provider === 'gemini') ? 'selected' : '' %>>Gemini (Google)</option>
+                </select>
+              </div>
+
+              <div class="col-12"><hr class="my-1"></div>
+
+              <!-- OpenAI Section -->
+              <div class="col-md-6">
+                <div class="border rounded p-3">
+                  <h6 class="fw-semibold mb-3"><i class="bi bi-chat-dots me-1"></i> OpenAI (ChatGPT)</h6>
+                  <div class="mb-3">
+                    <label class="form-label small fw-medium"><%- t('settings.ai_openai_key') %></label>
+                    <div class="input-group">
+                      <input type="password" class="form-control" id="fAiOpenaiKey"
+                             value="<%- (aiConfig && aiConfig.openai_key) || '' %>"
+                             placeholder="sk-xxxxxxxxxxxxxxxx" autocomplete="off">
+                      <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis(this)"><i class="bi bi-eye"></i></button>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small fw-medium"><%- t('settings.ai_openai_model') %></label>
+                    <input type="text" class="form-control" id="fAiOpenaiModel"
+                           value="<%- (aiConfig && aiConfig.openai_model) || 'gpt-4o-mini' %>"
+                           placeholder="gpt-4o-mini">
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="btnValidateOpenai" onclick="validateAiKey('openai')">
+                    <i class="bi bi-check-circle me-1"></i><%- t('settings.ai_validate') %>
+                  </button>
+                  <span id="openaiStatus" class="ms-2 small"></span>
+                </div>
+              </div>
+
+              <!-- Gemini Section -->
+              <div class="col-md-6">
+                <div class="border rounded p-3">
+                  <h6 class="fw-semibold mb-3"><i class="bi bi-stars me-1"></i> Gemini (Google)</h6>
+                  <div class="mb-3">
+                    <label class="form-label small fw-medium"><%- t('settings.ai_gemini_key') %></label>
+                    <div class="input-group">
+                      <input type="password" class="form-control" id="fAiGeminiKey"
+                             value="<%- (aiConfig && aiConfig.gemini_key) || '' %>"
+                             placeholder="AIzaSyxxxxxxxxxxxxxxxx" autocomplete="off">
+                      <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis(this)"><i class="bi bi-eye"></i></button>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small fw-medium"><%- t('settings.ai_gemini_model') %></label>
+                    <input type="text" class="form-control" id="fAiGeminiModel"
+                           value="<%- (aiConfig && aiConfig.gemini_model) || 'gemini-2.5-flash' %>"
+                           placeholder="gemini-2.5-flash">
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-success" id="btnValidateGemini" onclick="validateAiKey('gemini')">
+                    <i class="bi bi-check-circle me-1"></i><%- t('settings.ai_validate') %>
+                  </button>
+                  <span id="geminiStatus" class="ms-2 small"></span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Disabled notice -->
+          <div class="col-12" id="aiDisabledNotice" style="<%- (aiConfig && aiConfig.enabled) ? 'display:none;' : '' %>">
+            <div class="alert alert-warning mb-0">
+              <i class="bi bi-info-circle me-1"></i><%- t('settings.ai_disabled_note') %>
+            </div>
+          </div>
+
+          <!-- Save AI Config Button — ALWAYS visible when card is shown -->
+          <div class="col-12 text-end">
+            <button type="button" class="btn btn-primary" id="btnSaveAiConfig" onclick="saveAiConfig()">
+              <i class="bi bi-floppy me-1"></i><%- t('settings.ai_save') %>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <% } %>
 
   </div><!-- /col -->
 

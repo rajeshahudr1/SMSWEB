@@ -4,7 +4,7 @@
  */
 $(function(){
 
-    var curLang='', enD={}, trD={}, flt='all', lName='', aiProvider='openai';
+    var curLang='', enD={}, trD={}, flt='all', lName='', aiProvider='openai', _aiEnabled=false;
 
     var $sTop  = document.getElementById('btnSaveTop');
     var $sBot  = document.getElementById('btnSaveBottom');
@@ -102,9 +102,11 @@ $(function(){
                 h += '    <div class="d-flex gap-1 align-items-center">';
                 h += '      <input type="text" class="sms-tinput flex-fill" data-k="'+k+'" value="'+escA(tv)+'"';
                 h += '        placeholder="'+escA(ev)+'" oninput="window.smsLangDrt(this)">';
+                if(_aiEnabled){
                 h += '      <button type="button" class="btn btn-sm btn-outline-secondary sms-ai-one-btn p-0" onclick="window.smsLangTrOne(this,\''+k+'\')" title="AI Translate">';
                 h += '        <i class="bi bi-robot"></i>';
                 h += '      </button>';
+                }
                 h += '    </div>';
                 h += '  </td>';
                 h += '</tr>';
@@ -175,29 +177,26 @@ $(function(){
 
     /* ══════════════ AI TRANSLATION ══════════════ */
 
-    /* Provider picker */
-    $(document).on('click', '.sms-ai-provider', function(e){
-        e.preventDefault();
-        if($(this).hasClass('disabled')) return;
-        aiProvider = $(this).data('provider');
-        $('.sms-ai-provider').removeClass('active');
-        $(this).addClass('active');
-        toastr.info('AI Provider: ' + (aiProvider==='gemini' ? 'Gemini (Google)' : 'ChatGPT (OpenAI)'));
-    });
-
-    /* Load AI config */
+    /* Load AI config from Settings — no provider picker needed */
     $.get('/languages/ai-config', function(r){
         if(r.status===200){
             var d = r.data;
-            if(!d.openai && !d.gemini){
-                $('.sms-ai-btn').addClass('disabled').attr('title','Add OPENAI_API_KEY or GEMINI_API_KEY to .env');
-            } else if(!d.openai && d.gemini){
-                aiProvider = 'gemini';
-                $('.sms-ai-provider').removeClass('active');
-                $('.sms-ai-provider[data-provider="gemini"]').addClass('active');
+
+            /* If AI is disabled or no keys configured → hide everything */
+            if(!d.enabled || (!d.openai && !d.gemini)){
+                _aiEnabled = false;
+                $('#aiButtonsWrap').hide();
+                return;
             }
-            if(!d.openai) $('.sms-ai-provider[data-provider="openai"]').addClass('disabled');
-            if(!d.gemini) $('.sms-ai-provider[data-provider="gemini"]').addClass('disabled');
+
+            /* AI is enabled — show buttons */
+            _aiEnabled = true;
+            aiProvider = d.provider || 'openai';
+            $('#aiButtonsWrap').css('display','flex');
+            $('#aiProviderBadge').html('<i class="bi bi-robot me-1"></i>' + (aiProvider === 'gemini' ? 'Gemini' : 'ChatGPT'));
+
+            /* If language was already loaded before config arrived, re-render to add AI buttons */
+            if(curLang && Object.keys(enD).length > 0) render();
         }
     });
 
