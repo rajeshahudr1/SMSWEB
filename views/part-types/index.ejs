@@ -1,0 +1,138 @@
+<%- layout('../layouts/main') %>
+
+<div class="card shadow-sm">
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto">
+        <i class="bi bi-gear-wide-connected me-2 text-primary"></i><%- t('part_types.title') %>
+        <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span>
+      </h3>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
+      <% if (can('export_part_types')) { %>
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline"><%- t('btn.export') %></span></button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i><%- t('part_types.export_csv') %></a></li>
+          <li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i><%- t('part_types.export_excel') %></a></li>
+          <li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i><%- t('part_types.export_pdf') %></a></li>
+          <li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i><%- t('part_types.export_print') %></a></li>
+        </ul>
+      </div>
+      <% } %>
+      <% if (can('import_part_types')) { %>
+      <button class="btn btn-sm btn-outline-info" onclick="openImport()"><i class="bi bi-upload me-1"></i><span class="d-none d-sm-inline"><%- t('btn.import') %></span></button>
+      <% } %>
+      <% if (can('add_part_types')) { %>
+      <a href="/part-types/create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline"><%- t('part_types.add') %></span></a>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-5 col-lg-3">
+        <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269;  <%- t('part_types.search_ph') %>"/>
+      </div>
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" id="filterStatus">
+          <option value=""><%- t('general.all_status') %></option>
+          <option value="1"><%- t('general.active') %></option>
+          <option value="0"><%- t('general.inactive') %></option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bulkBar" class="d-none">
+    <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
+      <span class="fw-semibold"><span id="bulkCount">0</span> <%- t('general.selected_count') %></span>
+      <button class="btn btn-sm btn-white ms-auto" onclick="bulkAction('delete')"><i class="bi bi-trash3 me-1 text-danger"></i><%- t('btn.delete') %></button>
+      <button class="btn btn-sm btn-ghost-white" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover table-vcenter mb-0">
+      <thead>
+        <tr>
+          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll"/></th>
+          <th style="width:36px;" class="text-muted">#</th>
+          <th style="width:60px;"><%- t('general.image') %></th>
+          <th class="sortable" data-field="part_name"><%- t('part_types.name') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="sortable" data-field="status"><%- t('general.status') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="d-none d-md-table-cell sortable" data-field="created_at"><%- t('general.created_at') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+          <th class="text-end" style="width:140px;"><%- t('general.actions') %></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="7" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div><%- t('general.loading') %></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card-footer d-flex align-items-center flex-wrap gap-2">
+    <div class="text-muted small" id="tableInfo"></div>
+    <div class="ms-auto" id="tablePagination"></div>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal fade" id="modalView" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:640px;">
+    <div class="modal-content">
+      <div class="modal-header py-3">
+        <h5 class="modal-title fw-semibold"><i class="bi bi-gear-wide-connected me-2 text-primary"></i><%- t('part_types.details') %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0" id="viewBody"><div class="text-center py-5"><div class="spinner-border text-primary"></div></div></div>
+      <div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Preview Modal — shows BOTH uploaded and external -->
+<div class="modal fade" id="modalImage" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:600px;">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-semibold mb-0" id="imgModalTitle"><i class="bi bi-image me-2 text-primary"></i><%- t('part_types.image_both_title') %></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3" id="imgModalBody"></div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="modalImport" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-content">
+      <div class="modal-header py-3">
+        <h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i><%- t('part_types.import_title') %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="frmImport" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p class="text-muted small mb-3"><%- t('part_types.import_hint') %></p>
+          <a href="/templates/part-types-import-template.csv" class="btn btn-sm btn-outline-primary mb-3" download><i class="bi bi-download me-1"></i><%- t('part_types.import_template') %></a>
+          <div class="mb-3">
+            <input type="file" name="file" id="importFile" class="form-control" accept=".csv,.xlsx,.xls" required/>
+          </div>
+          <div id="importResult" class="d-none"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.cancel') %></button>
+          <button type="submit" class="btn btn-info btn-sm" id="btnImport"><i class="bi bi-upload me-1"></i><%- t('btn.import') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<% block('scripts', '<script src="/js/pages/part-types.js"></script>') %>
