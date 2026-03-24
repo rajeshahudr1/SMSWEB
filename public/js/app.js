@@ -179,6 +179,28 @@ function smsFormatDate(dateStr) {
     }
 }
 
+/* ── ADD THIS FUNCTION TO app.js (after smsFormatDate function) ── */
+
+/**
+ * smsFormatDateTime(dateStr)
+ * Formats date + time using SMS_SETTINGS.date_format + SMS_SETTINGS.time_format + timezone
+ */
+function smsFormatDateTime(dateStr) {
+    if (!dateStr) return '—';
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr).slice(0, 19);
+    var datePart = smsFormatDate(dateStr);
+    var hh = d.getHours(), mm = d.getMinutes();
+    var tf = (typeof SMS_SETTINGS !== 'undefined' && SMS_SETTINGS.time_format) ? SMS_SETTINGS.time_format : '12h';
+    if (tf === '24h') {
+        return datePart + ' ' + String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+    }
+    var ampm = hh >= 12 ? 'PM' : 'AM';
+    var h12 = hh % 12 || 12;
+    return datePart + ' ' + String(h12).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ' ' + ampm;
+}
+
+
 /* ── Global per-page options (must match settings page) ── */
 var SMS_PER_PAGE_OPTIONS = [10, 15, 25, 50, 100, 250, 500, 1000];
 
