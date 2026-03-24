@@ -5,6 +5,7 @@
 $(function(){
 
     var curLang='', enD={}, trD={}, flt='all', lName='', aiProvider='openai', _aiEnabled=false;
+    var _usageCounts = {}; // { key: count } — loaded after render
 
     var $sTop  = document.getElementById('btnSaveTop');
     var $sBot  = document.getElementById('btnSaveBottom');
@@ -86,9 +87,10 @@ $(function(){
             h += '<div class="table-responsive">';
             h += '<table class="table table-hover table-vcenter mb-0">';
             h += '<thead><tr>';
-            h += '  <th class="w-25 text-muted small text-uppercase">Key</th>';
+            h += '  <th class="text-muted small text-uppercase" style="min-width:140px;">Key</th>';
             h += '  <th class="text-muted small text-uppercase d-none d-md-table-cell sms-col-en">English</th>';
             h += '  <th class="text-muted small text-uppercase">Translation</th>';
+            h += '  <th class="text-muted small text-uppercase text-center" style="width:40px;"></th>';
             h += '</tr></thead>';
             h += '<tbody>';
 
@@ -96,18 +98,26 @@ $(function(){
                 var ev = enD[k]||'', tv = trD[k]||'', em = !tv.trim();
                 var sk = k.includes('.') ? k.split('.').slice(1).join('.') : k;
                 h += '<tr class="sms-trow'+(em?' sms-row-miss':'')+'" data-k="'+k+'" data-d="'+(em?0:1)+'">';
-                h += '  <td><code class="text-muted">'+esc(sk)+'</code></td>';
+                h += '  <td>';
+                h += '    <code class="sms-key-link text-primary" style="cursor:pointer;text-decoration:underline dotted;" onclick="window.smsLangKeyUsage(\''+k+'\')" title="Click to see usage">'+esc(sk)+'</code>';
+                h += '    <span class="sms-usage-badge" data-usage-key="'+k+'"></span>';
+                h += '  </td>';
                 h += '  <td class="text-muted d-none d-md-table-cell">'+esc(ev)+'</td>';
                 h += '  <td>';
                 h += '    <div class="d-flex gap-1 align-items-center">';
                 h += '      <input type="text" class="sms-tinput flex-fill" data-k="'+k+'" value="'+escA(tv)+'"';
                 h += '        placeholder="'+escA(ev)+'" oninput="window.smsLangDrt(this)">';
                 if(_aiEnabled){
-                h += '      <button type="button" class="btn btn-sm btn-outline-secondary sms-ai-one-btn p-0" onclick="window.smsLangTrOne(this,\''+k+'\')" title="AI Translate">';
-                h += '        <i class="bi bi-robot"></i>';
-                h += '      </button>';
+                    h += '      <button type="button" class="btn btn-sm btn-outline-secondary sms-ai-one-btn p-0" onclick="window.smsLangTrOne(this,\''+k+'\')" title="AI Translate">';
+                    h += '        <i class="bi bi-robot"></i>';
+                    h += '      </button>';
                 }
                 h += '    </div>';
+                h += '  </td>';
+                h += '  <td class="text-center">';
+                h += '    <button type="button" class="btn btn-sm btn-ghost-danger sms-del-key-btn p-0" data-del-key="'+k+'" onclick="window.smsLangDeleteKey(\''+k+'\')" title="Delete key">';
+                h += '      <i class="bi bi-trash3" style="font-size:13px;"></i>';
+                h += '    </button>';
                 h += '  </td>';
                 h += '</tr>';
             });
@@ -115,9 +125,42 @@ $(function(){
             h += '</tbody></table></div></div></div>';
         });
         $ed.innerHTML = h;
+
+        /* Load usage counts after render */
+        loadUsageCounts();
     }
 
-    /* ── Global handlers (called from onclick in dynamic HTML) ── */
+    /* ── Usage count loader — runs after render ── */
+    function loadUsageCounts(){
+        var allKeys = Object.keys(enD);
+        if(!allKeys.length) return;
+        _usageCounts = {};
+
+        var BATCH = 200;
+        for(var i=0; i<allKeys.length; i+=BATCH){
+            var batch = allKeys.slice(i, i+BATCH);
+            (function(batchKeys){
+                $.get('/languages/key-usage-all?keys='+encodeURIComponent(batchKeys.join(',')), function(r){
+                    if(r.status===200 && r.data){
+                        var counts = r.data;
+                        Object.assign(_usageCounts, counts);
+                        for(var key in counts){
+                            var $badge = $('[data-usage-key="'+key+'"]');
+                            if(!$badge.length) continue;
+                            var c = counts[key];
+                            if(c > 0){
+                                $badge.html('<span class="badge bg-success-lt" style="font-size:9px;font-weight:500;vertical-align:middle;cursor:help;" title="Used in '+c+' place'+(c>1?'s':'')+'">'+c+'</span>');
+                            } else {
+                                $badge.html('<span class="badge bg-danger-lt" style="font-size:9px;font-weight:500;vertical-align:middle;cursor:help;" title="Not used anywhere — safe to delete">0</span>');
+                            }
+                        }
+                    }
+                });
+            })(batch);
+        }
+    }
+
+    /* ── Global handlers ── */
     window.smsLangDrt = function(inp){
         inp.classList.add('is-dirty');
         var r = inp.closest('.sms-trow');
@@ -175,27 +218,67 @@ $(function(){
         [$sTop,$sBot].forEach(function(b){ b.disabled=false; b.innerHTML=SV; });
     };
 
+    /* ══════════════ DELETE KEY ══════════════ */
+    window.smsLangDeleteKey = async function(key){
+        if(!key) return;
+
+        /* Check usage count — if already loaded use cache, otherwise fetch */
+        var count = _usageCounts[key];
+        if(count === undefined){
+            /* Fetch fresh count */
+            try {
+                var cr = await(await fetch('/languages/key-usage-all?keys='+encodeURIComponent(key))).json();
+                if(cr.status===200 && cr.data) count = cr.data[key] || 0;
+                else count = -1;
+            } catch(e){ count = -1; }
+        }
+
+        if(count > 0){
+            toastr.error('Cannot delete "'+key+'" — it is used in '+count+' place'+(count>1?'s':'')+'. Remove from code first.');
+            return;
+        }
+
+        if(!confirm('Delete key "'+key+'" from ALL language files?\nThis cannot be undone.')) return;
+
+        try {
+            var j = await(await fetch('/languages/remove-key',{
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ key: key })
+            })).json();
+            if(j.status===200){
+                toastr.success(j.message || 'Key deleted.');
+                /* Remove row from UI */
+                var $row = $('[data-k="'+key+'"]');
+                var $grp = $row.closest('.sms-lang-grp');
+                $row.fadeOut(200, function(){
+                    $(this).remove();
+                    /* If group is now empty, remove group card */
+                    if($grp.find('.sms-trow').length === 0) $grp.fadeOut(200, function(){ $(this).remove(); });
+                });
+                delete enD[key];
+                delete trD[key];
+                delete _usageCounts[key];
+            } else {
+                toastr.error(j.message || 'Delete failed.');
+            }
+        } catch(e){ console.error(e); toastr.error('Delete failed: network error.'); }
+    };
+
     /* ══════════════ AI TRANSLATION ══════════════ */
 
     /* Load AI config from Settings — no provider picker needed */
     $.get('/languages/ai-config', function(r){
         if(r.status===200){
             var d = r.data;
-
-            /* If AI is disabled or no keys configured → hide everything */
             if(!d.enabled || (!d.openai && !d.gemini)){
                 _aiEnabled = false;
                 $('#aiButtonsWrap').hide();
                 return;
             }
-
-            /* AI is enabled — show buttons */
             _aiEnabled = true;
             aiProvider = d.provider || 'openai';
             $('#aiButtonsWrap').css('display','flex');
             $('#aiProviderBadge').html('<i class="bi bi-robot me-1"></i>' + (aiProvider === 'gemini' ? 'Gemini' : 'ChatGPT'));
-
-            /* If language was already loaded before config arrived, re-render to add AI buttons */
             if(curLang && Object.keys(enD).length > 0) render();
         }
     });
@@ -224,20 +307,10 @@ $(function(){
         if(!curLang){ toastr.error('Select a language first'); return; }
         if(!confirm('This will overwrite all existing translations. Continue?')) return;
 
-        /* Temporarily clear all values so API translates everything */
-        var allEmpty = {};
-        Object.keys(enD).forEach(function(k){ allEmpty[k] = enD[k]; });
-
         var $btn = $('#btnTrAll');
         var orig = $btn.html();
         $btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Translating all...');
         try {
-            /* Send with all keys as "to translate" */
-            var SUPPORTED = null;
-            var langInfo = await(await fetch('/languages/'+curLang)).json();
-            var langName = langInfo.data ? langInfo.data.language.name : curLang;
-            var nativeName = langInfo.data ? langInfo.data.language.nativeName : curLang;
-
             var j = await(await fetch('/languages/translate-all',{
                 method:'POST', headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({ code:curLang, provider:aiProvider, force_all:true })
@@ -326,6 +399,89 @@ $(function(){
             if(j.status===200){ toastr.success(j.message); if(addM)addM.hide(); load(curLang); }
             else toastr.error(j.message || 'Error');
         } catch(e){ console.error(e); toastr.error('Failed to add key'); }
+    };
+
+    /* ══════════════ KEY USAGE FINDER ══════════════ */
+    var _usageModal;
+    window.smsLangKeyUsage = async function(key){
+        if(!key) return;
+
+        if(!_usageModal) _usageModal = new bootstrap.Modal(document.getElementById('keyUsageModal'));
+        document.getElementById('usageKeyName').textContent = key;
+        document.getElementById('usageCountInfo').textContent = '';
+        document.getElementById('usageModalBody').innerHTML =
+            '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Scanning files...</div>';
+        _usageModal.show();
+
+        try {
+            var r = await(await fetch('/languages/key-usage?key='+encodeURIComponent(key))).json();
+            if(r.status === 200 && r.data){
+                var d = r.data;
+                var count = d.count || 0;
+
+                document.getElementById('usageCountInfo').innerHTML =
+                    '<i class="bi bi-files me-1"></i>Found in <strong>'+count+'</strong> location'+(count!==1?'s':'');
+
+                if(count === 0){
+                    document.getElementById('usageModalBody').innerHTML =
+                        '<div class="text-center py-4 text-muted">'
+                        +'<i class="bi bi-emoji-neutral d-block mb-2" style="font-size:32px;"></i>'
+                        +'<div>This key is <strong>not used</strong> anywhere in the codebase.</div>'
+                        +'<div class="small mt-1 text-warning"><i class="bi bi-exclamation-triangle me-1"></i>You can safely remove it.</div>'
+                        +'</div>';
+                    return;
+                }
+
+                var byFile = {};
+                d.locations.forEach(function(loc){
+                    if(!byFile[loc.file]) byFile[loc.file] = [];
+                    byFile[loc.file].push(loc);
+                });
+
+                var h = '<div class="list-group list-group-flush">';
+                var fileIdx = 0;
+                for(var file in byFile){
+                    var locs = byFile[file];
+                    var icon = file.endsWith('.ejs') ? 'bi-filetype-html text-success' :
+                        file.endsWith('.js')  ? 'bi-filetype-js text-warning' : 'bi-file-code text-muted';
+                    var badge = file.endsWith('.ejs') ? 'bg-success-lt' : 'bg-warning-lt';
+                    var typeLabel = file.endsWith('.ejs') ? 'View' : 'Script';
+
+                    h += '<div class="list-group-item px-3 py-2'+(fileIdx>0?' border-top':'')+'">';
+                    h += '  <div class="d-flex align-items-center gap-2 mb-1">';
+                    h += '    <i class="bi '+icon+'" style="font-size:16px;"></i>';
+                    h += '    <strong class="small" style="word-break:break-all;">'+esc(file)+'</strong>';
+                    h += '    <span class="badge '+badge+' ms-auto" style="font-size:10px;">'+typeLabel+'</span>';
+                    h += '    <span class="badge bg-primary-lt" style="font-size:10px;">'+locs.length+'</span>';
+                    h += '  </div>';
+
+                    locs.forEach(function(loc){
+                        var ctx = esc(loc.context);
+                        var keyEsc = esc(key);
+                        ctx = ctx.replace(new RegExp(keyEsc.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'),
+                            '<mark class="bg-warning px-0">'+keyEsc+'</mark>');
+
+                        h += '  <div class="d-flex align-items-start gap-2 ms-4 mt-1">';
+                        h += '    <span class="badge bg-secondary-lt text-nowrap" style="font-size:10px;min-width:50px;">Line '+loc.line+'</span>';
+                        h += '    <code class="small text-muted" style="word-break:break-all;font-size:11px;line-height:1.4;">'+ctx+'</code>';
+                        h += '  </div>';
+                    });
+
+                    h += '</div>';
+                    fileIdx++;
+                }
+                h += '</div>';
+                document.getElementById('usageModalBody').innerHTML = h;
+
+            } else {
+                document.getElementById('usageModalBody').innerHTML =
+                    '<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-1"></i>'+(r.message||'Failed to scan')+'</div>';
+            }
+        } catch(e){
+            console.error(e);
+            document.getElementById('usageModalBody').innerHTML =
+                '<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-1"></i>Error scanning files.</div>';
+        }
     };
 
     /* ── Helpers ── */

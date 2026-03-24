@@ -10,7 +10,10 @@ router.use(requireSuperAdmin);
 
 router.get('/',                Lang.index);
 router.get('/ai-config',       Lang.aiConfig);        // before :code
+router.get('/key-usage',       Lang.keyUsage);         // before :code
+router.get('/key-usage-all',   Lang.keyUsageAll);      // before :code
 router.post('/add-key',        Lang.addKey);           // before :code
+router.post('/remove-key',     Lang.removeKey);        // before :code
 router.post('/translate-all',  Lang.translateAll);     // before :code
 router.post('/translate-single', Lang.translateSingle);
 router.get('/:code',           Lang.get);
