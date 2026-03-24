@@ -1,11 +1,145 @@
 'use strict';
 
 const i18n = require('../helpers/i18n');
+const api  = require('../helpers/api');
 
+// ── How often to re-validate token with API (ms) ──
+const TOKEN_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * requireLogin
+ * Basic session check — user must be logged in.
+ */
 function requireLogin(req, res, next) {
-    if (req.session && req.session.user) return next();
+    if (req.session && req.session.user && req.session.token) return next();
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+        return res.status(401).json({ status: 401, success: false, message: 'Session expired. Please login again.', _authExpired: true });
+    }
     req.flash('error', 'Please login to continue.');
     res.redirect('/login');
+}
+
+/**
+ * tokenGuard
+ * Validates JWT token with API periodically.
+ * - Calls /api/auth/me every TOKEN_CHECK_INTERVAL
+ * - If API returns 401 → destroys session → redirects to login
+ * - Caches validation timestamp in session to avoid overhead
+ *
+ * Use AFTER requireLogin:
+ *   router.use(requireLogin);
+ *   router.use(tokenGuard);
+ */
+async function tokenGuard(req, res, next) {
+    if (!req.session || !req.session.token) return next();
+
+    const now = Date.now();
+    const lastCheck = req.session._tokenCheckedAt || 0;
+
+    // Skip if checked recently
+    if (now - lastCheck < TOKEN_CHECK_INTERVAL) return next();
+
+    try {
+        const result = await api.get('/auth/me', req.session.token);
+
+        if (result._authExpired || result.status === 401) {
+            // Token expired or invalid → destroy session
+            return _forceLogout(req, res, result.message || 'Session expired. Please login again.');
+        }
+
+        // Token is valid — update session check timestamp
+        // Also refresh user data from API (in case role/status changed)
+        if (result.status === 200 && result.data) {
+            req.session.user = result.data.user || req.session.user;
+            if (result.data.permissions) {
+                req.session.permissions = result.data.permissions;
+            }
+        }
+        req.session._tokenCheckedAt = now;
+        await new Promise(r => req.session.save(r));
+        next();
+
+    } catch (err) {
+        // Network error to API — don't logout, just continue with cached session
+        console.error('tokenGuard check failed:', err.message);
+        next();
+    }
+}
+
+/**
+ * authGuard (combined helper)
+ * Use this single middleware instead of requireLogin + tokenGuard separately.
+ * Checks session exists AND validates token periodically.
+ */
+async function authGuard(req, res, next) {
+    // Step 1: Basic session check
+    if (!req.session || !req.session.user || !req.session.token) {
+        if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+            return res.status(401).json({ status: 401, success: false, message: 'Session expired. Please login again.', _authExpired: true });
+        }
+        req.flash('error', 'Please login to continue.');
+        return res.redirect('/login');
+    }
+
+    // Step 2: Periodic token validation
+    const now = Date.now();
+    const lastCheck = req.session._tokenCheckedAt || 0;
+
+    if (now - lastCheck >= TOKEN_CHECK_INTERVAL) {
+        try {
+            const result = await api.get('/auth/me', req.session.token);
+
+            if (result._authExpired || result.status === 401) {
+                return _forceLogout(req, res, result.message || 'Session expired. Please login again.');
+            }
+
+            if (result.status === 200 && result.data) {
+                req.session.user = result.data.user || req.session.user;
+                if (result.data.permissions) req.session.permissions = result.data.permissions;
+            }
+            req.session._tokenCheckedAt = now;
+            await new Promise(r => req.session.save(r));
+
+        } catch (err) {
+            console.error('authGuard check failed:', err.message);
+            // Network error — continue with cached session
+        }
+    }
+
+    next();
+}
+
+/**
+ * handleApiAuth(req, res, result)
+ * Call this in any web controller after making an API call.
+ * If the API returned 401, this auto-logouts the user.
+ * Returns true if auth expired (caller should stop processing).
+ *
+ * Usage in controllers:
+ *   const result = await api.get('/something', req.session.token);
+ *   if (handleApiAuth(req, res, result)) return; // stop if logged out
+ *   // continue processing...
+ */
+function handleApiAuth(req, res, result) {
+    if (result && (result._authExpired || result.status === 401)) {
+        _forceLogout(req, res, result.message || 'Session expired. Please login again.');
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Force logout — destroy session and redirect to login
+ */
+function _forceLogout(req, res, message) {
+    req.session.destroy(() => {
+        if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+            return res.status(401).json({ status: 401, success: false, message, _authExpired: true });
+        }
+        // For page requests, redirect to login with flash
+        // (flash won't work after session destroy, so use query param)
+        res.redirect('/login?expired=1');
+    });
 }
 
 function guestOnly(req, res, next) {
@@ -34,17 +168,14 @@ async function injectLocals(req, res, next) {
         const permissions = sess.permissions || [];
         const menus       = sess.menus       || [];
 
-        // ── Language from session.settings only (DB-backed, no cookies) ──
         const lang = settings.language || 'en-US';
 
-        // Preload translations + languages list from API (cached 5 min)
         await i18n.preloadLanguage(lang);
         if (lang !== 'en-US') await i18n.preloadLanguage('en-US');
 
         const t        = i18n.getTranslator(lang);
         const langDict = i18n.getDict(lang);
 
-        // Fetch supported languages from API (NOT hardcoded)
         const supportedLanguages = await i18n.fetchSupportedLanguages();
 
         res.locals.APP_NAME            = process.env.APP_NAME || 'SMS';
@@ -89,4 +220,13 @@ function requireSuperAdmin(req, res, next) {
     res.redirect('/dashboard');
 }
 
-module.exports = { requireLogin, guestOnly, requirePermission, requireSuperAdmin, injectLocals };
+module.exports = {
+    requireLogin,
+    tokenGuard,
+    authGuard,
+    handleApiAuth,
+    guestOnly,
+    requirePermission,
+    requireSuperAdmin,
+    injectLocals,
+};

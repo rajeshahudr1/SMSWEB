@@ -2,13 +2,13 @@
 
 /**
  * api.js
- * Central helper to make HTTP calls to sms-api (Solution 1).
- * All web controllers use these functions — never call axios directly in controllers.
+ * Central helper to make HTTP calls to sms-api.
+ * All web controllers use these functions — never call axios directly.
  *
- * Pattern:
- *   const api = require('../helpers/api');
- *   const result = await api.get('/users', session.token);
- *   const result = await api.post('/auth/login', { email, password });
+ * AUTH SECURITY:
+ *   - Every response with status 401 gets _authExpired: true flag
+ *   - Web controllers/middleware can check this flag to auto-logout
+ *   - AJAX responses with 401 are caught by global handler in app.js
  */
 
 const axios = require('axios');
@@ -20,6 +20,19 @@ function headers(token) {
     const h = { 'Content-Type': 'application/json' };
     if (token) h['Authorization'] = 'Bearer ' + token;
     return h;
+}
+
+// ── Normalise axios errors into a consistent shape ──
+function _handleError(err) {
+    if (err.response && err.response.data) {
+        const data = err.response.data;
+        // Mark 401 responses so middleware can auto-logout
+        if (err.response.status === 401) {
+            data._authExpired = true;
+        }
+        return data;
+    }
+    return { status: 500, success: false, message: 'Could not connect to API server.' };
 }
 
 // ── GET request ──────────────────────────────────
@@ -75,10 +88,11 @@ async function put(endpoint, body = {}, token = null) {
 }
 
 // ── DELETE request ───────────────────────────────
-async function del(endpoint, token = null) {
+async function del(endpoint, token = null, body = {}) {
     try {
         const res = await axios.delete(BASE + endpoint, {
             headers: headers(token),
+            data: body,
         });
         return res.data;
     } catch (err) {
@@ -86,15 +100,7 @@ async function del(endpoint, token = null) {
     }
 }
 
-// ── Normalise axios errors into a consistent shape ──
-function _handleError(err) {
-    if (err.response && err.response.data) {
-        return err.response.data; // API returned a structured error
-    }
-    return { status: 500, success: false, message: 'Could not connect to API server.' };
-}
-
-// ── PATCH request ─────────────────────────────────────────
+// ── PATCH request ────────────────────────────────
 async function patch(endpoint, body = {}, token = null) {
     try {
         const res = await axios.patch(BASE + endpoint, body, {

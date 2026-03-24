@@ -28,10 +28,14 @@ function smsAjax(opts) {
         contentType: opts.fd ? false : 'application/x-www-form-urlencoded; charset=UTF-8',
         success: function(res) {
             if (opts.btn) btnReset(opts.btn);
+            // Auth check — 401 responses are caught by global handler
+            if (res && (res._authExpired || res.status === 401)) return;
             if (typeof opts.success === 'function') opts.success(res);
         },
         error: function(xhr) {
             if (opts.btn) btnReset(opts.btn);
+            // 401 is caught by global handler — don't show generic error
+            if (xhr.status === 401) return;
             if (typeof opts.error === 'function') opts.error(xhr);
             else toastr.error(SMS_T('general.error', 'Network error. Please try again.'));
         }
@@ -179,8 +183,6 @@ function smsFormatDate(dateStr) {
     }
 }
 
-/* ── ADD THIS FUNCTION TO app.js (after smsFormatDate function) ── */
-
 /**
  * smsFormatDateTime(dateStr)
  * Formats date + time using SMS_SETTINGS.date_format + SMS_SETTINGS.time_format + timezone
@@ -241,4 +243,57 @@ $(function() {
         $inp.attr('type', isText ? 'password' : 'text');
         $(this).find('i').toggleClass('bi-eye bi-eye-slash');
     });
+
+    /* ══════════════════════════════════════════════════════
+       GLOBAL AUTH GUARD — catches 401 on ALL AJAX calls
+       ══════════════════════════════════════════════════════ */
+    var _authRedirecting = false; // Prevent multiple redirects
+
+    // 1. Catch HTTP 401 status from server
+    $(document).ajaxError(function(event, xhr, settings) {
+        if (xhr.status === 401 && !_authRedirecting) {
+            _authRedirecting = true;
+            _showSessionExpired();
+        }
+    });
+
+    // 2. Catch JSON responses with { status: 401 } or { _authExpired: true }
+    $(document).ajaxComplete(function(event, xhr, settings) {
+        if (_authRedirecting) return;
+        try {
+            var ct = xhr.getResponseHeader('Content-Type') || '';
+            if (ct.indexOf('json') === -1) return;
+            var data = typeof xhr.responseJSON !== 'undefined' ? xhr.responseJSON : JSON.parse(xhr.responseText);
+            if (data && (data._authExpired === true || data.status === 401)) {
+                _authRedirecting = true;
+                _showSessionExpired();
+            }
+        } catch(e) { /* not JSON, ignore */ }
+    });
+
+    function _showSessionExpired() {
+        // Show toast and redirect after brief delay
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Session expired. Redirecting to login...', '', {
+                timeOut: 2000, closeButton: false, progressBar: true
+            });
+        }
+        setTimeout(function() {
+            window.location.href = BASE_URL + '/login?expired=1';
+        }, 1500);
+    }
+
+    // 3. Check URL param on login page (session expired redirect)
+    if (window.location.pathname.indexOf('/login') !== -1) {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('expired') === '1') {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Your session has expired. Please login again.');
+            }
+            // Clean URL without reload
+            if (window.history.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }
+    }
 });
