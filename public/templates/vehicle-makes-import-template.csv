@@ -1,4 +1,5 @@
-name,vehicle_type
-"Toyota","Passenger Car"
-"Honda","Passenger Car"
-"Tata Motors","Commercial Vehicle"
+name,vehicle_type,image_url,Hindi,Gujarati
+"Toyota","Passenger Car","","टोयोटा","ટોયોટા"
+"Honda","Passenger Car","","होंडा","હોન્ડા"
+"Tata Motors","Commercial Vehicle","","टाटा मोटर्स","ટાટા મોટર્સ"
+"Maruti Suzuki","Passenger Car","","मारुति सुजुकी","મારુતિ સુઝુકી"

@@ -11,7 +11,7 @@ const getOrgs = (tk) => api.get('/vehicle-makes/organizations', tk).then(r => r.
 exports.index = async (req, res) => {
     let orgs = [];
     if (req.session.user && req.session.user.is_super_admin) orgs = await getOrgs(req.session.token);
-    res.render('vehicle-makes/index', { page_title: res.locals.t ? res.locals.t('vehicle_makes.title') : 'Part Brands', activeLink: 'vehicle-makes', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-makes' }], organizations: orgs });
+    res.render('vehicle-makes/index', { page_title: res.locals.t ? res.locals.t('vehicle_makes.title') : 'Vehicle Makes', activeLink: 'vehicle-makes', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Makes', url: '/vehicle-makes' }], organizations: orgs });
 };
 
 exports.paginate = async (req, res) => { res.json(await api.post('/vehicle-makes/paginate', req.body, req.session.token)); };
@@ -23,7 +23,7 @@ exports.create = async (req, res) => {
     ]);
     res.render('vehicle-makes/form', {
         page_title: 'Add Part Type', activeLink: 'vehicle-makes',
-        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-makes' }, { name: 'Add', url: '' }],
+        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Makes', url: '/vehicle-makes' }, { name: 'Add', url: '' }],
         partType: null, languages: langs, organizations: orgs,
     });
 };
@@ -37,7 +37,7 @@ exports.edit = async (req, res) => {
     if (r.status !== 200) { req.flash('error', 'Not found.'); return res.redirect('/vehicle-makes'); }
     res.render('vehicle-makes/form', {
         page_title: 'Edit Part Type', activeLink: 'vehicle-makes',
-        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-makes' }, { name: 'Edit', url: '' }],
+        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Makes', url: '/vehicle-makes' }, { name: 'Edit', url: '' }],
         partType: r.data, languages: langs, organizations: orgs,
     });
 };
@@ -70,7 +70,8 @@ exports.exportData = async (req, res) => {
     const rows = result.data.rows || [];
     if (!rows.length) return res.json({ status: 200, message: 'No data.', data: { rows: [] } });
     if (format === 'csv') { const hd = Object.keys(rows[0]); const csv = [hd.join(','), ...rows.map(r => hd.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n'); res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-makes-${Date.now()}.csv"`); return res.send(csv); }
-    if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Part Brands'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-makes-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Vehicle Makes'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-makes-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    if (format === 'pdf') { const pdfExport = require('../helpers/pdfExport'); return pdfExport.generate(res, 'Vehicle Makes', rows); }
     return res.json({ status: 200, data: result.data });
 };
 
