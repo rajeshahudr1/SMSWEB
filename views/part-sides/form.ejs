@@ -1,0 +1,168 @@
+<%- layout('../layouts/main') %>
+<%
+var pt     = typeof partType !== 'undefined' ? partType : null;
+var isEdit = !!pt;
+var langs  = typeof languages !== 'undefined' ? languages : [];
+var orgs   = typeof organizations !== 'undefined' ? organizations : [];
+var formAction = isEdit ? '/part-sides/' + pt.uuid : '/part-sides';
+var isSuperAdmin = user && user.is_super_admin;
+
+var transMap = {};
+if (pt && pt.translations) pt.translations.forEach(function(tr) { transMap[tr.language_id] = tr.name; });
+
+var uploadedImgUrl = '';
+var externalImgUrl = '';
+if (isEdit) { uploadedImgUrl = pt.uploaded_image_url || ''; externalImgUrl = pt.image_full_url || ''; }
+var displayImg = pt && pt.display_image_url ? pt.display_image_url : '';
+%>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/part-sides" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i><%- t('general.back') %></a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-gear-wide-connected me-2 text-primary"></i><%- isEdit ? t('part_sides.edit') : t('part_sides.add') %></h3>
+</div>
+
+<form id="frmPartType" method="POST" action="<%- formAction %>" enctype="multipart/form-data" novalidate>
+<div class="row g-3">
+
+  <div class="col-lg-8">
+
+    <!-- Company selector (super admin only) -->
+    <% if (isSuperAdmin) { %>
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div>
+      </div>
+      <div class="card-body">
+        <select name="company_id" id="selCompany" class="form-select">
+          <option value="global" <%- (!isEdit || !pt.organization_id) ? 'selected' : '' %>>Global (Super Admin)</option>
+          <% orgs.forEach(function(o) { %>
+          <option value="<%- o.id %>" <%- (isEdit && pt.organization_id && String(pt.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
+          <% }) %>
+        </select>
+        <div class="form-hint mt-1">Select which company this part type belongs to. "Global" means all companies can see it.</div>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-info-circle me-1 text-primary"></i><%- t('part_sides.information') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label fw-medium"><%- t('part_sides.name_default') %> <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="fPartName" class="form-control" required autofocus value="<%= isEdit ? (pt.name||'') : '' %>" placeholder="<%- t('part_sides.name') %>"/>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-medium"><%- t('part_sides.image_external') %></label>
+            <input type="url" name="image_full_url" id="fImageUrl" class="form-control" value="<%= externalImgUrl %>" placeholder="https://example.com/images/part.jpg"/>
+            <div class="form-hint"><%- t('part_sides.image_external_hint') %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% if (langs.length > 0) { %>
+    <div class="card mt-3 shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0 d-flex align-items-center" style="font-size:14px;">
+          <span><i class="bi bi-translate me-1 text-primary"></i><%- t('part_sides.translations') %> <span class="badge bg-primary-lt ms-1" style="font-size:10px;"><%- langs.length %> <%- t('general.languages') %></span></span>
+          <button type="button" class="btn btn-sm btn-outline-info ms-auto d-none ai-translate-btn" id="btnTranslateAll" title="AI Translate All">
+            <i class="bi bi-stars me-1"></i>Translate All
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3"><%- t('part_sides.translations_hint') %></p>
+        <div class="row g-3">
+          <% langs.forEach(function(lang) { %>
+          <div class="col-md-6">
+            <label class="form-label fw-medium">
+              <% if (lang.flag) { %><span class="me-1"><%- lang.flag %></span><% } %><%- lang.name %>
+              <% if (lang.native_name) { %><span class="text-muted ms-1" style="font-size:11px;">(<%- lang.native_name %>)</span><% } %>
+              <% if (lang.is_default) { %><span class="badge bg-warning-lt ms-1" style="font-size:9px;"><%- t('master_lang.default') %></span><% } %>
+            </label>
+            <input type="text" name="trans_<%- lang.id %>" class="form-control" value="<%= transMap[lang.id] || '' %>" placeholder="<%- lang.name %>"
+                   data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"/>
+            <button type="button" class="btn btn-sm btn-ghost-info mt-1 d-none ai-translate-btn ai-single-btn"
+                    data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"
+                    title="Translate to <%- lang.name %> using AI">
+              <i class="bi bi-stars me-1"></i><span class="d-none d-sm-inline">AI</span>
+            </button>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-image me-1 text-primary"></i><%- t('part_sides.image') %></div></div>
+      <div class="card-body text-center">
+        <% if (isEdit && (uploadedImgUrl || externalImgUrl)) { %>
+        <div class="row g-2 mb-3">
+          <% if (uploadedImgUrl) { %>
+          <div class="<%= externalImgUrl ? 'col-6' : 'col-12' %>">
+            <div class="border rounded p-2">
+              <div class="text-muted small mb-1"><i class="bi bi-cloud-upload me-1"></i><%- t('part_sides.image_uploaded') %></div>
+              <img src="<%- uploadedImgUrl %>" class="rounded sms-img-preview" style="max-width:100%;max-height:140px;object-fit:contain;cursor:pointer;" data-title="<%= isEdit ? (pt.name||'') : '' %>" data-uploaded="<%= uploadedImgUrl %>" data-external="<%= externalImgUrl %>" onerror="this.src='/images/no-image.svg';this.classList.remove('sms-img-preview');"/>
+              <div class="mt-1"><a href="<%- uploadedImgUrl %>" target="_blank" class="small"><%- t('general.view_file') %></a></div>
+            </div>
+          </div>
+          <% } %>
+          <% if (externalImgUrl) { %>
+          <div class="<%= uploadedImgUrl ? 'col-6' : 'col-12' %>">
+            <div class="border rounded p-2">
+              <div class="text-muted small mb-1"><i class="bi bi-link-45deg me-1"></i><%- t('general.external_url') %></div>
+              <img src="<%- externalImgUrl %>" class="rounded sms-img-preview" style="max-width:100%;max-height:140px;object-fit:contain;cursor:pointer;" data-title="<%= isEdit ? (pt.name||'') : '' %>" data-uploaded="<%= uploadedImgUrl %>" data-external="<%= externalImgUrl %>" onerror="this.src='/images/no-image.svg';this.classList.remove('sms-img-preview');"/>
+              <div class="mt-1"><a href="<%- externalImgUrl %>" target="_blank" class="small text-break"><%- t('general.open_file') %></a></div>
+            </div>
+          </div>
+          <% } %>
+        </div>
+        <% } else if (!isEdit) { %>
+        <div id="imgPlaceholder" class="border rounded d-flex align-items-center justify-content-center mb-3" style="height:140px;background:var(--tblr-bg-surface-secondary);"><img src="/images/no-image.svg" style="width:80px;opacity:.6;"/></div>
+        <% } else { %>
+        <div class="border rounded d-flex align-items-center justify-content-center mb-3" style="height:100px;background:var(--tblr-bg-surface-secondary);"><span class="text-muted small"><%- t('part_sides.image_no') %></span></div>
+        <% } %>
+        <div id="newImagePreview"></div>
+        <input type="file" name="image" id="fImage" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.gif,.webp"/>
+        <div class="form-hint mt-1"><%- t('part_sides.image_upload_hint') %></div>
+        <% if (isEdit && uploadedImgUrl) { %>
+        <label class="form-check form-switch mt-2 d-inline-flex"><input type="checkbox" class="form-check-input" name="remove_image" id="fRemoveImg" value="1"/><span class="form-check-label text-danger small"><%- t('part_sides.image_remove') %></span></label>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (isEdit) { %>
+    <div class="card mt-3 shadow-sm">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-toggle-on me-1 text-primary"></i><%- t('general.status') %></div></div>
+      <div class="card-body"><select name="status" class="form-select"><option value="1" <%- parseInt(pt.status) ? 'selected' : '' %>><%- t('general.active') %></option><option value="0" <%- !parseInt(pt.status) ? 'selected' : '' %>><%- t('general.inactive') %></option></select></div>
+    </div>
+    <% } %>
+
+    <div class="card mt-3 shadow-sm">
+      <div class="card-body py-3">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? t('general.update') : t('general.create') %> <%- t('part_sides.title') %></button>
+          <a href="/part-sides" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel') %></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+
+<!-- Image popup -->
+<div class="modal fade" id="modalImageForm" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:600px;"><div class="modal-content"><div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0"><i class="bi bi-image me-2 text-primary"></i><span id="imgPopupTitle"><%- t('part_sides.image_preview') %></span></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-3" id="imgPopupBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div></div></div></div>
+
+<script>
+window._FORM_DATA = { isEdit: <%= isEdit ? 'true' : 'false' %>, langIds: [<%= langs.map(function(l){ return l.id; }).join(',') %>],
+  langs: <%- JSON.stringify(langs.map(function(l){ return {id:l.id, name:l.name, code:l.code}; })) %>
+};
+</script>
+<% block('scripts', '<script src="/js/pages/part-sides-form.js"></script>') %>

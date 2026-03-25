@@ -20,6 +20,11 @@ router.use('/pages',            authGuard, require('./pages'));
 router.use('/languages',        authGuard, require('./languages'));
 router.use('/master-languages', authGuard, require('./master-languages'));
 router.use('/part-types',       authGuard, require('./part-types'));
+router.use('/part-locations',   authGuard, require('./part-locations'));
+router.use('/part-groups',      authGuard, require('./part-groups'));
+router.use('/part-sides',       authGuard, require('./part-sides'));
+router.use('/part-brands',      authGuard, require('./part-brands'));
+
 
 // Root redirect
 router.get('/', (req, res) => {
