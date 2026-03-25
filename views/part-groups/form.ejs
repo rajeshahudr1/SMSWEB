@@ -52,7 +52,7 @@ var displayImg = pt && pt.display_image_url ? pt.display_image_url : '';
         <div class="row g-3">
           <div class="col-md-12">
             <label class="form-label fw-medium"><%- t('part_groups.name_default') %> <span class="text-danger">*</span></label>
-            <input type="text" name="name" id="fPartName" class="form-control" required autofocus value="<%= isEdit ? (pt.name||'') : '' %>" placeholder="<%- t('part_groups.name') %>"/>
+            <input type="text" name="name" id="fName" class="form-control" required autofocus value="<%= isEdit ? (pt.name||'') : '' %>" placeholder="<%- t('part_groups.name') %>"/>
           </div>
           <div class="col-md-12">
             <label class="form-label fw-medium"><%- t('part_groups.image_external') %></label>

@@ -19,11 +19,27 @@ router.use('/locations',        authGuard, require('./location'));
 router.use('/pages',            authGuard, require('./pages'));
 router.use('/languages',        authGuard, require('./languages'));
 router.use('/master-languages', authGuard, require('./master-languages'));
+
+// Part Catalog
 router.use('/part-types',       authGuard, require('./part-types'));
 router.use('/part-locations',   authGuard, require('./part-locations'));
 router.use('/part-groups',      authGuard, require('./part-groups'));
 router.use('/part-sides',       authGuard, require('./part-sides'));
 router.use('/part-brands',      authGuard, require('./part-brands'));
+
+// Vehicle Catalog
+router.use('/vehicle-categories', authGuard, require('./vehicle-categories'));
+router.use('/vehicle-fuels',      authGuard, require('./vehicle-fuels'));
+router.use('/vehicle-years',      authGuard, require('./vehicle-years'));
+router.use('/vehicle-types',      authGuard, require('./vehicle-types'));
+router.use('/vehicle-makes',      authGuard, require('./vehicle-makes'));
+router.use('/vehicle-models',     authGuard, require('./vehicle-models'));
+router.use('/vehicle-variants',   authGuard, require('./vehicle-variants'));
+router.use('/vehicle-engines',    authGuard, require('./vehicle-engines'));
+
+// Vehicle Autocomplete (shared proxy — serves all /vehicle-*/autocomplete routes)
+router.use('/', authGuard, require('./vehicle-autocomplete'));
+
 
 
 // Root redirect

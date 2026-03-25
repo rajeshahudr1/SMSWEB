@@ -1,0 +1,72 @@
+<%- layout('../layouts/main') %>
+<%
+var rec    = typeof partType !== 'undefined' ? partType : null;
+var isEdit = !!rec;
+var orgs   = typeof organizations !== 'undefined' ? organizations : [];
+var formAction = isEdit ? '/vehicle-years/' + rec.uuid : '/vehicle-years';
+var isSuperAdmin = user && user.is_super_admin;
+%>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/vehicle-years" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i><%- t('general.back') %></a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-calendar3 me-2 text-primary"></i><%- isEdit ? t('vehicle_years.edit') : t('vehicle_years.add') %></h3>
+</div>
+
+<form id="frmYear" method="POST" action="<%- formAction %>" novalidate>
+<div class="row g-3">
+  <div class="col-lg-6">
+
+    <% if (isSuperAdmin) { %>
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div></div>
+      <div class="card-body">
+        <select name="company_id" id="selCompany" class="form-select">
+          <option value="global" <%- (!isEdit || !rec.organization_id) ? 'selected' : '' %>>Global (Super Admin)</option>
+          <% orgs.forEach(function(o) { %>
+          <option value="<%- o.id %>" <%- (isEdit && rec.organization_id && String(rec.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card shadow-sm">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-calendar3 me-1 text-primary"></i><%- t('vehicle_years.information') || 'Year Information' %></div></div>
+      <div class="card-body">
+        <label class="form-label fw-medium"><%- t('vehicle_years.year') || 'Year' %> <span class="text-danger">*</span></label>
+        <input type="number" name="year" id="fYear" class="form-control" required autofocus
+               min="1900" max="2100" step="1"
+               value="<%= isEdit ? (rec.year || '') : '' %>"
+               placeholder="e.g. 2024"
+               onkeypress="return event.charCode >= 48 && event.charCode <= 57"/>
+        <div class="form-hint mt-1">Enter a 4-digit year between 1900 and 2100.</div>
+      </div>
+    </div>
+
+    <% if (isEdit) { %>
+    <div class="card mt-3 shadow-sm">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-toggle-on me-1 text-primary"></i><%- t('general.status') %></div></div>
+      <div class="card-body">
+        <select name="status" class="form-select">
+          <option value="1" <%- parseInt(rec.status) ? 'selected' : '' %>><%- t('general.active') %></option>
+          <option value="0" <%- !parseInt(rec.status) ? 'selected' : '' %>><%- t('general.inactive') %></option>
+        </select>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card mt-3 shadow-sm">
+      <div class="card-body py-3">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? t('general.update') : t('general.create') %> <%- t('vehicle_years.title') || 'Vehicle Year' %></button>
+          <a href="/vehicle-years" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel') %></a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</form>
+
+<script>window._FORM_DATA = { isEdit: <%= isEdit ? 'true' : 'false' %> };</script>
+<% block('scripts', '<script src="/js/pages/vehicle-years-form.js"></script>') %>
