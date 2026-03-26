@@ -47,7 +47,8 @@ router.use('/countries', authGuard, require('./countries'));
 router.use('/states',    authGuard, require('./states'));
 router.use('/cities',    authGuard, require('./cities'));
 
-
+// Activity Logs
+router.use('/activity-logs', authGuard, require('./activity-logs'));
 
 
 // Root redirect

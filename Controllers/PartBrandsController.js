@@ -22,7 +22,7 @@ exports.create = async (req, res) => {
         req.session.user && req.session.user.is_super_admin ? getOrgs(req.session.token) : Promise.resolve([]),
     ]);
     res.render('part-brands/form', {
-        page_title: 'Add Part Type', activeLink: 'part-brands',
+        page_title: 'Add Part Brand', activeLink: 'part-brands',
         breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/part-brands' }, { name: 'Add', url: '' }],
         partType: null, languages: langs, organizations: orgs,
     });
@@ -36,7 +36,7 @@ exports.edit = async (req, res) => {
     ]);
     if (r.status !== 200) { req.flash('error', 'Not found.'); return res.redirect('/part-brands'); }
     res.render('part-brands/form', {
-        page_title: 'Edit Part Type', activeLink: 'part-brands',
+        page_title: 'Edit Part Brand', activeLink: 'part-brands',
         breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/part-brands' }, { name: 'Edit', url: '' }],
         partType: r.data, languages: langs, organizations: orgs,
     });
