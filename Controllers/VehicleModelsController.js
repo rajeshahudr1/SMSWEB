@@ -3,7 +3,7 @@ const api = require('../helpers/api');
 const FormData = require('form-data');
 const fs = require('fs'); const multer = require('multer'); const path = require('path'); const os = require('os');
 const tempUpload = multer({ dest: os.tmpdir(), limits: { fileSize: 5*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.jpg','.jpeg','.png','.gif','.webp'].includes(path.extname(f.originalname).toLowerCase())); } });
-const tempImport = multer({ dest: os.tmpdir(), limits: { fileSize: 5*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.csv','.xlsx','.xls'].includes(path.extname(f.originalname).toLowerCase())); } });
+const tempImport = multer({ dest: os.tmpdir(), limits: { fileSize: 50*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.csv','.xlsx','.xls'].includes(path.extname(f.originalname).toLowerCase())); } });
 function clean(f) { if (f && f.path && fs.existsSync(f.path)) try { fs.unlinkSync(f.path); } catch(_) {} }
 const getLangs = (tk) => api.get('/master-languages/active', tk).then(r => r.status === 200 ? (r.data || []) : []);
 const getOrgs = (tk) => api.get('/vehicle-models/organizations', tk).then(r => r.status === 200 ? (r.data || []) : []);
@@ -11,7 +11,7 @@ const getOrgs = (tk) => api.get('/vehicle-models/organizations', tk).then(r => r
 exports.index = async (req, res) => {
     let orgs = [];
     if (req.session.user && req.session.user.is_super_admin) orgs = await getOrgs(req.session.token);
-    res.render('vehicle-models/index', { page_title: res.locals.t ? res.locals.t('vehicle_models.title') : 'Part Brands', activeLink: 'vehicle-models', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-models' }], organizations: orgs });
+    res.render('vehicle-models/index', { page_title: res.locals.t ? res.locals.t('vehicle_models.title') : 'Vehicle Models', activeLink: 'vehicle-models', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Models', url: '/vehicle-models' }], organizations: orgs });
 };
 
 exports.paginate = async (req, res) => { res.json(await api.post('/vehicle-models/paginate', req.body, req.session.token)); };
@@ -22,8 +22,8 @@ exports.create = async (req, res) => {
         req.session.user && req.session.user.is_super_admin ? getOrgs(req.session.token) : Promise.resolve([]),
     ]);
     res.render('vehicle-models/form', {
-        page_title: 'Add Part Type', activeLink: 'vehicle-models',
-        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-models' }, { name: 'Add', url: '' }],
+        page_title: 'Add Vehicle Model', activeLink: 'vehicle-models',
+        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Models', url: '/vehicle-models' }, { name: 'Add', url: '' }],
         partType: null, languages: langs, organizations: orgs,
     });
 };
@@ -36,8 +36,8 @@ exports.edit = async (req, res) => {
     ]);
     if (r.status !== 200) { req.flash('error', 'Not found.'); return res.redirect('/vehicle-models'); }
     res.render('vehicle-models/form', {
-        page_title: 'Edit Part Type', activeLink: 'vehicle-models',
-        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-models' }, { name: 'Edit', url: '' }],
+        page_title: 'Edit Vehicle Model', activeLink: 'vehicle-models',
+        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Models', url: '/vehicle-models' }, { name: 'Edit', url: '' }],
         partType: r.data, languages: langs, organizations: orgs,
     });
 };
@@ -70,7 +70,8 @@ exports.exportData = async (req, res) => {
     const rows = result.data.rows || [];
     if (!rows.length) return res.json({ status: 200, message: 'No data.', data: { rows: [] } });
     if (format === 'csv') { const hd = Object.keys(rows[0]); const csv = [hd.join(','), ...rows.map(r => hd.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n'); res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-models-${Date.now()}.csv"`); return res.send(csv); }
-    if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Part Brands'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-models-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Vehicle Models'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-models-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    if (format === 'pdf') { const pdfExport = require('../helpers/pdfExport'); return pdfExport.generate(res, 'Vehicle Models', rows); }
     return res.json({ status: 200, data: result.data });
 };
 

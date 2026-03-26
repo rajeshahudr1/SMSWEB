@@ -1,3 +1,4 @@
-name,vehicle_type,vehicle_make,month_initial,month_final,start_year,end_year
-"Fortuner","Passenger Car","Toyota",1,12,2018,2024
-"City","Passenger Car","Honda",3,11,2020,2025
+name,vehicle_type,vehicle_make,vehicle_year,month_initial,month_final,start_year,end_year,image_url
+Fortuner,SUV,Toyota,2024,1,12,2018,2024,https://example.com/fortuner.jpg
+City,Sedan,Honda,2023,3,11,2020,2023,
+Swift,Hatchback,Maruti,,,,,,

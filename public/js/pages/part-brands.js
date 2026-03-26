@@ -116,7 +116,7 @@ function renderImportResults(results) {
         return;
     }
 
-    var h = '<table class="table table-sm table-bordered mb-0"><thead><tr><th style="width:30px;">#</th><th>Part Name</th><th style="width:80px;">Status</th><th>Error</th><th style="width:110px;">Action</th></tr></thead><tbody>';
+    var h = '<table class="table table-sm table-bordered mb-0"><thead><tr><th style="width:30px;">#</th><th>Part Brand</th><th style="width:80px;">Status</th><th>Error</th><th style="width:110px;">Action</th></tr></thead><tbody>';
     results.forEach(function(r, i) {
         if (r.status === 'success') {
             h += '<tr class="table-success" id="impRow' + i + '"><td>' + r.row + '</td><td>' + H.esc(r.name) + '</td><td><span class="badge bg-success-lt"><i class="bi bi-check"></i> OK</span></td><td>—</td><td>—</td></tr>';

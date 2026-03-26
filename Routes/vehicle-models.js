@@ -4,7 +4,6 @@ const router  = express.Router();
 const Ctrl    = require('../Controllers/VehicleModelsController');
 const { requireLogin, requirePermission } = require('../Middlewares/auth');
 router.use(requireLogin);
-
 router.get('/',                        requirePermission('view_vehicle_models'),   Ctrl.index);
 router.post('/paginate',               requirePermission('view_vehicle_models'),   Ctrl.paginate);
 router.get('/export',                  requirePermission('export_vehicle_models'), Ctrl.exportData);
@@ -22,5 +21,4 @@ router.post('/:uuid',                  requirePermission('edit_vehicle_models'),
 router.post('/:uuid/toggle-status',    requirePermission('edit_vehicle_models'),   Ctrl.toggleStatus);
 router.post('/:uuid/recover',          requirePermission('edit_vehicle_models'),   Ctrl.recover);
 router.post('/:uuid/delete',           requirePermission('delete_vehicle_models'), Ctrl.destroy);
-
 module.exports = router;

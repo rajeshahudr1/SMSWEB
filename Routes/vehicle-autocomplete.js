@@ -8,8 +8,15 @@ router.use(requireLogin);
 
 function proxy(apiPath) {
     return async (req, res) => {
-        const result = await api.get(apiPath, req.session.token, req.query);
-        res.json(result);
+        try {
+            // Build query string from req.query and pass to API
+            const qs = new URLSearchParams(req.query).toString();
+            const url = qs ? apiPath + '?' + qs : apiPath;
+            const result = await api.get(url, req.session.token);
+            res.json(result);
+        } catch (e) {
+            res.json({ status: 500, message: 'Proxy failed.' });
+        }
     };
 }
 
