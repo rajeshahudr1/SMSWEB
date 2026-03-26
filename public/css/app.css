@@ -1622,3 +1622,25 @@ body.sms-sb-collapsed .page-wrapper { margin-left: var(--sb-w-col) !important; }
   .sms-profile-tab { padding: 8px 12px; }
   .sms-profile-tab__icon { width: 32px; height: 32px; font-size: 15px; }
 }
+
+.sms-notif-dot {
+  position: absolute;
+  top: 2px; right: 2px;
+  min-width: 16px; height: 16px;
+  font-size: 9px; line-height: 16px;
+  text-align: center;
+  background: #e0e0e0;
+  color: #666;
+  border-radius: 50%;
+  display: none;
+}
+.sms-notif-dot--active {
+  display: inline-block;
+  background: #e53935;
+  color: #fff;
+  animation: notifPulse 2s infinite;
+}
+@keyframes notifPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}

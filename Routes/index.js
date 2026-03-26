@@ -40,6 +40,9 @@ router.use('/vehicle-engines',    authGuard, require('./vehicle-engines'));
 // Vehicle Autocomplete (shared proxy — serves all /vehicle-*/autocomplete routes)
 router.use('/', authGuard, require('./vehicle-autocomplete'));
 
+router.use('/notifications', authGuard, require('./notifications'));
+
+
 
 
 // Root redirect
