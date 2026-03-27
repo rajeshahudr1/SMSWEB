@@ -39,6 +39,27 @@ function menuLabel(item) {
   }
   return item.title || '';
 }
+
+/**
+ * isActive(routePath)
+ * Checks if this menu item matches the current page.
+ * Compares route_path with activeLink local variable.
+ */
+function isActive(routePath) {
+  if (!routePath || !activeLink) return false;
+  // activeLink = 'vehicle-engines', route_path = '/vehicle-engines'
+  var rp = routePath.replace(/^\//, '');
+  return rp === activeLink;
+}
+
+/**
+ * hasActiveChild(parentItem)
+ * Checks if any child of this parent matches the current page.
+ */
+function hasActiveChild(item) {
+  if (!item.children || !item.children.length) return false;
+  return item.children.some(function(sub) { return isActive(sub.route_path); });
+}
 %>
 
 <aside id="smsSidebar" class="sms-sidebar <%= collapsed ? 'sms-sidebar--collapsed' : '' %>" data-bs-theme="<%- sbTheme %>">
@@ -79,21 +100,23 @@ function menuLabel(item) {
                   <%/* ── PARENT WITH SUB-CHILDREN → collapse + flyout ── */%>
                   <% var subId = 'sub-' + child.id; %>
 
+                  <% var childIsActive = hasActiveChild(child); %>
                   <li class="sms-nav__item sms-has-flyout">
-                    <a class="sms-nav__link sms-nav__link--drop"
+                    <a class="sms-nav__link sms-nav__link--drop<%= childIsActive ? ' active' : '' %>"
                        href="#<%- subId %>"
-                       data-bs-toggle="collapse">
+                       data-bs-toggle="collapse"
+                       aria-expanded="<%= childIsActive ? 'true' : 'false' %>">
                       <span class="sms-nav__icon"><i class="<%- childIcon %>"></i></span>
                       <span class="sms-nav__text"><%- childLabel %></span>
                       <i class="bi bi-chevron-down sms-nav__arrow"></i>
                     </a>
 
                     <%/* Normal expanded subnav (Bootstrap collapse) */%>
-                    <div class="collapse" id="<%- subId %>">
+                    <div class="collapse<%= childIsActive ? ' show' : '' %>" id="<%- subId %>">
                       <ul class="sms-subnav">
                         <% child.children.forEach(function(sub){ %>
                         <li>
-                          <a class="sms-subnav__link" href="<%- sub.route_path %>">
+                          <a class="sms-subnav__link<%= isActive(sub.route_path) ? ' active' : '' %>" href="<%- sub.route_path %>">
                             <span class="sms-subnav__dot"></span>
                             <span class="sms-nav__text"><%- menuLabel(sub) %></span>
                           </a>
@@ -112,7 +135,7 @@ function menuLabel(item) {
                         <ul class="sms-flyout__list">
                           <% child.children.forEach(function(sub){ %>
                           <li>
-                            <a class="sms-flyout__link" href="<%- sub.route_path %>">
+                            <a class="sms-flyout__link<%= isActive(sub.route_path) ? ' active' : '' %>" href="<%- sub.route_path %>">
                               <span class="sms-flyout__dot"></span>
                               <%- menuLabel(sub) %>
                             </a>
@@ -126,7 +149,7 @@ function menuLabel(item) {
                 <% } else { %>
                   <%/* ── SIMPLE LINK (no children) → tooltip ── */%>
                   <li class="sms-nav__item sms-has-tooltip">
-                    <a class="sms-nav__link" href="<%- child.route_path || '#' %>">
+                    <a class="sms-nav__link<%= isActive(child.route_path) ? ' active' : '' %>" href="<%- child.route_path || '#' %>">
                       <span class="sms-nav__icon"><i class="<%- childIcon %>"></i></span>
                       <span class="sms-nav__text"><%- childLabel %></span>
                     </a>
@@ -145,7 +168,7 @@ function menuLabel(item) {
               <% var topLabel = menuLabel(group); %>
 
               <li class="sms-nav__item sms-has-tooltip">
-                <a class="sms-nav__link" href="<%- group.route_path || '#' %>">
+                <a class="sms-nav__link<%= isActive(group.route_path) ? ' active' : '' %>" href="<%- group.route_path || '#' %>">
                   <span class="sms-nav__icon"><i class="<%- topIcon %>"></i></span>
                   <span class="sms-nav__text"><%- topLabel %></span>
                 </a>
@@ -165,7 +188,7 @@ function menuLabel(item) {
             <span><%- t('nav.legal') || 'Legal' %></span>
           </li>
           <li class="sms-nav__item sms-has-tooltip">
-            <a class="sms-nav__link" href="/pages">
+            <a class="sms-nav__link<%= isActive('/pages') ? ' active' : '' %>" href="/pages">
               <span class="sms-nav__icon"><i class="bi bi-file-earmark-ruled"></i></span>
               <span class="sms-nav__text"><%- t('nav.legal_pages') || 'Legal Pages' %></span>
             </a>
