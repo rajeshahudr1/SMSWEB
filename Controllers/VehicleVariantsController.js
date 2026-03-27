@@ -3,7 +3,7 @@ const api = require('../helpers/api');
 const FormData = require('form-data');
 const fs = require('fs'); const multer = require('multer'); const path = require('path'); const os = require('os');
 const tempUpload = multer({ dest: os.tmpdir(), limits: { fileSize: 5*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.jpg','.jpeg','.png','.gif','.webp'].includes(path.extname(f.originalname).toLowerCase())); } });
-const tempImport = multer({ dest: os.tmpdir(), limits: { fileSize: 5*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.csv','.xlsx','.xls'].includes(path.extname(f.originalname).toLowerCase())); } });
+const tempImport = multer({ dest: os.tmpdir(), limits: { fileSize: 50*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.csv','.xlsx','.xls'].includes(path.extname(f.originalname).toLowerCase())); } });
 function clean(f) { if (f && f.path && fs.existsSync(f.path)) try { fs.unlinkSync(f.path); } catch(_) {} }
 const getLangs = (tk) => api.get('/master-languages/active', tk).then(r => r.status === 200 ? (r.data || []) : []);
 const getOrgs = (tk) => api.get('/vehicle-variants/organizations', tk).then(r => r.status === 200 ? (r.data || []) : []);
@@ -11,7 +11,7 @@ const getOrgs = (tk) => api.get('/vehicle-variants/organizations', tk).then(r =>
 exports.index = async (req, res) => {
     let orgs = [];
     if (req.session.user && req.session.user.is_super_admin) orgs = await getOrgs(req.session.token);
-    res.render('vehicle-variants/index', { page_title: res.locals.t ? res.locals.t('vehicle_variants.title') : 'Part Brands', activeLink: 'vehicle-variants', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-variants' }], organizations: orgs });
+    res.render('vehicle-variants/index', { page_title: res.locals.t ? res.locals.t('vehicle_variants.title') : 'Vehicle Variants', activeLink: 'vehicle-variants', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Variants', url: '/vehicle-variants' }], organizations: orgs });
 };
 
 exports.paginate = async (req, res) => { res.json(await api.post('/vehicle-variants/paginate', req.body, req.session.token)); };
@@ -23,7 +23,7 @@ exports.create = async (req, res) => {
     ]);
     res.render('vehicle-variants/form', {
         page_title: 'Add Vehicle Variant', activeLink: 'vehicle-variants',
-        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-variants' }, { name: 'Add', url: '' }],
+        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Variants', url: '/vehicle-variants' }, { name: 'Add', url: '' }],
         partType: null, languages: langs, organizations: orgs,
     });
 };
@@ -37,7 +37,7 @@ exports.edit = async (req, res) => {
     if (r.status !== 200) { req.flash('error', 'Not found.'); return res.redirect('/vehicle-variants'); }
     res.render('vehicle-variants/form', {
         page_title: 'Edit Vehicle Variant', activeLink: 'vehicle-variants',
-        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Brands', url: '/vehicle-variants' }, { name: 'Edit', url: '' }],
+        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Vehicle Variants', url: '/vehicle-variants' }, { name: 'Edit', url: '' }],
         partType: r.data, languages: langs, organizations: orgs,
     });
 };
@@ -48,7 +48,7 @@ exports.store = [(r,s,n) => { tempUpload.single('image')(r,s,(e) => { if (e) ret
 
 exports.update = [(r,s,n) => { tempUpload.single('image')(r,s,(e) => { if (e) return s.json({ status: 422, message: e.message }); n(); }); }, async (req, res) => {
     try { const fd = new FormData(); Object.keys(req.body).forEach(k => { if (req.body[k] != null) fd.append(k, String(req.body[k])); }); if (req.file) fd.append('image', fs.createReadStream(req.file.path), { filename: req.file.originalname, contentType: req.file.mimetype });
-    const axios = require('axios'); const BASE = process.env.API_URL || 'http://localhost:3000/api'; const h = { ...fd.getHeaders(), Authorization: 'Bearer ' + req.session.token }; const r = await axios.put(BASE + '/vehicle-variants/' + req.params.uuid, fd, { headers: h }); clean(req.file); return res.json(r.data); } catch(e) { clean(req.file); return res.json(e.response && e.response.data ? e.response.data : { status: 500, message: 'Failed.' }); }
+        const axios = require('axios'); const BASE = process.env.API_URL || 'http://localhost:3000/api'; const h = { ...fd.getHeaders(), Authorization: 'Bearer ' + req.session.token }; const r = await axios.put(BASE + '/vehicle-variants/' + req.params.uuid, fd, { headers: h }); clean(req.file); return res.json(r.data); } catch(e) { clean(req.file); return res.json(e.response && e.response.data ? e.response.data : { status: 500, message: 'Failed.' }); }
 }];
 
 exports.viewData = async (req, res) => { res.json(await api.get('/vehicle-variants/' + req.params.uuid + '/view', req.session.token)); };
@@ -65,12 +65,27 @@ exports.importSingleRow = async (req, res) => {
 
 exports.exportData = async (req, res) => {
     const params = Object.assign({}, req.query, req.body); const format = params.format || 'csv';
+    const isCheck = params.check === '1' || params.check === 1;
+
     const result = await api.post('/vehicle-variants/export/data', params, req.session.token);
-    if (!result || result.status !== 200) return res.json({ status: 500, message: 'Failed.' });
+    if (!result || result.status !== 200) return res.json({ status: result ? result.status : 500, message: result ? result.message : 'Failed.', data: result ? result.data : null });
+
+    // Background mode — always return JSON
+    if (result.data && result.data.mode === 'background') {
+        return res.json(result);
+    }
+
+    // Check mode — just confirm it's inline, don't generate file
+    if (isCheck) {
+        return res.json({ status: 200, data: { mode: 'inline', total: (result.data.rows || []).length } });
+    }
+
+    // Actual file download
     const rows = result.data.rows || [];
     if (!rows.length) return res.json({ status: 200, message: 'No data.', data: { rows: [] } });
     if (format === 'csv') { const hd = Object.keys(rows[0]); const csv = [hd.join(','), ...rows.map(r => hd.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n'); res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-variants-${Date.now()}.csv"`); return res.send(csv); }
-    if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Part Brands'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-variants-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Vehicle Variants'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-variants-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    if (format === 'pdf') { const pdfExport = require('../helpers/pdfExport'); return pdfExport.generate(res, 'Vehicle Variants', rows); }
     return res.json({ status: 200, data: result.data });
 };
 

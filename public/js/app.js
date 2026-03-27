@@ -297,3 +297,14 @@ $(function() {
         }
     }
 });
+
+/* ── Tooltip init — call after dynamic content loads ── */
+function smsInitTooltips(container) {
+    var sel = container || document;
+    var els = $(sel).find('[data-bs-toggle="tooltip"]');
+    els.each(function() {
+        var old = bootstrap.Tooltip.getInstance(this);
+        if (old) old.dispose();
+        new bootstrap.Tooltip(this, { trigger: 'hover', delay: { show: 300, hide: 0 } });
+    });
+}

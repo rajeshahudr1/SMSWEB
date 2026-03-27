@@ -1,2 +1,4 @@
-name,vehicle_type,vehicle_make,vehicle_model,month_initial,month_final,start_year,end_year,kw,hp
-"2.8L Diesel 4x4 AT","Passenger Car","Toyota","Fortuner",1,12,2018,2024,150,204
+name,vehicle_type,vehicle_make,vehicle_model,vehicle_year,month_initial,month_final,start_year,end_year,kw,hp,image_url
+"2.8L Diesel 4x4 AT","Passenger Car","Toyota","Fortuner",2024,1,12,2018,2024,150,204,https://example.com/fortuner-variant.jpg
+"1.5L Turbo CVT","Sedan","Honda","City",2023,3,11,2020,2023,90,121,
+"1.2L Petrol MT","Hatchback","Maruti","Swift",2024,1,12,2022,2024,66,90,

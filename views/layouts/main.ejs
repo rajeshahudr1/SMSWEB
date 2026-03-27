@@ -105,6 +105,14 @@ function SMS_T(k,f){ return SMS_T_DICT[k]||f||k; }
 
 window.H = window.H||{};
 H.esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+H.trunc = function(s, max, cls) {
+    if (!s) return '';
+    max = max || 20;
+    var e = H.esc(String(s));
+    if (String(s).length <= max) return '<span'+(cls?' class="'+cls+'"':'')+'>'+e+'</span>';
+    var short = H.esc(String(s).substring(0, max)) + '…';
+    return '<span'+(cls?' class="'+cls+'"':'')+' title="'+e+'" data-bs-toggle="tooltip" data-bs-placement="top">'+short+'</span>';
+};
 
 var SMS_PENDING_THEME = {
   theme_color:   SMS_SETTINGS.theme_color   || '#0054a6',
