@@ -2,7 +2,7 @@
 'use strict';
 var _page=1,_pp=15,_sel=[],_sort={field:'created_at',dir:'desc'};
 var T=function(k,f){return SMS_T(k,f);};
-function _filters(){return{page:_page,per_page:_pp,search:$('#searchInput').val().trim(),status:$('#filterStatus').val(),show_deleted:$('#filterDeleted').val(),company_id:$('#filterCompany').length?$('#filterCompany').val():'',sort_field:_sort.field,sort_dir:_sort.dir};}
+function _filters(){return{page:_page,per_page:_pp,search:$('#searchInput').val().trim(),status:$('#filterStatus').val(),show_deleted:$('#filterDeleted').val(),company_id:$('#filterCompany').length?$('#filterCompany').val():'',start_year_from:$('#filterStartYearFrom').val()||'',start_year_to:$('#filterStartYearTo').val()||'',end_year_from:$('#filterEndYearFrom').val()||'',end_year_to:$('#filterEndYearTo').val()||'',kw_min:$('#filterKwMin').val()||'',hp_min:$('#filterHpMin').val()||'',variant_ids:($('#filterVariant').val()||[]).join(','),sort_field:_sort.field,sort_dir:_sort.dir};}
 
 function loadData(){
     $('#tableBody').html('<tr><td colspan="10" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading…')+'</td></tr>');
@@ -23,26 +23,36 @@ function loadData(){
             var globalBadge=isGlobal?' <span class="badge bg-azure-lt" style="font-size:9px;">Global</span>':'';
             var editable=r.is_editable!==false&&!deleted;
             var deletable=r.is_deletable!==false&&!deleted;
-            var variantBadge=r.variant_count?'<span class="badge bg-indigo-lt">'+r.variant_count+' variant'+(r.variant_count>1?'s':'')+'</span>':'<span class="text-muted small">—</span>';
-
-            var acts='<div class="btn-group btn-group-sm">';
-            acts+='<button class="btn btn-ghost-primary" onclick="viewRec(\''+r.uuid+'\')" title="'+T('general.preview','View')+'"><i class="bi bi-eye"></i></button>';
-            if(deleted){
-                acts+='<button class="btn btn-ghost-success" onclick="recoverRec(\''+r.uuid+'\',\''+H.esc(r.motor_code||'')+'\')" title="Recover"><i class="bi bi-arrow-counterclockwise"></i></button>';
-            }else{
-                if(editable)acts+='<a href="'+BASE_URL+'/vehicle-engines/'+r.uuid+'/edit" class="btn btn-ghost-secondary" title="'+T('btn.edit','Edit')+'"><i class="bi bi-pencil"></i></a>';
-                if(editable)acts+='<button class="btn btn-ghost-'+(parseInt(r.status)?'warning':'success')+'" onclick="toggleRec(\''+r.uuid+'\')"><i class="bi bi-toggle-'+(parseInt(r.status)?'on':'off')+'"></i></button>';
-                if(deletable)acts+='<button class="btn btn-ghost-danger" onclick="delRec(\''+r.uuid+'\',\''+H.esc(r.motor_code||'')+'\')"><i class="bi bi-trash3"></i></button>';
+            var vNames = r.variant_names || '';
+            var vTitle = vNames ? vNames : 'No variants linked';
+            var variantBadge = '<a href="#" class="text-decoration-none" onclick="openVariantModal(\''+r.uuid+'\',\''+H.esc(r.motor_code||'')+'\');return false;">';
+            if (r.variant_count) {
+                variantBadge += '<span class="badge bg-indigo-lt" style="cursor:pointer;" title="'+H.esc(vTitle)+'" data-bs-toggle="tooltip" data-bs-html="true">'+r.variant_count+' variant'+(r.variant_count>1?'s':'')+'</span>';
+            } else {
+                variantBadge += '<span class="badge bg-secondary-lt" style="cursor:pointer;" title="Click to add variants" data-bs-toggle="tooltip"><i class="bi bi-plus-lg me-1"></i>Add</span>';
             }
-            acts+='</div>';
+            variantBadge += '</a>';
+
+            var acts='<div class="dropdown">';
+            acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts+='<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewRec(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>View Details</a></li>';
+            if(deleted){
+                acts+='<li><a class="dropdown-item" href="#" onclick="recoverRec(\''+r.uuid+'\',\''+H.esc(r.motor_code||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>Recover</a></li>';
+            }else{
+                if(editable)acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/vehicle-engines/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>';
+                if(editable)acts+='<li><a class="dropdown-item" href="#" onclick="toggleRec(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(parseInt(r.status)?'off':'on')+' me-2 text-'+(parseInt(r.status)?'warning':'success')+'"></i>'+(parseInt(r.status)?'Deactivate':'Activate')+'</a></li>';
+                if(deletable)acts+='<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delRec(\''+r.uuid+'\',\''+H.esc(r.motor_code||'')+'\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
+            }
+            acts+='</ul></div>';
             var rowClass=deleted?' class="table-secondary"':(isGlobal?' class="table-light"':'');
             rows+='<tr'+rowClass+'><td style="padding-left:1rem;"><input type="checkbox" class="form-check-input row-chk" data-uuid="'+r.uuid+'"/></td>'+
                 '<td class="text-muted small">'+(start+i+1)+'</td>'+
-                '<td><span class="fw-semibold font-monospace">'+H.esc(r.motor_code||'')+'</span></td>'+
-                '<td><span class="fw-medium">'+H.esc(r.manufacturer_engine||'')+'</span>'+globalBadge+'</td>'+
+                '<td>'+H.trunc(r.motor_code||'',20,'fw-semibold font-monospace')+'</td>'+
+                '<td>'+H.trunc(r.manufacturer_engine||'',25,'fw-medium')+globalBadge+'</td>'+
                 '<td>'+variantBadge+'</td>'+
-                '<td class="d-none d-lg-table-cell text-muted small">'+(r.kw||'—')+'</td>'+
-                '<td class="d-none d-lg-table-cell text-muted small">'+(r.hp||'—')+'</td>'+
+                '<td class="d-none d-lg-table-cell text-muted small">'+(r.kw?'<span title="'+r.kw+' Kilowatts" data-bs-toggle="tooltip">'+r.kw+'</span>':'—')+'</td>'+
+                '<td class="d-none d-lg-table-cell text-muted small">'+(r.hp?'<span title="'+r.hp+' Horsepower" data-bs-toggle="tooltip">'+r.hp+'</span>':'—')+'</td>'+
                 '<td>'+status+'</td>'+
                 '<td class="d-none d-md-table-cell text-muted small">'+smsFormatDateTime(r.created_at)+'</td>'+
                 '<td class="text-end">'+acts+'</td></tr>';
@@ -50,6 +60,7 @@ function loadData(){
         $('#tableBody').html(rows);
         $('#tableInfo').text(T('general.showing','Showing')+' '+(pg.from||1)+'–'+(pg.to||data.length)+' '+T('general.of','of')+' '+(pg.total||0));
         $('#tablePagination').html(smsPg(pg));updateBulk();
+        if(typeof smsInitTooltips==='function') smsInitTooltips('#tableBody');
     }).fail(function(){$('#tableBody').html('<tr><td colspan="10" class="text-center py-4 text-danger">'+T('general.network_error','Network error.')+'</td></tr>');});
 }
 
@@ -69,21 +80,28 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
         if(rec.company_name)h+='<div class="text-muted small mt-1"><i class="bi bi-building me-1"></i>'+H.esc(rec.company_name)+'</div>';
         h+='</div>';
 
-        // Specs
-        h+='<div class="row g-2 mb-3 text-center">';
-        h+='<div class="col-3"><div class="border rounded p-2"><div class="text-muted small">Start Year</div><div class="fw-medium">'+(rec.start_year||'—')+'</div></div></div>';
-        h+='<div class="col-3"><div class="border rounded p-2"><div class="text-muted small">End Year</div><div class="fw-medium">'+(rec.end_year||'—')+'</div></div></div>';
-        h+='<div class="col-3"><div class="border rounded p-2"><div class="text-muted small">KW</div><div class="fw-medium">'+(rec.kw||'—')+'</div></div></div>';
-        h+='<div class="col-3"><div class="border rounded p-2"><div class="text-muted small">HP</div><div class="fw-medium">'+(rec.hp||'—')+'</div></div></div>';
-        h+='</div>';
+        // Detail table
+        h+='<div class="border-top pt-3 mb-3">';
+        h+='<table class="table table-sm mb-0" style="font-size:13px;"><tbody>';
+        h+='<tr><td class="text-muted fw-medium" style="width:160px;"><i class="bi bi-hash me-1"></i>Motor Code</td><td><span class="fw-semibold font-monospace">'+H.esc(rec.motor_code||'')+'</span></td></tr>';
+        h+='<tr><td class="text-muted fw-medium"><i class="bi bi-gear me-1"></i>Engine Name</td><td>'+H.esc(rec.manufacturer_engine||'')+'</td></tr>';
+        h+='<tr><td class="text-muted fw-medium"><i class="bi bi-calendar me-1"></i>Start Year</td><td>'+(rec.start_year||'<span class="text-muted">—</span>')+'</td></tr>';
+        h+='<tr><td class="text-muted fw-medium"><i class="bi bi-calendar-check me-1"></i>End Year</td><td>'+(rec.end_year||'<span class="text-muted">—</span>')+'</td></tr>';
+        h+='<tr><td class="text-muted fw-medium"><i class="bi bi-lightning me-1"></i>KW (Kilowatts)</td><td>'+(rec.kw?'<strong>'+rec.kw+'</strong> kW':'<span class="text-muted">—</span>')+'</td></tr>';
+        h+='<tr><td class="text-muted fw-medium"><i class="bi bi-speedometer me-1"></i>HP (Horsepower)</td><td>'+(rec.hp?'<strong>'+rec.hp+'</strong> hp':'<span class="text-muted">—</span>')+'</td></tr>';
+        h+='<tr><td class="text-muted fw-medium"><i class="bi bi-building me-1"></i>Company</td><td>'+H.esc(rec.company_name||'—')+'</td></tr>';
+        h+='</tbody></table></div>';
 
-        // Variants
+        // Variants with details
+        h+='<div class="border-top pt-3 mb-3"><div class="fw-medium mb-2"><i class="bi bi-sliders2-vertical me-1 text-primary"></i>Linked Variants <span class="badge bg-indigo-lt">'+vars.length+'</span></div>';
         if(vars.length){
-            h+='<div class="border-top pt-3 mb-3"><div class="fw-medium mb-2"><i class="bi bi-sliders2-vertical me-1 text-primary"></i>'+T('vehicle_engines.variants','Variants')+' <span class="badge bg-indigo-lt">'+vars.length+'</span></div>';
             h+='<div class="d-flex flex-wrap gap-1">';
-            vars.forEach(function(v){ h+='<span class="badge bg-secondary-lt">'+H.esc(v.name)+'</span>'; });
-            h+='</div></div>';
+            vars.forEach(function(v){ h+='<span class="badge bg-indigo-lt px-2 py-1" title="'+H.esc(v.name)+'" data-bs-toggle="tooltip">'+H.esc(v.name)+'</span>'; });
+            h+='</div>';
+        } else {
+            h+='<div class="text-muted small fst-italic">No variants linked to this engine.</div>';
         }
+        h+='</div>';
 
         // Translations
         if(trans.length){
@@ -113,13 +131,94 @@ function doExport(fmt){var f=_filters();f.format=fmt;if(fmt==='print'){var w=win
 
 /* Import */
 function openImport(){$('#importStep1').removeClass('d-none');$('#importStep2').addClass('d-none');$('#importFile').val('');bootstrap.Modal.getOrCreateInstance($('#modalImport')[0]).show();}
+
+/* ── Variant Edit from List ── */
+function openVariantModal(uuid, code) {
+    $('#varEngineUuid').val(uuid);
+    $('#varEngineLabel').text(code);
+
+    // Init Select2 for variant selection
+    if (!$('#selVariantIds').data('select2')) {
+        $('#selVariantIds').select2({
+            theme: 'bootstrap-5', allowClear: true, placeholder: 'Search variants...',
+            dropdownParent: $('#modalVariants'),
+            ajax: {
+                url: BASE_URL + '/vehicle-variants/autocomplete',
+                dataType: 'json', delay: 300,
+                data: function(p) { return { search: p.term || '' }; },
+                processResults: function(res) {
+                    return { results: (res.data || []).map(function(r) { return { id: r.id, text: r.name }; }) };
+                }, cache: true
+            },
+            minimumInputLength: 0
+        });
+    }
+
+    // Clear old selection
+    $('#selVariantIds').val(null).trigger('change');
+
+    // Load current variants for this engine
+    $.get(BASE_URL + '/vehicle-engines/' + uuid + '/view-data', function(res) {
+        if (res && res.status === 200) {
+            var rec = res.data.record || res.data || {};
+            var vars = rec.variants || [];
+            vars.forEach(function(v) {
+                if ($('#selVariantIds').find('option[value="' + v.id + '"]').length === 0) {
+                    $('#selVariantIds').append(new Option(v.name, v.id, true, true));
+                }
+            });
+            $('#selVariantIds').trigger('change');
+        }
+    });
+
+    bootstrap.Modal.getOrCreateInstance($('#modalVariants')[0]).show();
+}
+window.openVariantModal = openVariantModal;
+
 $(function(){
     smsInitPerPage('#perPageSel');_pp=parseInt($('#perPageSel').val())||15;
     loadData();
     $('#perPageSel').on('change',function(){_pp=parseInt($(this).val())||15;_page=1;loadData();});
-    $('#searchInput').on('keyup',$.debounce(400,function(){_page=1;loadData();}));
-    $('#filterStatus,#filterDeleted,#filterCompany').on('change',function(){_page=1;loadData();});
-    $('#btnClearFilters').on('click',function(){$('#searchInput').val('');$('#filterStatus').val('');$('#filterDeleted').val('');if($('#filterCompany').length)$('#filterCompany').val('all');_page=1;loadData();});
+    var _debounce;
+    $('#searchInput').on('input',function(){clearTimeout(_debounce);_debounce=setTimeout(function(){_page=1;loadData();},400);});
+
+    // Sidebar variant Select2
+    $('#filterVariant').select2({
+        theme:'bootstrap-5', allowClear:true, placeholder:'Search variants...',
+        dropdownParent: $('#filterSidebar'),
+        ajax:{url:BASE_URL+'/vehicle-variants/autocomplete',dataType:'json',delay:250,
+            data:function(p){return{search:p.term||''};},
+            processResults:function(r){return{results:(r.data||[]).map(function(x){return{id:x.id,text:x.name};})};},cache:true},
+        minimumInputLength:0
+    });
+
+    // Apply filters
+    $('#btnApplyFilters').on('click',function(){_page=1;loadData();updateFilterCount();});
+
+    // Clear all filters
+    function clearAllFilters(){
+        $('#searchInput').val('');$('#filterStatus').val('');$('#filterDeleted').val('');
+        $('#filterStartYearFrom,#filterStartYearTo,#filterEndYearFrom,#filterEndYearTo,#filterKwMin,#filterHpMin').val('');
+        $('#filterVariant').val(null).trigger('change');
+        if($('#filterCompany').length)$('#filterCompany').val('all');
+        _page=1;loadData();updateFilterCount();
+    }
+    $('#btnClearFilters').on('click',clearAllFilters);
+    $('#btnClearFilters2').on('click',clearAllFilters);
+
+    // Filter count badge
+    function updateFilterCount(){
+        var n=0;
+        if($('#filterStatus').val())n++;
+        if($('#filterDeleted').val())n++;
+        if($('#filterCompany').length&&$('#filterCompany').val()&&$('#filterCompany').val()!=='all')n++;
+        if($('#filterStartYearFrom').val()||$('#filterStartYearTo').val())n++;
+        if($('#filterEndYearFrom').val()||$('#filterEndYearTo').val())n++;
+        if($('#filterKwMin').val())n++;
+        if($('#filterHpMin').val())n++;
+        if(($('#filterVariant').val()||[]).length)n++;
+        if(n>0){$('#filterCount').text(n).removeClass('d-none');}else{$('#filterCount').addClass('d-none');}
+    }
     $(document).on('click','.sms-pg',function(e){e.preventDefault();var p=parseInt($(this).data('p'));if(p&&p!==_page){_page=p;loadData();}});
     $(document).on('click','.sortable',function(){var f=$(this).data('field');if(_sort.field===f)_sort.dir=_sort.dir==='asc'?'desc':'asc';else{_sort.field=f;_sort.dir='asc';}_page=1;loadData();});
     $(document).on('change','#selectAll',function(){$('.row-chk').prop('checked',$(this).is(':checked'));updateBulk();});
@@ -127,19 +226,109 @@ $(function(){
     $('#btnClearBulk').on('click',function(){$('#selectAll').prop('checked',false);$('.row-chk').prop('checked',false);updateBulk();});
 
     // Import form
+    var _importResults = [];
     $('#frmImport').on('submit',function(e){e.preventDefault();var fd=new FormData(this);var $btn=$('#btnImport');btnLoading($btn);
-        $.ajax({url:BASE_URL+'/vehicle-engines/import',type:'POST',data:fd,processData:false,contentType:false,success:function(r){btnReset($btn);$('#importStep1').addClass('d-none');$('#importStep2').removeClass('d-none');
-            if(r.status===200||r.status===201){var d=r.data||{};var sum='<div class="alert alert-'+(d.errors&&d.errors.length?'warning':'success')+' py-2"><strong>'+d.success+'</strong> imported'+(d.errors&&d.errors.length?', <strong>'+d.errors.length+'</strong> errors':'')+'</div>';$('#importSummary').html(sum);
-                if(d.errors&&d.errors.length){$('#importErrorActions').removeClass('d-none');var tbl='<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Row</th><th>Data</th><th>Error</th><th>Action</th></tr></thead><tbody>';
-                    d.errors.forEach(function(er,idx){tbl+='<tr data-idx="'+idx+'"><td>'+er.row+'</td><td class="small text-break">'+JSON.stringify(er.data)+'</td><td class="text-danger small">'+H.esc(er.error)+'</td><td><button class="btn btn-sm btn-outline-warning btn-retry-row" data-row=\''+JSON.stringify(er.data)+'\'>Retry</button></td></tr>';});
-                    tbl+='</tbody></table></div>';$('#importResultTable').html(tbl);
-                }else{$('#importResultTable').html('');$('#importErrorActions').addClass('d-none');}
-                loadData();
-            }else{$('#importSummary').html('<div class="alert alert-danger py-2">'+H.esc(r.message||'Failed')+'</div>');}
-        },error:function(){btnReset($btn);toastr.error('Network error.');}});
+        $.ajax({url:BASE_URL+'/vehicle-engines/import',type:'POST',data:fd,processData:false,contentType:false,success:function(r){
+                btnReset($btn);$('#importStep1').addClass('d-none');$('#importStep2').removeClass('d-none');
+                if(r.status!==200){$('#importSummary').html('<div class="alert alert-danger py-2">'+H.esc(r.message||'Failed')+'</div>');return;}
+                _importResults = (r.data && r.data.results) || [];
+                showImportResults(_importResults);
+            },error:function(){btnReset($btn);toastr.error('Network error.');}});
     });
 
-    $(document).on('click','.btn-retry-row',function(){var $btn=$(this);var data=JSON.parse($btn.attr('data-row'));btnLoading($btn);
-        $.post(BASE_URL+'/vehicle-engines/import/single',data,function(r){btnReset($btn);if(r.status===200||r.status===201){$btn.closest('tr').fadeOut();toastr.success('Row imported.');loadData();}else toastr.error(r.message||'Failed.');});
+    function showImportResults(results){
+        var ok=results.filter(function(r){return r.status==='success';}).length;
+        var err=results.filter(function(r){return r.status==='error';}).length;
+        $('#importSummary').html('<div class="d-flex gap-2 flex-wrap"><span class="badge bg-success-lt px-3 py-2"><i class="bi bi-check-circle me-1"></i>'+ok+' imported</span>'+(err>0?'<span class="badge bg-danger-lt px-3 py-2"><i class="bi bi-x-circle me-1"></i>'+err+' errors</span>':'')+'</div>');
+        if(err===0){$('#importResultTable').html('<div class="text-center py-4"><div style="font-size:52px;margin-bottom:12px;">✅</div><h5 class="text-success">All '+ok+' rows imported!</h5></div>');$('#importErrorActions').addClass('d-none');loadData();return;}
+        var h='<div class="table-responsive"><table class="table table-sm table-bordered mb-0" style="font-size:11px;"><thead class="table-light"><tr>'+
+            '<th style="width:28px;">#</th>'+
+            '<th style="min-width:120px;">Engine Name</th>'+
+            '<th style="min-width:80px;">Motor Code</th>'+
+            '<th style="min-width:55px;">Start Yr</th>'+
+            '<th style="min-width:55px;">End Yr</th>'+
+            '<th style="min-width:45px;">KW</th>'+
+            '<th style="min-width:45px;">HP</th>'+
+            '<th style="min-width:120px;">Variant Names</th>'+
+            '<th style="min-width:110px;">Error</th>'+
+            '<th style="width:48px;">Retry</th>'+
+            '</tr></thead><tbody>';
+        results.forEach(function(r,i){
+            if(r.status!=='error') return;
+            var d=r.data||{};
+            var mfg=r.manufacturer_engine||d.manufacturer_engine||d['manufacturer engine']||d.engine||'';
+            var mc=r.motor_code||d.motor_code||d['motor code']||d.code||'';
+            var sy=d.start_year||d['start year']||'';
+            var ey=d.end_year||d['end year']||'';
+            var kw=d.kw||d.kilowatts||'';
+            var hp=d.hp||d.horsepower||'';
+            var vn=d.variant_names||d['variant names']||d.variants||'';
+            h+='<tr class="table-danger" id="impRow'+i+'">'+
+                '<td>'+r.row+'</td>'+
+                '<td><input type="text" class="form-control form-control-sm imp-mfg" value="'+H.esc(mfg)+'" placeholder="Engine *" maxlength="255"/></td>'+
+                '<td><input type="text" class="form-control form-control-sm imp-code" value="'+H.esc(mc)+'" placeholder="Code *" maxlength="255"/></td>'+
+                '<td><input type="number" class="form-control form-control-sm imp-sy" value="'+H.esc(sy)+'" style="width:55px;"/></td>'+
+                '<td><input type="number" class="form-control form-control-sm imp-ey" value="'+H.esc(ey)+'" style="width:55px;"/></td>'+
+                '<td><input type="number" class="form-control form-control-sm imp-kw" value="'+H.esc(kw)+'" style="width:45px;"/></td>'+
+                '<td><input type="number" class="form-control form-control-sm imp-hp" value="'+H.esc(hp)+'" style="width:45px;"/></td>'+
+                '<td><input type="text" class="form-control form-control-sm imp-vn" value="'+H.esc(vn)+'" placeholder="var1;var2"/></td>'+
+                '<td class="small text-danger">'+H.esc(r.message||'Error')+'</td>'+
+                '<td><button class="btn btn-sm btn-outline-warning" onclick="retryRow('+i+')"><i class="bi bi-arrow-repeat"></i></button></td></tr>';
+        });
+        h+='</tbody></table></div>';
+        if(ok>0)$('#importResultTable').html('<div class="alert alert-success py-2 mb-3 small"><i class="bi bi-check-circle me-1"></i><strong>'+ok+' rows imported.</strong> '+err+' rows need attention:</div>'+h);
+        else $('#importResultTable').html(h);
+        $('#importErrorActions').removeClass('d-none');
+        loadData();
+    }
+
+    window.retryRow = function(idx){
+        var r=_importResults[idx]; if(!r||r.status==='success') return;
+        var $tr=$('#impRow'+idx);
+        var mfg=$tr.find('.imp-mfg').val().trim();
+        var mc=$tr.find('.imp-code').val().trim();
+        if(!mfg){toastr.error('Engine name is required.');return;}
+        if(!mc){toastr.error('Motor code is required.');return;}
+        if(mfg.length>255){toastr.error('Engine name max 255 chars.');return;}
+        if(mc.length>255){toastr.error('Motor code max 255 chars.');return;}
+        var $b=$tr.find('button');btnLoading($b);
+        $.post(BASE_URL+'/vehicle-engines/import/single',{
+            manufacturer_engine:mfg, motor_code:mc,
+            start_year:$tr.find('.imp-sy').val(), end_year:$tr.find('.imp-ey').val(),
+            kw:$tr.find('.imp-kw').val(), hp:$tr.find('.imp-hp').val(),
+            variant_names:$tr.find('.imp-vn').val()
+        },function(res){
+            btnReset($b);
+            if(res.status===200||res.status===201){
+                $tr.removeClass('table-danger').addClass('table-success');
+                $tr.find('input').prop('disabled',true).addClass('bg-light');
+                $tr.find('td:eq(8)').html('<span class="text-success"><i class="bi bi-check-circle me-1"></i>OK</span>');
+                $tr.find('td:eq(9)').html('—');
+                r.status='success'; toastr.success(mc+' imported.'); loadData();
+            } else toastr.error(res.message||'Failed.');
+        });
+    };
+
+    // Save variants from modal
+    $('#btnSaveVariants').on('click', function() {
+        var uuid = $('#varEngineUuid').val();
+        var ids = $('#selVariantIds').val() || [];
+        var $btn = $(this); btnLoading($btn);
+        $.post(BASE_URL + '/vehicle-engines/' + uuid + '/update-variants', {
+            variant_ids: JSON.stringify(ids)
+        }, function(res) {
+            btnReset($btn);
+            if (res.status === 200) {
+                toastr.success(res.message || 'Variants updated.');
+                bootstrap.Modal.getOrCreateInstance($('#modalVariants')[0]).hide();
+                loadData();
+            } else {
+                toastr.error(res.message || 'Failed.');
+            }
+        }).fail(function() { btnReset($btn); toastr.error('Network error.'); });
+    });
+
+    $('#btnRetryAllErrors').on('click',function(){
+        _importResults.forEach(function(r,i){if(r.status==='error')retryRow(i);});
     });
 });

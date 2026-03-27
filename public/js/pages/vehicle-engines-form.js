@@ -164,6 +164,8 @@ $(function() {
         var mfgEngine = $('#fManufacturerEngine').val().trim();
         if (!motorCode) { toastr.error('Motor code is required.'); $('#fMotorCode').focus(); return; }
         if (!mfgEngine) { toastr.error('Manufacturer engine is required.'); $('#fManufacturerEngine').focus(); return; }
+        if (motorCode.length > 255) { toastr.error('Motor code max 255 characters.'); return; }
+        if (mfgEngine.length > 255) { toastr.error('Engine name max 255 characters.'); return; }
 
         var $btn = $('#btnSubmit');
 

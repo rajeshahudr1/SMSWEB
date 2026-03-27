@@ -69,7 +69,10 @@ $(function() {
                 return d;
             },
             processResults: function(res) { return { results: (res.data||[]).map(function(r) {
-                    return { id: r.id, text: r.name,
+                    var lbl = r.name;
+                    if (r.vehicle_make_name) lbl += ' — ' + r.vehicle_make_name;
+                    if (r.vehicle_type_name) lbl += ' (' + r.vehicle_type_name + ')';
+                    return { id: r.id, text: lbl,
                         vehicle_type_id: r.vehicle_type_id, vehicle_type_name: r.vehicle_type_name,
                         vehicle_make_id: r.vehicle_make_id, vehicle_make_name: r.vehicle_make_name,
                         vehicle_year_id: r.vehicle_year_id, vehicle_year_name: r.vehicle_year_name };
@@ -240,6 +243,7 @@ $(function() {
         var nm = $('#fName').val().trim();
         if (!nm) { toastr.error('Variant name is required.'); $('#fName').focus(); return; }
         if (nm.length < 2) { toastr.error('Name must be at least 2 characters.'); return; }
+        if (nm.length > 255) { toastr.error('Name must not exceed 255 characters.'); return; }
         if (!$('#selVehicleType').val()) { toastr.error('Vehicle Type is required.'); return; }
         if (!$('#selVehicleMake').val()) { toastr.error('Vehicle Make is required.'); return; }
         if (!$('#selVehicleModel').val()) { toastr.error('Vehicle Model is required.'); return; }

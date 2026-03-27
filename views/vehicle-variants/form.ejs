@@ -56,7 +56,7 @@ if (isEdit) { uploadedImgUrl = rec.uploaded_image_url || ''; externalImgUrl = re
         <div class="row g-3">
           <div class="col-md-12">
             <label class="form-label fw-medium">Variant Name <span class="text-danger">*</span></label>
-            <input type="text" name="name" id="fName" class="form-control" required autofocus value="<%= isEdit ? (rec.name||'') : '' %>" placeholder="e.g. 1.5 Turbo MT, 2.0 Diesel AT"/>
+            <input type="text" name="name" id="fName" class="form-control" required maxlength="255" autofocus value="<%= isEdit ? (rec.name||'') : '' %>" placeholder="e.g. 1.5 Turbo MT, 2.0 Diesel AT"/>
           </div>
           <div class="col-md-12">
             <label class="form-label fw-medium">External Image URL</label>

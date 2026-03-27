@@ -1,3 +1,4 @@
-manufacturer_engine,motor_code,start_year,end_year,kw,hp
-"2.0 TSI","CZPA",2018,2024,140,190
-"1.5 TDI","DADA",2020,2025,85,116
+manufacturer_engine,motor_code,start_year,end_year,kw,hp,variant_names
+"2.0 TSI","CZPA",2018,2024,140,190,"1.5 Turbo MT;2.0 Diesel AT"
+"1.5 TDI","DADA",2020,2025,85,116,"1.5L Petrol MT"
+"3.0 V6","DCPC",2019,2024,250,340,

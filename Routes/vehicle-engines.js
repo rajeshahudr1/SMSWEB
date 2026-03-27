@@ -13,6 +13,7 @@ router.post('/import',                 requirePermission('import_vehicle_engines
 router.post('/import/single',          requirePermission('import_vehicle_engines'), Ctrl.importSingleRow);
 router.get('/ai-config',               Ctrl.aiConfig);
 router.post('/translate',              Ctrl.translate);
+router.post('/:uuid/update-variants', requirePermission('edit_vehicle_engines'), Ctrl.updateVariants);
 router.post('/bulk-action',            requirePermission('edit_vehicle_engines'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_vehicle_engines'),    Ctrl.create);
 router.post('/',                       requirePermission('add_vehicle_engines'),    Ctrl.store);

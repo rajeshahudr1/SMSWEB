@@ -66,6 +66,10 @@ exports.toggleStatus = async (req, res) => { res.json(await api.patch('/vehicle-
 exports.recover   = async (req, res) => { res.json(await api.post('/vehicle-engines/' + req.params.uuid + '/recover', {}, req.session.token)); };
 exports.bulkAction = async (req, res) => { res.json(await api.post('/vehicle-engines/bulk-action', req.body, req.session.token)); };
 
+exports.updateVariants = async (req, res) => {
+    res.json(await api.patch('/vehicle-engines/' + req.params.uuid + '/variants', req.body, req.session.token));
+};
+
 exports.importSingleRow = async (req, res) => { res.json(await api.post('/vehicle-engines/import/single', req.body, req.session.token)); };
 
 exports.exportData = async (req, res) => {

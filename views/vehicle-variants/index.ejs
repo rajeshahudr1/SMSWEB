@@ -270,5 +270,11 @@ var isSuperAdmin = user && user.is_super_admin;
 <div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div>
 </div></div></div>
 
+
+<style>
+  /* Fix dropdown clipping inside table-responsive scroll */
+  .table-responsive { overflow: clip visible !important; }
+  @supports not (overflow: clip visible) { .table-responsive { overflow: visible !important; } }
+</style>
 <script>window._IS_SUPER = <%= isSuperAdmin ? 'true' : 'false' %>;</script>
 <% block('scripts', '<script src="/js/pages/vehicle-variants.js"></script>') %>

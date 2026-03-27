@@ -50,12 +50,12 @@ var existingVariants = (rec && rec.variants) ? rec.variants : [];
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label fw-medium"><%- t('vehicle_engines.manufacturer_engine') %> <span class="text-danger">*</span></label>
-            <input type="text" name="manufacturer_engine" id="fManufacturerEngine" class="form-control" required autofocus value="<%= isEdit ? (rec.manufacturer_engine||'') : '' %>" placeholder="<%- t('vehicle_engines.manufacturer_engine_ph') %>"/>
+            <input type="text" name="manufacturer_engine" maxlength="255" id="fManufacturerEngine" class="form-control" required autofocus value="<%= isEdit ? (rec.manufacturer_engine||'') : '' %>" placeholder="<%- t('vehicle_engines.manufacturer_engine_ph') %>"/>
             <div class="form-hint"><%- t('vehicle_engines.manufacturer_engine_hint') %></div>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-medium"><%- t('vehicle_engines.motor_code') %> <span class="text-danger">*</span></label>
-            <input type="text" name="motor_code" id="fMotorCode" class="form-control" required value="<%= isEdit ? (rec.motor_code||'') : '' %>" placeholder="<%- t('vehicle_engines.motor_code_ph') %>"/>
+            <input type="text" name="motor_code" maxlength="255" id="fMotorCode" class="form-control" required value="<%= isEdit ? (rec.motor_code||'') : '' %>" placeholder="<%- t('vehicle_engines.motor_code_ph') %>"/>
             <div class="form-hint"><%- t('vehicle_engines.motor_code_hint') %></div>
           </div>
         </div>
