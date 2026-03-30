@@ -33,11 +33,13 @@ var isSuperAdmin = user && user.is_super_admin;
 
 <!-- Summary Cards -->
 <div class="row g-3 mb-3" id="summaryRow">
+  <% if ((permissions || []).indexOf('view_activity_logs') !== -1) { %>
   <div class="col-6 col-lg-3">
     <div class="card card-sm shadow-sm border-start border-primary border-3">
       <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;"><%- t('dash.activity', 'Activity') %></div><div class="h2 mb-0 mt-1" id="todayTotal">–</div></div><div class="rounded-circle bg-primary-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-lightning-fill text-primary" style="font-size:20px;"></i></div></div></div>
     </div>
   </div>
+  <% } %>
   <div class="col-6 col-lg-3" id="cardUsers">
     <div class="card card-sm shadow-sm border-start border-success border-3">
       <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;"><%- t('dash.users', 'Users') %></div><div class="h2 mb-0 mt-1" id="totalUsers">–</div></div><div class="rounded-circle bg-success-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-people-fill text-success" style="font-size:20px;"></i></div></div></div>
@@ -78,12 +80,14 @@ var isSuperAdmin = user && user.is_super_admin;
       <div class="card-body p-0" id="blockLocations"><div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div></div>
     </div>
   </div>
+  <% if ((permissions || []).indexOf('view_activity_logs') !== -1) { %>
   <div class="col-lg-8">
     <div class="card shadow-sm h-100">
       <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-bar-chart-fill me-2 text-primary"></i><%- t('dash.activity_chart', 'Activity Chart') %></div></div>
       <div class="card-body" style="height:280px;"><canvas id="activityChart"></canvas></div>
     </div>
   </div>
+  <% } %>
 </div>
 
 <script>

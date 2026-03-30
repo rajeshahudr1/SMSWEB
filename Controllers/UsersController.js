@@ -20,7 +20,12 @@ exports.index = async (req, res) => {
             { name: 'Users',     url: '/users' },
         ],
         roles: Array.isArray(roles) ? roles : [],
+        is_super_admin: !!(req.session.user && req.session.user.is_super_admin),
     });
+};
+
+exports.organizations = async (req, res) => {
+    res.json(await api.get('/users/organizations', req.session.token));
 };
 
 // ── Paginate (POST — AJAX from users.js) ─────────────────
@@ -104,14 +109,17 @@ exports.bulkAction = async (req, res) => {
 
 // ── Create (offcanvas form page) ────────────────────────────
 exports.create = async (req, res) => {
-    const [roles, countries] = await Promise.all([
+    const isSA = !!(req.session.user && req.session.user.is_super_admin);
+    const [roles, countries, orgsResult] = await Promise.all([
         getRoles(req.session.token),
         api.get('/locations/countries', req.session.token).then(r => r.status === 200 ? r.data : []),
+        isSA ? api.get('/users/organizations', req.session.token) : Promise.resolve({ data: [] }),
     ]);
     res.render('users/form', {
         page_title: 'Add User', activeLink: 'users',
         breadcrumbs: [{ name:'Dashboard',url:'/dashboard'},{name:'Users',url:'/users'},{name:'Add User',url:''}],
         user: null, roles, countries,
+        is_super_admin: isSA, organizations: orgsResult.data || [],
     });
 };
 
@@ -123,16 +131,19 @@ exports.viewData = async (req, res) => {
 
 // ── Edit form ────────────────────────────────────────────────
 exports.edit = async (req, res) => {
-    const [userResult, roles, countries] = await Promise.all([
+    const isSA = !!(req.session.user && req.session.user.is_super_admin);
+    const [userResult, roles, countries, orgsResult] = await Promise.all([
         api.get('/users/' + req.params.uuid, req.session.token),
         getRoles(req.session.token),
         api.get('/locations/countries', req.session.token).then(r => r.status === 200 ? r.data : []),
+        isSA ? api.get('/users/organizations', req.session.token) : Promise.resolve({ data: [] }),
     ]);
     if (userResult.status !== 200) return res.send('<div class="alert alert-danger m-3">User not found.</div>');
     res.render('users/form', {
         page_title: 'Edit User', activeLink: 'users',
         breadcrumbs: [{ name:'Dashboard',url:'/dashboard'},{name:'Users',url:'/users'},{name:'Edit User',url:''}],
         user: userResult.data, roles, countries,
+        is_super_admin: isSA, organizations: orgsResult.data || [],
     });
 };
 

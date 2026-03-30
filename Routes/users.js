@@ -22,6 +22,7 @@ const upload = multer({
 router.use(requireLogin);
 
 // ── List + data ──
+router.get( '/organizations',           requirePermission('view_users'),   Users.organizations);
 router.get( '/',                       requirePermission('view_users'),   Users.index);
 router.post('/paginate',               requirePermission('view_users'),   Users.paginate);
 

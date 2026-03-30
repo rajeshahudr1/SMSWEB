@@ -76,9 +76,7 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
         h+='<div class="text-center mb-3"><h4 class="mb-1 font-monospace">'+H.esc(rec.motor_code||'')+'</h4>';
         h+='<div class="text-muted">'+H.esc(rec.manufacturer_engine||'')+'</div>';
         h+='<div class="mt-1">'+(parseInt(rec.status)?'<span class="badge bg-success-lt">'+T('general.active','Active')+'</span>':'<span class="badge bg-danger-lt">'+T('general.inactive','Inactive')+'</span>');
-        if(rec.is_global)h+=' <span class="badge bg-azure-lt">Global</span>';
         h+='</div>';
-        if(rec.company_name)h+='<div class="text-muted small mt-1"><i class="bi bi-building me-1"></i>'+H.esc(rec.company_name)+'</div>';
         h+='</div>';
 
         // Detail table
@@ -90,7 +88,6 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
         h+='<tr><td class="text-muted fw-medium"><i class="bi bi-calendar-check me-1"></i>End Year</td><td>'+(rec.end_year||'<span class="text-muted">—</span>')+'</td></tr>';
         h+='<tr><td class="text-muted fw-medium"><i class="bi bi-lightning me-1"></i>KW (Kilowatts)</td><td>'+(rec.kw?'<strong>'+rec.kw+'</strong> kW':'<span class="text-muted">—</span>')+'</td></tr>';
         h+='<tr><td class="text-muted fw-medium"><i class="bi bi-speedometer me-1"></i>HP (Horsepower)</td><td>'+(rec.hp?'<strong>'+rec.hp+'</strong> hp':'<span class="text-muted">—</span>')+'</td></tr>';
-        h+='<tr><td class="text-muted fw-medium"><i class="bi bi-building me-1"></i>Company</td><td>'+H.esc(rec.company_name||'—')+'</td></tr>';
         h+='</tbody></table></div>';
 
         // Variants with details

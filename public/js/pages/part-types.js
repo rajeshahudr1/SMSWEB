@@ -67,9 +67,7 @@ function viewPT(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py-
         var up=pt.uploaded_image_url||'',ext=pt.image_full_url||'';
         var h='<div class="p-4"><div class="text-center mb-4"><h4 class="mb-1">'+H.esc(pt.part_name||'')+'</h4>';
         h+='<div>'+(parseInt(pt.status)?'<span class="badge bg-success-lt">'+T('general.active','Active')+'</span>':'<span class="badge bg-danger-lt">'+T('general.inactive','Inactive')+'</span>');
-        if(pt.is_global)h+=' <span class="badge bg-azure-lt">Global</span>';
         h+='</div>';
-        if(pt.company_name)h+='<div class="text-muted small mt-1"><i class="bi bi-building me-1"></i>'+H.esc(pt.company_name)+'</div>';
         h+='</div>';
         /* Both images */
         if(up||ext){h+='<div class="row g-2 mb-3">';

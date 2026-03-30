@@ -173,6 +173,20 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
             </select>
           </div>
 
+          <!-- Module Language -->
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-semibold"><%- t('settings.module_language', 'Module Language') %></label>
+            <select class="form-select select2" id="selModuleLanguage" name="module_language">
+              <% (moduleLanguages || []).forEach(function(lng){ %>
+              <option value="<%- lng.code %>"
+                <%- (s.module_language === lng.code || (!s.module_language && lng.is_default)) ? 'selected' : '' %>>
+                <%- lng.flag || '' %> <%- lng.native_name || lng.name %>
+              </option>
+              <% }); %>
+            </select>
+            <div class="form-hint"><%- t('settings.module_language_hint', 'Controls the language used for dropdown lists and module data.') %></div>
+          </div>
+
           <!-- Date Format -->
           <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.date_format') %></label>
@@ -328,6 +342,43 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
             </button>
           </div>
 
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (user && (user.is_super_admin || user.is_org_admin)) { %>
+    <!-- ── Tax Configuration (Org Admin Only) ──────────────────── -->
+    <div class="card mb-4" id="taxConfigCard">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="bi bi-receipt me-2 text-primary"></i>
+          Tax Configuration
+        </div>
+        <div class="card-options">
+          <span class="badge bg-info-lt" style="font-size:10px;"><i class="bi bi-shield-lock me-1"></i>Admin Only</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">Configure tax types and percentages for your company. Based on your country's tax structure (GST, VAT, etc.).</p>
+
+        <div id="taxRows">
+          <div class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddTax">
+            <i class="bi bi-plus-lg me-1"></i>Add Tax
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnLoadTemplate">
+            <i class="bi bi-magic me-1"></i>Load Country Template
+          </button>
+        </div>
+
+        <div class="text-end mt-3">
+          <button type="button" class="btn btn-primary" id="btnSaveTax" onclick="saveTaxConfig()">
+            <i class="bi bi-floppy me-1"></i>Save Tax Configuration
+          </button>
         </div>
       </div>
     </div>

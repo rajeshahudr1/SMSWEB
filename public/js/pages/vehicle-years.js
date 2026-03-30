@@ -55,9 +55,7 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
         var rec=res.data.record||res.data||{};
         var h='<div class="p-4 text-center"><h2 class="mb-2">'+rec.year+'</h2>';
         h+='<div>'+(parseInt(rec.status)?'<span class="badge bg-success-lt">'+T('general.active','Active')+'</span>':'<span class="badge bg-danger-lt">'+T('general.inactive','Inactive')+'</span>');
-        if(rec.is_global)h+=' <span class="badge bg-azure-lt">Global</span>';
         h+='</div>';
-        if(rec.company_name)h+='<div class="text-muted small mt-1"><i class="bi bi-building me-1"></i>'+H.esc(rec.company_name)+'</div>';
         h+='<div class="border-top mt-3 pt-3 text-start"><div class="mb-1"><span class="text-muted small">Created:</span> '+smsFormatDateTime(rec.created_at)+'</div>';
         h+='<div><span class="text-muted small">Updated:</span> '+smsFormatDateTime(rec.updated_at)+'</div></div></div>';
         $b.html(h);

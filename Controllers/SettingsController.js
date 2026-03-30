@@ -5,9 +5,10 @@ const i18n = require('../helpers/i18n');
 
 // ── Show settings page ────────────────────────────
 exports.index = async (req, res) => {
-    const [result, aiResult] = await Promise.all([
+    const [result, aiResult, langResult] = await Promise.all([
         api.get('/settings', req.session.token),
         api.get('/settings/ai-config', req.session.token),
+        api.get('/master-languages/active', req.session.token),
     ]);
 
     res.render('settings/index', {
@@ -20,6 +21,7 @@ exports.index = async (req, res) => {
         userSettings:       (result.status === 200) ? result.data : req.session.settings || {},
         aiConfig:           (aiResult.status === 200) ? aiResult.data : {},
         supportedLanguages: await i18n.fetchSupportedLanguages(),
+        moduleLanguages:    (langResult.status === 200) ? langResult.data : [],
     });
 };
 
@@ -105,4 +107,12 @@ exports.saveAiConfig = async (req, res) => {
 exports.validateAiKey = async (req, res) => {
     const result = await api.post('/settings/ai-validate', req.body, req.session.token);
     res.json(result);
+};
+
+// Tax Configuration
+exports.getTaxConfig = async (req, res) => {
+    res.json(await api.get('/settings/tax-config', req.session.token));
+};
+exports.saveTaxConfig = async (req, res) => {
+    res.json(await api.post('/settings/tax-config', req.body, req.session.token));
 };

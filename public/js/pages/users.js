@@ -8,13 +8,15 @@ var _sort  = { field: 'created_at', dir: 'desc' };
 var _sel   = [];
 
 function _filters() {
-    return {
+    var f = {
         page: _page, per_page: _pp,
         search:     $('#searchInput').val().trim(),
         role_id:    $('#filterRole').val(),
         status:     $('#filterStatus').val(),
         sort_field: _sort.field, sort_dir: _sort.dir,
     };
+    if (typeof IS_SUPER !== 'undefined' && IS_SUPER && $('#filterCompany').length) f.company_id = $('#filterCompany').val();
+    return f;
 }
 
 function ava(name, img) {
@@ -339,19 +341,31 @@ function _initSelect2() {
 /* ══════════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════════ */
+function _loadOrgs() {
+    if (typeof IS_SUPER === 'undefined' || !IS_SUPER || !$('#filterCompany').length) return;
+    $.get(BASE_URL + '/users/organizations', function(res) {
+        if (!res || res.status !== 200) return;
+        var h = '<option value="all">' + T('general.companies','All Companies') + '</option>';
+        (res.data || []).forEach(function(o) { h += '<option value="' + o.id + '">' + H.esc(o.company_name) + '</option>'; });
+        $('#filterCompany').html(h);
+    });
+}
+
 $(function() {
     _pp = smsInitPerPage('#perPageSel');
     _initSelect2();
+    _loadOrgs();
     loadUsers();
 
     var st;
     $('#searchInput').on('input', function() { clearTimeout(st); st = setTimeout(function() { _page = 1; loadUsers(); }, 380); });
-    $(document).on('change', '#filterRole, #filterStatus', function() { _page = 1; loadUsers(); });
+    $(document).on('change', '#filterRole, #filterStatus, #filterCompany', function() { _page = 1; loadUsers(); });
     $('#perPageSel').on('change', function() { var v = $(this).val(); _pp = (v === 'all') ? 99999 : (parseInt(v) || 15); _page = 1; loadUsers(); });
     $('#btnClearFilters').on('click', function() {
         $('#searchInput').val('');
         try { $('#filterRole').val('').trigger('change.select2'); } catch(e) { $('#filterRole').val(''); }
         try { $('#filterStatus').val('').trigger('change.select2'); } catch(e) { $('#filterStatus').val(''); }
+        if ($('#filterCompany').length) $('#filterCompany').val('all');
         _page = 1; loadUsers();
     });
 

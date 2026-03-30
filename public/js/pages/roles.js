@@ -7,12 +7,14 @@ var _pp   = 15;
 var _sort = { field: 'name', dir: 'asc' };
 
 function _filters() {
-    return {
+    var f = {
         page: _page, per_page: _pp,
         search: $('#searchInput').val().trim(),
         status: $('#filterStatus').val(),
         sort_field: _sort.field, sort_dir: _sort.dir,
     };
+    if (typeof IS_SUPER !== 'undefined' && IS_SUPER && $('#filterCompany').length) f.company_id = $('#filterCompany').val();
+    return f;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -205,9 +207,20 @@ function _initSelect2() {
 /* ══════════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════════ */
+function _loadOrgs() {
+    if (typeof IS_SUPER === 'undefined' || !IS_SUPER || !$('#filterCompany').length) return;
+    $.get(BASE_URL + '/roles/organizations', function(res) {
+        if (!res || res.status !== 200) return;
+        var h = '<option value="all">' + T('general.companies','All Companies') + '</option>';
+        (res.data || []).forEach(function(o) { h += '<option value="' + o.id + '">' + H.esc(o.company_name) + '</option>'; });
+        $('#filterCompany').html(h);
+    });
+}
+
 $(function() {
     _pp = smsInitPerPage('#perPageSel');
     _initSelect2();
+    _loadOrgs();
     loadRoles();
 
     /* Search debounce */
@@ -218,7 +231,7 @@ $(function() {
     });
 
     /* Filter change */
-    $(document).on('change', '#filterStatus', function() { _page = 1; loadRoles(); });
+    $(document).on('change', '#filterStatus, #filterCompany', function() { _page = 1; loadRoles(); });
 
     /* Per page — handle "all" */
     $('#perPageSel').on('change', function() {
@@ -232,6 +245,7 @@ $(function() {
     $('#btnClearFilters').on('click', function() {
         $('#searchInput').val('');
         try { $('#filterStatus').val('').trigger('change.select2'); } catch (e) { $('#filterStatus').val(''); }
+        if ($('#filterCompany').length) $('#filterCompany').val('all');
         _page = 1;
         loadRoles();
     });

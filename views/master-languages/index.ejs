@@ -26,6 +26,14 @@
           <option value="0"><%- t('general.inactive') %></option>
         </select>
       </div>
+      <% if (typeof is_super_admin !== 'undefined' && is_super_admin) { %>
+      <div class="col-6 col-sm-3 col-md-2">
+        <select class="form-select form-select-sm" id="filterCompany">
+          <option value=""><%- t('general.companies', 'Companies') %></option>
+          <option value="global"><%- t('general.global_super_admin', 'Global (Super Admin)') %></option>
+        </select>
+      </div>
+      <% } %>
       <div class="col-auto">
         <button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button>
       </div>
@@ -41,6 +49,9 @@
           <th class="sortable" data-field="name"><%- t('master_lang.name') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
           <th class="sortable" data-field="code"><%- t('master_lang.code') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
           <th class="d-none d-md-table-cell"><%- t('master_lang.native_name') %></th>
+          <% if (typeof is_super_admin !== 'undefined' && is_super_admin) { %>
+          <th class="d-none d-md-table-cell"><%- t('general.company', 'Company') %></th>
+          <% } %>
           <th><%- t('master_lang.default') %></th>
           <th><%- t('master_lang.sort_order') %></th>
           <th><%- t('general.status') %></th>
@@ -70,6 +81,15 @@
       <form id="frmLang" novalidate>
         <div class="modal-body">
           <input type="hidden" id="editUuid" value=""/>
+          <% if (typeof is_super_admin !== 'undefined' && is_super_admin) { %>
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-building me-1 text-info"></i><%- t('general.company', 'Company') %></label>
+            <select class="form-select" id="fCompany">
+              <option value=""><%- t('general.global_super_admin', 'Global (Super Admin)') %></option>
+            </select>
+            <div class="form-hint"><%- t('general.company_hint', 'Select which company this record belongs to.') %></div>
+          </div>
+          <% } %>
           <div class="mb-3 pb-3 border-bottom" id="ddlWrap">
             <label class="form-label fw-medium"><i class="bi bi-list-check me-1 text-info"></i><%- t('master_lang.select_available') %></label>
             <select class="form-select" id="ddlAvailable" style="width:100%;"><option value="">— <%- t('master_lang.select_ph') %> —</option></select>
@@ -121,4 +141,5 @@
 
 <% include ../partials/usage-modal %>
 
+<script>var IS_SUPER=<%= (typeof is_super_admin !== 'undefined' && is_super_admin) ? 'true' : 'false' %>;</script>
 <% block('scripts', '<script src="/js/pages/master-languages.js"></script>') %>

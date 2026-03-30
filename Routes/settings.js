@@ -19,4 +19,8 @@ router.get( '/ai-config',     Settings.getAiConfig);
 router.post('/ai-config',     Settings.saveAiConfig);
 router.post('/ai-validate',   Settings.validateAiKey);
 
+// Tax Configuration
+router.get( '/tax-config',    Settings.getTaxConfig);
+router.post('/tax-config',    Settings.saveTaxConfig);
+
 module.exports = router;

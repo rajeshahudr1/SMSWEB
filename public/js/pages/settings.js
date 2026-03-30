@@ -330,3 +330,76 @@ window.saveAiConfig = function () {
         }
     });
 };
+
+/* ══════════════════════════════════════════════════════
+   TAX CONFIGURATION
+   ══════════════════════════════════════════════════════ */
+var _taxTemplates = {};
+var _taxCountryCode = null;
+
+function taxRowHtml(t) {
+    var name = (t && t.tax_name) || '';
+    var pct  = (t && t.percentage !== undefined) ? t.percentage : 0;
+    var on   = (t && t.is_enabled !== false) ? true : false;
+    return '<div class="row g-2 align-items-center mb-2 tax-row">' +
+        '<div class="col-auto"><label class="form-check mb-0"><input type="checkbox" class="form-check-input tax-enabled" ' + (on ? 'checked' : '') + '/></label></div>' +
+        '<div class="col"><input type="text" class="form-control form-control-sm tax-name" value="' + H.esc(name) + '" placeholder="Tax name (e.g. GST, VAT)"/></div>' +
+        '<div class="col-3"><div class="input-group input-group-sm"><input type="number" class="form-control tax-pct" value="' + pct + '" min="0" max="100" step="0.01" placeholder="0.00"/><span class="input-group-text">%</span></div></div>' +
+        '<div class="col-auto"><button type="button" class="btn btn-sm btn-ghost-danger" onclick="$(this).closest(\'.tax-row\').remove();" title="Remove"><i class="bi bi-trash3"></i></button></div>' +
+        '</div>';
+}
+
+function loadTaxConfig() {
+    if (!$('#taxConfigCard').length) return;
+    $.get(BASE_URL + '/settings/tax-config', function(res) {
+        if (!res || res.status !== 200) { $('#taxRows').html('<div class="text-danger small">Failed to load.</div>'); return; }
+        var d = res.data || {};
+        _taxTemplates = d.templates || {};
+        _taxCountryCode = d.country_code || null;
+        var taxes = d.taxes || [];
+        if (!taxes.length) {
+            $('#taxRows').html('<div class="text-muted small text-center py-2">No tax types configured. Click "Add Tax" or "Load Country Template".</div>');
+            return;
+        }
+        var h = '';
+        taxes.forEach(function(t) { h += taxRowHtml(t); });
+        $('#taxRows').html(h);
+    });
+}
+
+function saveTaxConfig() {
+    var taxes = [];
+    $('.tax-row').each(function() {
+        var name = $(this).find('.tax-name').val().trim();
+        if (!name) return;
+        var pct = parseFloat($(this).find('.tax-pct').val());
+        if (isNaN(pct) || pct < 0 || pct > 100) { toastr.error(name + ': percentage must be 0-100'); taxes = null; return false; }
+        taxes.push({ tax_name: name, percentage: pct, is_enabled: $(this).find('.tax-enabled').is(':checked') });
+    });
+    if (!taxes) return;
+    var $btn = $('#btnSaveTax');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+    $.ajax({ url: BASE_URL + '/settings/tax-config', type: 'POST', contentType: 'application/json', data: JSON.stringify({ taxes: taxes }), success: function(r) {
+        $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i>Save Tax Configuration');
+        if (r.status === 200) toastr.success(r.message);
+        else toastr.error(r.message);
+    }, error: function() { $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i>Save Tax Configuration'); toastr.error('Network error.'); } });
+}
+
+$(function() {
+    loadTaxConfig();
+    $('#btnAddTax').on('click', function() {
+        var $rows = $('#taxRows');
+        if ($rows.find('.text-muted, .text-danger').length) $rows.html('');
+        $rows.append(taxRowHtml({}));
+    });
+    $('#btnLoadTemplate').on('click', function() {
+        var code = _taxCountryCode || 'IN';
+        var tmpl = _taxTemplates[code] || _taxTemplates['_DEFAULT'] || [];
+        if (!tmpl.length) { toastr.info('No template for country: ' + code); return; }
+        var h = '';
+        tmpl.forEach(function(t) { h += taxRowHtml({ tax_name: t.tax_name, percentage: t.percentage, is_enabled: true }); });
+        $('#taxRows').html(h);
+        toastr.info('Loaded ' + code + ' template with ' + tmpl.length + ' tax types. Review and save.');
+    });
+});

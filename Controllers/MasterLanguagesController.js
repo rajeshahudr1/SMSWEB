@@ -4,13 +4,18 @@ const api = require('../helpers/api');
 
 exports.index = async (req, res) => {
     res.render('master-languages/index', {
-        page_title:  'Master Languages',
+        page_title:  res.locals.t('master_lang.title', 'Master Languages'),
         activeLink:  'master-languages',
         breadcrumbs: [
-            { name: 'Dashboard', url: '/dashboard' },
-            { name: 'Master Languages', url: '/master-languages' },
+            { name: res.locals.t('nav.dashboard', 'Dashboard'), url: '/dashboard' },
+            { name: res.locals.t('master_lang.title', 'Master Languages'), url: '/master-languages' },
         ],
+        is_super_admin: !!(req.session.user && req.session.user.is_super_admin),
     });
+};
+
+exports.organizations = async (req, res) => {
+    res.json(await api.get('/master-languages/organizations', req.session.token));
 };
 
 exports.paginate = async (req, res) => {

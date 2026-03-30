@@ -40,6 +40,13 @@
           <option value="0"><%- t("users.inactive") %></option>
         </select>
       </div>
+      <% if (typeof is_super_admin !== 'undefined' && is_super_admin) { %>
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" id="filterCompany">
+          <option value="all"><%- t('general.companies', 'All Companies') %></option>
+        </select>
+      </div>
+      <% } %>
       <div class="col-auto">
         <button class="btn btn-sm btn-outline-secondary sms-filter-clear" id="btnClearFilters" title="<%- t('general.clear_filters', 'Clear all filters') %>">
           <i class="bi bi-x-lg"></i>
@@ -108,4 +115,5 @@
   </div>
 </div>
 
+<script>var IS_SUPER=<%= (typeof is_super_admin !== 'undefined' && is_super_admin) ? 'true' : 'false' %>;</script>
 <% block('scripts', '<link rel="stylesheet" href="/css/permissions.css"/><script src="/js/pages/users.js"></script>') %>

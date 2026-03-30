@@ -113,9 +113,7 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
         h+='<h4 class="mb-1">'+H.esc(rec.name||'')+'</h4>';
         if(rec.vehicle_type_name)h+='<div class="mb-1"><span class="badge bg-blue-lt">'+H.esc(rec.vehicle_type_name)+'</span></div>';
         h+='<div>'+(parseInt(rec.status)?'<span class="badge bg-success-lt">Active</span>':'<span class="badge bg-danger-lt">Inactive</span>');
-        if(rec.is_global)h+=' <span class="badge bg-azure-lt">Global</span>';
         h+='</div>';
-        if(rec.company_name)h+='<div class="text-muted small mt-1"><i class="bi bi-building me-1"></i>'+H.esc(rec.company_name)+'</div>';
         h+='</div>';
         if(trans.length){h+='<div class="border-top pt-3 mb-3"><div class="fw-medium mb-2"><i class="bi bi-translate me-1 text-primary"></i>Translations</div><div class="row g-2">';trans.forEach(function(tr){h+='<div class="col-6"><div class="border rounded p-2 small">'+(tr.flag?'<span class="me-1">'+tr.flag+'</span>':'')+tr.language_name+': <strong>'+H.esc(tr.name)+'</strong></div></div>';});h+='</div></div>';}
         h+='<div class="border-top pt-3"><div class="mb-1"><span class="text-muted small">Created:</span> '+smsFormatDateTime(rec.created_at)+'</div><div><span class="text-muted small">Updated:</span> '+smsFormatDateTime(rec.updated_at)+'</div></div></div>';

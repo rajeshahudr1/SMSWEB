@@ -171,8 +171,6 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
         h+='<div class="text-center mb-3">';
         h+='<h4 class="mb-1">'+H.esc(rec.name||'')+'</h4>';
         h+=(parseInt(rec.status)?'<span class="badge bg-success-lt">Active</span>':'<span class="badge bg-danger-lt">Inactive</span>');
-        if(rec.is_global)h+=' <span class="badge bg-azure-lt">Global</span>';
-        if(rec.company_name)h+='<div class="text-muted small mt-1"><i class="bi bi-building me-1"></i>'+H.esc(rec.company_name)+'</div>';
         h+='</div>';
 
         /* Both images — same as part-types */

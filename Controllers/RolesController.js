@@ -7,7 +7,12 @@ exports.index = async (req, res) => {
         page_title:  res.locals.t ? res.locals.t('roles.title') : 'Roles',
         activeLink:  'roles',
         breadcrumbs: [],
+        is_super_admin: !!(req.session.user && req.session.user.is_super_admin),
     });
+};
+
+exports.organizations = async (req, res) => {
+    res.json(await api.get('/roles/organizations', req.session.token));
 };
 
 exports.paginate = async (req, res) => {
@@ -34,28 +39,38 @@ exports.exportData = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-    const perms = await api.get('/permissions', req.session.token, { grouped: 1 });
+    const isSA = !!(req.session.user && req.session.user.is_super_admin);
+    const [perms, orgsResult] = await Promise.all([
+        api.get('/permissions', req.session.token, { grouped: 1 }),
+        isSA ? api.get('/roles/organizations', req.session.token) : Promise.resolve({ data: [] }),
+    ]);
     res.render('roles/form', {
         page_title:   'Add Role',
         activeLink:   'roles',
         breadcrumbs:  [],
         role:        null,
         permissions: (perms.status === 200) ? perms.data : [],
+        is_super_admin: isSA, organizations: orgsResult.data || [],
     });
 };
 
 exports.edit = async (req, res) => {
+    const isSA = !!(req.session.user && req.session.user.is_super_admin);
     const roleResult = await api.get('/roles/' + req.params.uuid, req.session.token);
     if (roleResult.status !== 200) {
         return res.send('<div class="alert alert-danger m-3">Role not found.</div>');
     }
-    const perms = await api.get('/permissions', req.session.token, { grouped: 1 });
+    const [perms, orgsResult] = await Promise.all([
+        api.get('/permissions', req.session.token, { grouped: 1 }),
+        isSA ? api.get('/roles/organizations', req.session.token) : Promise.resolve({ data: [] }),
+    ]);
     res.render('roles/form', {
         page_title:  'Edit Role',
         activeLink:  'roles',
         breadcrumbs: [],
         role:        roleResult.data,
         permissions: (perms.status === 200) ? perms.data : [],
+        is_super_admin: isSA, organizations: orgsResult.data || [],
     });
 };
 

@@ -30,6 +30,17 @@ var pageTitle  = isEdit ? t('users.edit', 'Edit User') : t('users.add', 'Add Use
       <div class="card-body">
         <div class="row g-3">
 
+          <% if (typeof is_super_admin !== 'undefined' && is_super_admin) { %>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><i class="bi bi-building me-1"></i><%- t('general.company', 'Company') %> <span class="text-danger">*</span></label>
+            <select name="company_id" id="selCompany" class="form-select" required>
+              <% (typeof organizations !== 'undefined' ? organizations : []).forEach(function(o) { %>
+              <option value="<%- o.id %>" <%- (isEdit && u.organization_id == o.id) ? 'selected' : '' %>><%- o.company_name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <% } %>
+
           <div class="col-md-6">
             <label class="form-label fw-medium"><%- t("form.full_name") %> <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control" required autofocus
@@ -66,9 +77,9 @@ var pageTitle  = isEdit ? t('users.edit', 'Edit User') : t('users.add', 'Add Use
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-medium"><%- t("users.role") %></label>
-            <select name="role_id" id="selRole" class="form-select" style="width:100%;">
-              <option value="">— <%- t('users.no_role', 'No Role') %> —</option>
+            <label class="form-label fw-medium"><%- t("users.role") %> <span class="text-danger">*</span></label>
+            <select name="role_id" id="selRole" class="form-select" required style="width:100%;">
+              <option value="">— <%- t('users.select_role', 'Select Role') %> —</option>
               <% if (typeof roles !== 'undefined') { roles.forEach(function(r){ %>
               <option value="<%- r.id %>" <%- isEdit && u.role_id==r.id ? 'selected':'' %>><%- r.name %></option>
               <% }) } %>
@@ -99,8 +110,8 @@ var pageTitle  = isEdit ? t('users.edit', 'Edit User') : t('users.add', 'Add Use
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="form-label fw-medium"><%- t("form.country") %></label>
-            <select name="country_id" id="sCountry" class="form-select" style="width:100%;">
+            <label class="form-label fw-medium"><%- t("form.country") %> <span class="text-danger">*</span></label>
+            <select name="country_id" id="sCountry" class="form-select" required style="width:100%;">
               <option value="">— <%- t('form.select_country', 'Select Country') %> —</option>
               <% if (typeof countries !== 'undefined') { countries.forEach(function(c){ %>
               <option value="<%- c.id %>"
@@ -109,14 +120,14 @@ var pageTitle  = isEdit ? t('users.edit', 'Edit User') : t('users.add', 'Add Use
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-medium"><%- t("form.state") %></label>
-            <select name="state_id" id="sState" class="form-select" style="width:100%;">
+            <label class="form-label fw-medium"><%- t("form.state") %> <span class="text-danger">*</span></label>
+            <select name="state_id" id="sState" class="form-select" required style="width:100%;">
               <option value="">— <%- t('form.select_state', 'Select State') %> —</option>
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-medium"><%- t("form.city") %></label>
-            <select name="city_id" id="sCity" class="form-select" style="width:100%;">
+            <label class="form-label fw-medium"><%- t("form.city") %> <span class="text-danger">*</span></label>
+            <select name="city_id" id="sCity" class="form-select" required style="width:100%;">
               <option value="">— <%- t('form.select_city', 'Select City') %> —</option>
             </select>
           </div>

@@ -177,10 +177,10 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
           <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.module_language', 'Module Language') %></label>
             <select class="form-select select2" id="selModuleLanguage" name="module_language">
-              <% (supportedLanguages || []).forEach(function(lng){ %>
+              <% (moduleLanguages || []).forEach(function(lng){ %>
               <option value="<%- lng.code %>"
-                <%- (s.module_language === lng.code || (!s.module_language && lng.code === 'en')) ? 'selected' : '' %>>
-                <%- lng.flag %> <%- lng.nativeName %>
+                <%- (s.module_language === lng.code || (!s.module_language && lng.is_default)) ? 'selected' : '' %>>
+                <%- lng.flag %> <%- lng.native_name || lng.name %>
               </option>
               <% }); %>
             </select>

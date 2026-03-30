@@ -7,6 +7,7 @@ const { requireLogin, requirePermission } = require('../Middlewares/auth');
 
 router.use(requireLogin);
 
+router.get( '/organizations', requirePermission('view_roles'),   Roles.organizations);
 router.get( '/',             requirePermission('view_roles'),   Roles.index);
 router.post('/paginate',     requirePermission('view_roles'),   Roles.paginate);
 router.get( '/export',                 requirePermission('view_roles'),   Roles.exportData);

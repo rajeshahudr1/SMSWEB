@@ -9,25 +9,46 @@ var assignedB2CIds = isEdit && r.b2c_permission_ids ? r.b2c_permission_ids.map(f
 var formAction  = isEdit ? '/roles/' + r.uuid : '/roles';
 var pageTitle   = isEdit ? t('roles.edit', 'Edit Role') : t('roles.add', 'Add Role');
 
-/* Split permissions by panel for B2B/B2C tabs */
-var b2bGroups = {};
-var b2cGroups = {};
+/* Section mapping — groups permissions by menu section */
+var SECTIONS = [
+    { key: 'system',     label: 'System',          icon: 'bi-gear',          groups: ['Dashboard', 'Settings', 'Profile'] },
+    { key: 'users',      label: 'User Management', icon: 'bi-people',        groups: ['Users', 'Roles', 'Permissions', 'Menus'] },
+    { key: 'languages',  label: 'Languages',       icon: 'bi-translate',     groups: ['Languages', 'Master Languages'] },
+    { key: 'parts',      label: 'Parts',           icon: 'bi-cpu',           groups: ['Part Types', 'Part Locations', 'Part Groups', 'Part Sides', 'Part Brands'] },
+    { key: 'vehicle',    label: 'Vehicle',          icon: 'bi-truck',         groups: ['Vehicle Categories', 'Vehicle Fuels', 'Vehicle Years', 'Vehicle Types', 'Vehicle Makes', 'Vehicle Models', 'Vehicle Variants', 'Vehicle Engines'] },
+    { key: 'location',   label: 'Location',         icon: 'bi-geo-alt',       groups: ['Countries', 'States', 'Cities'] },
+    { key: 'reports',    label: 'Reports',           icon: 'bi-bar-chart',     groups: ['Activity Logs'] },
+];
+
+/* Split permissions by panel for B2B/B2C tabs, organized by section */
+var b2bSections = [];
+var b2cSections = [];
 var b2bCount  = 0;
 var b2cCount  = 0;
 if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions).length) {
-    Object.keys(permissions).forEach(function(groupName) {
-        permissions[groupName].forEach(function(p) {
-            if (p.panel_type === 'b2b' || p.panel_type === 'both') {
-                if (!b2bGroups[groupName]) b2bGroups[groupName] = [];
-                b2bGroups[groupName].push(p);
-                b2bCount++;
-            }
-            if (p.panel_type === 'b2c' || p.panel_type === 'both') {
-                if (!b2cGroups[groupName]) b2cGroups[groupName] = [];
-                b2cGroups[groupName].push(p);
-                b2cCount++;
-            }
+    /* Also collect any groups not mapped to a section */
+    var mappedGroups = {};
+    SECTIONS.forEach(function(s) { s.groups.forEach(function(g) { mappedGroups[g] = true; }); });
+    var unmapped = Object.keys(permissions).filter(function(g) { return !mappedGroups[g]; });
+    if (unmapped.length) SECTIONS.push({ key: 'other', label: 'Other', icon: 'bi-three-dots', groups: unmapped });
+
+    SECTIONS.forEach(function(sec) {
+        var b2bGrps = {}, b2cGrps = {}, b2bC = 0, b2cC = 0;
+        sec.groups.forEach(function(groupName) {
+            if (!permissions[groupName]) return;
+            permissions[groupName].forEach(function(p) {
+                if (p.panel_type === 'b2b' || p.panel_type === 'both') {
+                    if (!b2bGrps[groupName]) b2bGrps[groupName] = [];
+                    b2bGrps[groupName].push(p); b2bC++; b2bCount++;
+                }
+                if (p.panel_type === 'b2c' || p.panel_type === 'both') {
+                    if (!b2cGrps[groupName]) b2cGrps[groupName] = [];
+                    b2cGrps[groupName].push(p); b2cC++; b2cCount++;
+                }
+            });
         });
+        if (b2bC) b2bSections.push({ key: sec.key, label: sec.label, icon: sec.icon, groups: b2bGrps, count: b2bC });
+        if (b2cC) b2cSections.push({ key: sec.key, label: sec.label, icon: sec.icon, groups: b2cGrps, count: b2cC });
     });
 }
 %>
@@ -54,6 +75,16 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
         </div>
       </div>
       <div class="card-body">
+        <% if (typeof is_super_admin !== 'undefined' && is_super_admin) { %>
+        <div class="mb-3">
+          <label class="form-label fw-medium"><i class="bi bi-building me-1"></i><%- t('general.company', 'Company') %> <span class="text-danger">*</span></label>
+          <select name="company_id" id="selCompany" class="form-select" required>
+            <% (typeof organizations !== 'undefined' ? organizations : []).forEach(function(o) { %>
+            <option value="<%- o.id %>" <%- (isEdit && r && r.organization_id == o.id) ? 'selected' : '' %>><%- o.company_name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <% } %>
         <div class="mb-3">
           <label class="form-label fw-medium"><%- t("roles.name") %> <span class="text-danger">*</span></label>
           <input type="text" name="name" class="form-control" required autofocus
@@ -126,34 +157,46 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
 
           <!-- B2B Tab -->
           <div class="tab-pane fade show active" id="tabB2B" role="tabpanel">
-            <% if (Object.keys(b2bGroups).length) { %>
-            <% Object.keys(b2bGroups).forEach(function(groupName){ %>
-            <div class="border-bottom">
-              <div class="d-flex align-items-center justify-content-between px-4 py-2 bg-light">
-                <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;"><%- groupName %></span>
+            <% if (b2bSections.length) { %>
+            <% b2bSections.forEach(function(sec){ %>
+            <!-- Section: <%- sec.label %> -->
+            <div class="border-bottom" style="border-left:3px solid var(--tblr-primary) !important;">
+              <div class="d-flex align-items-center justify-content-between px-4 py-2" style="background:var(--tblr-bg-surface-secondary);">
+                <span class="fw-bold small text-primary"><i class="bi <%- sec.icon %> me-2"></i><%- sec.label %> <span class="badge bg-primary-lt rounded-pill ms-1" style="font-size:10px;"><%- sec.count %></span></span>
                 <label class="form-check mb-0">
-                  <input type="checkbox" class="form-check-input group-toggle" data-group="b2b_<%- groupName %>"/>
-                  <span class="form-check-label small"><%- t('general.all', 'All') %></span>
+                  <input type="checkbox" class="form-check-input section-toggle" data-section="b2b_sec_<%- sec.key %>"/>
+                  <span class="form-check-label small fw-semibold"><%- t('btn.select_all', 'Select All') %></span>
                 </label>
               </div>
-              <div class="row g-0 px-4 py-2">
-                <% b2bGroups[groupName].forEach(function(p){
-                     var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
-                     var color  = aColor[p.action] || 'secondary';
-                %>
-                <div class="col-12 col-sm-6 col-lg-4 mb-2">
-                  <label class="form-check d-flex align-items-center gap-2 mb-0">
-                    <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
-                           name="b2b_permission_ids[]" value="<%- p.id %>" data-group="b2b_<%- groupName %>"
-                            <%- assignedB2BIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
-                    <span class="form-check-label" style="font-size:12.5px;">
-                      <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
-                      <%- p.display_name %>
-                    </span>
+              <% Object.keys(sec.groups).forEach(function(groupName){ %>
+              <div class="border-bottom border-light">
+                <div class="d-flex align-items-center justify-content-between px-4 py-1" style="background:rgba(0,0,0,.02);">
+                  <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;font-size:11px;"><%- groupName %></span>
+                  <label class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input group-toggle" data-group="b2b_<%- groupName %>" data-section="b2b_sec_<%- sec.key %>"/>
+                    <span class="form-check-label small"><%- t('general.all', 'All') %></span>
                   </label>
                 </div>
-                <% }) %>
+                <div class="row g-0 px-4 py-2">
+                  <% sec.groups[groupName].forEach(function(p){
+                       var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
+                       var color  = aColor[p.action] || 'secondary';
+                  %>
+                  <div class="col-12 col-sm-6 col-lg-4 mb-2">
+                    <label class="form-check d-flex align-items-center gap-2 mb-0">
+                      <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
+                             name="b2b_permission_ids[]" value="<%- p.id %>" data-group="b2b_<%- groupName %>" data-section="b2b_sec_<%- sec.key %>"
+                              <%- assignedB2BIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                      <span class="form-check-label" style="font-size:12.5px;">
+                        <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
+                        <%- p.display_name %>
+                      </span>
+                    </label>
+                  </div>
+                  <% }) %>
+                </div>
               </div>
+              <% }) %>
             </div>
             <% }) %>
             <% } else { %>
@@ -163,35 +206,45 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
 
           <!-- B2C Tab -->
           <div class="tab-pane fade" id="tabB2C" role="tabpanel">
-            <% if (Object.keys(b2cGroups).length) { %>
-            <% Object.keys(b2cGroups).forEach(function(groupName){ %>
-            <div class="border-bottom">
-              <div class="d-flex align-items-center justify-content-between px-4 py-2 bg-light">
-                <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;"><%- groupName %></span>
+            <% if (b2cSections.length) { %>
+            <% b2cSections.forEach(function(sec){ %>
+            <div class="border-bottom" style="border-left:3px solid var(--tblr-success) !important;">
+              <div class="d-flex align-items-center justify-content-between px-4 py-2" style="background:var(--tblr-bg-surface-secondary);">
+                <span class="fw-bold small text-success"><i class="bi <%- sec.icon %> me-2"></i><%- sec.label %> <span class="badge bg-success-lt rounded-pill ms-1" style="font-size:10px;"><%- sec.count %></span></span>
                 <label class="form-check mb-0">
-                  <!-- B2C group toggle -->
-                  <input type="checkbox" class="form-check-input group-toggle" data-group="b2c_<%- groupName %>"/>
-                  <span class="form-check-label small"><%- t('general.all', 'All') %></span>
+                  <input type="checkbox" class="form-check-input section-toggle" data-section="b2c_sec_<%- sec.key %>"/>
+                  <span class="form-check-label small fw-semibold"><%- t('btn.select_all', 'Select All') %></span>
                 </label>
               </div>
-              <div class="row g-0 px-4 py-2">
-                <% b2cGroups[groupName].forEach(function(p){
-                     var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
-                     var color  = aColor[p.action] || 'secondary';
-                %>
-                <div class="col-12 col-sm-6 col-lg-4 mb-2">
-                  <label class="form-check d-flex align-items-center gap-2 mb-0">
-                    <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
-                           name="b2c_permission_ids[]" value="<%- p.id %>" data-group="b2c_<%- groupName %>"
-                            <%- assignedB2CIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
-                    <span class="form-check-label" style="font-size:12.5px;">
-                      <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
-                      <%- p.display_name %>
-                    </span>
+              <% Object.keys(sec.groups).forEach(function(groupName){ %>
+              <div class="border-bottom border-light">
+                <div class="d-flex align-items-center justify-content-between px-4 py-1" style="background:rgba(0,0,0,.02);">
+                  <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;font-size:11px;"><%- groupName %></span>
+                  <label class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input group-toggle" data-group="b2c_<%- groupName %>" data-section="b2c_sec_<%- sec.key %>"/>
+                    <span class="form-check-label small"><%- t('general.all', 'All') %></span>
                   </label>
                 </div>
-                <% }) %>
+                <div class="row g-0 px-4 py-2">
+                  <% sec.groups[groupName].forEach(function(p){
+                       var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
+                       var color  = aColor[p.action] || 'secondary';
+                  %>
+                  <div class="col-12 col-sm-6 col-lg-4 mb-2">
+                    <label class="form-check d-flex align-items-center gap-2 mb-0">
+                      <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
+                             name="b2c_permission_ids[]" value="<%- p.id %>" data-group="b2c_<%- groupName %>" data-section="b2c_sec_<%- sec.key %>"
+                              <%- assignedB2CIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                      <span class="form-check-label" style="font-size:12.5px;">
+                        <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
+                        <%- p.display_name %>
+                      </span>
+                    </label>
+                  </div>
+                  <% }) %>
+                </div>
               </div>
+              <% }) %>
             </div>
             <% }) %>
             <% } else { %>
@@ -214,17 +267,34 @@ $(function(){
     var activeTab = $('#permTabs .nav-link.active').attr('data-bs-target');
     $(activeTab).find('.perm-check').prop('checked', true);
     $(activeTab).find('.group-toggle').prop('checked', true);
+    $(activeTab).find('.section-toggle').prop('checked', true);
   });
   $('#btnClearAll').on('click', function(){
     var activeTab = $('#permTabs .nav-link.active').attr('data-bs-target');
     $(activeTab).find('.perm-check').prop('checked', false);
     $(activeTab).find('.group-toggle').prop('checked', false);
+    $(activeTab).find('.section-toggle').prop('checked', false);
+  });
+
+  /* ── Section toggle — select/deselect all groups + perms in section ── */
+  $(document).on('change', '.section-toggle', function(){
+    var sec = $(this).data('section');
+    var checked = $(this).is(':checked');
+    $('.perm-check[data-section="'+sec+'"]').prop('checked', checked);
+    $('.group-toggle[data-section="'+sec+'"]').prop('checked', checked);
   });
 
   /* ── Group toggle — scoped by prefixed group name ── */
   $(document).on('change', '.group-toggle', function(){
     var g = $(this).data('group');
     $('.perm-check[data-group="'+g+'"]').prop('checked', $(this).is(':checked'));
+    // Update section toggle state
+    var sec = $(this).data('section');
+    if (sec) {
+      var allGroups = $('.group-toggle[data-section="'+sec+'"]');
+      var allChecked = allGroups.length === allGroups.filter(':checked').length;
+      $('.section-toggle[data-section="'+sec+'"]').prop('checked', allChecked);
+    }
   });
 
   /* ── Submit ── */
