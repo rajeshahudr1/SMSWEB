@@ -30,16 +30,16 @@ var displayImg = pt && pt.display_image_url ? pt.display_image_url : '';
     <% if (isSuperAdmin) { %>
     <div class="card shadow-sm mb-3">
       <div class="card-header py-2">
-        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div>
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i><%- t('general.company') %></div>
       </div>
       <div class="card-body">
         <select name="company_id" id="selCompany" class="form-select">
-          <option value="global" <%- (!isEdit || !pt.organization_id) ? 'selected' : '' %>>Global (Super Admin)</option>
+          <option value="global" <%- (!isEdit || !pt.organization_id) ? 'selected' : '' %>><%- t('general.global_super_admin') %></option>
           <% orgs.forEach(function(o) { %>
           <option value="<%- o.id %>" <%- (isEdit && pt.organization_id && String(pt.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
           <% }) %>
         </select>
-        <div class="form-hint mt-1">Select which company this part type belongs to. "Global" means all companies can see it.</div>
+        <div class="form-hint mt-1"><%- t('general.company_hint') %></div>
       </div>
     </div>
     <% } %>

@@ -23,8 +23,8 @@ var isSuperAdmin = user && user.is_super_admin;
       <% if (isSuperAdmin && orgs.length) { %>
       <div class="col-12 col-sm-4 col-lg-2">
         <select class="form-select form-select-sm" id="filterCompany">
-          <option value="all"><%- t('general.all') %> Companies</option>
-          <option value="global">Global (Super Admin)</option>
+          <option value="all"><%- t('general.all_companies', 'All Companies') %></option>
+          <option value="global"><%- t('general.global_super_admin', 'Global (Super Admin)') %></option>
           <% orgs.forEach(function(o) { %><option value="<%- o.id %>"><%- o.company_name %></option><% }) %>
         </select>
       </div><% } %>
@@ -33,7 +33,7 @@ var isSuperAdmin = user && user.is_super_admin;
         <select class="form-select form-select-sm" id="filterStatus"><option value=""><%- t('general.all_status') %></option><option value="1"><%- t('general.active') %></option><option value="0"><%- t('general.inactive') %></option></select>
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
-        <select class="form-select form-select-sm" id="filterDeleted"><option value="">Active Records</option><option value="only">Deleted Only</option><option value="all">All Records</option></select>
+        <select class="form-select form-select-sm" id="filterDeleted"><option value=""><%- t('general.active_records', 'Active Records') %></option><option value="only"><%- t('general.deleted_only', 'Deleted Only') %></option><option value="all"><%- t('general.all_records', 'All Records') %></option></select>
       </div>
       <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button></div>
     </div>
@@ -44,10 +44,10 @@ var isSuperAdmin = user && user.is_super_admin;
     <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
       <span class="fw-semibold"><span id="bulkCount">0</span> <%- t('general.selected_count') %></span>
       <div class="ms-auto d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i>Deactivate</button>
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i>Activate</button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i><%- t('bulk.deactivate', 'Deactivate') %></button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i><%- t('bulk.activate', 'Activate') %></button>
         <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')"><i class="bi bi-trash3 me-1"></i><%- t('btn.delete') %></button>
-        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i>Recover</button>
+        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i><%- t('bulk.recover', 'Recover') %></button>
         <button class="btn btn-sm btn-outline-light" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
       </div>
     </div>
@@ -82,7 +82,7 @@ var isSuperAdmin = user && user.is_super_admin;
   <!-- Step 1: File upload -->
   <div id="importStep1">
     <div class="sms-import-instructions">
-      <h6><i class="bi bi-info-circle me-1"></i>Import Instructions — Vehicle Fuels</h6>
+      <h6><i class="bi bi-info-circle me-1"></i><%- t('vehicle_fuels.import_instructions', 'Import Instructions — Vehicle Fuels') %></h6>
       <div class="sms-import-columns">
         <span class="col-badge required"><code>name</code></span>
         <span class="col-badge optional"><code>image_url</code></span>
@@ -91,12 +91,12 @@ var isSuperAdmin = user && user.is_super_admin;
         <span class="col-badge optional"><code>... any language</code></span>
       </div>
       <ul class="sms-import-notes mb-0">
-        <li><strong>name</strong> <span class="text-danger">(required)</span> — The vehicle fuel name in default language</li>
-        <li><strong>image_url</strong> — External image URL (optional)</li>
-        <li><strong>Language columns</strong> — Add any language as column header using name (e.g. <code>Hindi</code>) or code (e.g. <code>hi</code>). Translations will be saved automatically.</li>
-        <li>Accepted formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></li>
-        <li>First row = column headers. Data starts from row 2.</li>
-        <li>Duplicate names within the same company will be <strong>skipped</strong>.</li>
+        <li><strong>name</strong> <span class="text-danger"><%- t('import.required', '(required)') %></span> — <%- t('vehicle_fuels.import_name_hint', 'The vehicle fuel name in default language') %></li>
+        <li><strong>image_url</strong> — <%- t('import.image_url_hint', 'External image URL (optional)') %></li>
+        <li><strong><%- t('import.language_columns', 'Language columns') %></strong> — <%- t('import.language_columns_hint', 'Add any language as column header using name (e.g. <code>Hindi</code>) or code (e.g. <code>hi</code>). Translations will be saved automatically.') %></li>
+        <li><%- t('import.accepted_formats', 'Accepted formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong>') %></li>
+        <li><%- t('import.first_row_hint', 'First row = column headers. Data starts from row 2.') %></li>
+        <li><%- t('import.duplicate_hint', 'Duplicate names within the same company will be <strong>skipped</strong>.') %></li>
       </ul>
     </div>
     <a href="/templates/vehicle-fuels-import-template.csv" class="btn btn-sm btn-outline-primary mb-3" download><i class="bi bi-download me-1"></i><%- t('vehicle_fuels.import_template') %></a>
@@ -108,9 +108,21 @@ var isSuperAdmin = user && user.is_super_admin;
   <!-- Step 2: Results -->
   <div id="importStep2" class="d-none">
     <div id="importSummary" class="mb-3"></div>
-    <div id="importResultTable"></div>
+    <div id="importResultTable" style="max-height:450px;overflow-y:auto;overflow-x:auto;"></div>
     <div id="importErrorActions" class="d-none mt-3 d-flex gap-2">
-      <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i>Retry All Errors</button>
+      <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i><%- t('import.retry_all', 'Retry All Errors') %></button>
+    </div>
+  </div>
+  <!-- Step 3: Background processing -->
+  <div id="importStep3" class="d-none">
+    <div class="text-center py-3">
+      <h6 class="mb-3"><i class="bi bi-hourglass-split me-2 text-primary"></i><%- t('general.processing_bg', 'Processing in background...') %></h6>
+      <div class="progress mb-3" style="height:24px;"><div class="progress-bar progress-bar-striped progress-bar-animated" id="impProgressBar" role="progressbar" style="width:0%;">0%</div></div>
+      <div class="d-flex justify-content-center gap-4 text-muted small">
+        <span><%- t('import.total', 'Total') %>: <strong id="impTotal">0</strong></span><span><%- t('import.processed', 'Processed') %>: <strong id="impProcessed">0</strong></span>
+        <span class="text-success"><%- t('import.success', 'Success') %>: <strong id="impSuccess">0</strong></span><span class="text-danger"><%- t('import.errors', 'Errors') %>: <strong id="impErrors">0</strong></span>
+      </div>
+      <div class="mt-2"><span id="impPercent" class="text-primary fw-bold">0%</span> <%- t('import.complete', 'complete') %></div>
     </div>
   </div>
 </div>

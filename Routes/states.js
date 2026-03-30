@@ -14,6 +14,7 @@ router.post('/import/single',          requirePermission('import_states'), Ctrl.
 router.post('/bulk-action',            requirePermission('edit_states'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_states'),    Ctrl.create);
 router.post('/',                       requirePermission('add_states'),    Ctrl.store);
+router.get('/:uuid/usage',            requirePermission('view_states'),   Ctrl.usage);
 router.get('/:uuid/view-data',        requirePermission('view_states'),   Ctrl.viewData);
 router.get('/:uuid/edit',             requirePermission('edit_states'),   Ctrl.edit);
 router.post('/:uuid',                 requirePermission('edit_states'),   Ctrl.update);

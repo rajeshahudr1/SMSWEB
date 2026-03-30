@@ -132,3 +132,5 @@ exports.reorder = async (req, res) => {
     const r = await api.post('/menus/reorder', req.body, req.session.token);
     res.json({ status: r.status, message: r.message });
 };
+
+exports.usage = async (req, res) => { res.json(await api.get('/menus/' + req.params.uuid + '/usage', req.session.token)); };

@@ -13,6 +13,7 @@ router.get( '/export',                 requirePermission('view_roles'),   Roles.
 router.post('/export',                 requirePermission('view_roles'),   Roles.exportData);
 router.get( '/create',       requirePermission('add_roles'),    Roles.create);
 router.post('/',             requirePermission('add_roles'),    Roles.store);
+router.get( '/:uuid/usage',  requirePermission('view_roles'),   Roles.usage);
 router.get( '/:uuid/edit',   requirePermission('edit_roles'),   Roles.edit);
 router.post('/:uuid',        requirePermission('edit_roles'),   Roles.update);
 router.get( '/:uuid/delete', requirePermission('delete_roles'), Roles.deleteConfirm);

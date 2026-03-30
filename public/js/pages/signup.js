@@ -1,5 +1,6 @@
 /* ── signup.js ── SMS Web — 4-step signup ── */
 /* Depends on: /js/common/location.js, /js/common/phone.js  */
+var T=function(k,f){return SMS_T(k,f);};
 
 $(function () {
     var formData  = {};   // accumulates text fields from steps 1–3
@@ -82,15 +83,15 @@ $(function () {
         var email   = $('#s1_email').val().trim();
 
         if (!company) {
-            fieldErr('company_name', 'Company name is required.');
+            fieldErr('company_name', T('form.company_required','Company name is required.'));
             $('#s1_company').addClass('is-invalid'); ok = false;
         }
         if (!reg) {
-            fieldErr('registration_number', 'Registration number is required.');
+            fieldErr('registration_number', T('form.reg_required','Registration number is required.'));
             $('#s1_reg').addClass('is-invalid'); ok = false;
         }
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            fieldErr('email', 'A valid email address is required.');
+            fieldErr('email', T('form.valid_email_required','A valid email address is required.'));
             $('#s1_email').addClass('is-invalid'); ok = false;
         }
         var phoneResult = SMS_Phone.validate('#s1PhoneWrap');
@@ -121,11 +122,11 @@ $(function () {
         var zip     = $('#s2_zip').val().trim();
         var address = $('#s2_address').val().trim();
 
-        if (!locVals.country_id) { fieldErr('country_id', 'Country is required.'); ok = false; }
-        if (!locVals.state_id)   { fieldErr('state_id',   'State is required.');   ok = false; }
-        if (!locVals.city_id)    { fieldErr('city_id',    'City is required.');     ok = false; }
-        if (!zip)                { fieldErr('zip_code',   'ZIP code is required.'); ok = false; }
-        if (!address)            { fieldErr('address',    'Address is required.');  ok = false; }
+        if (!locVals.country_id) { fieldErr('country_id', T('form.country_required','Country is required.')); ok = false; }
+        if (!locVals.state_id)   { fieldErr('state_id',   T('form.state_required','State is required.'));   ok = false; }
+        if (!locVals.city_id)    { fieldErr('city_id',    T('form.city_required','City is required.'));     ok = false; }
+        if (!zip)                { fieldErr('zip_code',   T('form.zip_required','ZIP code is required.')); ok = false; }
+        if (!address)            { fieldErr('address',    T('form.address_required','Address is required.'));  ok = false; }
 
         var fileEl = document.getElementById('s2_proof');
         if (fileEl && fileEl.files.length > 0) {
@@ -133,10 +134,10 @@ $(function () {
             var ext   = file.name.split('.').pop().toLowerCase();
             var valid = ['jpg','jpeg','png','pdf','doc','docx'].indexOf(ext) !== -1;
             if (!valid) {
-                fieldErr('address_proof', 'Only JPG, PNG, PDF, DOC or DOCX files allowed.');
+                fieldErr('address_proof', T('form.file_type_invalid','Only JPG, PNG, PDF, DOC or DOCX files allowed.'));
                 ok = false;
             } else if (file.size > 10 * 1024 * 1024) {
-                fieldErr('address_proof', 'File must be under 10MB.');
+                fieldErr('address_proof', T('msg.file_under_10mb','File must be under 10MB.'));
                 ok = false;
             } else {
                 fileInput = file;
@@ -185,9 +186,9 @@ $(function () {
         var cpw  = $('#s3_cpw').val();
         var ok   = true;
 
-        if (!name)         { fieldErr('name',             'Full name is required.');             $('#s3_name').addClass('is-invalid'); ok = false; }
-        if (pw.length < 8) { fieldErr('password',         'Password must be at least 8 chars.'); $('#s3_pw').addClass('is-invalid');   ok = false; }
-        if (pw !== cpw)    { fieldErr('confirm_password', 'Passwords do not match.');            $('#s3_cpw').addClass('is-invalid');   ok = false; }
+        if (!name)         { fieldErr('name',             T('form.name_required','Full name is required.'));             $('#s3_name').addClass('is-invalid'); ok = false; }
+        if (pw.length < 8) { fieldErr('password',         T('auth.pw_min_8','Password must be at least 8 chars.')); $('#s3_pw').addClass('is-invalid');   ok = false; }
+        if (pw !== cpw)    { fieldErr('confirm_password', T('auth.pw_mismatch','Passwords do not match.'));            $('#s3_cpw').addClass('is-invalid');   ok = false; }
         if (!ok) return;
 
         formData.name             = name;
@@ -215,16 +216,16 @@ $(function () {
             success: function (res) {
                 btnReset($btn);
                 if (res.status === 201) {
-                    toastr.success('Account created! Check your email for OTP.');
+                    toastr.success(T('auth.account_created','Account created! Check your email for OTP.'));
                     $('#otpEmailDisplay').text(formData.email);
                     showStep(4);
                     setTimeout(function () { $('.sms-otp-box').first().focus(); }, 200);
                 } else {
                     var msg = (res.errors && res.errors[0]) ? res.errors[0].message : res.message;
-                    toastr.error(msg || 'Signup failed.');
+                    toastr.error(msg || T('auth.signup_failed','Signup failed.'));
                 }
             },
-            error: function () { btnReset($btn); toastr.error('Server error. Please try again.'); },
+            error: function () { btnReset($btn); toastr.error(T('general.server_error','Server error. Please try again.')); },
         });
     });
 
@@ -243,7 +244,7 @@ $(function () {
     $('#btnVerifyOTP').on('click', function () {
         $('#err-otp').text('');
         var otp = $.map($('.sms-otp-box'), function (el) { return $(el).val(); }).join('');
-        if (otp.length < 6) { $('#err-otp').text('Please enter all 6 digits.'); return; }
+        if (otp.length < 6) { $('#err-otp').text(T('auth.enter_6_digits','Please enter all 6 digits.')); return; }
 
         var $btn = $(this).prop('disabled', true)
             .html('<span class="spinner-border spinner-border-sm me-1"></span>Verifying…');
@@ -251,23 +252,23 @@ $(function () {
         $.post(BASE_URL + '/verify-email', { email: formData.email, otp: otp }, function (res) {
             $btn.prop('disabled', false).html('Verify &amp; Login');
             if (res.status === 200) {
-                toastr.success('Email verified! Logging you in…');
+                toastr.success(T('auth.email_verified','Email verified! Logging you in…'));
                 setTimeout(function () { window.location.href = BASE_URL + '/dashboard'; }, 800);
             } else {
-                $('#err-otp').text(res.message || 'Invalid OTP.');
+                $('#err-otp').text(res.message || T('auth.invalid_otp','Invalid OTP.'));
             }
         }, 'json').fail(function () {
             $btn.prop('disabled', false).html('Verify &amp; Login');
-            toastr.error('Server error.');
+            toastr.error(T('general.server_error_short','Server error.'));
         });
     });
 
     $('#btnResendOTP').on('click', function () {
-        var $btn = $(this).prop('disabled', true).text('Sending…');
+        var $btn = $(this).prop('disabled', true).text(T('msg.sending','Sending…'));
         $.post(BASE_URL + '/resend-otp', { email: formData.email }, function (res) {
             $btn.prop('disabled', false).text('Resend OTP');
-            if (res.status === 200) toastr.success('New OTP sent!');
-            else toastr.error(res.message || 'Failed to resend.');
+            if (res.status === 200) toastr.success(T('auth.otp_sent','New OTP sent!'));
+            else toastr.error(res.message || T('auth.failed_resend','Failed to resend.'));
         }, 'json').fail(function () {
             $btn.prop('disabled', false).text('Resend OTP');
         });
@@ -276,7 +277,7 @@ $(function () {
     /* ── Google button ── */
     $('#btnGoogleSignup').on('click', function () {
         if (typeof google !== 'undefined' && google.accounts) google.accounts.id.prompt();
-        else toastr.warning('Google Sign-In is loading. Please try again.');
+        else toastr.warning(T('auth.google_loading','Google Sign-In is loading. Please try again.'));
     });
 
 }); // end $(function)
@@ -306,13 +307,13 @@ function googleSignIn(idToken) {
                         + '&gpic='   + encodeURIComponent(gd.picture || '');
                     window.location.href = BASE_URL + '/google-complete' + qs;
                 } else {
-                    toastr.success('Google sign-in successful!');
+                    toastr.success(T('auth.google_signin_success','Google sign-in successful!'));
                     setTimeout(function () { window.location.href = BASE_URL + '/dashboard'; }, 700);
                 }
             } else {
-                toastr.error(res.message || 'Google sign-in failed.');
+                toastr.error(res.message || T('auth.google_signin_failed','Google sign-in failed.'));
             }
         },
-        error: function () { toastr.error('Could not connect. Please try again.'); },
+        error: function () { toastr.error(T('general.could_not_connect_retry','Could not connect. Please try again.')); },
     });
 }

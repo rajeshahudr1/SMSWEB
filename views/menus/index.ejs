@@ -282,4 +282,6 @@
    The layout only has a 'scripts' block (no 'styles' block),
    so the link tag is injected there — valid in HTML5. */
 %>
+<% include ../partials/usage-modal %>
+
 <% block('scripts', '<link rel="stylesheet" href="/css/menus.css"/><script src="/js/pages/menus.js"></script>') %>

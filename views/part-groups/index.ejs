@@ -23,8 +23,8 @@ var isSuperAdmin = user && user.is_super_admin;
       <% if (isSuperAdmin && orgs.length) { %>
       <div class="col-12 col-sm-4 col-lg-2">
         <select class="form-select form-select-sm" id="filterCompany">
-          <option value="all"><%- t('general.all') %> Companies</option>
-          <option value="global">Global (Super Admin)</option>
+          <option value="all"><%- t('general.all_companies', 'All Companies') %></option>
+          <option value="global"><%- t('general.global_super_admin', 'Global (Super Admin)') %></option>
           <% orgs.forEach(function(o) { %><option value="<%- o.id %>"><%- o.company_name %></option><% }) %>
         </select>
       </div><% } %>
@@ -33,7 +33,7 @@ var isSuperAdmin = user && user.is_super_admin;
         <select class="form-select form-select-sm" id="filterStatus"><option value=""><%- t('general.all_status') %></option><option value="1"><%- t('general.active') %></option><option value="0"><%- t('general.inactive') %></option></select>
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
-        <select class="form-select form-select-sm" id="filterDeleted"><option value="">Active Records</option><option value="only">Deleted Only</option><option value="all">All Records</option></select>
+        <select class="form-select form-select-sm" id="filterDeleted"><option value=""><%- t('general.active_records', 'Active Records') %></option><option value="only"><%- t('general.deleted_only', 'Deleted Only') %></option><option value="all"><%- t('general.all_records', 'All Records') %></option></select>
       </div>
       <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button></div>
     </div>
@@ -44,10 +44,10 @@ var isSuperAdmin = user && user.is_super_admin;
     <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
       <span class="fw-semibold"><span id="bulkCount">0</span> <%- t('general.selected_count') %></span>
       <div class="ms-auto d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i>Deactivate</button>
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i>Activate</button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i><%- t('bulk.deactivate', 'Deactivate') %></button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i><%- t('bulk.activate', 'Activate') %></button>
         <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')"><i class="bi bi-trash3 me-1"></i><%- t('btn.delete') %></button>
-        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i>Recover</button>
+        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i><%- t('bulk.recover', 'Recover') %></button>
         <button class="btn btn-sm btn-outline-light" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
       </div>
     </div>
@@ -91,9 +91,25 @@ var isSuperAdmin = user && user.is_super_admin;
   <!-- Step 2: Results -->
   <div id="importStep2" class="d-none">
     <div id="importSummary" class="mb-3"></div>
-    <div id="importResultTable"></div>
+    <div id="importResultTable" style="max-height:450px;overflow-y:auto;overflow-x:auto;"></div>
     <div id="importErrorActions" class="d-none mt-3 d-flex gap-2">
       <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i>Retry All Errors</button>
+    </div>
+  </div>
+  <!-- Step 3: Background processing -->
+  <div id="importStep3" class="d-none">
+    <div class="text-center py-3">
+      <h6 class="mb-3"><i class="bi bi-hourglass-split me-2 text-primary"></i>Processing in background...</h6>
+      <div class="progress mb-3" style="height:24px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="impProgressBar" role="progressbar" style="width:0%;">0%</div>
+      </div>
+      <div class="d-flex justify-content-center gap-4 text-muted small">
+        <span>Total: <strong id="impTotal">0</strong></span>
+        <span>Processed: <strong id="impProcessed">0</strong></span>
+        <span class="text-success">Success: <strong id="impSuccess">0</strong></span>
+        <span class="text-danger">Errors: <strong id="impErrors">0</strong></span>
+      </div>
+      <div class="mt-2"><span id="impPercent" class="text-primary fw-bold">0%</span> complete</div>
     </div>
   </div>
 </div>

@@ -17,6 +17,7 @@ router.post('/:uuid/update-variants', requirePermission('edit_vehicle_engines'),
 router.post('/bulk-action',            requirePermission('edit_vehicle_engines'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_vehicle_engines'),    Ctrl.create);
 router.post('/',                       requirePermission('add_vehicle_engines'),    Ctrl.store);
+router.get('/:uuid/usage',             requirePermission('view_vehicle_engines'),   Ctrl.usage);
 router.get('/:uuid/view-data',         requirePermission('view_vehicle_engines'),   Ctrl.viewData);
 router.get('/:uuid/edit',              requirePermission('edit_vehicle_engines'),   Ctrl.edit);
 router.post('/:uuid',                  requirePermission('edit_vehicle_engines'),   Ctrl.update);

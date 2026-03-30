@@ -19,6 +19,7 @@ router.post('/',            requireSuperAdmin,    C.store);
 router.post('/reorder',     requireSuperAdmin,   C.reorder);   // ← BEFORE /:uuid
 
 /* ── Param routes AFTER ────────────────────────────── */
+router.get( '/:uuid/usage',             requireSuperAdmin,   C.usage);
 router.get( '/:uuid/edit',              requireSuperAdmin,   C.edit);
 router.post('/:uuid',                   requireSuperAdmin,   C.update);
 router.post('/:uuid/delete',            requireSuperAdmin, C.destroy);

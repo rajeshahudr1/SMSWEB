@@ -64,6 +64,7 @@ exports.viewData  = async (req, res) => { res.json(await api.get('/vehicle-engin
 exports.destroy   = async (req, res) => { res.json(await api.del('/vehicle-engines/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/vehicle-engines/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover   = async (req, res) => { res.json(await api.post('/vehicle-engines/' + req.params.uuid + '/recover', {}, req.session.token)); };
+exports.usage     = async (req, res) => { res.json(await api.get('/vehicle-engines/' + req.params.uuid + '/usage', req.session.token)); };
 exports.bulkAction = async (req, res) => { res.json(await api.post('/vehicle-engines/bulk-action', req.body, req.session.token)); };
 
 exports.updateVariants = async (req, res) => {

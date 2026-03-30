@@ -42,6 +42,7 @@ function loadData(){
             }else{
                 if(editable)acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/vehicle-engines/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>';
                 if(editable)acts+='<li><a class="dropdown-item" href="#" onclick="toggleRec(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(parseInt(r.status)?'off':'on')+' me-2 text-'+(parseInt(r.status)?'warning':'success')+'"></i>'+(parseInt(r.status)?'Deactivate':'Activate')+'</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.manufacturer_engine||r.motor_code||'')+'\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>';
                 if(deletable)acts+='<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delRec(\''+r.uuid+'\',\''+H.esc(r.motor_code||'')+'\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
             }
             acts+='</ul></div>';
@@ -118,16 +119,27 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
     });
 }
 
+function showUsage(uuid, name) {
+    var $b = $('#usageBody');
+    $('#usageModalName').text(T('usage.title', 'Usage') + ': ' + (name || ''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
+    $.get(BASE_URL + '/vehicle-engines/' + uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">' + T('general.failed_load', 'Failed.') + '</div>'); return; }
+        smsRenderUsageBody(res.data, 'vehicle-engines', uuid, name);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">' + T('general.network_error', 'Network error.') + '</div>'); });
+}
+
 function toggleRec(uuid){smsConfirm({title:T('general.confirm','Confirm'),text:T('general.toggle_confirm','Toggle status?'),onConfirm:function(){$.post(BASE_URL+'/vehicle-engines/'+uuid+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
 function delRec(uuid,name){smsConfirm({title:T('btn.delete','Delete'),text:T('general.delete_confirm','Delete')+ ' <strong>'+name+'</strong>?',btnClass:'btn-danger',onConfirm:function(){$.post(BASE_URL+'/vehicle-engines/'+uuid+'/delete',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
-function recoverRec(uuid,name){smsConfirm({title:'Recover',text:'Recover <strong>'+name+'</strong>?',btnClass:'btn-success',onConfirm:function(){$.post(BASE_URL+'/vehicle-engines/'+uuid+'/recover',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
+function recoverRec(uuid,name){smsConfirm({title:T('bulk.recover','Recover'),text:T('bulk.recover','Recover')+' <strong>'+name+'</strong>?',btnClass:'btn-success',onConfirm:function(){$.post(BASE_URL+'/vehicle-engines/'+uuid+'/recover',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
 
 function updateBulk(){var c=$('.row-chk:checked').length;_sel=[];$('.row-chk:checked').each(function(){_sel.push($(this).data('uuid'));});$('#bulkCount').text(c);if(c>0)$('#bulkBar').removeClass('d-none');else $('#bulkBar').addClass('d-none');}
 function bulkAction(action){if(!_sel.length)return;smsConfirm({title:action.charAt(0).toUpperCase()+action.slice(1),text:action+' '+_sel.length+' items?',onConfirm:function(){$.post(BASE_URL+'/vehicle-engines/bulk-action',{action:action,uuids:_sel},function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
 
 function doExport(fmt){var f=_filters();f.format=fmt;if(fmt==='print'){var w=window.open('','_blank');w.document.write('<html><body><p>Loading...</p></body></html>');$.post(BASE_URL+'/vehicle-engines/export',f,function(r){if(r.status===200&&r.data&&r.data.rows){var rows=r.data.rows;if(!rows.length){w.document.body.innerHTML='<p>No data</p>';return;}var hd=Object.keys(rows[0]);var tbl='<table border=1 cellpadding=4 cellspacing=0><tr>'+hd.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>';rows.forEach(function(row){tbl+='<tr>'+hd.map(function(h){return '<td>'+(row[h]||'')+'</td>';}).join('')+'</tr>';});tbl+='</table>';w.document.body.innerHTML=tbl;w.print();}else{w.document.body.innerHTML='<p>Failed</p>';}});return;}
     if(fmt==='csv'||fmt==='excel'){var form=$('<form method="POST" action="'+BASE_URL+'/vehicle-engines/export"></form>');for(var k in f)form.append('<input type="hidden" name="'+k+'" value="'+f[k]+'"/>');$('body').append(form);form.submit();form.remove();return;}
-    if(fmt==='pdf'){$.post(BASE_URL+'/vehicle-engines/export',f,function(r){if(r.status===200)toastr.info('PDF export — use browser print.');else toastr.error('Failed.');});}}
+    if(fmt==='pdf'){$.post(BASE_URL+'/vehicle-engines/export',f,function(r){if(r.status===200)toastr.info(T('msg.pdf_export','PDF export — use browser print.'));else toastr.error(T('msg.failed','Failed.'));});}}
 
 /* Import */
 function openImport(){$('#importStep1').removeClass('d-none');$('#importStep2').addClass('d-none');$('#importFile').val('');bootstrap.Modal.getOrCreateInstance($('#modalImport')[0]).show();}
@@ -233,7 +245,7 @@ $(function(){
                 if(r.status!==200){$('#importSummary').html('<div class="alert alert-danger py-2">'+H.esc(r.message||'Failed')+'</div>');return;}
                 _importResults = (r.data && r.data.results) || [];
                 showImportResults(_importResults);
-            },error:function(){btnReset($btn);toastr.error('Network error.');}});
+            },error:function(){btnReset($btn);toastr.error(T('general.network_error','Network error.'));}});
     });
 
     function showImportResults(results){
@@ -287,10 +299,10 @@ $(function(){
         var $tr=$('#impRow'+idx);
         var mfg=$tr.find('.imp-mfg').val().trim();
         var mc=$tr.find('.imp-code').val().trim();
-        if(!mfg){toastr.error('Engine name is required.');return;}
-        if(!mc){toastr.error('Motor code is required.');return;}
-        if(mfg.length>255){toastr.error('Engine name max 255 chars.');return;}
-        if(mc.length>255){toastr.error('Motor code max 255 chars.');return;}
+        if(!mfg){toastr.error(T('msg.name_required','Engine name is required.'));return;}
+        if(!mc){toastr.error(T('msg.motor_code_required','Motor code is required.'));return;}
+        if(mfg.length>255){toastr.error(T('msg.engine_name_max','Engine name max 255 chars.'));return;}
+        if(mc.length>255){toastr.error(T('msg.motor_code_max','Motor code max 255 chars.'));return;}
         var $b=$tr.find('button');btnLoading($b);
         $.post(BASE_URL+'/vehicle-engines/import/single',{
             manufacturer_engine:mfg, motor_code:mc,
@@ -325,7 +337,7 @@ $(function(){
             } else {
                 toastr.error(res.message || 'Failed.');
             }
-        }).fail(function() { btnReset($btn); toastr.error('Network error.'); });
+        }).fail(function() { btnReset($btn); toastr.error(T('general.network_error','Network error.')); });
     });
 
     $('#btnRetryAllErrors').on('click',function(){

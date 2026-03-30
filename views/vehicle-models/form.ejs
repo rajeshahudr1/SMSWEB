@@ -14,48 +14,48 @@ if (isEdit) { uploadedImgUrl = rec.uploaded_image_url || ''; externalImgUrl = re
 
 <div class="d-flex align-items-center gap-2 mb-3">
   <a href="/vehicle-models" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i><%- t('general.back') %></a>
-  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-car-front-fill me-2 text-primary"></i><%- isEdit ? (t('vehicle_models.edit') || 'Edit Model') : (t('vehicle_models.add') || 'Add Model') %></h3>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-car-front-fill me-2 text-primary"></i><%- isEdit ? t('vehicle_models.edit') : t('vehicle_models.add') %></h3>
 </div>
 
 <form id="frmPartType" method="POST" action="<%- formAction %>" enctype="multipart/form-data" novalidate>
 <div class="row g-3">
   <div class="col-lg-8">
     <% if (isSuperAdmin) { %>
-    <div class="card shadow-sm mb-3"><div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div></div><div class="card-body"><select name="company_id" id="selCompany" class="form-select"><option value="global" <%- (!isEdit || !rec.organization_id) ? 'selected' : '' %>>Global (Super Admin)</option><% orgs.forEach(function(o) { %><option value="<%- o.id %>" <%- (isEdit && rec.organization_id && String(rec.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option><% }) %></select></div></div>
+    <div class="card shadow-sm mb-3"><div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i><%- t('general.company') %></div></div><div class="card-body"><select name="company_id" id="selCompany" class="form-select"><option value="global" <%- (!isEdit || !rec.organization_id) ? 'selected' : '' %>><%- t('general.global_super_admin') %></option><% orgs.forEach(function(o) { %><option value="<%- o.id %>" <%- (isEdit && rec.organization_id && String(rec.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option><% }) %></select></div></div>
     <% } %>
 
     <!-- FK Dropdowns -->
     <div class="card shadow-sm mb-3">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-link-45deg me-1 text-primary"></i>Linked To</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-link-45deg me-1 text-primary"></i><%- t('vehicle_models.linked_to') %></div></div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="form-label fw-medium">Vehicle Year</label>
+            <label class="form-label fw-medium"><%- t('vehicle_models.vehicle_year') %></label>
             <select name="vehicle_year_id" id="selVehicleYear" class="form-select" style="width:100%;"><% if (isEdit && rec.vehicle_year_id) { %><option value="<%- rec.vehicle_year_id %>" selected><%- rec.vehicle_year_name || rec.vehicle_year_id %></option><% } %></select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-medium">Vehicle Type <span class="text-danger">*</span></label>
+            <label class="form-label fw-medium"><%- t('vehicle_models.vehicle_type') %> <span class="text-danger">*</span></label>
             <select name="vehicle_type_id" id="selVehicleType" class="form-select" style="width:100%;"><% if (isEdit && rec.vehicle_type_id) { %><option value="<%- rec.vehicle_type_id %>" selected><%- rec.vehicle_type_name || rec.vehicle_type_id %></option><% } %></select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-medium">Vehicle Make <span class="text-danger">*</span></label>
+            <label class="form-label fw-medium"><%- t('vehicle_models.vehicle_make') %> <span class="text-danger">*</span></label>
             <select name="vehicle_make_id" id="selVehicleMake" class="form-select" style="width:100%;"><% if (isEdit && rec.vehicle_make_id) { %><option value="<%- rec.vehicle_make_id %>" selected><%- rec.vehicle_make_name || rec.vehicle_make_id %></option><% } %></select>
-            <div class="form-hint" style="font-size:11px;">Filtered by selected type</div>
+            <div class="form-hint" style="font-size:11px;"><%- t('vehicle_models.make_hint') %></div>
           </div>
         </div>
       </div>
     </div>
 
     <div class="card shadow-sm">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-info-circle me-1 text-primary"></i>Model Information</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-info-circle me-1 text-primary"></i><%- t('vehicle_models.information') %></div></div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-12">
-            <label class="form-label fw-medium">Model Name <span class="text-danger">*</span></label>
+            <label class="form-label fw-medium"><%- t('vehicle_models.name_default') %> <span class="text-danger">*</span></label>
             <input type="text" name="name" id="fName" class="form-control" required autofocus value="<%= isEdit ? (rec.name||'') : '' %>" placeholder="e.g. Fortuner, City, Swift"/>
           </div>
           <div class="col-md-12">
-            <label class="form-label fw-medium">External Image URL</label>
+            <label class="form-label fw-medium"><%- t('vehicle_models.image_external') %></label>
             <input type="url" name="image_full_url" id="fImageUrl" class="form-control" value="<%= externalImgUrl %>" placeholder="https://example.com/images/model.jpg"/>
           </div>
         </div>
@@ -64,25 +64,25 @@ if (isEdit) { uploadedImgUrl = rec.uploaded_image_url || ''; externalImgUrl = re
 
     <!-- Production Period -->
     <div class="card mt-3 shadow-sm">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-calendar-range me-1 text-primary"></i>Production Period</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-calendar-range me-1 text-primary"></i><%- t('vehicle_models.production_period') %></div></div>
       <div class="card-body"><div class="row g-3">
-        <div class="col-md-3"><label class="form-label fw-medium">Month Initial</label><input type="number" name="month_initial" class="form-control" min="1" max="12" step="1" value="<%= isEdit && rec.month_initial ? rec.month_initial : '' %>" placeholder="1"/></div>
-        <div class="col-md-3"><label class="form-label fw-medium">Month Final</label><input type="number" name="month_final" class="form-control" min="1" max="12" step="1" value="<%= isEdit && rec.month_final ? rec.month_final : '' %>" placeholder="12"/></div>
-        <div class="col-md-3"><label class="form-label fw-medium">Start Year</label><input type="number" name="start_year" class="form-control" min="1900" max="2100" step="1" value="<%= isEdit && rec.start_year ? rec.start_year : '' %>" placeholder="2018"/></div>
-        <div class="col-md-3"><label class="form-label fw-medium">End Year</label><input type="number" name="end_year" class="form-control" min="1900" max="2100" step="1" value="<%= isEdit && rec.end_year ? rec.end_year : '' %>" placeholder="2024"/></div>
+        <div class="col-md-3"><label class="form-label fw-medium"><%- t('vehicle_models.month_initial') %></label><input type="number" name="month_initial" class="form-control" min="1" max="12" step="1" value="<%= isEdit && rec.month_initial ? rec.month_initial : '' %>" placeholder="1"/></div>
+        <div class="col-md-3"><label class="form-label fw-medium"><%- t('vehicle_models.month_final') %></label><input type="number" name="month_final" class="form-control" min="1" max="12" step="1" value="<%= isEdit && rec.month_final ? rec.month_final : '' %>" placeholder="12"/></div>
+        <div class="col-md-3"><label class="form-label fw-medium"><%- t('vehicle_models.start_year') %></label><input type="number" name="start_year" class="form-control" min="1900" max="2100" step="1" value="<%= isEdit && rec.start_year ? rec.start_year : '' %>" placeholder="2018"/></div>
+        <div class="col-md-3"><label class="form-label fw-medium"><%- t('vehicle_models.end_year') %></label><input type="number" name="end_year" class="form-control" min="1900" max="2100" step="1" value="<%= isEdit && rec.end_year ? rec.end_year : '' %>" placeholder="2024"/></div>
       </div></div>
     </div>
 
     <% if (langs.length > 0) { %>
     <div class="card mt-3 shadow-sm">
-      <div class="card-header py-2"><div class="card-title mb-0 d-flex align-items-center" style="font-size:14px;"><span><i class="bi bi-translate me-1 text-primary"></i>Translations <span class="badge bg-primary-lt ms-1" style="font-size:10px;"><%- langs.length %></span></span><button type="button" class="btn btn-sm btn-outline-info ms-auto d-none ai-translate-btn" id="btnTranslateAll"><i class="bi bi-stars me-1"></i>Translate All</button></div></div>
-      <div class="card-body"><div class="row g-3"><% langs.forEach(function(lang) { %><div class="col-md-6"><label class="form-label fw-medium"><% if (lang.flag) { %><span class="me-1"><%- lang.flag %></span><% } %><%- lang.name %></label><input type="text" name="trans_<%- lang.id %>" class="form-control" value="<%= transMap[lang.id] || '' %>" data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"/><button type="button" class="btn btn-sm btn-ghost-info mt-1 d-none ai-translate-btn ai-single-btn" data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"><i class="bi bi-stars me-1"></i>AI</button></div><% }) %></div></div>
+      <div class="card-header py-2"><div class="card-title mb-0 d-flex align-items-center" style="font-size:14px;"><span><i class="bi bi-translate me-1 text-primary"></i><%- t('vehicle_models.translations') %> <span class="badge bg-primary-lt ms-1" style="font-size:10px;"><%- langs.length %> <%- t('general.languages') %></span></span><button type="button" class="btn btn-sm btn-outline-info ms-auto d-none ai-translate-btn" id="btnTranslateAll"><i class="bi bi-stars me-1"></i>Translate All</button></div></div>
+      <div class="card-body"><p class="text-muted small mb-3"><%- t('vehicle_models.translations_hint') %></p><div class="row g-3"><% langs.forEach(function(lang) { %><div class="col-md-6"><label class="form-label fw-medium"><% if (lang.flag) { %><span class="me-1"><%- lang.flag %></span><% } %><%- lang.name %></label><input type="text" name="trans_<%- lang.id %>" class="form-control" value="<%= transMap[lang.id] || '' %>" data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"/><button type="button" class="btn btn-sm btn-ghost-info mt-1 d-none ai-translate-btn ai-single-btn" data-lang-id="<%- lang.id %>" data-lang-name="<%- lang.name %>" data-lang-code="<%- lang.code %>"><i class="bi bi-stars me-1"></i>AI</button></div><% }) %></div></div>
     </div>
     <% } %>
   </div>
 
   <div class="col-lg-4">
-    <div class="card shadow-sm"><div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-image me-1 text-primary"></i>Image</div></div><div class="card-body text-center"><% if (isEdit && (uploadedImgUrl || externalImgUrl)) { %><div class="mb-3"><img src="<%- uploadedImgUrl || externalImgUrl %>" class="rounded border" style="max-width:100%;max-height:140px;object-fit:contain;" onerror="this.src='/images/no-image.svg'"/></div><% } else { %><div class="border rounded d-flex align-items-center justify-content-center mb-3" style="height:100px;background:var(--tblr-bg-surface-secondary);"><img src="/images/no-image.svg" style="width:60px;opacity:.5;"/></div><% } %><div id="newImagePreview"></div><input type="file" name="image" id="fImage" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.gif,.webp"/><% if (isEdit && uploadedImgUrl) { %><label class="form-check form-switch mt-2 d-inline-flex"><input type="checkbox" class="form-check-input" name="remove_image" value="1"/><span class="form-check-label text-danger small">Remove</span></label><% } %></div></div>
+    <div class="card shadow-sm"><div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-image me-1 text-primary"></i><%- t('vehicle_models.image') %></div></div><div class="card-body text-center"><% if (isEdit && (uploadedImgUrl || externalImgUrl)) { %><div class="mb-3"><img src="<%- uploadedImgUrl || externalImgUrl %>" class="rounded border" style="max-width:100%;max-height:140px;object-fit:contain;" onerror="this.src='/images/no-image.svg'"/></div><% } else { %><div class="border rounded d-flex align-items-center justify-content-center mb-3" style="height:100px;background:var(--tblr-bg-surface-secondary);"><img src="/images/no-image.svg" style="width:60px;opacity:.5;"/></div><% } %><div id="newImagePreview"></div><input type="file" name="image" id="fImage" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.gif,.webp"/><% if (isEdit && uploadedImgUrl) { %><label class="form-check form-switch mt-2 d-inline-flex"><input type="checkbox" class="form-check-input" name="remove_image" value="1"/><span class="form-check-label text-danger small"><%- t('vehicle_models.image_remove') %></span></label><% } %></div></div>
     <% if (isEdit) { %><div class="card mt-3 shadow-sm"><div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-toggle-on me-1 text-primary"></i><%- t('general.status') %></div></div><div class="card-body"><select name="status" class="form-select"><option value="1" <%- parseInt(rec.status) ? 'selected' : '' %>><%- t('general.active') %></option><option value="0" <%- !parseInt(rec.status) ? 'selected' : '' %>><%- t('general.inactive') %></option></select></div></div><% } %>
     <div class="card mt-3 shadow-sm"><div class="card-body py-3"><div class="d-grid gap-2"><button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? t('general.update') : t('general.create') %></button><a href="/vehicle-models" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel') %></a></div></div></div>
   </div>

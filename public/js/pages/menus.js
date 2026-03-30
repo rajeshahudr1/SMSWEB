@@ -13,6 +13,7 @@
    9. Collapse toggle: uses correct bi- class names not ti-
 ═══════════════════════════════════════════════════════════ */
 'use strict';
+var T=function(k,f){return SMS_T(k,f);};
 
 /* ── globals ────────────────────────────────────────────── */
 var _panel       = 'b2b';
@@ -35,7 +36,7 @@ function jPost(url, payload, done, fail){
     $.ajax({ url:url, type:'POST', contentType:'application/json',
         data:JSON.stringify(payload) })
         .done(done)
-        .fail(fail || function(){ toastr.error('Network error.'); });
+        .fail(fail || function(){ toastr.error(T('general.network_error','Network error.')); });
 }
 
 /* ── level badge class ──────────────────────────────────── */
@@ -74,7 +75,7 @@ function loadTree(){
         $('#treeLoading').hide();
 
         if (!res || res.status !== 200){
-            $('#treeRoot').html('<div class="alert alert-danger m-2">Failed to load menus.</div>');
+            $('#treeRoot').html('<div class="alert alert-danger m-2">'+T('menus.failed_to_load','Failed to load menus.')+'</div>');
             return;
         }
 
@@ -84,8 +85,8 @@ function loadTree(){
             $('#treeRoot').html(
                 '<div class="text-center py-5">'
                 +'<i class="bi bi-diagram-3" style="font-size:52px;opacity:.12;display:block;margin:0 auto 14px;color:var(--tblr-primary);"></i>'
-                +'<p class="fw-semibold mb-1" style="font-size:14px;">No menus yet</p>'
-                +'<p class="text-muted mb-3" style="font-size:13px;">Click <strong>Add Menu</strong> above to create your first main menu.</p>'
+                +'<p class="fw-semibold mb-1" style="font-size:14px;">'+T('menus.no_menus_yet','No menus yet')+'</p>'
+                +'<p class="text-muted mb-3" style="font-size:13px;">'+T('menus.click_add_menu','Click <strong>Add Menu</strong> above to create your first main menu.')+'</p>'
                 +'</div>'
             );
         } else {
@@ -112,7 +113,7 @@ function loadTree(){
 
     }).fail(function(){
         $('#treeLoading').hide();
-        $('#treeRoot').html('<div class="alert alert-danger m-2">Network error loading menus.</div>');
+        $('#treeRoot').html('<div class="alert alert-danger m-2">'+T('menus.network_error_loading','Network error loading menus.')+'</div>');
     });
 }
 
@@ -176,7 +177,7 @@ function renderLI(m){
 
     /* hidden badge */
     if (!isVis){
-        li += '<span class="sms-hid" title="Hidden from sidebar">hidden</span>';
+        li += '<span class="sms-hid" title="'+T('menus.hidden_from_sidebar','Hidden from sidebar')+'">'+T('menus.hidden','hidden')+'</span>';
     }
 
     /* ── action buttons ── */
@@ -209,6 +210,11 @@ function renderLI(m){
         + ' title="' + vTitle + '">'
         + '<i class="bi ' + vIcon + '"></i></button>';
 
+    li += '<button type="button" class="btn btn-sm btn-ghost-info"'
+        + ' onclick="showUsage(\'' + x(m.uuid) + '\',\'' + x(m.title||m.name||'') + '\')"'
+        + ' title="Usage">'
+        + '<i class="bi bi-diagram-3"></i></button>';
+
     li += '<button type="button" class="btn btn-sm btn-ghost-danger"'
         + ' onclick="openDelete(\'' + x(m.uuid) + '\',\'' + x(m.title) + '\',' + (kids?1:0) + ')"'
         + ' title="Delete \'' + x(m.title) + '\'' + (kids?' (and all sub-menus)':'') + '">'
@@ -223,6 +229,36 @@ function renderLI(m){
 
     li += '</li>';
     return li;
+}
+
+/* Usage */
+function showUsage(uuid, name) {
+    var $b = $('#usageBody');
+    $('#usageModalName').text('Usage: ' + (name || ''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
+    $.get(BASE_URL + '/menus/' + uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">'+T('msg.failed','Failed.')+'</div>'); return; }
+        var d = res.data || {};
+        if (!d.hasDependencies || !d.dependencies || !d.dependencies.length) {
+            $b.html('<div class="text-center py-4"><i class="bi bi-check-circle text-success d-block mb-2" style="font-size:48px;"></i><p class="text-muted">'+T('general.not_used_anywhere','This record is not used anywhere.')+'</p></div>');
+            return;
+        }
+        var h = '';
+        d.dependencies.forEach(function(dep) {
+            h += '<div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><strong>' + H.esc(dep.label || dep.table) + '</strong><span class="badge bg-primary rounded-pill">' + dep.count + '</span></div>';
+            if (dep.records && dep.records.length) {
+                h += '<div class="table-responsive"><table class="table table-sm table-hover mb-0"><tbody>';
+                dep.records.forEach(function(r, i) {
+                    h += '<tr><td class="text-muted" style="width:40px;">' + (i + 1) + '</td><td>' + H.esc(r.display_name || r.name || r.full_name || r.uuid || '-') + '</td></tr>';
+                });
+                h += '</tbody></table></div>';
+                if (dep.count > dep.records.length) h += '<div class="card-footer text-muted small">and ' + (dep.count - dep.records.length) + ' more...</div>';
+            }
+            h += '</div>';
+        });
+        $b.html(h);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Network error.')+'</div>'); });
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -317,10 +353,10 @@ function _onDD(e){
 
     jPost(BASE_URL + '/menus/reorder', { items:payload },
         function(res){
-            if (res.status === 200) toastr.success('Order saved.');
-            else { toastr.error(res.message||'Reorder failed.'); loadTree(); }
+            if (res.status === 200) toastr.success(T('menus.order_saved','Order saved.'));
+            else { toastr.error(res.message||T('menus.reorder_failed','Reorder failed.')); loadTree(); }
         },
-        function(){ toastr.error('Network error.'); loadTree(); }
+        function(){ toastr.error(T('general.network_error','Network error.')); loadTree(); }
     );
 }
 
@@ -341,16 +377,16 @@ function openAdd(parentId){
     var url = BASE_URL + '/menus/create' + params;
 
     if (!parentId){
-        $('#ocTitle').text('Add ' + _panel.toUpperCase() + ' Main Menu');
-        $('#ocSub').text('Creating a new top-level L1 menu for ' + _panel.toUpperCase());
+        $('#ocTitle').text(T('menus.add','Add') + ' ' + _panel.toUpperCase() + ' ' + T('menus.main_menu','Main Menu'));
+        $('#ocSub').text(T('menus.creating_top_level','Creating a new top-level L1 menu for') + ' ' + _panel.toUpperCase());
         _showOC(url);
     } else {
         var doOpen = function(){
             var par = _flat.find(function(m){ return String(m.id) === String(parentId); });
-            $('#ocTitle').text('Add Sub-Menu');
+            $('#ocTitle').text(T('menus.add_sub_menu','Add Sub-Menu'));
             $('#ocSub').text(par
-                ? 'Creating L' + ((par.level||1)+1) + ' child inside "' + par.title + '"'
-                : 'Creating child menu');
+                ? T('menus.creating_child','Creating') + ' L' + ((par.level||1)+1) + ' ' + T('menus.child_inside','child inside') + ' "' + par.title + '"'
+                : T('menus.creating_child_menu','Creating child menu'));
             _showOC(url);
         };
         if (_flatReady) doOpen();
@@ -360,7 +396,7 @@ function openAdd(parentId){
 
 function openEdit(uuid){
     var item = _flat.find(function(m){ return m.uuid === uuid; });
-    $('#ocTitle').text('Edit Menu');
+    $('#ocTitle').text(T('menus.edit_menu','Edit Menu'));
     $('#ocSub').text(item ? '"'+item.title+'" — L'+(item.level||1) : '');
     /* Pass current panel so form knows the context */
     _showOC(BASE_URL + '/menus/'+uuid+'/edit?panel='+_panel);
@@ -387,8 +423,8 @@ function _showOC(url){
     }).fail(function(xhr){
         $('#ocBody').html(
             '<div class="alert alert-danger m-3">'
-            +'<strong>Failed to load form.</strong><br>'
-            +'<small class="text-muted">Status: '+xhr.status+' '+xhr.statusText+'</small>'
+            +'<strong>'+T('menus.failed_to_load_form','Failed to load form.')+'</strong><br>'
+            +'<small class="text-muted">'+T('general.status','Status')+': '+xhr.status+' '+xhr.statusText+'</small>'
             +'</div>'
         );
     });
@@ -503,7 +539,7 @@ function _submitOC($f){
 
     var $btn = $f.find('#frmSave').prop('disabled',true);
     var orig = $btn.html();
-    $btn.html('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
+    $btn.html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('general.saving','Saving...'));
 
     var fd = $f.serializeArray();
     if (!$f.find('[name=is_visible]').is(':checked'))
@@ -514,15 +550,15 @@ function _submitOC($f){
     $.post(url, fd, function(res){
         $btn.prop('disabled',false).html(orig);
         if (res.status === 200 || res.status === 201){
-            toastr.success(res.message || 'Saved.');
+            toastr.success(res.message || T('msg.settings_saved','Saved.'));
             bootstrap.Offcanvas.getInstance(document.getElementById('ocMenu'))?.hide();
             loadTree();
         } else {
-            toastr.error(res.message || 'Error saving.');
+            toastr.error(res.message || T('general.error_saving','Error saving.'));
         }
     }, 'json').fail(function(){
         $btn.prop('disabled',false).html(orig);
-        toastr.error('Network error.');
+        toastr.error(T('general.network_error','Network error.'));
     });
 }
 
@@ -535,10 +571,10 @@ function doToggleVis(uuid, btn){
         .done(function(res){
             $(btn).prop('disabled',false);
             if (res.status === 200){ toastr.success(res.message); loadTree(); }
-            else toastr.error(res.message||'Failed.');
+            else toastr.error(res.message||T('msg.failed','Failed.'));
         }).fail(function(){
         $(btn).prop('disabled',false);
-        toastr.error('Network error.');
+        toastr.error(T('general.network_error','Network error.'));
     });
 }
 
@@ -562,11 +598,11 @@ $('#btnDeleteConfirm').on('click', function(){
             bootstrap.Modal.getInstance(document.getElementById('modalDelete'))?.hide();
             loadTree();
         } else {
-            toastr.error(res.message||'Delete failed.');
+            toastr.error(res.message||T('menus.delete_failed','Delete failed.'));
         }
     }, 'json').fail(function(){
         $btn.prop('disabled',false);
-        toastr.error('Network error.');
+        toastr.error(T('general.network_error','Network error.'));
     });
 });
 
@@ -637,14 +673,14 @@ $('#btnMoveConfirm').on('click', function(){
         function(res){
             $btn.prop('disabled',false);
             if (res.status === 200){
-                toastr.success(res.message||'Moved.');
+                toastr.success(res.message||T('menus.moved','Moved.'));
                 bootstrap.Modal.getInstance(document.getElementById('modalMove'))?.hide();
                 loadTree();
             } else {
-                toastr.error(res.message||'Move failed.');
+                toastr.error(res.message||T('menus.move_failed','Move failed.'));
             }
         },
-        function(){ $btn.prop('disabled',false); toastr.error('Network error.'); }
+        function(){ $btn.prop('disabled',false); toastr.error(T('general.network_error','Network error.')); }
     );
 });
 
@@ -662,7 +698,7 @@ function openSort(parentId, parentTitle){
     $('#sortParentName').text(parentTitle || 'Top Level');
     $('#sortList').html(
         '<div class="text-center py-4 text-muted">'
-        + '<div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…'
+        + '<div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')
         + '</div>'
     );
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSort')).show();
@@ -680,7 +716,7 @@ function openSort(parentId, parentTitle){
 
         if (!items.length){
             $list.html('<p class="text-muted text-center py-3 mb-0" style="font-size:13px;">'
-                + 'No items at this level to sort.</p>');
+                + T('menus.no_items_to_sort','No items at this level to sort.') + '</p>');
             return;
         }
 
@@ -736,14 +772,14 @@ $('#btnSortSave').on('click', function(){
         function(res){
             $btn.prop('disabled',false);
             if (res.status === 200){
-                toastr.success('Sort order saved.');
+                toastr.success(T('menus.sort_order_saved','Sort order saved.'));
                 bootstrap.Modal.getInstance(document.getElementById('modalSort'))?.hide();
                 loadTree();
             } else {
-                toastr.error(res.message||'Save failed.');
+                toastr.error(res.message||T('menus.save_failed','Save failed.'));
             }
         },
-        function(){ $btn.prop('disabled',false); toastr.error('Network error.'); }
+        function(){ $btn.prop('disabled',false); toastr.error(T('general.network_error','Network error.')); }
     );
 });
 

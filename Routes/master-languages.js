@@ -12,6 +12,7 @@ router.get( '/',                       Ctrl.index);
 router.get( '/available',             Ctrl.availableLanguages);   // DDL data
 router.post('/paginate',               Ctrl.paginate);
 router.post('/',                       Ctrl.store);
+router.get( '/:uuid/usage',            Ctrl.usage);
 router.get( '/:uuid',                  Ctrl.show);
 router.post('/:uuid',                  Ctrl.update);
 router.post('/:uuid/delete',           Ctrl.destroy);

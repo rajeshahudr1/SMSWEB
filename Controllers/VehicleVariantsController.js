@@ -55,6 +55,7 @@ exports.viewData = async (req, res) => { res.json(await api.get('/vehicle-varian
 exports.destroy = async (req, res) => { res.json(await api.del('/vehicle-variants/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/vehicle-variants/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover = async (req, res) => { res.json(await api.post('/vehicle-variants/' + req.params.uuid + '/recover', {}, req.session.token)); };
+exports.usage = async (req, res) => { res.json(await api.get('/vehicle-variants/' + req.params.uuid + '/usage', req.session.token)); };
 exports.bulkAction = async (req, res) => { res.json(await api.post('/vehicle-variants/bulk-action', req.body, req.session.token)); };
 
 // Import single error row retry

@@ -14,6 +14,7 @@ router.post('/import/single',          requirePermission('import_countries'), Ct
 router.post('/bulk-action',            requirePermission('edit_countries'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_countries'),    Ctrl.create);
 router.post('/',                       requirePermission('add_countries'),    Ctrl.store);
+router.get('/:uuid/usage',            requirePermission('view_countries'),   Ctrl.usage);
 router.get('/:uuid/view-data',        requirePermission('view_countries'),   Ctrl.viewData);
 router.get('/:uuid/edit',             requirePermission('edit_countries'),   Ctrl.edit);
 router.post('/:uuid',                 requirePermission('edit_countries'),   Ctrl.update);

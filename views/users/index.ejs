@@ -6,12 +6,12 @@
   <div class="card-header py-2 border-bottom">
     <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
       <h3 class="card-title mb-0 me-auto">
-        <i class="bi bi-people-fill me-2 text-primary"></i>Users
+        <i class="bi bi-people-fill me-2 text-primary"></i><%- t('users.title', 'Users') %>
         <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span>
       </h3>
-      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;" title="Rows per page"></select>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;" title="<%- t('general.rows_per_page', 'Rows per page') %>"></select>
       <% if (can('add_users')) { %>
-      <a href="/users/create" class="btn btn-sm btn-primary" title="Create new user">
+      <a href="/users/create" class="btn btn-sm btn-primary" title="<%- t('users.add', 'Add User') %>">
         <i class="bi bi-person-plus me-1"></i><span class="d-none d-sm-inline"><%- t("users.add") %></span>
       </a>
       <% } %>
@@ -41,7 +41,7 @@
         </select>
       </div>
       <div class="col-auto">
-        <button class="btn btn-sm btn-outline-secondary sms-filter-clear" id="btnClearFilters" title="Clear all filters">
+        <button class="btn btn-sm btn-outline-secondary sms-filter-clear" id="btnClearFilters" title="<%- t('general.clear_filters', 'Clear all filters') %>">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
@@ -51,11 +51,11 @@
   <!-- ── Bulk bar ── -->
   <div id="bulkBar" class="d-none">
     <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
-      <span class="fw-semibold"><span id="bulkCount">0</span> selected</span>
-      <button class="btn btn-sm btn-white ms-auto" onclick="bulkAction('delete')" title="Delete selected users">
-        <i class="bi bi-trash3 me-1 text-danger"></i>Delete
+      <span class="fw-semibold"><span id="bulkCount">0</span> <%- t('general.selected', 'selected') %></span>
+      <button class="btn btn-sm btn-white ms-auto" onclick="bulkAction('delete')" title="<%- t('bulk.delete_selected', 'Delete selected users') %>">
+        <i class="bi bi-trash3 me-1 text-danger"></i><%- t('bulk.delete', 'Delete') %>
       </button>
-      <button class="btn btn-sm btn-ghost-white" id="btnClearBulk" title="Clear selection"><i class="bi bi-x-lg"></i></button>
+      <button class="btn btn-sm btn-ghost-white" id="btnClearBulk" title="<%- t('bulk.clear_selection', 'Clear selection') %>"><i class="bi bi-x-lg"></i></button>
     </div>
   </div>
 
@@ -64,7 +64,7 @@
     <table class="table table-hover table-vcenter mb-0">
       <thead>
         <tr>
-          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll" title="Select all"/></th>
+          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll" title="<%- t('general.select_all', 'Select all') %>"/></th>
           <th style="width:36px;" class="text-muted">#</th>
           <th class="sortable" data-field="name"><%- t("users.name") %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
           <th class="d-none d-md-table-cell sortable" data-field="email"><%- t("users.email") %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
@@ -94,7 +94,7 @@
     <div class="modal-content">
       <div class="modal-header border-bottom py-3">
         <h5 class="modal-title fw-semibold">
-          <i class="bi bi-person-badge me-2 text-primary"></i>User Details
+          <i class="bi bi-person-badge me-2 text-primary"></i><%- t('users.details', 'User Details') %>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>

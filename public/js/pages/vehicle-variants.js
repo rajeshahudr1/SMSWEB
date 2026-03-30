@@ -95,7 +95,7 @@ function loadData(){
         if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="13" class="text-center py-4 text-danger">Failed.</td></tr>');return;}
         var data=(res.data&&res.data.data)||[],pg=(res.data&&res.data.pagination)||{};
         $('#badgeTotal').text((pg.total||0).toLocaleString());
-        if(!data.length){$('#tableBody').html('<tr><td colspan="13" class="text-center py-5 text-muted"><i class="bi bi-car-front-fill d-block mb-2" style="font-size:36px;opacity:.3;"></i>No vehicle variants found</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+        if(!data.length){$('#tableBody').html('<tr><td colspan="13" class="text-center py-5 text-muted"><i class="bi bi-car-front-fill d-block mb-2" style="font-size:36px;opacity:.3;"></i>'+T('msg.no_vehicle_variants','No vehicle variants found')+'</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
 
         var start=((_page-1)*_pp),rows='';
         data.forEach(function(r,i){
@@ -121,6 +121,7 @@ function loadData(){
             } else {
                 if(ed)acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/vehicle-variants/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>';
                 if(ed)acts+='<li><a class="dropdown-item" href="#" onclick="toggleRec(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(parseInt(r.status)?'off':'on')+' me-2 text-'+(parseInt(r.status)?'warning':'success')+'"></i>'+(parseInt(r.status)?'Deactivate':'Activate')+'</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>';
                 if(dl)acts+='<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
             }
             acts+='</ul></div>';
@@ -146,10 +147,22 @@ function loadData(){
     }).fail(function(){$('#tableBody').html('<tr><td colspan="13" class="text-center py-4 text-danger">Network error.</td></tr>');});
 }
 
+/* Usage */
+function showUsage(uuid, name) {
+    var $b = $('#usageBody');
+    $('#usageModalName').text(T('usage.title', 'Usage') + ': ' + (name || ''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
+    $.get(BASE_URL + '/vehicle-variants/' + uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">' + T('general.failed_load', 'Failed.') + '</div>'); return; }
+        smsRenderUsageBody(res.data, 'vehicle-variants', uuid, name);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">' + T('general.network_error', 'Network error.') + '</div>'); });
+}
+
 /* ── View — all details (image same as part-types) ── */
 function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
     $.get(BASE_URL+'/vehicle-variants/'+uuid+'/view-data',function(res){
-        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">Not found.</div>');return;}
+        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">' + T('general.not_found','Not found.') + '</div>');return;}
         var rec=res.data.record||res.data||{},trans=rec.translations||[];
         var up=rec.uploaded_image_url||'',ext=rec.image_full_url||'';
         var h='<div class="p-4">';
@@ -198,11 +211,11 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
     });
 }
 
-function toggleRec(u){smsConfirm({title:'Confirm',text:'Toggle status?',onConfirm:function(){$.post(BASE_URL+'/vehicle-variants/'+u+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
-function delRec(u,n){smsConfirm({title:'Delete',text:'Delete <strong>'+n+'</strong>?',btnClass:'btn-danger',onConfirm:function(){$.post(BASE_URL+'/vehicle-variants/'+u+'/delete',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
-function recoverRec(u,n){smsConfirm({title:'Recover',text:'Recover <strong>'+n+'</strong>?',btnClass:'btn-success',onConfirm:function(){$.post(BASE_URL+'/vehicle-variants/'+u+'/recover',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
+function toggleRec(u){smsConfirm({title:T('general.confirm','Confirm'),text:T('msg.toggle_status','Toggle status?'),onConfirm:function(){$.post(BASE_URL+'/vehicle-variants/'+u+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
+function delRec(u,n){smsConfirm({title:T('btn.delete','Delete'),text:T('btn.delete','Delete')+' <strong>'+n+'</strong>?',btnClass:'btn-danger',onConfirm:function(){$.post(BASE_URL+'/vehicle-variants/'+u+'/delete',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
+function recoverRec(u,n){smsConfirm({title:T('bulk.recover','Recover'),text:T('bulk.recover','Recover')+' <strong>'+n+'</strong>?',btnClass:'btn-success',onConfirm:function(){$.post(BASE_URL+'/vehicle-variants/'+u+'/recover',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
 function updateBulk(){var c=$('.row-chk:checked').length;_sel=[];$('.row-chk:checked').each(function(){_sel.push($(this).data('uuid'));});$('#bulkCount').text(c);if(c>0)$('#bulkBar').removeClass('d-none');else $('#bulkBar').addClass('d-none');}
-function bulkAction(a){if(!_sel.length)return;smsConfirm({title:a,text:a+' '+_sel.length+' items?',onConfirm:function(){$.ajax({url:BASE_URL+'/vehicle-variants/bulk-action',type:'POST',contentType:'application/json',data:JSON.stringify({action:a,uuids:_sel}),success:function(r){if(r.status===200){toastr.success(r.message);$('#selectAll').prop('checked',false);_sel=[];loadData();}else toastr.error(r.message);},error:function(){toastr.error('Network error.');}});}});}
+function bulkAction(a){if(!_sel.length)return;smsConfirm({title:a,text:a+' '+_sel.length+' items?',onConfirm:function(){$.ajax({url:BASE_URL+'/vehicle-variants/bulk-action',type:'POST',contentType:'application/json',data:JSON.stringify({action:a,uuids:_sel}),success:function(r){if(r.status===200){toastr.success(r.message);$('#selectAll').prop('checked',false);_sel=[];loadData();}else toastr.error(r.message);},error:function(){toastr.error(T('general.network_error','Network error.'));}});}});}
 
 /* ── Export ── */
 function doExport(fmt){
@@ -215,13 +228,13 @@ function doExport(fmt){
             hideLoading();
             if(!res||res.status!==200){toastr.error(res?res.message:'Failed.');return;}
             if(res.data&&res.data.mode==='background'){
-                toastr.info('Export is processing in background. You will receive a notification and email when ready.');
-                if(typeof smsTrackJob==='function') smsTrackJob(res.data.jobId,{onComplete:function(job){if(typeof fetchUnreadCount==='function')fetchUnreadCount();if(job.status==='completed')toastr.success('Export ready! Check notifications to download.');else toastr.error('Export failed.');}});
+                toastr.info(T('export.processing','Export is processing in background. You will receive a notification and email when ready.'));
+                if(typeof smsTrackJob==='function') smsTrackJob(res.data.jobId,{onComplete:function(job){if(typeof fetchUnreadCount==='function')fetchUnreadCount();if(job.status==='completed')toastr.success(T('export.ready','Export ready! Check notifications to download.'));else toastr.error(T('export.failed','Export failed.'));}});
                 return;
             }
             // Step 2: Small export → trigger actual file download via GET
             window.location.href=BASE_URL+'/vehicle-variants/export?'+$.param(p);
-        }).fail(function(){hideLoading();toastr.error('Network error.');});
+        }).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});
         return;
     }
     // Print — needs JSON rows to build HTML in browser
@@ -230,16 +243,16 @@ function doExport(fmt){
         hideLoading();
         if(!res||res.status!==200){toastr.error(res?res.message:'Failed.');return;}
         if(res.data&&res.data.mode==='background'){
-            toastr.info('Export is processing in background. You will receive a notification and email when ready.');
+            toastr.info(T('export.processing','Export is processing in background. You will receive a notification and email when ready.'));
             return;
         }
-        if(!res.data||!res.data.rows||!res.data.rows.length){toastr.error('No data.');return;}
+        if(!res.data||!res.data.rows||!res.data.rows.length){toastr.error(T('general.no_data','No data.'));return;}
         var rows=res.data.rows,cols=Object.keys(rows[0]);
         var html='<html><head><title>Vehicle Variants</title><style>body{font-family:Arial;font-size:11px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:4px 6px;}th{background:#f0f4f8;font-weight:600;}</style></head><body><h2>Vehicle Variants ('+rows.length+')</h2><table><tr>';
         cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr>';
         rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});
         html+='</table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(function(){w.print();},400);
-    }).fail(function(){hideLoading();toastr.error('Failed.');});
+    }).fail(function(){hideLoading();toastr.error(T('msg.failed','Failed.'));});
 }
 
 /* ── Import ── */
@@ -267,7 +280,7 @@ function showImportProgress(jobId, total){
 
 function pollImportStatus(jobId){
     $.get(BASE_URL+'/notifications/job/'+jobId, function(res){
-        if(!res||res.status!==200){clearInterval(_pollTimer);_pollTimer=null;toastr.error('Failed to check status.');return;}
+        if(!res||res.status!==200){clearInterval(_pollTimer);_pollTimer=null;toastr.error(T('msg.failed_check_status','Failed to check status.'));return;}
         var d=res.data;
         $('#impProcessed').text((d.processed_rows||0).toLocaleString());
         $('#impSuccess').text((d.success_count||0).toLocaleString());
@@ -280,7 +293,7 @@ function pollImportStatus(jobId){
             // Refresh notification bell immediately
             if(typeof fetchUnreadCount==='function') fetchUnreadCount();
             if(d.error_count>0 && d.results && d.results.length){
-                toastr.warning('Import done: '+d.success_count+' imported, '+d.error_count+' errors. Fix errors below.');
+                toastr.warning(T('import.done','Import done:')+' '+d.success_count+' imported, '+d.error_count+' errors. Fix errors below.');
                 setTimeout(function(){
                     $('#importStep3').addClass('d-none');$('#importStep2').removeClass('d-none');
                     renderImportResults(d.results);
@@ -298,10 +311,10 @@ function pollImportStatus(jobId){
         } else if(d.status==='failed'){
             clearInterval(_pollTimer);_pollTimer=null;
             $('#impProgressBar').addClass('bg-danger');
-            toastr.error('Import failed: '+(d.error_message||'Unknown error'));
+            toastr.error(T('import.failed','Import failed:')+' '+(d.error_message||'Unknown error'));
             if(typeof fetchUnreadCount==='function') fetchUnreadCount();
         }
-    }).fail(function(){clearInterval(_pollTimer);_pollTimer=null;toastr.error('Connection lost.');});
+    }).fail(function(){clearInterval(_pollTimer);_pollTimer=null;toastr.error(T('general.connection_lost','Connection lost.'));});
 }
 
 function renderImportResults(results) {
@@ -408,11 +421,11 @@ function retryImportRow(idx) {
     var ey = $tr.find('.imp-ey').val().trim();
     var mf = $tr.find('.imp-mf').val().trim();
     var iu = $tr.find('.imp-iu').val().trim();
-    if (!nm) { toastr.error('Variant name is required.'); return; }
-    if (!vt) { toastr.error('Vehicle type is required.'); return; }
-    if (!vmk) { toastr.error('Vehicle make is required.'); return; }
-    if (!vmo) { toastr.error('Vehicle model is required.'); return; }
-    if (!vy) { toastr.error('Vehicle year is required.'); return; }
+    if (!nm) { toastr.error(T('msg.name_required','Variant name is required.')); return; }
+    if (!vt) { toastr.error(T('msg.vehicle_type_required','Vehicle type is required.')); return; }
+    if (!vmk) { toastr.error(T('msg.vehicle_make_required','Vehicle make is required.')); return; }
+    if (!vmo) { toastr.error(T('msg.vehicle_model_required','Vehicle model is required.')); return; }
+    if (!vy) { toastr.error(T('msg.vehicle_year_required','Vehicle year is required.')); return; }
     var $b = $tr.find('button'); btnLoading($b);
     $.post(BASE_URL + '/vehicle-variants/import/single', {
         name: nm, vehicle_type: vt, vehicle_make: vmk, vehicle_model: vmo, vehicle_year: vy,
@@ -438,7 +451,7 @@ function retryImportRow(idx) {
                 $('#importSummary').html('<div class="d-flex gap-2 flex-wrap"><span class="badge bg-success-lt px-3 py-2"><i class="bi bi-check-circle me-1"></i>' + ok + ' imported</span><span class="badge bg-danger-lt px-3 py-2"><i class="bi bi-x-circle me-1"></i>' + remaining + ' errors</span></div>');
             }
         } else { toastr.error(res.message || 'Failed.'); }
-    }).fail(function() { btnReset($b); toastr.error('Error.'); });
+    }).fail(function() { btnReset($b); toastr.error(T('general.error','Error.')); });
 }
 function retryAllErrors() { _importResults.forEach(function(r, i) { if (r.status === 'error') retryImportRow(i); }); }
 
@@ -536,7 +549,7 @@ $(function(){
                         $('#importStep2').removeClass('d-none');
                         renderImportResults(r.data.results);
                     } else {
-                        toastr.error('Unexpected response.');
+                        toastr.error(T('general.unexpected','Unexpected response.'));
                         $('#importStep1').removeClass('d-none');
                     }
                 } else {
@@ -544,7 +557,7 @@ $(function(){
                     $('#importStep1').removeClass('d-none');
                 }
             },
-            error: function() { btnReset($b); $('#importProcessing').addClass('d-none'); $('#importStep1').removeClass('d-none'); toastr.error('Network error.'); }
+            error: function() { btnReset($b); $('#importProcessing').addClass('d-none'); $('#importStep1').removeClass('d-none'); toastr.error(T('general.network_error','Network error.')); }
         });
     });
     $('#btnRetryAllErrors').on('click', retryAllErrors);

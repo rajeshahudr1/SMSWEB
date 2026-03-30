@@ -16,6 +16,7 @@ router.post('/translate',              Ctrl.translate);
 router.post('/bulk-action',            requirePermission('edit_vehicle_types'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_vehicle_types'),    Ctrl.create);
 router.post('/',                       requirePermission('add_vehicle_types'),    Ctrl.store);
+router.get('/:uuid/usage',             requirePermission('view_vehicle_types'),   Ctrl.usage);
 router.get('/:uuid/view-data',         requirePermission('view_vehicle_types'),   Ctrl.viewData);
 router.get('/:uuid/edit',              requirePermission('edit_vehicle_types'),   Ctrl.edit);
 router.post('/:uuid',                  requirePermission('edit_vehicle_types'),   Ctrl.update);

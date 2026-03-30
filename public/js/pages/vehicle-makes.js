@@ -54,10 +54,10 @@ function loadData(){
     if(isDeleted)$('#btnBulkRecover').removeClass('d-none');else $('#btnBulkRecover').addClass('d-none');
 
     $.post(BASE_URL+'/vehicle-makes/paginate',_filters(),function(res){
-        if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load.</td></tr>');return;}
+        if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">'+T('general.failed_to_load','Failed to load.')+'</td></tr>');return;}
         var data=(res.data&&res.data.data)||[],pg=(res.data&&res.data.pagination)||{};
         $('#badgeTotal').text((pg.total||0).toLocaleString());
-        if(!data.length){$('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-building d-block mb-2" style="font-size:36px;opacity:.3;"></i>No vehicle makes found</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+        if(!data.length){$('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-building d-block mb-2" style="font-size:36px;opacity:.3;"></i>'+T('msg.no_vehicle_makes','No vehicle makes found')+'</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
 
         var start=((_page-1)*_pp),rows='';
         data.forEach(function(r,i){
@@ -77,10 +77,11 @@ function loadData(){
 
             var acts='<div class="btn-group btn-group-sm">';
             acts+='<button class="btn btn-ghost-primary" onclick="viewRec(\''+r.uuid+'\')" title="View"><i class="bi bi-eye"></i></button>';
-            if(deleted){acts+='<button class="btn btn-ghost-success" onclick="recoverRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')" title="Recover"><i class="bi bi-arrow-counterclockwise"></i></button>';}
+            if(deleted){acts+='<button class="btn btn-ghost-success" onclick="recoverRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')" title="'+T('bulk.recover','Recover')+'"><i class="bi bi-arrow-counterclockwise"></i></button>';}
             else{
                 if(editable)acts+='<a href="'+BASE_URL+'/vehicle-makes/'+r.uuid+'/edit" class="btn btn-ghost-secondary" title="Edit"><i class="bi bi-pencil"></i></a>';
                 if(editable)acts+='<button class="btn btn-ghost-'+(parseInt(r.status)?'warning':'success')+'" onclick="toggleRec(\''+r.uuid+'\')"><i class="bi bi-toggle-'+(parseInt(r.status)?'on':'off')+'"></i></button>';
+                acts+='<button class="btn btn-ghost-info" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-diagram-3"></i></button>';
                 if(deletable)acts+='<button class="btn btn-ghost-danger" onclick="delRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-trash3"></i></button>';
             }
             acts+='</div>';
@@ -105,7 +106,7 @@ function loadData(){
 ══════════════════════════════════════════════════════ */
 function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
     $.get(BASE_URL+'/vehicle-makes/'+uuid+'/view-data',function(res){
-        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">Not found.</div>');return;}
+        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">' + T('general.not_found','Not found.') + '</div>');return;}
         var rec=res.data.record||res.data||{},trans=rec.translations||[];
         var h='<div class="p-4"><div class="text-center mb-3">';
         if(rec.display_image_url)h+='<img src="'+H.esc(rec.display_image_url)+'" class="rounded border mb-2" style="max-height:120px;object-fit:contain;" onerror="this.style.display=\'none\'"/><br/>';
@@ -122,9 +123,20 @@ function viewRec(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py
     });
 }
 
-function toggleRec(uuid){smsConfirm({title:'Confirm',text:'Toggle status?',onConfirm:function(){$.post(BASE_URL+'/vehicle-makes/'+uuid+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
-function delRec(uuid,name){smsConfirm({title:'Delete',text:'Delete <strong>'+name+'</strong>?',btnClass:'btn-danger',onConfirm:function(){$.post(BASE_URL+'/vehicle-makes/'+uuid+'/delete',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
-function recoverRec(uuid,name){smsConfirm({title:'Recover',text:'Recover <strong>'+name+'</strong>?',btnClass:'btn-success',onConfirm:function(){$.post(BASE_URL+'/vehicle-makes/'+uuid+'/recover',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
+function showUsage(uuid, name) {
+    var $b = $('#usageBody');
+    $('#usageModalName').text(T('usage.title', 'Usage') + ': ' + (name || ''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
+    $.get(BASE_URL + '/vehicle-makes/' + uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">' + T('general.failed_load', 'Failed.') + '</div>'); return; }
+        smsRenderUsageBody(res.data, 'vehicle-makes', uuid, name);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">' + T('general.network_error', 'Network error.') + '</div>'); });
+}
+
+function toggleRec(uuid){smsConfirm({title:T('general.confirm','Confirm'),text:T('msg.toggle_status','Toggle status?'),onConfirm:function(){$.post(BASE_URL+'/vehicle-makes/'+uuid+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
+function delRec(uuid,name){smsConfirm({title:T('btn.delete','Delete'),text:T('btn.delete','Delete')+' <strong>'+name+'</strong>?',btnClass:'btn-danger',onConfirm:function(){$.post(BASE_URL+'/vehicle-makes/'+uuid+'/delete',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
+function recoverRec(uuid,name){smsConfirm({title:T('bulk.recover','Recover'),text:T('bulk.recover','Recover')+' <strong>'+name+'</strong>?',btnClass:'btn-success',onConfirm:function(){$.post(BASE_URL+'/vehicle-makes/'+uuid+'/recover',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
 
 function updateBulk(){var c=$('.row-chk:checked').length;_sel=[];$('.row-chk:checked').each(function(){_sel.push($(this).data('uuid'));});$('#bulkCount').text(c);if(c>0)$('#bulkBar').removeClass('d-none');else $('#bulkBar').addClass('d-none');}
 function bulkAction(action){if(!_sel.length)return;smsConfirm({title:action,text:action+' '+_sel.length+' items?',onConfirm:function(){$.post(BASE_URL+'/vehicle-makes/bulk-action',{action:action,uuids:_sel},function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}});}
@@ -137,7 +149,7 @@ function doExport(fmt){
     if(fmt==='csv'||fmt==='excel'||fmt==='pdf'){window.location.href=BASE_URL+'/vehicle-makes/export?'+$.param(p);return;}
     // Print
     $.post(BASE_URL+'/vehicle-makes/export',p,function(res){
-        if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error('No data.');return;}
+        if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error(T('general.no_data','No data.'));return;}
         var rows=res.data.rows,cols=Object.keys(rows[0]);
         var html='<html><head><title>Vehicle Makes</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body><h2>Vehicle Makes ('+rows.length+')</h2><table><thead><tr>';
         cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr></thead><tbody>';
@@ -149,7 +161,11 @@ function doExport(fmt){
 /* ══════════════════════════════════════════════════════
    IMPORT — with make name + vehicle type columns
 ══════════════════════════════════════════════════════ */
-function openImport(){$('#importStep1').show();$('#importStep2').addClass('d-none');$('#frmImport')[0].reset();bootstrap.Modal.getOrCreateInstance($('#modalImport')[0]).show();}
+/* ── Import ── */
+var _pollTimer = null;
+function openImport(){if(_pollTimer){clearInterval(_pollTimer);_pollTimer=null;}$('#importProcessing').addClass('d-none');$('#importStep1').removeClass('d-none');$('#importStep2').addClass('d-none');$('#importStep3').addClass('d-none');$('#frmImport')[0].reset();bootstrap.Modal.getOrCreateInstance($('#modalImport')[0]).show();}
+function showImportProgress(jobId,total){$('#importProcessing').addClass('d-none');$('#importStep1').addClass('d-none');$('#importStep2').addClass('d-none');$('#importStep3').removeClass('d-none');$('#impTotal').text(total.toLocaleString());$('#impProcessed').text('0');$('#impSuccess').text('0');$('#impErrors').text('0');$('#impPercent').text('0%');$('#impProgressBar').css('width','0%').removeClass('bg-success bg-danger');_pollTimer=setInterval(function(){pollImportStatus(jobId);},2000);}
+function pollImportStatus(jobId){$.get(BASE_URL+'/notifications/job/'+jobId,function(res){if(!res||res.status!==200){clearInterval(_pollTimer);_pollTimer=null;toastr.error(T('msg.failed_check_status','Failed to check status.'));return;}var d=res.data;$('#impProcessed').text((d.processed_rows||0).toLocaleString());$('#impSuccess').text((d.success_count||0).toLocaleString());$('#impErrors').text((d.error_count||0).toLocaleString());$('#impPercent').text((d.progress||0)+'%');$('#impProgressBar').css('width',(d.progress||0)+'%');if(d.status==='completed'){clearInterval(_pollTimer);_pollTimer=null;$('#impProgressBar').addClass(d.error_count>0?'bg-warning':'bg-success');if(typeof fetchUnreadCount==='function')fetchUnreadCount();if(d.error_count>0&&d.results&&d.results.length){toastr.warning(T('import.done','Import done:')+' '+d.success_count+' imported, '+d.error_count+' errors.');setTimeout(function(){$('#importStep3').addClass('d-none');$('#importStep2').removeClass('d-none');renderImportResults(d.results);},800);}else{toastr.success('All '+d.success_count+' rows imported!');$('#impProgressBar').addClass('bg-success').css('width','100%').text('100%');$('#importStep3').find('.d-flex').first().after('<div class="text-center py-3 mt-2"><div style="font-size:42px;">✅</div><h5 class="text-success mt-2">All '+d.success_count+' rows imported!</h5><p class="text-muted small">Check your notifications for details.</p></div>');loadData();setTimeout(function(){try{bootstrap.Modal.getOrCreateInstance($('#modalImport')[0]).hide();}catch(e){}},3000);}}else if(d.status==='failed'){clearInterval(_pollTimer);_pollTimer=null;$('#impProgressBar').addClass('bg-danger');toastr.error(T('import.failed','Import failed:')+' '+(d.error_message||'Unknown error'));if(typeof fetchUnreadCount==='function')fetchUnreadCount();}}).fail(function(){clearInterval(_pollTimer);_pollTimer=null;toastr.error(T('general.connection_lost','Connection lost.'));});}
 
 function renderImportResults(results) {
     _importResults = results;
@@ -195,8 +211,8 @@ function retryImportRow(idx) {
     var $tr = $('#impRow' + idx);
     var nm = $tr.find('.imp-name').val().trim();
     var vt = $tr.find('.imp-type').val().trim();
-    if (!nm) { toastr.error('Make name is required.'); return; }
-    if (!vt) { toastr.error('Vehicle type is required.'); return; }
+    if (!nm) { toastr.error(T('msg.name_required','Make name is required.')); return; }
+    if (!vt) { toastr.error(T('msg.vehicle_type_required','Vehicle type is required.')); return; }
     var $b = $tr.find('button'); btnLoading($b);
     $.post(BASE_URL + '/vehicle-makes/import/single', { name: nm, vehicle_type: vt }, function(res) {
         btnReset($b);
@@ -209,7 +225,7 @@ function retryImportRow(idx) {
             $tr.find('td:last').html('\u2014');
             r.status = 'success'; loadData();
         } else { toastr.error(res.message || 'Failed.'); }
-    }).fail(function() { btnReset($b); toastr.error('Error.'); });
+    }).fail(function() { btnReset($b); toastr.error(T('general.error','Error.')); });
 }
 
 function retryAllErrors() { _importResults.forEach(function(r, i) { if (r.status === 'error') retryImportRow(i); }); }
@@ -302,12 +318,13 @@ $(function(){
         $.ajax({ url: BASE_URL + '/vehicle-makes/import', type: 'POST', data: fd, processData: false, contentType: false,
             success: function(r) {
                 btnReset($b);
-                if (r.status === 200 && r.data && r.data.results) {
-                    $('#importStep1').hide(); $('#importStep2').removeClass('d-none');
-                    renderImportResults(r.data.results);
+                if (r.status === 200 && r.data) {
+                    if (r.data.mode === 'background') { $('#importStep1').addClass('d-none'); showImportProgress(r.data.jobId, r.data.total); }
+                    else if (r.data.results) { $('#importStep1').addClass('d-none'); $('#importStep2').removeClass('d-none'); renderImportResults(r.data.results); }
+                    else { toastr.error(r.message || 'Failed.'); }
                 } else { toastr.error(r.message || 'Failed.'); }
             },
-            error: function() { btnReset($b); toastr.error('Network error.'); }
+            error: function() { btnReset($b); toastr.error(T('general.network_error','Network error.')); }
         });
     });
     $('#btnRetryAllErrors').on('click', function() { retryAllErrors(); });

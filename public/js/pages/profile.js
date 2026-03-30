@@ -2,6 +2,7 @@
    profile.js — SMS Web — Complete profile management
    Depends on: /js/common/location.js, /js/common/phone.js
    ══════════════════════════════════════════════════════ */
+var T=function(k,f){return SMS_T(k,f);};
 $(function () {
     'use strict';
 
@@ -47,7 +48,7 @@ $(function () {
     $('#avatarFile').on('change', function () {
         var file = this.files[0];
         if (!file) return;
-        if (file.size > 2 * 1024 * 1024) { toastr.error('Image must be under 2MB.'); return; }
+        if (file.size > 2 * 1024 * 1024) { toastr.error(T('msg.image_under_2mb','Image must be under 2MB.')); return; }
 
         var fd = new FormData();
         fd.append('profile_image', file);
@@ -73,14 +74,14 @@ $(function () {
             success: function (res) {
                 $('#avatarUploadProgress').hide();
                 if (res.status === 200) {
-                    toastr.success('Profile photo updated.');
+                    toastr.success(T('msg.profile_photo_updated','Profile photo updated.'));
                 } else {
-                    toastr.error(res.message || 'Upload failed.');
+                    toastr.error(res.message || T('msg.upload_failed','Upload failed.'));
                 }
             },
             error: function () {
                 $('#avatarUploadProgress').hide();
-                toastr.error('Upload failed. Please try again.');
+                toastr.error(T('msg.upload_failed_retry','Upload failed. Please try again.'));
             },
         });
     });
@@ -142,11 +143,11 @@ $(function () {
         if (pw.length >= 12) score++;
 
         var levels = [
-            { w:'20%', cls:'bg-danger',  label:'Very weak' },
-            { w:'40%', cls:'bg-danger',  label:'Weak'      },
-            { w:'60%', cls:'bg-warning', label:'Fair'      },
-            { w:'80%', cls:'bg-info',    label:'Good'      },
-            { w:'100%',cls:'bg-success', label:'Strong'    },
+            { w:'20%', cls:'bg-danger',  label:T('auth.pw_very_weak','Very weak') },
+            { w:'40%', cls:'bg-danger',  label:T('auth.pw_weak','Weak')           },
+            { w:'60%', cls:'bg-warning', label:T('auth.pw_fair','Fair')           },
+            { w:'80%', cls:'bg-info',    label:T('auth.pw_good','Good')           },
+            { w:'100%',cls:'bg-success', label:T('auth.pw_strong','Strong')       },
         ];
         var lvl = levels[Math.max(0, score - 1)] || levels[0];
         $('#pwdStrengthFill').css('width', lvl.w).attr('class', 'progress-bar ' + lvl.cls);
@@ -176,13 +177,13 @@ $(function () {
         var phoneRes = SMS_Phone.validate('#pPhoneWrap');
         var ok = true;
 
-        if (!name)              { showErr('pName',    'Full name is required.');              ok=false; }
-        if (!phoneRes.valid)    { showErr('pPhone',   phoneRes.error || 'Invalid phone.');    ok=false; }
-        if (!loc.country_id)    { showErr('pCountry', 'Country is required.');                ok=false; }
-        if (!loc.state_id)      { showErr('pState',   'State is required.');                  ok=false; }
-        if (!loc.city_id)       { showErr('pCity',    'City is required.');                   ok=false; }
-        if (!zip)               { showErr('pZip',     'ZIP / Postal Code is required.');      ok=false; }
-        if (!address)           { showErr('pAddress', 'Address is required.');                ok=false; }
+        if (!name)              { showErr('pName',    T('form.name_required','Full name is required.'));              ok=false; }
+        if (!phoneRes.valid)    { showErr('pPhone',   phoneRes.error || T('form.invalid_phone','Invalid phone.'));    ok=false; }
+        if (!loc.country_id)    { showErr('pCountry', T('form.country_required','Country is required.'));                ok=false; }
+        if (!loc.state_id)      { showErr('pState',   T('form.state_required','State is required.'));                  ok=false; }
+        if (!loc.city_id)       { showErr('pCity',    T('form.city_required','City is required.'));                   ok=false; }
+        if (!zip)               { showErr('pZip',     T('form.zip_required','ZIP / Postal Code is required.'));      ok=false; }
+        if (!address)           { showErr('pAddress', T('form.address_required','Address is required.'));                ok=false; }
         if (!ok) {
             /* Scroll to first error */
             var $first = $('.is-invalid').first();
@@ -208,7 +209,7 @@ $(function () {
             success: function (res) {
                 btnReset($btn);
                 if (res.status === 200) {
-                    toastr.success(res.message || 'Profile updated successfully.');
+                    toastr.success(res.message || T('msg.profile_updated','Profile updated successfully.'));
                     /* Keep SMS_PROFILE in sync so company tab always has fresh values */
                     if (window.SMS_PROFILE) {
                         window.SMS_PROFILE.name       = data.name       || window.SMS_PROFILE.name;
@@ -226,10 +227,10 @@ $(function () {
                     }
                 } else {
                     var msg = res.errors ? res.errors.map(function(e){ return e.message||e; }).join(', ') : res.message;
-                    toastr.error(msg || 'Could not save profile.');
+                    toastr.error(msg || T('msg.could_not_save_profile','Could not save profile.'));
                 }
             },
-            error: function () { btnReset($btn); toastr.error('Network error. Please try again.'); },
+            error: function () { btnReset($btn); toastr.error(T('general.network_error_retry','Network error. Please try again.')); },
         });
     });
 
@@ -242,7 +243,7 @@ $(function () {
         clearErrs();
 
         var company = $('#cName').val().trim();
-        if (!company) { showErr('cName', 'Company name is required.'); return; }
+        if (!company) { showErr('cName', T('form.company_required','Company name is required.')); return; }
 
         var $btn = $('#btnCompany');
         btnLoad($btn, 'Saving…');
@@ -275,13 +276,13 @@ $(function () {
             success: function (res) {
                 btnReset($btn);
                 if (res.status === 200) {
-                    toastr.success(res.message || 'Company details updated.');
+                    toastr.success(res.message || T('msg.company_updated','Company details updated.'));
                 } else {
                     var msg = res.errors ? res.errors.map(function(e){ return e.message||e; }).join('\n') : res.message;
-                    toastr.error(msg || 'Could not update company details.');
+                    toastr.error(msg || T('msg.could_not_update_company','Could not update company details.'));
                 }
             },
-            error: function () { btnReset($btn); toastr.error('Network error.'); },
+            error: function () { btnReset($btn); toastr.error(T('general.network_error','Network error.')); },
         });
     });
 
@@ -289,7 +290,7 @@ $(function () {
     $('#orgProofFile').on('change', function () {
         var file = this.files[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) { toastr.error('File must be under 10MB.'); this.value = ''; return; }
+        if (file.size > 10 * 1024 * 1024) { toastr.error(T('msg.file_under_10mb','File must be under 10MB.')); this.value = ''; return; }
 
         var fd = new FormData();
         fd.append('address_proof', file);
@@ -304,7 +305,7 @@ $(function () {
             type: 'POST', data: fd, processData: false, contentType: false,
             success: function (res) {
                 if (res.status === 200) {
-                    toastr.success(res.message || 'Address proof uploaded.');
+                    toastr.success(res.message || T('msg.address_proof_uploaded','Address proof uploaded.'));
                     var url = res.data && res.data.address_proof_url;
                     /* Update the current proof display */
                     if (url) {
@@ -319,12 +320,12 @@ $(function () {
                     }
                     $hint.html('Accepted: JPG, PNG, PDF, DOC. Max 10MB.');
                 } else {
-                    toastr.error(res.message || 'Upload failed.');
+                    toastr.error(res.message || T('msg.upload_failed','Upload failed.'));
                     $hint.html('Accepted: JPG, PNG, PDF, DOC. Max 10MB.');
                 }
             },
             error: function () {
-                toastr.error('Upload failed. Network error.');
+                toastr.error(T('msg.upload_failed_network','Upload failed. Network error.'));
                 $hint.html('Accepted: JPG, PNG, PDF, DOC. Max 10MB.');
             },
         });
@@ -343,12 +344,12 @@ $(function () {
         var cpw  = $('#confPwd').val();
         var ok   = true;
 
-        if (!isGoogle && !cur)     { showErr('curPwd', 'Current password is required.'); ok=false; }
-        if (!npw)                  { showErr('newPwd', 'New password is required.'); ok=false; }
-        else if (npw.length < 8)   { showErr('newPwd', 'Password must be at least 8 characters.'); ok=false; }
-        else if (!isGoogle && npw===cur) { showErr('newPwd', 'New password must differ from current.'); ok=false; }
-        if (!cpw)                  { showErr('confPwd', 'Please confirm your new password.'); ok=false; }
-        else if (npw !== cpw)      { showErr('confPwd', 'Passwords do not match.'); ok=false; }
+        if (!isGoogle && !cur)     { showErr('curPwd', T('auth.current_pw_required','Current password is required.')); ok=false; }
+        if (!npw)                  { showErr('newPwd', T('auth.new_pw_required','New password is required.')); ok=false; }
+        else if (npw.length < 8)   { showErr('newPwd', T('auth.pw_min_8','Password must be at least 8 characters.')); ok=false; }
+        else if (!isGoogle && npw===cur) { showErr('newPwd', T('auth.pw_must_differ','New password must differ from current.')); ok=false; }
+        if (!cpw)                  { showErr('confPwd', T('auth.confirm_pw','Please confirm your new password.')); ok=false; }
+        else if (npw !== cpw)      { showErr('confPwd', T('auth.pw_mismatch','Passwords do not match.')); ok=false; }
         if (!ok) return;
 
         var $btn = $('#btnPassword');
@@ -364,7 +365,7 @@ $(function () {
             success: function (res) {
                 btnReset($btn);
                 if (res.status === 200) {
-                    toastr.success(res.message || 'Password updated successfully.');
+                    toastr.success(res.message || T('msg.password_updated','Password updated successfully.'));
                     $('#frmPassword')[0].reset();
                     $('#pwdStrengthBar').hide();
                     /* Reset rule icons */
@@ -372,10 +373,10 @@ $(function () {
                     $('.sms-pwd-rule').removeClass('text-success').addClass('text-muted');
                     if (isGoogle) setTimeout(function(){ location.reload(); }, 1500);
                 } else {
-                    toastr.error(res.message || 'Could not update password.');
+                    toastr.error(res.message || T('msg.could_not_update_password','Could not update password.'));
                 }
             },
-            error: function () { btnReset($btn); toastr.error('Network error.'); },
+            error: function () { btnReset($btn); toastr.error(T('general.network_error','Network error.')); },
         });
     });
 

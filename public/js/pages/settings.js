@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════════════
    settings.js — SMS Web — Full live preview
    ══════════════════════════════════════════════════════ */
+var T=function(k,f){return SMS_T(k,f);};
 $(function () {
     'use strict';
 
@@ -16,6 +17,7 @@ $(function () {
             border_radius:  $('#fBorderRadius').val()  || 'md',
             font_size:      $('#fFontSize').val()      || '14px',
             language:       $('#fLanguage').val()      || 'en',
+            module_language:$('#selModuleLanguage').val() || 'en',
             date_format:    $('#fDateFormat').val()    || 'DD/MM/YYYY',
             time_format:    $('#fTimeFormat').val()    || '12h',
             timezone:       $('#fTimezone').val()      || 'Asia/Kolkata',
@@ -169,28 +171,29 @@ $(function () {
         var s    = collectSettings();
 
         $btn.prop('disabled', true)
-            .html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+            .html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('msg.saving','Saving...'));
 
         $.post(BASE_URL + '/settings/user', s, function (res) {
             $btn.prop('disabled', false).html(orig);
             if (res.status === 200) {
-                toastr.success('Settings saved.');
+                toastr.success(T('msg.settings_saved','Settings saved.'));
                 $('#previewChangedBadge').hide();
                 var needReload = s.direction     !== (SMS_SETTINGS.direction     || 'ltr')
                     || s.dark_mode     !== (SMS_SETTINGS.dark_mode     || '0')
                     || s.sidebar_style !== (SMS_SETTINGS.sidebar_style || 'dark')
-                    || s.language      !== (SMS_SETTINGS.language      || 'en');
+                    || s.language      !== (SMS_SETTINGS.language      || 'en')
+                    || s.module_language !== (SMS_SETTINGS.module_language || 'en');
                 if (needReload) {
                     setTimeout(function () { location.reload(); }, 600);
                 } else {
                     Object.assign(SMS_SETTINGS, s);
                 }
             } else {
-                toastr.error(res.message || 'Error saving settings.');
+                toastr.error(res.message || T('msg.error_saving_settings','Error saving settings.'));
             }
         }).fail(function () {
             $btn.prop('disabled', false).html(orig);
-            toastr.error('Could not connect.');
+            toastr.error(T('general.could_not_connect','Could not connect.'));
         });
     });
 
@@ -201,15 +204,15 @@ $(function () {
         var defaults = {
             theme_color:'#0054a6', dark_mode:'0', direction:'ltr',
             sidebar_style:'dark', border_radius:'md', font_size:'14px',
-            language:'en', date_format:'DD/MM/YYYY', time_format:'12h',
+            language:'en', module_language:'en', date_format:'DD/MM/YYYY', time_format:'12h',
             timezone:'Asia/Kolkata', items_per_page:'15',
         };
         $.post(BASE_URL + '/settings/user', defaults, function (res) {
             if (res.status === 200) {
-                toastr.success('Settings reset to defaults.');
+                toastr.success(T('msg.settings_reset','Settings reset to defaults.'));
                 setTimeout(function () { location.reload(); }, 600);
             } else {
-                toastr.error('Error resetting settings.');
+                toastr.error(T('msg.error_resetting_settings','Error resetting settings.'));
             }
         });
     });
@@ -260,12 +263,12 @@ window.validateAiKey = function (provider) {
     }
 
     if (!key) {
-        toastr.error('Please enter an API key first.');
+        toastr.error(T('msg.enter_api_key','Please enter an API key first.'));
         return;
     }
 
     var origHtml = $btn.html();
-    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Validating...');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('msg.validating','Validating...'));
     $status.html('').removeClass('text-success text-danger');
 
     $.ajax({
@@ -276,17 +279,17 @@ window.validateAiKey = function (provider) {
         success: function (res) {
             $btn.prop('disabled', false).html(origHtml);
             if (res.status === 200) {
-                $status.html('<i class="bi bi-check-circle-fill text-success me-1"></i>Valid!').addClass('text-success');
-                toastr.success(res.message || 'API key is valid!');
+                $status.html('<i class="bi bi-check-circle-fill text-success me-1"></i>'+T('msg.valid','Valid!')).addClass('text-success');
+                toastr.success(res.message || T('msg.api_key_valid','API key is valid!'));
             } else {
-                $status.html('<i class="bi bi-x-circle-fill text-danger me-1"></i>Invalid').addClass('text-danger');
-                toastr.error(res.message || 'Validation failed.');
+                $status.html('<i class="bi bi-x-circle-fill text-danger me-1"></i>'+T('msg.invalid','Invalid')).addClass('text-danger');
+                toastr.error(res.message || T('msg.validation_failed','Validation failed.'));
             }
         },
         error: function () {
             $btn.prop('disabled', false).html(origHtml);
-            $status.html('<i class="bi bi-x-circle-fill text-danger me-1"></i>Error').addClass('text-danger');
-            toastr.error('Network error while validating.');
+            $status.html('<i class="bi bi-x-circle-fill text-danger me-1"></i>'+T('general.error','Error')).addClass('text-danger');
+            toastr.error(T('general.network_error_validating','Network error while validating.'));
         }
     });
 };
@@ -305,7 +308,7 @@ window.saveAiConfig = function () {
         ai_gemini_model:        $('#fAiGeminiModel').val().trim() || 'gemini-2.5-flash',
     };
 
-    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('msg.saving','Saving...'));
 
     $.ajax({
         url: BASE_URL + '/settings/ai-config',
@@ -315,15 +318,15 @@ window.saveAiConfig = function () {
         success: function (res) {
             $btn.prop('disabled', false).html(origHtml);
             if (res.status === 200) {
-                toastr.success(res.message || 'AI configuration saved.');
+                toastr.success(res.message || T('msg.ai_config_saved','AI configuration saved.'));
                 $('#openaiStatus, #geminiStatus').html('');
             } else {
-                toastr.error(res.message || 'Failed to save AI config.');
+                toastr.error(res.message || T('msg.failed_save_ai_config','Failed to save AI config.'));
             }
         },
         error: function () {
             $btn.prop('disabled', false).html(origHtml);
-            toastr.error('Network error while saving.');
+            toastr.error(T('general.network_error_saving','Network error while saving.'));
         }
     });
 };

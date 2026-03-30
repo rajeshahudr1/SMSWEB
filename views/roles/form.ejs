@@ -7,7 +7,7 @@ var assignedIds = isEdit && r.permissions ? r.permissions.map(function(p){ retur
 var assignedB2BIds = isEdit && r.b2b_permission_ids ? r.b2b_permission_ids.map(function(id){ return parseInt(id); }) : [];
 var assignedB2CIds = isEdit && r.b2c_permission_ids ? r.b2c_permission_ids.map(function(id){ return parseInt(id); }) : [];
 var formAction  = isEdit ? '/roles/' + r.uuid : '/roles';
-var pageTitle   = isEdit ? 'Edit Role' : 'Add Role';
+var pageTitle   = isEdit ? t('roles.edit', 'Edit Role') : t('roles.add', 'Add Role');
 
 /* Split permissions by panel for B2B/B2C tabs */
 var b2bGroups = {};
@@ -34,8 +34,8 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
 
 <!-- ── Back bar ── -->
 <div class="d-flex align-items-center gap-2 mb-3">
-  <a href="/roles" class="btn btn-sm btn-outline-secondary" title="Back to Roles list">
-    <i class="bi bi-arrow-left me-1"></i>Back
+  <a href="/roles" class="btn btn-sm btn-outline-secondary" title="<%- t('btn.back_to_list', 'Back to Roles list') %>">
+    <i class="bi bi-arrow-left me-1"></i><%- t('btn.back', 'Back') %>
   </a>
   <h3 class="mb-0" style="font-size:16px;">
     <i class="bi bi-shield-check me-2 text-primary"></i><%- pageTitle %>
@@ -50,7 +50,7 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
     <div class="card shadow-sm">
       <div class="card-header py-2">
         <div class="card-title mb-0" style="font-size:14px;">
-          <i class="bi bi-info-circle me-1 text-primary"></i>Role Details
+          <i class="bi bi-info-circle me-1 text-primary"></i><%- t('roles.details', 'Role Details') %>
         </div>
       </div>
       <div class="card-body">
@@ -81,10 +81,10 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
     <div class="card mt-3 shadow-sm">
       <div class="card-body py-3">
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary" id="btnSubmit" title="<%- isEdit ? 'Update this role' : 'Create new role' %>">
-            <i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update Role' : 'Create Role' %>
+          <button type="submit" class="btn btn-primary" id="btnSubmit" title="<%- isEdit ? t('btn.update', 'Update') : t('btn.save', 'Save') %>">
+            <i class="bi bi-floppy me-1"></i><%- isEdit ? t('btn.update', 'Update') : t('btn.save', 'Save') %>
           </button>
-          <a href="/roles" class="btn btn-outline-secondary" title="Discard and go back"><i class="bi bi-x-lg me-1"></i><%- t("btn.cancel") %></a>
+          <a href="/roles" class="btn btn-outline-secondary" title="<%- t('btn.discard', 'Discard and go back') %>"><i class="bi bi-x-lg me-1"></i><%- t("btn.cancel") %></a>
         </div>
       </div>
     </div>
@@ -95,11 +95,11 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
     <div class="card shadow-sm">
       <div class="card-header py-2">
         <div class="card-title mb-0" style="font-size:14px;">
-          <i class="bi bi-key me-1 text-primary"></i>Permissions
+          <i class="bi bi-key me-1 text-primary"></i><%- t('roles.permissions', 'Permissions') %>
         </div>
         <div class="card-options gap-2">
-          <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll" title="Select all permissions in active tab"><%- t("btn.select_all") %></button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearAll" title="Clear all permissions in active tab"><%- t("btn.clear_all") %></button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll" title="<%- t('roles.select_all_tip', 'Select all permissions in active tab') %>"><%- t("btn.select_all") %></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearAll" title="<%- t('roles.clear_all_tip', 'Clear all permissions in active tab') %>"><%- t("btn.clear_all") %></button>
         </div>
       </div>
 
@@ -109,14 +109,14 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
           <li class="nav-item">
             <button class="nav-link active d-flex align-items-center gap-2" data-bs-toggle="tab" data-bs-target="#tabB2B" type="button" role="tab">
               <i class="bi bi-building"></i>
-              B2B Permissions
+              <%- t('roles.b2b_permissions', 'B2B Permissions') %>
               <span class="badge bg-primary-lt rounded-pill" style="font-size:10px;"><%- b2bCount %></span>
             </button>
           </li>
           <li class="nav-item">
             <button class="nav-link d-flex align-items-center gap-2" data-bs-toggle="tab" data-bs-target="#tabB2C" type="button" role="tab">
               <i class="bi bi-person"></i>
-              B2C Permissions
+              <%- t('roles.b2c_permissions', 'B2C Permissions') %>
               <span class="badge bg-success-lt rounded-pill" style="font-size:10px;"><%- b2cCount %></span>
             </button>
           </li>
@@ -133,7 +133,7 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
                 <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing:.05em;"><%- groupName %></span>
                 <label class="form-check mb-0">
                   <input type="checkbox" class="form-check-input group-toggle" data-group="b2b_<%- groupName %>"/>
-                  <span class="form-check-label small">All</span>
+                  <span class="form-check-label small"><%- t('general.all', 'All') %></span>
                 </label>
               </div>
               <div class="row g-0 px-4 py-2">
@@ -157,7 +157,7 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
             </div>
             <% }) %>
             <% } else { %>
-            <div class="text-center text-muted py-5">No B2B permissions found.</div>
+            <div class="text-center text-muted py-5"><%- t('roles.no_b2b_permissions', 'No B2B permissions found.') %></div>
             <% } %>
           </div>
 
@@ -171,7 +171,7 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
                 <label class="form-check mb-0">
                   <!-- B2C group toggle -->
                   <input type="checkbox" class="form-check-input group-toggle" data-group="b2c_<%- groupName %>"/>
-                  <span class="form-check-label small">All</span>
+                  <span class="form-check-label small"><%- t('general.all', 'All') %></span>
                 </label>
               </div>
               <div class="row g-0 px-4 py-2">
@@ -195,7 +195,7 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
             </div>
             <% }) %>
             <% } else { %>
-            <div class="text-center text-muted py-5">No B2C permissions found.</div>
+            <div class="text-center text-muted py-5"><%- t('roles.no_b2c_permissions', 'No B2C permissions found.') %></div>
             <% } %>
           </div>
 

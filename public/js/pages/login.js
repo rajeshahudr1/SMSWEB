@@ -1,4 +1,5 @@
 /* ── login.js ── SMS Web ───────────────────────── */
+var T=function(k,f){return SMS_T(k,f);};
 
 $(function () {
 
@@ -32,7 +33,7 @@ $(function () {
         if (typeof google !== 'undefined' && google.accounts) {
             google.accounts.id.prompt();
         } else {
-            toastr.warning('Google Sign-In is loading. Please try again in a moment.');
+            toastr.warning(T('auth.google_loading','Google Sign-In is loading. Please try again in a moment.'));
         }
     });
 
@@ -51,12 +52,12 @@ $(function () {
             password: { required: true },
         },
         messages: {
-            email:    { required: 'Please enter your email.', email: 'Enter a valid email address.' },
-            password: { required: 'Please enter your password.' },
+            email:    { required: T('auth.enter_email','Please enter your email.'), email: T('auth.valid_email','Enter a valid email address.') },
+            password: { required: T('auth.enter_password','Please enter your password.') },
         },
         submitHandler: function () {
             var $btn = $('#btnLogin');
-            btnLoad($btn, 'Signing in...');
+            btnLoad($btn, T('auth.signing_in','Signing in...'));
 
             $.ajax({
                 url:         BASE_URL + '/login',
@@ -65,7 +66,7 @@ $(function () {
                 dataType:    'json',
                 success: function (res) {
                     if (res.status === 200) {
-                        toastr.success('Login successful! Redirecting...');
+                        toastr.success(T('auth.login_success','Login successful! Redirecting...'));
                         setTimeout(function () {
                             window.location.href = '/dashboard';
                         }, 700);
@@ -77,12 +78,12 @@ $(function () {
                         }, 1800);
                         btnReset($btn);
                     } else {
-                        toastr.error(res.message || 'Invalid email or password.');
+                        toastr.error(res.message || T('auth.invalid_credentials','Invalid email or password.'));
                         btnReset($btn);
                     }
                 },
                 error: function () {
-                    toastr.error('Server error. Please try again.');
+                    toastr.error(T('general.server_error','Server error. Please try again.'));
                     btnReset($btn);
                 }
             });
@@ -97,7 +98,7 @@ function googleSignIn(idToken, mode) {
     mode = mode || 'login';
     var $btn = $('#btnGoogleLogin');
     $btn.prop('disabled', true).html(
-        '<span class="spinner-border spinner-border-sm me-1"></span>Connecting...'
+        '<span class="spinner-border spinner-border-sm me-1"></span>'+T('auth.connecting','Connecting...')
     );
 
     $.ajax({
@@ -117,18 +118,18 @@ function googleSignIn(idToken, mode) {
                         + '&gpic='   + encodeURIComponent(gd.picture || '');
                     window.location.href = BASE_URL + '/google-complete' + qs;
                 } else {
-                    toastr.success('Google login successful!');
+                    toastr.success(T('auth.google_login_success','Google login successful!'));
                     setTimeout(function () { window.location.href = '/dashboard'; }, 700);
                 }
             } else {
-                toastr.error(res.message || 'Google sign-in failed.');
+                toastr.error(res.message || T('auth.google_signin_failed','Google sign-in failed.'));
                 $btn.prop('disabled', false).html(
                     '<img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" height="20"> Continue with Google'
                 );
             }
         },
         error: function () {
-            toastr.error('Could not connect. Please try again.');
+            toastr.error(T('general.could_not_connect_retry','Could not connect. Please try again.'));
             $btn.prop('disabled', false).html(
                 '<img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" height="20"> Continue with Google'
             );

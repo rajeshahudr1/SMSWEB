@@ -9,10 +9,10 @@ var isSuperAdmin = user && user.is_super_admin;
       <h3 class="card-title mb-0 me-auto"><i class="bi bi-building me-2 text-primary"></i><%- t('vehicle_makes.title') || 'Vehicle Makes' %> <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
       <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
       <!-- Advanced Filter button -->
-      <button class="btn btn-sm btn-outline-primary" id="btnAdvFilter" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline">Filters</span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button>
+      <button class="btn btn-sm btn-outline-primary" id="btnAdvFilter" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline"><%- t('general.filters', 'Filters') %></span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button>
       <% if (can('export_vehicle_makes')) { %>
       <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline"><%- t('btn.export') %></span></button>
-        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li><li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
+        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i><%- t('export.csv', 'CSV') %></a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i><%- t('export.excel', 'Excel') %></a></li><li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i><%- t('export.pdf', 'PDF') %></a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i><%- t('export.print', 'Print') %></a></li></ul>
       </div><% } %>
       <% if (can('import_vehicle_makes')) { %><button class="btn btn-sm btn-outline-info" onclick="openImport()"><i class="bi bi-upload me-1"></i><span class="d-none d-sm-inline"><%- t('btn.import') %></span></button><% } %>
       <% if (can('add_vehicle_makes')) { %><a href="/vehicle-makes/create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline"><%- t('vehicle_makes.add') || 'Add Make' %></span></a><% } %>
@@ -22,7 +22,7 @@ var isSuperAdmin = user && user.is_super_admin;
   <!-- Inline quick search -->
   <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
     <div class="d-flex align-items-center gap-2">
-      <div class="flex-grow-1"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269;  Search makes by name..."/></div>
+      <div class="flex-grow-1"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="<%- t('vehicle_makes.search_placeholder', 'Search makes by name...') %>"/></div>
       <div id="activeFiltersBar" class="d-flex gap-1 flex-wrap"></div>
     </div>
   </div>
@@ -30,12 +30,12 @@ var isSuperAdmin = user && user.is_super_admin;
   <!-- Bulk bar -->
   <div id="bulkBar" class="d-none">
     <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
-      <span class="fw-semibold"><span id="bulkCount">0</span> selected</span>
+      <span class="fw-semibold"><span id="bulkCount">0</span> <%- t('general.selected', 'selected') %></span>
       <div class="ms-auto d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i>Deactivate</button>
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i>Activate</button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i><%- t('bulk.deactivate', 'Deactivate') %></button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i><%- t('bulk.activate', 'Activate') %></button>
         <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')"><i class="bi bi-trash3 me-1"></i><%- t('btn.delete') %></button>
-        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i>Recover</button>
+        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i><%- t('bulk.recover', 'Recover') %></button>
         <button class="btn btn-sm btn-outline-light" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
       </div>
     </div>
@@ -64,51 +64,51 @@ var isSuperAdmin = user && user.is_super_admin;
 ═══════════════════════════════════════════════ -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="filterSidebar" style="width:340px;">
   <div class="offcanvas-header border-bottom py-3">
-    <h5 class="offcanvas-title fw-semibold mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Advanced Filters</h5>
+    <h5 class="offcanvas-title fw-semibold mb-0"><i class="bi bi-funnel me-2 text-primary"></i><%- t('filters.advanced_filters', 'Advanced Filters') %></h5>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
   </div>
   <div class="offcanvas-body">
 
     <% if (isSuperAdmin && orgs.length) { %>
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Company</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('filters.company', 'Company') %></label>
       <select class="form-select form-select-sm" id="filterCompany">
-        <option value="all">All Companies</option>
-        <option value="global">Global (Super Admin)</option>
+        <option value="all"><%- t('filters.all_companies', 'All Companies') %></option>
+        <option value="global"><%- t('filters.global_super_admin', 'Global (Super Admin)') %></option>
         <% orgs.forEach(function(o) { %><option value="<%- o.id %>"><%- o.company_name %></option><% }) %>
       </select>
     </div>
     <% } %>
 
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Vehicle Type</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('vehicle_makes.vehicle_type', 'Vehicle Type') %></label>
       <select class="form-select form-select-sm" id="filterVehicleType" multiple style="width:100%;"></select>
-      <div class="form-hint mt-1" style="font-size:11px;">Select one or more types to filter<% if (isSuperAdmin) { %> — filtered by company<% } %></div>
+      <div class="form-hint mt-1" style="font-size:11px;"><%- t('filters.select_types_hint', 'Select one or more types to filter') %><% if (isSuperAdmin) { %> — <%- t('filters.filtered_by_company', 'filtered by company') %><% } %></div>
     </div>
 
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Status</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('general.status', 'Status') %></label>
       <select class="form-select form-select-sm" id="filterStatus">
-        <option value="">All Status</option>
+        <option value=""><%- t('filters.all_status', 'All Status') %></option>
         <option value="1"><%- t('general.active') %></option>
         <option value="0"><%- t('general.inactive') %></option>
       </select>
     </div>
 
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Records</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('filters.records', 'Records') %></label>
       <select class="form-select form-select-sm" id="filterDeleted">
-        <option value="">Active Records</option>
-        <option value="only">Deleted Only</option>
-        <option value="all">All Records</option>
+        <option value=""><%- t('filters.active_records', 'Active Records') %></option>
+        <option value="only"><%- t('filters.deleted_only', 'Deleted Only') %></option>
+        <option value="all"><%- t('filters.all_records', 'All Records') %></option>
       </select>
     </div>
 
   </div>
   <div class="offcanvas-footer border-top p-3">
     <div class="d-flex gap-2">
-      <button class="btn btn-primary btn-sm flex-fill" id="btnApplyFilters"><i class="bi bi-check-lg me-1"></i>Apply Filters</button>
-      <button class="btn btn-outline-secondary btn-sm flex-fill" id="btnClearFilters"><i class="bi bi-x-lg me-1"></i>Clear All</button>
+      <button class="btn btn-primary btn-sm flex-fill" id="btnApplyFilters"><i class="bi bi-check-lg me-1"></i><%- t('filters.apply', 'Apply Filters') %></button>
+      <button class="btn btn-outline-secondary btn-sm flex-fill" id="btnClearFilters"><i class="bi bi-x-lg me-1"></i><%- t('filters.clear_all', 'Clear All') %></button>
     </div>
   </div>
 </div>
@@ -117,31 +117,31 @@ var isSuperAdmin = user && user.is_super_admin;
 <div class="modal fade" id="modalView" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:640px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-building me-2 text-primary"></i><%- t('vehicle_makes.details') || 'Make Details' %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="viewBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div></div></div></div>
 
 <!-- Image Modal -->
-<div class="modal fade" id="modalImage" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:600px;"><div class="modal-content"><div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0" id="imgModalTitle"><i class="bi bi-image me-2 text-primary"></i>Images</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-3" id="imgModalBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div></div></div></div>
+<div class="modal fade" id="modalImage" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:600px;"><div class="modal-content"><div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0" id="imgModalTitle"><i class="bi bi-image me-2 text-primary"></i><%- t('general.images', 'Images') %></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-3" id="imgModalBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div></div></div></div>
 
 <!-- Import Modal -->
-<div class="modal fade" id="modalImport" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:720px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i>Import Vehicle Makes</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal fade" id="modalImport" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:720px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i><%- t('vehicle_makes.import_title', 'Import Vehicle Makes') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
   <div id="importStep1">
     <div class="sms-import-instructions">
-      <h6><i class="bi bi-info-circle me-1"></i>Import Instructions — Vehicle Makes</h6>
+      <h6><i class="bi bi-info-circle me-1"></i><%- t('vehicle_makes.import_instructions_title', 'Import Instructions — Vehicle Makes') %></h6>
       <div class="sms-import-columns">
         <span class="col-badge required"><code>name</code></span>
         <span class="col-badge required"><code>vehicle_type</code></span>
         <span class="col-badge optional"><code>image_url</code></span>
-        <span class="col-badge optional"><code>Hindi / hi</code></span>
-        <span class="col-badge optional"><code>... any language</code></span>
+        <span class="col-badge optional"><code><%- t('import.hindi_example', 'Hindi / hi') %></code></span>
+        <span class="col-badge optional"><code><%- t('import.any_language', '... any language') %></code></span>
       </div>
       <ul class="sms-import-notes mb-0">
-        <li><strong>name</strong> <span class="text-danger">(required)</span> — Make name (e.g. Toyota, Honda)</li>
-        <li><strong>vehicle_type</strong> <span class="text-danger">(required)</span> — Vehicle type name as text. <strong>Smart match:</strong> your company first → global → auto-create new type.</li>
-        <li><strong>image_url</strong> — External image URL (optional)</li>
-        <li><strong>Language columns</strong> — Use language name or code as header (e.g. <code>Hindi</code> or <code>hi</code>)</li>
-        <li>Same make name is allowed under <strong>different types</strong> (e.g. "Audi" under Car + "Audi" under Truck)</li>
-        <li>Accepted: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong> — max 1000 rows per import</li>
+        <li><strong>name</strong> <span class="text-danger"><%- t('import.required', '(required)') %></span> — <%- t('vehicle_makes.import_name_hint', 'Make name (e.g. Toyota, Honda)') %></li>
+        <li><strong>vehicle_type</strong> <span class="text-danger"><%- t('import.required', '(required)') %></span> — <%- t('vehicle_makes.import_type_hint', 'Vehicle type name as text.') %> <strong><%- t('import.smart_match', 'Smart match:') %></strong> <%- t('vehicle_makes.import_type_match', 'your company first → global → auto-create new type.') %></li>
+        <li><strong>image_url</strong> — <%- t('vehicle_makes.import_image_hint', 'External image URL (optional)') %></li>
+        <li><strong><%- t('import.language_columns', 'Language columns') %></strong> — <%- t('import.language_columns_hint', 'Use language name or code as header') %> (<%- t('import.eg', 'e.g.') %> <code>Hindi</code> <%- t('import.or', 'or') %> <code>hi</code>)</li>
+        <li><%- t('vehicle_makes.import_same_name_hint', 'Same make name is allowed under') %> <strong><%- t('import.different_types', 'different types') %></strong> (<%- t('import.eg', 'e.g.') %> "Audi" <%- t('import.under', 'under') %> Car + "Audi" <%- t('import.under', 'under') %> Truck)</li>
+        <li><%- t('import.accepted_formats', 'Accepted:') %> <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong> — <%- t('import.max_rows', 'max 1000 rows per import') %></li>
       </ul>
     </div>
-    <a href="/templates/vehicle-makes-import-template.csv" class="btn btn-sm btn-outline-primary mb-3" download><i class="bi bi-download me-1"></i>Download Template</a>
+    <a href="/templates/vehicle-makes-import-template.csv" class="btn btn-sm btn-outline-primary mb-3" download><i class="bi bi-download me-1"></i><%- t('import.download_template', 'Download Template') %></a>
     <form id="frmImport" enctype="multipart/form-data">
       <div class="mb-3"><input type="file" name="file" id="importFile" class="form-control" accept=".csv,.xlsx,.xls" required/></div>
       <button type="submit" class="btn btn-info btn-sm" id="btnImport"><i class="bi bi-upload me-1"></i><%- t('btn.import') %></button>
@@ -149,14 +149,28 @@ var isSuperAdmin = user && user.is_super_admin;
   </div>
   <div id="importStep2" class="d-none">
     <div id="importSummary" class="mb-3"></div>
-    <div id="importResultTable" style="max-height:400px;overflow-y:auto;"></div>
+    <div id="importResultTable" style="max-height:450px;overflow-y:auto;overflow-x:auto;"></div>
     <div id="importErrorActions" class="d-none mt-3 d-flex gap-2">
-      <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i>Retry All Errors</button>
+      <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i><%- t('import.retry_all_errors', 'Retry All Errors') %></button>
+    </div>
+  </div>
+  <!-- Step 3: Background processing -->
+  <div id="importStep3" class="d-none">
+    <div class="text-center py-3">
+      <h6 class="mb-3"><i class="bi bi-hourglass-split me-2 text-primary"></i><%- t('import.processing_background', 'Processing in background...') %></h6>
+      <div class="progress mb-3" style="height:24px;"><div class="progress-bar progress-bar-striped progress-bar-animated" id="impProgressBar" role="progressbar" style="width:0%;">0%</div></div>
+      <div class="d-flex justify-content-center gap-4 text-muted small">
+        <span><%- t('import.total', 'Total') %>: <strong id="impTotal">0</strong></span><span><%- t('import.processed', 'Processed') %>: <strong id="impProcessed">0</strong></span>
+        <span class="text-success"><%- t('import.success', 'Success') %>: <strong id="impSuccess">0</strong></span><span class="text-danger"><%- t('import.errors', 'Errors') %>: <strong id="impErrors">0</strong></span>
+      </div>
+      <div class="mt-2"><span id="impPercent" class="text-primary fw-bold">0%</span> <%- t('import.complete', 'complete') %></div>
     </div>
   </div>
 </div>
 <div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div>
 </div></div></div>
+
+<% include ../partials/usage-modal %>
 
 <script>window._IS_SUPER = <%= isSuperAdmin ? 'true' : 'false' %>;</script>
 <% block('scripts', '<script src="/js/pages/vehicle-makes.js"></script>') %>

@@ -14,6 +14,7 @@ router.post('/import/single',          requirePermission('import_cities'), Ctrl.
 router.post('/bulk-action',            requirePermission('edit_cities'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_cities'),    Ctrl.create);
 router.post('/',                       requirePermission('add_cities'),    Ctrl.store);
+router.get('/:uuid/usage',            requirePermission('view_cities'),   Ctrl.usage);
 router.get('/:uuid/view-data',        requirePermission('view_cities'),   Ctrl.viewData);
 router.get('/:uuid/edit',             requirePermission('edit_cities'),   Ctrl.edit);
 router.post('/:uuid',                 requirePermission('edit_cities'),   Ctrl.update);

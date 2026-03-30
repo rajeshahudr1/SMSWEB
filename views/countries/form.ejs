@@ -1,16 +1,16 @@
 <%- layout('../layouts/main') %>
 <% var r = typeof record !== 'undefined' && record ? record : null; var isEdit = !!r; %>
 <div class="card shadow-sm" style="max-width:700px;margin:0 auto;">
-  <div class="card-header py-3"><h3 class="card-title mb-0"><i class="bi bi-globe me-2 text-primary"></i><%= isEdit ? 'Edit' : 'Add' %> Country</h3></div>
+  <div class="card-header py-3"><h3 class="card-title mb-0"><i class="bi bi-globe me-2 text-primary"></i><%- isEdit ? t('countries.edit', 'Edit Country') : t('countries.add', 'Add Country') %></h3></div>
   <div class="card-body">
     <form id="frmSave">
-      <div class="mb-3"><label class="form-label">Country Name <span class="text-danger">*</span></label><input type="text" class="form-control" name="name" id="fldName" value="<%= r ? r.name : '' %>" required autofocus/></div>
+      <div class="mb-3"><label class="form-label"><%- t('countries.name', 'Country Name') %> <span class="text-danger">*</span></label><input type="text" class="form-control" name="name" id="fldName" value="<%= r ? r.name : '' %>" required autofocus/></div>
       <div class="row g-3 mb-3">
-        <div class="col-sm-6"><label class="form-label">Code (e.g. IN, US)</label><input type="text" class="form-control" name="sort_name" id="fldCode" value="<%= r ? r.sort_name||'' : '' %>" maxlength="10"/></div>
-        <div class="col-sm-6"><label class="form-label">Phone Code</label><input type="text" class="form-control" name="phone_code" id="fldPhone" value="<%= r ? r.phone_code||'' : '' %>" placeholder="+91"/></div>
+        <div class="col-sm-6"><label class="form-label"><%- t('countries.code_hint', 'Code (e.g. IN, US)') %></label><input type="text" class="form-control" name="sort_name" id="fldCode" value="<%= r ? r.sort_name||'' : '' %>" maxlength="10"/></div>
+        <div class="col-sm-6"><label class="form-label"><%- t('countries.phone_code', 'Phone Code') %></label><input type="text" class="form-control" name="phone_code" id="fldPhone" value="<%= r ? r.phone_code||'' : '' %>" placeholder="+91"/></div>
       </div>
-      <div class="mb-3"><label class="form-label">Status</label><select class="form-select" name="status" id="fldStatus"><option value="1" <%= r && !parseInt(r.status) ? '' : 'selected' %>>Active</option><option value="0" <%= r && !parseInt(r.status) ? 'selected' : '' %>>Inactive</option></select></div>
-      <div class="d-flex gap-2"><button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg me-1"></i><%= isEdit ? 'Update' : 'Save' %></button><a href="/countries" class="btn btn-ghost-secondary">Cancel</a></div>
+      <div class="mb-3"><label class="form-label"><%- t('general.status', 'Status') %></label><select class="form-select" name="status" id="fldStatus"><option value="1" <%= r && !parseInt(r.status) ? '' : 'selected' %>><%- t('general.active', 'Active') %></option><option value="0" <%= r && !parseInt(r.status) ? 'selected' : '' %>><%- t('general.inactive', 'Inactive') %></option></select></div>
+      <div class="d-flex gap-2"><button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg me-1"></i><%- isEdit ? t('btn.update', 'Update') : t('btn.save', 'Save') %></button><a href="/countries" class="btn btn-ghost-secondary"><%- t('btn.cancel', 'Cancel') %></a></div>
     </form>
   </div>
 </div>

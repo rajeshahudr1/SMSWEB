@@ -2,6 +2,7 @@
  * languages.js — Language Manager page
  * Loaded via block('scripts') → runs AFTER jQuery, Select2, toastr
  */
+var T=function(k,f){return SMS_T(k,f);};
 $(function(){
 
     var curLang='', enD={}, trD={}, flt='all', lName='', aiProvider='openai', _aiEnabled=false;
@@ -40,12 +41,12 @@ $(function(){
         curLang=c; hide($mt,$ed,$bb); show($ld);
         try {
             var r = await(await fetch('/languages/'+c)).json();
-            if(r.status!==200){ toastr.error(r.message||'Error loading'); return; }
+            if(r.status!==200){ toastr.error(r.message||T('msg.error_loading','Error loading')); return; }
             enD = r.data.en||{}; trD = r.data.translations||{};
             upStats(r.data.totalKeys, r.data.translated);
             render();
             hide($ld); show($ed,$hBtns,$tb,$bb);
-        } catch(e){ console.error(e); hide($ld); show($mt); toastr.error('Failed to load language'); }
+        } catch(e){ console.error(e); hide($ld); show($mt); toastr.error(T('msg.failed_load_language','Failed to load language')); }
     }
 
     function upStats(t,d){
@@ -201,7 +202,7 @@ $(function(){
         var inps = document.querySelectorAll('.sms-tinput'), tr={};
         inps.forEach(function(i){ tr[i.dataset.k] = i.value; });
         var SV = $sTop.innerHTML;
-        [$sTop,$sBot].forEach(function(b){ b.disabled=true; b.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Saving...'; });
+        [$sTop,$sBot].forEach(function(b){ b.disabled=true; b.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>'+T('msg.saving','Saving...'); });
         try{
             var j = await(await fetch('/languages/'+curLang,{
                 method:'PUT', headers:{'Content-Type':'application/json'},
@@ -210,11 +211,11 @@ $(function(){
             if(j.status===200){
                 if(j.data) upStats(j.data.totalKeys, j.data.translated);
                 inps.forEach(function(i){ i.classList.remove('is-dirty'); });
-                toastr.success(j.message || 'Translations saved successfully.');
+                toastr.success(j.message || T('msg.translations_saved','Translations saved successfully.'));
             } else {
-                toastr.error(j.message || 'Save failed.');
+                toastr.error(j.message || T('msg.save_failed','Save failed.'));
             }
-        } catch(e){ console.error(e); toastr.error('Save failed: network error.'); }
+        } catch(e){ console.error(e); toastr.error(T('msg.save_failed_network','Save failed: network error.')); }
         [$sTop,$sBot].forEach(function(b){ b.disabled=false; b.innerHTML=SV; });
     };
 
@@ -246,7 +247,7 @@ $(function(){
                 body: JSON.stringify({ key: key })
             })).json();
             if(j.status===200){
-                toastr.success(j.message || 'Key deleted.');
+                toastr.success(j.message || T('msg.key_deleted','Key deleted.'));
                 /* Remove row from UI */
                 var $row = $('[data-k="'+key+'"]');
                 var $grp = $row.closest('.sms-lang-grp');
@@ -259,9 +260,9 @@ $(function(){
                 delete trD[key];
                 delete _usageCounts[key];
             } else {
-                toastr.error(j.message || 'Delete failed.');
+                toastr.error(j.message || T('msg.delete_failed','Delete failed.'));
             }
-        } catch(e){ console.error(e); toastr.error('Delete failed: network error.'); }
+        } catch(e){ console.error(e); toastr.error(T('msg.delete_failed_network','Delete failed: network error.')); }
     };
 
     /* ══════════════ AI TRANSLATION ══════════════ */
@@ -285,10 +286,10 @@ $(function(){
 
     /* Translate MISSING keys only */
     window.smsLangTrMissing = async function(){
-        if(!curLang){ toastr.error('Select a language first'); return; }
+        if(!curLang){ toastr.error(T('msg.select_language','Select a language first')); return; }
         var $btn = $('#btnTrMissing');
         var orig = $btn.html();
-        $btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Translating...');
+        $btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('msg.translating','Translating...'));
         try {
             var j = await(await fetch('/languages/translate-all',{
                 method:'POST', headers:{'Content-Type':'application/json'},
@@ -296,20 +297,20 @@ $(function(){
             })).json();
             if(j.status===200 && j.data){
                 fillInputs(j.data.translations);
-                toastr.success(j.message || 'Missing keys translated!');
-            } else { toastr.error(j.message || 'Translation failed.'); }
-        } catch(e){ console.error(e); toastr.error('Translation failed.'); }
+                toastr.success(j.message || T('msg.missing_keys_translated','Missing keys translated!'));
+            } else { toastr.error(j.message || T('msg.translation_failed','Translation failed.')); }
+        } catch(e){ console.error(e); toastr.error(T('msg.translation_failed','Translation failed.')); }
         $btn.prop('disabled',false).html(orig);
     };
 
     /* Translate ALL keys (overwrite existing) */
     window.smsLangTrAll = async function(){
-        if(!curLang){ toastr.error('Select a language first'); return; }
-        if(!confirm('This will overwrite all existing translations. Continue?')) return;
+        if(!curLang){ toastr.error(T('msg.select_language','Select a language first')); return; }
+        if(!confirm(T('msg.overwrite_translations','This will overwrite all existing translations. Continue?'))) return;
 
         var $btn = $('#btnTrAll');
         var orig = $btn.html();
-        $btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Translating all...');
+        $btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('msg.translating_all','Translating all...'));
         try {
             var j = await(await fetch('/languages/translate-all',{
                 method:'POST', headers:{'Content-Type':'application/json'},
@@ -317,9 +318,9 @@ $(function(){
             })).json();
             if(j.status===200 && j.data){
                 fillInputs(j.data.translations);
-                toastr.success(j.message || 'All keys translated!');
-            } else { toastr.error(j.message || 'Translation failed.'); }
-        } catch(e){ console.error(e); toastr.error('Translation failed.'); }
+                toastr.success(j.message || T('msg.all_keys_translated','All keys translated!'));
+            } else { toastr.error(j.message || T('msg.translation_failed','Translation failed.')); }
+        } catch(e){ console.error(e); toastr.error(T('msg.translation_failed','Translation failed.')); }
         $btn.prop('disabled',false).html(orig);
     };
 
@@ -340,7 +341,7 @@ $(function(){
         var inp = btn.closest('td').querySelector('.sms-tinput');
         if(!inp) return;
         var enVal = enD[key] || '';
-        if(!enVal){ toastr.error('No English value for this key'); return; }
+        if(!enVal){ toastr.error(T('msg.no_english_value','No English value for this key')); return; }
 
         var origHtml = btn.innerHTML;
         btn.disabled = true;
@@ -354,8 +355,8 @@ $(function(){
                 inp.value = j.data.translated;
                 smsLangDrt(inp);
                 toastr.success('Translated: ' + key);
-            } else { toastr.error(j.message || 'Failed'); }
-        } catch(e){ console.error(e); toastr.error('Translation failed'); }
+            } else { toastr.error(j.message || T('msg.failed','Failed')); }
+        } catch(e){ console.error(e); toastr.error(T('msg.translation_failed','Translation failed')); }
         btn.disabled = false;
         btn.innerHTML = origHtml;
     };
@@ -389,16 +390,16 @@ $(function(){
         var g = document.getElementById('newKeyGroup').value;
         var n = document.getElementById('newKeyName').value.trim().toLowerCase().replace(/\s+/g,'_');
         var v = document.getElementById('newKeyValue').value.trim();
-        if(!g){ toastr.error('Select a group'); return; }
-        if(!n){ toastr.error('Enter a key name'); return; }
+        if(!g){ toastr.error(T('msg.select_group','Select a group')); return; }
+        if(!n){ toastr.error(T('msg.enter_key_name','Enter a key name')); return; }
         try {
             var j = await(await fetch('/languages/add-key',{
                 method:'POST', headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({ key:g+'.'+n, value:v })
             })).json();
             if(j.status===200){ toastr.success(j.message); if(addM)addM.hide(); load(curLang); }
-            else toastr.error(j.message || 'Error');
-        } catch(e){ console.error(e); toastr.error('Failed to add key'); }
+            else toastr.error(j.message || T('general.error','Error'));
+        } catch(e){ console.error(e); toastr.error(T('msg.failed_add_key','Failed to add key')); }
     };
 
     /* ══════════════ KEY USAGE FINDER ══════════════ */

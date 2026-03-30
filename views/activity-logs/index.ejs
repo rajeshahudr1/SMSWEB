@@ -9,33 +9,33 @@ var isSuperAdmin = user && user.is_super_admin;
 
 <!-- Stats Cards -->
 <div class="row g-3 mb-3" id="statsRow">
-  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted">Today's Activity</div><div class="h1 mb-0 mt-1" id="statTotal">–</div></div></div></div>
-  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted">Creates</div><div class="h1 mb-0 mt-1 text-success" id="statCreate">–</div></div></div></div>
-  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted">Updates</div><div class="h1 mb-0 mt-1 text-info" id="statUpdate">–</div></div></div></div>
-  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted">Deletes</div><div class="h1 mb-0 mt-1 text-danger" id="statDelete">–</div></div></div></div>
+  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted"><%- t('actlog.todays_activity', "Today's Activity") %></div><div class="h1 mb-0 mt-1" id="statTotal">–</div></div></div></div>
+  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted"><%- t('actlog.creates', 'Creates') %></div><div class="h1 mb-0 mt-1 text-success" id="statCreate">–</div></div></div></div>
+  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted"><%- t('actlog.updates', 'Updates') %></div><div class="h1 mb-0 mt-1 text-info" id="statUpdate">–</div></div></div></div>
+  <div class="col-6 col-sm-3"><div class="card card-sm"><div class="card-body"><div class="subheader text-muted"><%- t('actlog.deletes', 'Deletes') %></div><div class="h1 mb-0 mt-1 text-danger" id="statDelete">–</div></div></div></div>
 </div>
 
 <div class="card shadow-sm">
   <div class="card-header py-2 border-bottom">
     <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
-      <h3 class="card-title mb-0 me-auto"><i class="bi bi-clock-history me-2 text-primary"></i>Activity Log <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-clock-history me-2 text-primary"></i><%- t('actlog.title', 'Activity Log') %> <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
       <select class="form-select form-select-sm" id="perPageSel" style="width:110px;"></select>
-      <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Export</span></button>
+      <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline"><%- t('btn.export', 'Export') %></span></button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li>
-          <li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li>
-          <li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF</a></li>
+          <li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i><%- t('export.csv', 'CSV') %></a></li>
+          <li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i><%- t('export.excel', 'Excel') %></a></li>
+          <li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i><%- t('export.pdf', 'PDF') %></a></li>
         </ul>
       </div>
-      <button class="btn btn-sm btn-outline-primary" id="btnToggleFilter" title="Advanced Filter"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline">Filters</span></button>
+      <button class="btn btn-sm btn-outline-primary" id="btnToggleFilter" title="<%- t('actlog.advanced_filter', 'Advanced Filter') %>"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline"><%- t('actlog.filters', 'Filters') %></span></button>
     </div>
   </div>
 
   <!-- Quick search (always visible) -->
   <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
     <div class="row g-2 align-items-center">
-      <div class="col"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269; Search description, record, user..."/></div>
-      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters" title="Clear All Filters"><i class="bi bi-x-lg"></i></button></div>
+      <div class="col"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269; <%= t('actlog.search_placeholder', 'Search description, record, user...') %>"/></div>
+      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters" title="<%- t('actlog.clear_all_filters', 'Clear All Filters') %>"><i class="bi bi-x-lg"></i></button></div>
     </div>
   </div>
 
@@ -45,40 +45,40 @@ var isSuperAdmin = user && user.is_super_admin;
       <div class="row g-2 align-items-end">
         <% if (isSuperAdmin && orgs.length) { %>
         <div class="col-12 col-sm-4 col-lg-2">
-          <label class="form-label small mb-0">Company</label>
+          <label class="form-label small mb-0"><%- t('actlog.company', 'Company') %></label>
           <select class="form-select form-select-sm" id="filterCompany">
-            <option value="all">All Companies</option>
+            <option value="all"><%- t('actlog.all_companies', 'All Companies') %></option>
             <% orgs.forEach(function(o) { %><option value="<%- o.id %>"><%- o.company_name %></option><% }) %>
           </select>
         </div>
         <% } %>
         <div class="col-6 col-sm-4 col-lg-2">
-          <label class="form-label small mb-0">Module</label>
+          <label class="form-label small mb-0"><%- t('actlog.module', 'Module') %></label>
           <select class="form-select form-select-sm" id="filterModule">
-            <option value="">All Modules</option>
+            <option value=""><%- t('actlog.all_modules', 'All Modules') %></option>
             <% mods.forEach(function(m) { %><option value="<%- m.key %>"><%- m.label %></option><% }) %>
           </select>
         </div>
         <div class="col-6 col-sm-4 col-lg-2">
-          <label class="form-label small mb-0">Action</label>
+          <label class="form-label small mb-0"><%- t('actlog.action', 'Action') %></label>
           <select class="form-select form-select-sm" id="filterAction">
-            <option value="">All Actions</option>
+            <option value=""><%- t('actlog.all_actions', 'All Actions') %></option>
             <% acts.forEach(function(a) { %><option value="<%- a.key %>"><%- a.label %></option><% }) %>
           </select>
         </div>
         <div class="col-6 col-sm-4 col-lg-2">
-          <label class="form-label small mb-0">User</label>
+          <label class="form-label small mb-0"><%- t('actlog.user', 'User') %></label>
           <select class="form-select form-select-sm" id="filterUser">
-            <option value="">All Users</option>
+            <option value=""><%- t('actlog.all_users', 'All Users') %></option>
             <% usrs.forEach(function(u) { %><option value="<%- u.id %>"><%- u.name || u.email %></option><% }) %>
           </select>
         </div>
         <div class="col-6 col-sm-4 col-lg-2">
-          <label class="form-label small mb-0">Date From</label>
+          <label class="form-label small mb-0"><%- t('actlog.date_from', 'Date From') %></label>
           <input type="date" class="form-control form-control-sm" id="filterDateFrom"/>
         </div>
         <div class="col-6 col-sm-4 col-lg-2">
-          <label class="form-label small mb-0">Date To</label>
+          <label class="form-label small mb-0"><%- t('actlog.date_to', 'Date To') %></label>
           <input type="date" class="form-control form-control-sm" id="filterDateTo"/>
         </div>
       </div>
@@ -90,29 +90,29 @@ var isSuperAdmin = user && user.is_super_admin;
     <table class="table table-hover table-vcenter mb-0" style="font-size:13px;">
       <thead><tr>
         <th style="width:36px;" class="text-muted">#</th>
-        <th>User</th>
-        <th class="sortable" data-field="module">Module <i class="bi bi-arrow-down-up text-muted small"></i></th>
-        <th class="sortable" data-field="action">Action <i class="bi bi-arrow-down-up text-muted small"></i></th>
-        <th>Description</th>
-        <th class="d-none d-lg-table-cell">Record</th>
-        <th class="sortable d-none d-md-table-cell" data-field="created_at">Date <i class="bi bi-arrow-down-up text-muted small"></i></th>
-        <th class="text-end" style="width:100px;">Actions</th>
+        <th><%- t('actlog.th_user', 'User') %></th>
+        <th class="sortable" data-field="module"><%- t('actlog.th_module', 'Module') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="sortable" data-field="action"><%- t('actlog.th_action', 'Action') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th><%- t('actlog.th_description', 'Description') %></th>
+        <th class="d-none d-lg-table-cell"><%- t('actlog.th_record', 'Record') %></th>
+        <th class="sortable d-none d-md-table-cell" data-field="created_at"><%- t('actlog.th_date', 'Date') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="text-end" style="width:100px;"><%- t('general.actions', 'Actions') %></th>
       </tr></thead>
-      <tbody id="tableBody"><tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…</td></tr></tbody>
+      <tbody id="tableBody"><tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div><%- t('general.loading', 'Loading...') %></td></tr></tbody>
     </table>
   </div>
   <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
 </div>
 
 <!-- Detail Modal -->
-<div class="modal fade" id="modalDetail" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-info-circle me-2 text-primary"></i>Activity Detail</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="detailBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button></div></div></div></div>
+<div class="modal fade" id="modalDetail" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-info-circle me-2 text-primary"></i><%- t('actlog.activity_detail', 'Activity Detail') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="detailBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close', 'Close') %></button></div></div></div></div>
 
 <!-- Compare Modal (no own backdrop, overlaps history) -->
-<div class="modal fade" id="modalCompare" tabindex="-1" data-bs-backdrop="false"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl"><div class="modal-content shadow-lg border"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-arrow-left-right me-2 text-warning"></i>Compare Changes</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="compareBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button></div></div></div></div>
+<div class="modal fade" id="modalCompare" tabindex="-1" data-bs-backdrop="false"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl"><div class="modal-content shadow-lg border"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-arrow-left-right me-2 text-warning"></i><%- t('actlog.compare_changes', 'Compare Changes') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="compareBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close', 'Close') %></button></div></div></div></div>
 <style>#modalCompare { z-index: 1065 !important; }</style>
 
 <!-- Record History Modal -->
-<div class="modal fade" id="modalHistory" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-clock-history me-2 text-info"></i>Record History</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="historyBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button></div></div></div></div>
+<div class="modal fade" id="modalHistory" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-clock-history me-2 text-info"></i><%- t('actlog.record_history', 'Record History') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="historyBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close', 'Close') %></button></div></div></div></div>
 
 <script>window._IS_SUPER = <%= isSuperAdmin ? 'true' : 'false' %>;</script>
 <% block('scripts', '<script src="/js/pages/activity-logs.js"></script>') %>

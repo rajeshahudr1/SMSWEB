@@ -2,21 +2,21 @@
 <div class="card shadow-sm">
   <div class="card-header py-2 border-bottom">
     <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
-      <h3 class="card-title mb-0 me-auto"><i class="bi bi-bell me-2 text-primary"></i>Notifications <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-bell me-2 text-primary"></i><%- t('notif.title', 'Notifications') %> <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
       <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
-      <button class="btn btn-sm btn-outline-secondary" id="btnPageMarkAllRead"><i class="bi bi-check-all me-1"></i><span class="d-none d-sm-inline">Mark All Read</span></button>
+      <button class="btn btn-sm btn-outline-secondary" id="btnPageMarkAllRead"><i class="bi bi-check-all me-1"></i><span class="d-none d-sm-inline"><%- t('notif.mark_all_read', 'Mark All Read') %></span></button>
     </div>
   </div>
 
   <!-- Inline Filters -->
   <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
     <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-4 col-lg-3"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269;  Search notifications..."/></div>
+      <div class="col-12 col-sm-4 col-lg-3"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269;  <%= t('notif.search_placeholder', 'Search notifications...') %>"/></div>
       <div class="col-6 col-sm-3 col-lg-2">
-        <select class="form-select form-select-sm" id="filterType"><option value="">All Types</option><option value="export_ready">Export</option><option value="import_complete">Import OK</option><option value="import_errors">Import Errors</option></select>
+        <select class="form-select form-select-sm" id="filterType"><option value=""><%- t('notif.all_types', 'All Types') %></option><option value="export_ready"><%- t('notif.type_export', 'Export') %></option><option value="import_complete"><%- t('notif.type_import_ok', 'Import OK') %></option><option value="import_errors"><%- t('notif.type_import_errors', 'Import Errors') %></option></select>
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
-        <select class="form-select form-select-sm" id="filterRead"><option value="">All Status</option><option value="0">Unread</option><option value="1">Read</option></select>
+        <select class="form-select form-select-sm" id="filterRead"><option value=""><%- t('notif.all_status', 'All Status') %></option><option value="0"><%- t('notif.unread', 'Unread') %></option><option value="1"><%- t('notif.read', 'Read') %></option></select>
       </div>
       <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button></div>
     </div>
@@ -27,14 +27,14 @@
       <thead><tr>
         <th style="width:36px;" class="text-muted">#</th>
         <th style="width:42px;"></th>
-        <th>Title</th>
-        <th class="d-none d-md-table-cell">Message</th>
-        <th style="width:110px;">Type</th>
-        <th style="width:80px;">Status</th>
-        <th class="d-none d-md-table-cell" style="width:140px;">Date</th>
-        <th class="text-end" style="width:100px;">Actions</th>
+        <th><%- t('notif.th_title', 'Title') %></th>
+        <th class="d-none d-md-table-cell"><%- t('notif.th_message', 'Message') %></th>
+        <th style="width:110px;"><%- t('notif.th_type', 'Type') %></th>
+        <th style="width:80px;"><%- t('notif.th_status', 'Status') %></th>
+        <th class="d-none d-md-table-cell" style="width:140px;"><%- t('notif.th_date', 'Date') %></th>
+        <th class="text-end" style="width:100px;"><%- t('general.actions', 'Actions') %></th>
       </tr></thead>
-      <tbody id="tableBody"><tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr></tbody>
+      <tbody id="tableBody"><tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div><%- t('general.loading', 'Loading...') %></td></tr></tbody>
     </table>
   </div>
   <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
@@ -51,28 +51,28 @@ document.addEventListener('DOMContentLoaded', function(){
     function _filters(){return{page:_page,per_page:_pp,search:$('#searchInput').val().trim(),type:$('#filterType').val()||'',is_read:$('#filterRead').val()||''};}
 
     function loadData(){
-        $('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr>');
+        $('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>${t('general.loading', 'Loading...')}</td></tr>');
         $.get(BASE_URL+'/notifications/api-list',_filters(),function(res){
-            if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load.</td></tr>');return;}
+            if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">${t('general.failed_to_load', 'Failed to load.')}</td></tr>');return;}
             var items=(res.data&&res.data.data)||[],pg=(res.data&&res.data.pagination)||{};
             $('#badgeTotal').text(pg.total||0);
-            if(!items.length){$('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-bell-slash d-block mb-2" style="font-size:36px;opacity:.3;"></i>No notifications found</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+            if(!items.length){$('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-bell-slash d-block mb-2" style="font-size:36px;opacity:.3;"></i>${t('notif.no_notifications', 'No notifications found')}</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
             var start=((_page-1)*_pp),rows='';
             items.forEach(function(n,i){
                 var cls=n.is_read?'':'bg-azure-lt';
                 var icon=n.icon||'bi-bell';
                 var color=n.color||'primary';
                 var typeBadge='';
-                if(n.type==='export_ready')typeBadge='<span class="badge bg-green-lt">Export</span>';
-                else if(n.type==='import_complete')typeBadge='<span class="badge bg-blue-lt">Import OK</span>';
-                else if(n.type==='import_errors')typeBadge='<span class="badge bg-warning-lt">Import Errors</span>';
-                else typeBadge='<span class="badge bg-secondary-lt">'+H.esc(n.type||'General')+'</span>';
-                var statusBadge=n.is_read?'<span class="badge bg-secondary-lt">Read</span>':'<span class="badge bg-danger-lt"><span class="status-dot status-dot-animated bg-danger me-1"></span>Unread</span>';
+                if(n.type==='export_ready')typeBadge='<span class="badge bg-green-lt">${t('notif.type_export', 'Export')}</span>';
+                else if(n.type==='import_complete')typeBadge='<span class="badge bg-blue-lt">${t('notif.type_import_ok', 'Import OK')}</span>';
+                else if(n.type==='import_errors')typeBadge='<span class="badge bg-warning-lt">${t('notif.type_import_errors', 'Import Errors')}</span>';
+                else typeBadge='<span class="badge bg-secondary-lt">'+H.esc(n.type||'${t('notif.type_general', 'General')}')+'</span>';
+                var statusBadge=n.is_read?'<span class="badge bg-secondary-lt">${t('notif.read', 'Read')}</span>':'<span class="badge bg-danger-lt"><span class="status-dot status-dot-animated bg-danger me-1"></span>${t('notif.unread', 'Unread')}</span>';
                 var acts='<div class="btn-group btn-group-sm">';
-                acts+='<button class="btn btn-ghost-primary btn-sm btn-notif-view" data-uuid="'+n.uuid+'" title="View"><i class="bi bi-eye"></i></button>';
-                if(!n.is_read)acts+='<button class="btn btn-ghost-success btn-sm btn-notif-read" data-uuid="'+n.uuid+'" title="Mark Read"><i class="bi bi-check-lg"></i></button>';
-                if(n.file_path&&n.file_url)acts+='<a href="'+H.esc(n.file_url)+'" class="btn btn-ghost-info btn-sm" title="Download" download><i class="bi bi-download"></i></a>';
-                acts+='<button class="btn btn-ghost-danger btn-sm btn-notif-del" data-uuid="'+n.uuid+'" title="Delete"><i class="bi bi-trash3"></i></button>';
+                acts+='<button class="btn btn-ghost-primary btn-sm btn-notif-view" data-uuid="'+n.uuid+'" title="${t('btn.view', 'View')}"><i class="bi bi-eye"></i></button>';
+                if(!n.is_read)acts+='<button class="btn btn-ghost-success btn-sm btn-notif-read" data-uuid="'+n.uuid+'" title="${t('notif.mark_read', 'Mark Read')}"><i class="bi bi-check-lg"></i></button>';
+                if(n.file_path&&n.file_url)acts+='<a href="'+H.esc(n.file_url)+'" class="btn btn-ghost-info btn-sm" title="${t('btn.download', 'Download')}" download><i class="bi bi-download"></i></a>';
+                acts+='<button class="btn btn-ghost-danger btn-sm btn-notif-del" data-uuid="'+n.uuid+'" title="${t('btn.delete', 'Delete')}"><i class="bi bi-trash3"></i></button>';
                 acts+='</div>';
                 rows+='<tr class="'+cls+'">';
                 rows+='<td class="text-muted small">'+(start+i+1)+'</td>';
@@ -88,9 +88,9 @@ document.addEventListener('DOMContentLoaded', function(){
                 rows+='</tr>';
             });
             $('#tableBody').html(rows);
-            $('#tableInfo').text('Showing '+(pg.from||1)+'\\u2013'+(pg.to||items.length)+' of '+(pg.total||0));
+            $('#tableInfo').text('${t('general.showing', 'Showing')} '+(pg.from||1)+'\\u2013'+(pg.to||items.length)+' ${t('general.of', 'of')} '+(pg.total||0));
             $('#tablePagination').html(buildPagination(pg,function(p){_page=p;loadData();}));
-        }).fail(function(){$('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Network error.</td></tr>');});
+        }).fail(function(){$('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">${t('general.network_error', 'Network error.')}</td></tr>');});
     }
 
     smsInitPerPage('#perPageSel');_pp=parseInt($('#perPageSel').val())||15;
@@ -103,9 +103,9 @@ document.addEventListener('DOMContentLoaded', function(){
     // Mark all read
     $('#btnPageMarkAllRead').on('click',function(){
         $.ajax({url:BASE_URL+'/notifications/mark-all-read',type:'POST',success:function(r){
-            if(r&&r.status===200){toastr.success('All marked as read.');loadData();if(typeof fetchUnreadCount==='function')fetchUnreadCount();}
-            else toastr.error((r&&r.message)||'Failed.');
-        },error:function(){toastr.error('Network error.');}});
+            if(r&&r.status===200){toastr.success('${t('notif.all_marked_read', 'All marked as read.')}');loadData();if(typeof fetchUnreadCount==='function')fetchUnreadCount();}
+            else toastr.error((r&&r.message)||'${t('general.failed', 'Failed.')}');
+        },error:function(){toastr.error('${t('general.network_error', 'Network error.')}');}});
     });
 
     // View detail
@@ -118,17 +118,17 @@ document.addEventListener('DOMContentLoaded', function(){
     $(document).on('click','.btn-notif-read',function(){
         var uuid=$(this).data('uuid');
         $.ajax({url:BASE_URL+'/notifications/'+uuid+'/read',type:'PATCH',success:function(r){
-            if(r&&r.status===200){toastr.success('Marked as read.');loadData();if(typeof fetchUnreadCount==='function')fetchUnreadCount();}
+            if(r&&r.status===200){toastr.success('${t('notif.marked_read', 'Marked as read.')}');loadData();if(typeof fetchUnreadCount==='function')fetchUnreadCount();}
         }});
     });
 
     // Delete
     $(document).on('click','.btn-notif-del',function(){
         var uuid=$(this).data('uuid');
-        smsConfirm({title:'Delete',msg:'Delete this notification?',btnClass:'btn-danger',btnText:'Delete',onConfirm:function(){
+        smsConfirm({title:'${t('btn.delete', 'Delete')}',msg:'${t('notif.confirm_delete', 'Delete this notification?')}',btnClass:'btn-danger',btnText:'${t('btn.delete', 'Delete')}',onConfirm:function(){
             $.ajax({url:BASE_URL+'/notifications/'+uuid,type:'DELETE',success:function(r){
-                if(r&&r.status===200){toastr.success('Deleted.');loadData();if(typeof fetchUnreadCount==='function')fetchUnreadCount();}
-                else toastr.error('Failed.');
+                if(r&&r.status===200){toastr.success('${t('general.deleted', 'Deleted.')}');loadData();if(typeof fetchUnreadCount==='function')fetchUnreadCount();}
+                else toastr.error('${t('general.failed', 'Failed.')}');
             }});
         }});
     });

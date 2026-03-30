@@ -3,13 +3,13 @@
 var u      = typeof user !== 'undefined' ? user : null;
 var isEdit = !!u;
 var formAction = isEdit ? '/users/' + u.uuid : '/users';
-var pageTitle  = isEdit ? 'Edit User' : 'Add User';
+var pageTitle  = isEdit ? t('users.edit', 'Edit User') : t('users.add', 'Add User');
 %>
 
 <!-- ── Back bar ── -->
 <div class="d-flex align-items-center gap-2 mb-3">
-  <a href="/users" class="btn btn-sm btn-outline-secondary" title="Back to Users list">
-    <i class="bi bi-arrow-left me-1"></i>Back
+  <a href="/users" class="btn btn-sm btn-outline-secondary" title="<%- t('btn.back_to_list', 'Back to Users list') %>">
+    <i class="bi bi-arrow-left me-1"></i><%- t('btn.back', 'Back') %>
   </a>
   <h3 class="mb-0" style="font-size:16px;">
     <i class="bi bi-person-fill me-2 text-primary"></i><%- pageTitle %>
@@ -24,7 +24,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
     <div class="card shadow-sm">
       <div class="card-header py-2">
         <div class="card-title mb-0" style="font-size:14px;">
-          <i class="bi bi-person me-1 text-primary"></i>User Information
+          <i class="bi bi-person me-1 text-primary"></i><%- t('users.information', 'User Information') %>
         </div>
       </div>
       <div class="card-body">
@@ -34,7 +34,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
             <label class="form-label fw-medium"><%- t("form.full_name") %> <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control" required autofocus
                    value="<%- isEdit ? (u.name||'') : '' %>"
-                   placeholder="Full name"/>
+                   placeholder="<%- t('form.full_name', 'Full name') %>"/>
           </div>
 
           <div class="col-md-6">
@@ -43,16 +43,16 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
                    value="<%- isEdit ? (u.email||'') : '' %>"
                    placeholder="user@company.com"
                    <%- isEdit ? 'readonly' : 'required' %>/>
-            <% if (isEdit) { %><div class="form-hint">Email cannot be changed.</div><% } %>
+            <% if (isEdit) { %><div class="form-hint"><%- t('users.email_readonly', 'Email cannot be changed.') %></div><% } %>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-medium"><%- t("form.password") %> <% if (!isEdit) { %><span class="text-danger">*</span><% } %></label>
             <div class="input-group">
               <input type="password" name="password" id="fPwd" class="form-control"
-                     placeholder="<%- isEdit ? 'Leave blank to keep current' : 'Min 8 characters' %>"
+                     placeholder="<%- isEdit ? t('form.password_keep', 'Leave blank to keep current') : t('form.password_min', 'Min 8 characters') %>"
                      <%- isEdit ? '' : 'required minlength="8"' %>/>
-              <button type="button" class="btn btn-outline-secondary btn-pwd-toggle" title="Toggle visibility">
+              <button type="button" class="btn btn-outline-secondary btn-pwd-toggle" title="<%- t('form.toggle_visibility', 'Toggle visibility') %>">
                 <i class="bi bi-eye"></i>
               </button>
             </div>
@@ -68,7 +68,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
           <div class="col-md-6">
             <label class="form-label fw-medium"><%- t("users.role") %></label>
             <select name="role_id" id="selRole" class="form-select" style="width:100%;">
-              <option value="">— No Role —</option>
+              <option value="">— <%- t('users.no_role', 'No Role') %> —</option>
               <% if (typeof roles !== 'undefined') { roles.forEach(function(r){ %>
               <option value="<%- r.id %>" <%- isEdit && u.role_id==r.id ? 'selected':'' %>><%- r.name %></option>
               <% }) } %>
@@ -93,7 +93,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
     <div class="card mt-3 shadow-sm">
       <div class="card-header py-2">
         <div class="card-title mb-0" style="font-size:14px;">
-          <i class="bi bi-geo-alt-fill me-1 text-primary"></i>Location
+          <i class="bi bi-geo-alt-fill me-1 text-primary"></i><%- t('form.location', 'Location') %>
         </div>
       </div>
       <div class="card-body">
@@ -101,7 +101,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
           <div class="col-md-4">
             <label class="form-label fw-medium"><%- t("form.country") %></label>
             <select name="country_id" id="sCountry" class="form-select" style="width:100%;">
-              <option value="">— Select Country —</option>
+              <option value="">— <%- t('form.select_country', 'Select Country') %> —</option>
               <% if (typeof countries !== 'undefined') { countries.forEach(function(c){ %>
               <option value="<%- c.id %>"
                 <% if (isEdit && u.country_id == c.id) { %><%- t("general.selected") %><% } %>><%- c.name %></option>
@@ -111,24 +111,24 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
           <div class="col-md-4">
             <label class="form-label fw-medium"><%- t("form.state") %></label>
             <select name="state_id" id="sState" class="form-select" style="width:100%;">
-              <option value="">— Select State —</option>
+              <option value="">— <%- t('form.select_state', 'Select State') %> —</option>
             </select>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-medium"><%- t("form.city") %></label>
             <select name="city_id" id="sCity" class="form-select" style="width:100%;">
-              <option value="">— Select City —</option>
+              <option value="">— <%- t('form.select_city', 'Select City') %> —</option>
             </select>
           </div>
           <div class="col-md-8">
             <label class="form-label fw-medium"><%- t("form.address") %></label>
             <input type="text" name="address" class="form-control"
-                   value="<%- isEdit ? (u.address||'') : '' %>" placeholder="Street address"/>
+                   value="<%- isEdit ? (u.address||'') : '' %>" placeholder="<%- t('form.street_address', 'Street address') %>"/>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-medium"><%- t("form.zip_code") %></label>
             <input type="text" name="zip_code" class="form-control"
-                   value="<%- isEdit ? (u.zip_code||'') : '' %>" placeholder="ZIP / Postal code"/>
+                   value="<%- isEdit ? (u.zip_code||'') : '' %>" placeholder="<%- t('form.zip_placeholder', 'ZIP / Postal code') %>"/>
           </div>
         </div>
       </div>
@@ -140,7 +140,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
     <div class="card shadow-sm">
       <div class="card-header py-2">
         <div class="card-title mb-0" style="font-size:14px;">
-          <i class="bi bi-person-badge me-1 text-primary"></i>Personal Details
+          <i class="bi bi-person-badge me-1 text-primary"></i><%- t('users.personal_details', 'Personal Details') %>
         </div>
       </div>
       <div class="card-body">
@@ -148,7 +148,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
           <div class="col-12">
             <label class="form-label fw-medium"><%- t("form.gender") %></label>
             <select name="gender" class="form-select">
-              <option value="">— Select —</option>
+              <option value="">— <%- t('form.select', 'Select') %> —</option>
               <option value="male"   <%- isEdit&&u.gender==='male'   ? 'selected':'' %>><%- t("form.male") %></option>
               <option value="female" <%- isEdit&&u.gender==='female' ? 'selected':'' %>><%- t("form.female") %></option>
               <option value="other"  <%- isEdit&&u.gender==='other'  ? 'selected':'' %>><%- t("form.other") %></option>
@@ -178,7 +178,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
     <div class="card mt-3 shadow-sm">
       <div class="card-header py-2">
         <div class="card-title mb-0" style="font-size:14px;">
-          <i class="bi bi-shield-check me-1 text-primary"></i>Access
+          <i class="bi bi-shield-check me-1 text-primary"></i><%- t('users.access', 'Access') %>
         </div>
       </div>
       <div class="card-body">
@@ -187,7 +187,7 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
                  <%- isEdit&&parseInt(u.is_org_admin) ? 'checked':'' %>/>
           <span class="form-check-label fw-medium"><%- t("form.org_admin") %></span>
         </label>
-        <div class="form-hint">Bypasses all permission checks within this org.</div>
+        <div class="form-hint"><%- t('form.org_admin_hint', 'Bypasses all permission checks within this org.') %></div>
       </div>
     </div>
 
@@ -195,11 +195,11 @@ var pageTitle  = isEdit ? 'Edit User' : 'Add User';
     <div class="card mt-3 shadow-sm">
       <div class="card-body py-3">
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary" id="btnSubmit" title="<%- isEdit ? 'Update user' : 'Create new user' %>">
-            <i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update User' : 'Create User' %>
+          <button type="submit" class="btn btn-primary" id="btnSubmit" title="<%- isEdit ? t('btn.update', 'Update') : t('btn.save', 'Save') %>">
+            <i class="bi bi-floppy me-1"></i><%- isEdit ? t('btn.update', 'Update') : t('btn.save', 'Save') %>
           </button>
-          <a href="/users" class="btn btn-outline-secondary" title="Discard and go back">
-            <i class="bi bi-x-lg me-1"></i>Cancel
+          <a href="/users" class="btn btn-outline-secondary" title="<%- t('btn.discard', 'Discard and go back') %>">
+            <i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %>
           </a>
         </div>
       </div>

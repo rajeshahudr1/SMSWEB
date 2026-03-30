@@ -108,7 +108,7 @@ $(function() {
                         toastr.warning('No translation returned for ' + langName);
                     }
                 } else {
-                    toastr.error(res.message || 'Failed.');
+                    toastr.error(res.message || T('msg.failed','Failed.'));
                 }
             },
             error: function() {
@@ -194,9 +194,9 @@ $(function() {
             success: function(r) {
                 btnReset($btn);
                 if (r.status === 200 || r.status === 201) {
-                    toastr.success(r.message || 'Saved.');
+                    toastr.success(r.message || T('msg.settings_saved','Saved.'));
                     setTimeout(function() { window.location = '/vehicle-fuels'; }, 800);
-                } else toastr.error(r.message || 'Error.');
+                } else toastr.error(r.message || T('general.error','Error.'));
             },
             error: function() { btnReset($btn); toastr.error(T('general.network_error','Network error.')); }
         });

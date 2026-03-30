@@ -21,8 +21,8 @@ var isSuperAdmin = user && user.is_super_admin;
   <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
     <div class="row g-2 align-items-center">
       <div class="col"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269; Search motor code, engine name..."/></div>
-      <div class="col-auto"><button class="btn btn-sm btn-outline-primary" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline">Filters</span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button></div>
-      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters" title="Clear All"><i class="bi bi-x-lg"></i></button></div>
+      <div class="col-auto"><button class="btn btn-sm btn-outline-primary" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline"><%- t('general.filters', 'Filters') %></span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button></div>
+      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters" title="<%- t('filters.clear_all', 'Clear All') %>"><i class="bi bi-x-lg"></i></button></div>
     </div>
   </div>
 
@@ -31,10 +31,10 @@ var isSuperAdmin = user && user.is_super_admin;
     <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
       <span class="fw-semibold"><span id="bulkCount">0</span> <%- t('general.selected_count') %></span>
       <div class="ms-auto d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i>Deactivate</button>
-        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i>Activate</button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i><%- t('bulk.deactivate', 'Deactivate') %></button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i><%- t('bulk.activate', 'Activate') %></button>
         <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')"><i class="bi bi-trash3 me-1"></i><%- t('btn.delete') %></button>
-        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i>Recover</button>
+        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i><%- t('bulk.recover', 'Recover') %></button>
         <button class="btn btn-sm btn-outline-light" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
       </div>
     </div>
@@ -48,8 +48,8 @@ var isSuperAdmin = user && user.is_super_admin;
         <th class="sortable" data-field="motor_code"><%- t('vehicle_engines.motor_code') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
         <th class="sortable" data-field="manufacturer_engine"><%- t('vehicle_engines.manufacturer_engine') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
         <th><%- t('vehicle_engines.variants') %></th>
-        <th class="d-none d-lg-table-cell">KW</th>
-        <th class="d-none d-lg-table-cell">HP</th>
+        <th class="d-none d-lg-table-cell"><%- t('vehicle_engines.kw', 'KW') %></th>
+        <th class="d-none d-lg-table-cell"><%- t('vehicle_engines.hp', 'HP') %></th>
         <th class="sortable" data-field="status"><%- t('general.status') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
         <th class="d-none d-md-table-cell sortable" data-field="created_at"><%- t('general.created_at') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
         <th class="text-end" style="width:50px;"><%- t('general.actions') %></th>
@@ -64,65 +64,65 @@ var isSuperAdmin = user && user.is_super_admin;
 <!-- Filter Sidebar -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="filterSidebar" style="width:360px;">
   <div class="offcanvas-header border-bottom py-3">
-    <h5 class="offcanvas-title fw-semibold mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Advanced Filters</h5>
+    <h5 class="offcanvas-title fw-semibold mb-0"><i class="bi bi-funnel me-2 text-primary"></i><%- t('filters.advanced_filters', 'Advanced Filters') %></h5>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
   </div>
   <div class="offcanvas-body">
     <% if (isSuperAdmin && orgs.length) { %>
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Company</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('filters.company', 'Company') %></label>
       <select class="form-select form-select-sm" id="filterCompany">
-        <option value="all">All Companies</option>
-        <option value="global">Global (Super Admin)</option>
+        <option value="all"><%- t('filters.all_companies', 'All Companies') %></option>
+        <option value="global"><%- t('filters.global_super_admin', 'Global (Super Admin)') %></option>
         <% orgs.forEach(function(o) { %><option value="<%- o.id %>"><%- o.company_name %></option><% }) %>
       </select>
     </div>
     <% } %>
 
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Vehicle Variants</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('vehicle_engines.vehicle_variants', 'Vehicle Variants') %></label>
       <select class="form-select form-select-sm" id="filterVariant" multiple style="width:100%;"></select>
-      <div class="form-hint mt-1" style="font-size:11px;">Filter engines by linked variants</div>
+      <div class="form-hint mt-1" style="font-size:11px;"><%- t('vehicle_engines.filter_by_variants', 'Filter engines by linked variants') %></div>
     </div>
 
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><i class="bi bi-calendar-range me-1"></i>Start Year Range</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><i class="bi bi-calendar-range me-1"></i><%- t('vehicle_engines.start_year_range', 'Start Year Range') %></label>
       <div class="row g-2">
         <div class="col-6"><input type="number" class="form-control form-control-sm" id="filterStartYearFrom" placeholder="From" min="1900" max="2100"/></div>
         <div class="col-6"><input type="number" class="form-control form-control-sm" id="filterStartYearTo" placeholder="To" min="1900" max="2100"/></div>
       </div>
     </div>
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><i class="bi bi-calendar-range me-1"></i>End Year Range</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><i class="bi bi-calendar-range me-1"></i><%- t('vehicle_engines.end_year_range', 'End Year Range') %></label>
       <div class="row g-2">
         <div class="col-6"><input type="number" class="form-control form-control-sm" id="filterEndYearFrom" placeholder="From" min="1900" max="2100"/></div>
         <div class="col-6"><input type="number" class="form-control form-control-sm" id="filterEndYearTo" placeholder="To" min="1900" max="2100"/></div>
       </div>
     </div>
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><i class="bi bi-lightning me-1"></i>Power (KW / HP)</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><i class="bi bi-lightning me-1"></i><%- t('vehicle_engines.power_kw_hp', 'Power (KW / HP)') %></label>
       <div class="row g-2">
         <div class="col-6"><input type="number" class="form-control form-control-sm" id="filterKwMin" placeholder="KW min"/></div>
         <div class="col-6"><input type="number" class="form-control form-control-sm" id="filterHpMin" placeholder="HP min"/></div>
       </div>
     </div>
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Status</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('general.status', 'Status') %></label>
       <select class="form-select form-select-sm" id="filterStatus">
-        <option value="">All Status</option><option value="1">Active</option><option value="0">Inactive</option>
+        <option value=""><%- t('filters.all_status', 'All Status') %></option><option value="1"><%- t('general.active', 'Active') %></option><option value="0"><%- t('general.inactive', 'Inactive') %></option>
       </select>
     </div>
     <div class="mb-4">
-      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;">Records</label>
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('filters.records', 'Records') %></label>
       <select class="form-select form-select-sm" id="filterDeleted">
-        <option value="">Active Records</option><option value="only">Deleted Only</option><option value="all">All Records</option>
+        <option value=""><%- t('filters.active_records', 'Active Records') %></option><option value="only"><%- t('filters.deleted_only', 'Deleted Only') %></option><option value="all"><%- t('filters.all_records', 'All Records') %></option>
       </select>
     </div>
   </div>
   <div class="offcanvas-footer border-top p-3">
     <div class="d-flex gap-2">
-      <button class="btn btn-primary btn-sm flex-fill" id="btnApplyFilters"><i class="bi bi-check-lg me-1"></i>Apply</button>
-      <button class="btn btn-outline-secondary btn-sm flex-fill" id="btnClearFilters2"><i class="bi bi-x-lg me-1"></i>Clear All</button>
+      <button class="btn btn-primary btn-sm flex-fill" id="btnApplyFilters"><i class="bi bi-check-lg me-1"></i><%- t('filters.apply', 'Apply') %></button>
+      <button class="btn btn-outline-secondary btn-sm flex-fill" id="btnClearFilters2"><i class="bi bi-x-lg me-1"></i><%- t('filters.clear_all', 'Clear All') %></button>
     </div>
   </div>
 </div>
@@ -134,53 +134,53 @@ var isSuperAdmin = user && user.is_super_admin;
 <div class="modal fade" id="modalImport" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:980px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i><%- t('vehicle_engines.import_title') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
   <div id="importStep1">
-    <h6 class="mb-3"><i class="bi bi-info-circle me-1 text-primary"></i>Import Instructions — Vehicle Engines</h6>
+    <h6 class="mb-3"><i class="bi bi-info-circle me-1 text-primary"></i><%- t('vehicle_engines.import_instructions', 'Import Instructions — Vehicle Engines') %></h6>
     <div class="row g-3 mb-3">
       <div class="col-md-6">
         <div class="border rounded p-2 bg-white" style="font-size:12px;">
-          <strong class="text-primary">Required Columns:</strong>
+          <strong class="text-primary"><%- t('import.required_columns', 'Required Columns') %>:</strong>
           <div class="d-flex flex-wrap gap-1 mt-1">
-            <span class="badge bg-danger-lt px-2 py-1"><code>manufacturer_engine</code> <small>(required)</small></span>
-            <span class="badge bg-danger-lt px-2 py-1"><code>motor_code</code> <small>(required)</small></span>
+            <span class="badge bg-danger-lt px-2 py-1"><code>manufacturer_engine</code> <small>(<%- t('import.required', 'required') %>)</small></span>
+            <span class="badge bg-danger-lt px-2 py-1"><code>motor_code</code> <small>(<%- t('import.required', 'required') %>)</small></span>
           </div>
-          <strong class="text-primary d-block mt-2">Optional Columns:</strong>
+          <strong class="text-primary d-block mt-2"><%- t('import.optional_columns', 'Optional Columns') %>:</strong>
           <div class="d-flex flex-wrap gap-1 mt-1">
             <span class="badge bg-blue-lt px-2 py-1"><code>start_year</code></span>
             <span class="badge bg-blue-lt px-2 py-1"><code>end_year</code></span>
             <span class="badge bg-blue-lt px-2 py-1"><code>kw</code></span>
             <span class="badge bg-blue-lt px-2 py-1"><code>hp</code></span>
-            <span class="badge bg-teal-lt px-2 py-1"><code>variant_names</code> <small>(semicolon-separated)</small></span>
+            <span class="badge bg-teal-lt px-2 py-1"><code>variant_names</code> <small>(<%- t('import.semicolon_separated', 'semicolon-separated') %>)</small></span>
           </div>
         </div>
       </div>
       <div class="col-md-6">
         <div class="border rounded p-2 bg-white" style="font-size:12px;">
-          <strong class="text-info"><i class="bi bi-file-earmark-text me-1"></i>File Requirements:</strong>
+          <strong class="text-info"><i class="bi bi-file-earmark-text me-1"></i><%- t('import.file_requirements', 'File Requirements') %>:</strong>
           <ul class="mb-0 mt-1 ps-3">
-            <li>Formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></li>
-            <li><strong>Unlimited rows</strong> per import</li>
-            <li>Max 255 characters for engine name &amp; motor code</li>
-            <li><code>variant_names</code>: semicolon-separated variant names to link</li>
-            <li>Language columns auto-detected for translations</li>
+            <li><%- t('import.formats', 'Formats') %>: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></li>
+            <li><strong><%- t('import.unlimited_rows', 'Unlimited rows') %></strong> <%- t('import.per_import', 'per import') %></li>
+            <li><%- t('import.max_255_chars', 'Max 255 characters for engine name &amp; motor code') %></li>
+            <li><code>variant_names</code>: <%- t('import.variant_names_hint', 'semicolon-separated variant names to link') %></li>
+            <li><%- t('import.language_columns', 'Language columns auto-detected for translations') %></li>
           </ul>
         </div>
       </div>
     </div>
     <div class="table-responsive mb-3" style="font-size:12px;">
       <table class="table table-sm table-bordered mb-0">
-        <thead class="table-light"><tr><th style="width:150px;">Column</th><th style="width:70px;">Required</th><th>Description</th><th style="width:140px;">Example</th></tr></thead>
+        <thead class="table-light"><tr><th style="width:150px;"><%- t('import.column', 'Column') %></th><th style="width:70px;"><%- t('import.required', 'Required') %></th><th><%- t('import.description', 'Description') %></th><th style="width:140px;"><%- t('import.example', 'Example') %></th></tr></thead>
         <tbody>
-          <tr><td><code>manufacturer_engine</code></td><td class="text-center"><span class="text-danger fw-bold">Yes</span></td><td>Engine name (max 255 chars)</td><td><code>2.0 TSI</code></td></tr>
-          <tr><td><code>motor_code</code></td><td class="text-center"><span class="text-danger fw-bold">Yes</span></td><td>Unique motor code (max 255 chars)</td><td><code>CZPA</code></td></tr>
-          <tr><td><code>start_year</code></td><td class="text-center text-muted">No</td><td>Production start year</td><td><code>2018</code></td></tr>
-          <tr><td><code>end_year</code></td><td class="text-center text-muted">No</td><td>Production end year</td><td><code>2024</code></td></tr>
-          <tr><td><code>kw</code></td><td class="text-center text-muted">No</td><td>Power in Kilowatts</td><td><code>140</code></td></tr>
-          <tr><td><code>hp</code></td><td class="text-center text-muted">No</td><td>Power in Horsepower</td><td><code>190</code></td></tr>
-          <tr><td><code>variant_names</code></td><td class="text-center text-muted">No</td><td>Vehicle variants to link (semicolon-separated). Matches existing variants by name.</td><td><code>1.5 Turbo MT;2.0 AT</code></td></tr>
+          <tr><td><code>manufacturer_engine</code></td><td class="text-center"><span class="text-danger fw-bold"><%- t('general.yes', 'Yes') %></span></td><td><%- t('import.engine_name_desc', 'Engine name (max 255 chars)') %></td><td><code>2.0 TSI</code></td></tr>
+          <tr><td><code>motor_code</code></td><td class="text-center"><span class="text-danger fw-bold"><%- t('general.yes', 'Yes') %></span></td><td><%- t('import.motor_code_desc', 'Unique motor code (max 255 chars)') %></td><td><code>CZPA</code></td></tr>
+          <tr><td><code>start_year</code></td><td class="text-center text-muted"><%- t('general.no', 'No') %></td><td><%- t('import.start_year_desc', 'Production start year') %></td><td><code>2018</code></td></tr>
+          <tr><td><code>end_year</code></td><td class="text-center text-muted"><%- t('general.no', 'No') %></td><td><%- t('import.end_year_desc', 'Production end year') %></td><td><code>2024</code></td></tr>
+          <tr><td><code>kw</code></td><td class="text-center text-muted"><%- t('general.no', 'No') %></td><td><%- t('import.kw_desc', 'Power in Kilowatts') %></td><td><code>140</code></td></tr>
+          <tr><td><code>hp</code></td><td class="text-center text-muted"><%- t('general.no', 'No') %></td><td><%- t('import.hp_desc', 'Power in Horsepower') %></td><td><code>190</code></td></tr>
+          <tr><td><code>variant_names</code></td><td class="text-center text-muted"><%- t('general.no', 'No') %></td><td><%- t('import.variant_names_desc', 'Vehicle variants to link (semicolon-separated). Matches existing variants by name.') %></td><td><code>1.5 Turbo MT;2.0 AT</code></td></tr>
         </tbody>
       </table>
     </div>
-    <a href="/templates/vehicle-engines-import-template.csv" class="btn btn-sm btn-outline-primary mb-3" download><i class="bi bi-download me-1"></i>Download Template</a>
+    <a href="/templates/vehicle-engines-import-template.csv" class="btn btn-sm btn-outline-primary mb-3" download><i class="bi bi-download me-1"></i><%- t('import.download_template', 'Download Template') %></a>
     <form id="frmImport" enctype="multipart/form-data">
       <div class="mb-3"><input type="file" name="file" id="importFile" class="form-control" accept=".csv,.xlsx,.xls" required/></div>
       <button type="submit" class="btn btn-info btn-sm" id="btnImport"><i class="bi bi-upload me-1"></i><%- t('btn.import') %></button>
@@ -190,7 +190,7 @@ var isSuperAdmin = user && user.is_super_admin;
     <div id="importSummary" class="mb-3"></div>
     <div id="importResultTable"></div>
     <div id="importErrorActions" class="d-none mt-3 d-flex gap-2">
-      <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i>Retry All Errors</button>
+      <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i><%- t('import.retry_all_errors', 'Retry All Errors') %></button>
     </div>
   </div>
 </div>
@@ -208,16 +208,18 @@ var isSuperAdmin = user && user.is_super_admin;
 
 
 <!-- Variant Edit Modal -->
-<div class="modal fade" id="modalVariants" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:500px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-sliders2-vertical me-2 text-indigo"></i>Manage Variants</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal fade" id="modalVariants" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:500px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-sliders2-vertical me-2 text-indigo"></i><%- t('vehicle_engines.manage_variants', 'Manage Variants') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body">
   <div class="mb-2"><strong id="varEngineLabel"></strong></div>
-  <label class="form-label small">Vehicle Variants</label>
+  <label class="form-label small"><%- t('vehicle_engines.vehicle_variants', 'Vehicle Variants') %></label>
   <select id="selVariantIds" class="form-select" multiple style="width:100%;"></select>
-  <div class="form-hint small mt-1">Search and select variants to link to this engine</div>
+  <div class="form-hint small mt-1"><%- t('vehicle_engines.search_select_variants', 'Search and select variants to link to this engine') %></div>
   <input type="hidden" id="varEngineUuid"/>
 </div>
-<div class="modal-footer py-2"><button class="btn btn-sm btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-sm btn-primary" id="btnSaveVariants"><i class="bi bi-check-lg me-1"></i>Save</button></div>
+<div class="modal-footer py-2"><button class="btn btn-sm btn-ghost-secondary" data-bs-dismiss="modal"><%- t('btn.cancel', 'Cancel') %></button><button class="btn btn-sm btn-primary" id="btnSaveVariants"><i class="bi bi-check-lg me-1"></i><%- t('btn.save', 'Save') %></button></div>
 </div></div></div>
+
+<% include ../partials/usage-modal %>
 
 <script>window._IS_SUPER = <%= isSuperAdmin ? 'true' : 'false' %>;</script>
 <% block('scripts', '<script src="/js/pages/vehicle-engines.js"></script>') %>

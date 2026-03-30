@@ -23,6 +23,7 @@ exports.viewData = async (req, res) => { res.json(await api.get('/cities/' + req
 exports.destroy = async (req, res) => { res.json(await api.del('/cities/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/cities/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover = async (req, res) => { res.json(await api.post('/cities/' + req.params.uuid + '/recover', {}, req.session.token)); };
+exports.usage = async (req, res) => { res.json(await api.get('/cities/' + req.params.uuid + '/usage', req.session.token)); };
 exports.bulkAction = async (req, res) => { res.json(await api.post('/cities/bulk-action', req.body, req.session.token)); };
 exports.exportData = async (req, res) => {
     const params = Object.assign({}, req.query, req.body); const format = params.format || 'csv';

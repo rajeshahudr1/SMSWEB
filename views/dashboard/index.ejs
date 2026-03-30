@@ -12,7 +12,7 @@ var isSuperAdmin = user && user.is_super_admin;
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-building text-primary"></i>
         <select class="form-select form-select-sm" id="selCompany" style="width:220px;">
-          <option value="all">All Companies</option>
+          <option value="all"><%- t('dash.all_companies', 'All Companies') %></option>
           <% orgs.forEach(function(o) { %><option value="<%- o.id %>"><%- o.company_name %></option><% }) %>
         </select>
       </div>
@@ -20,12 +20,12 @@ var isSuperAdmin = user && user.is_super_admin;
       <% } %>
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-calendar-range text-muted"></i>
-        <input type="date" class="form-control form-control-sm" id="dateFrom" style="width:145px;" title="From Date"/>
-        <span class="text-muted small">to</span>
-        <input type="date" class="form-control form-control-sm" id="dateTo" style="width:145px;" title="To Date"/>
+        <input type="date" class="form-control form-control-sm" id="dateFrom" style="width:145px;" title="<%- t('dash.from_date', 'From Date') %>"/>
+        <span class="text-muted small"><%- t('general.to', 'to') %></span>
+        <input type="date" class="form-control form-control-sm" id="dateTo" style="width:145px;" title="<%- t('dash.to_date', 'To Date') %>"/>
       </div>
-      <button class="btn btn-sm btn-primary" id="btnApplyDate"><i class="bi bi-funnel me-1"></i>Apply</button>
-      <button class="btn btn-sm btn-outline-secondary" id="btnClearDate" title="Clear date filter"><i class="bi bi-x-lg"></i></button>
+      <button class="btn btn-sm btn-primary" id="btnApplyDate"><i class="bi bi-funnel me-1"></i><%- t('general.apply', 'Apply') %></button>
+      <button class="btn btn-sm btn-outline-secondary" id="btnClearDate" title="<%- t('dash.clear_date_filter', 'Clear date filter') %>"><i class="bi bi-x-lg"></i></button>
       <div class="ms-auto text-muted small d-none d-md-block" id="dateRangeLabel"></div>
     </div>
   </div>
@@ -35,22 +35,22 @@ var isSuperAdmin = user && user.is_super_admin;
 <div class="row g-3 mb-3" id="summaryRow">
   <div class="col-6 col-lg-3">
     <div class="card card-sm shadow-sm border-start border-primary border-3">
-      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;">Activity</div><div class="h2 mb-0 mt-1" id="todayTotal">–</div></div><div class="rounded-circle bg-primary-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-lightning-fill text-primary" style="font-size:20px;"></i></div></div></div>
+      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;"><%- t('dash.activity', 'Activity') %></div><div class="h2 mb-0 mt-1" id="todayTotal">–</div></div><div class="rounded-circle bg-primary-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-lightning-fill text-primary" style="font-size:20px;"></i></div></div></div>
     </div>
   </div>
   <div class="col-6 col-lg-3" id="cardUsers">
     <div class="card card-sm shadow-sm border-start border-success border-3">
-      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;">Users</div><div class="h2 mb-0 mt-1" id="totalUsers">–</div></div><div class="rounded-circle bg-success-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-people-fill text-success" style="font-size:20px;"></i></div></div></div>
+      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;"><%- t('dash.users', 'Users') %></div><div class="h2 mb-0 mt-1" id="totalUsers">–</div></div><div class="rounded-circle bg-success-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-people-fill text-success" style="font-size:20px;"></i></div></div></div>
     </div>
   </div>
   <div class="col-6 col-lg-3" id="cardRoles">
     <div class="card card-sm shadow-sm border-start border-info border-3">
-      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;">Roles</div><div class="h2 mb-0 mt-1" id="totalRoles">–</div></div><div class="rounded-circle bg-info-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-shield-fill-check text-info" style="font-size:20px;"></i></div></div></div>
+      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;"><%- t('dash.roles', 'Roles') %></div><div class="h2 mb-0 mt-1" id="totalRoles">–</div></div><div class="rounded-circle bg-info-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-shield-fill-check text-info" style="font-size:20px;"></i></div></div></div>
     </div>
   </div>
   <div class="col-6 col-lg-3" id="cardLangs">
     <div class="card card-sm shadow-sm border-start border-purple border-3">
-      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;">Languages</div><div class="h2 mb-0 mt-1" id="totalLangs">–</div></div><div class="rounded-circle bg-purple-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-translate text-purple" style="font-size:20px;"></i></div></div></div>
+      <div class="card-body py-3"><div class="d-flex align-items-center"><div class="flex-fill"><div class="text-muted small text-uppercase fw-medium" style="font-size:11px;"><%- t('dash.languages', 'Languages') %></div><div class="h2 mb-0 mt-1" id="totalLangs">–</div></div><div class="rounded-circle bg-purple-lt d-flex align-items-center justify-content-center" style="width:44px;height:44px;"><i class="bi bi-translate text-purple" style="font-size:20px;"></i></div></div></div>
     </div>
   </div>
 </div>
@@ -59,13 +59,13 @@ var isSuperAdmin = user && user.is_super_admin;
 <div class="row g-3 mb-3">
   <div class="col-lg-6" id="wrapParts">
     <div class="card shadow-sm h-100">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-box-seam me-2 text-blue"></i>Parts Master</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-box-seam me-2 text-blue"></i><%- t('dash.parts_master', 'Parts Master') %></div></div>
       <div class="card-body p-0" id="blockParts"><div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div></div>
     </div>
   </div>
   <div class="col-lg-6" id="wrapVehicles">
     <div class="card shadow-sm h-100">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-car-front-fill me-2 text-teal"></i>Vehicle Master</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-car-front-fill me-2 text-teal"></i><%- t('dash.vehicle_master', 'Vehicle Master') %></div></div>
       <div class="card-body p-0" id="blockVehicles"><div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div></div>
     </div>
   </div>
@@ -74,13 +74,13 @@ var isSuperAdmin = user && user.is_super_admin;
 <div class="row g-3 mb-3">
   <div class="col-lg-4" id="wrapLocations">
     <div class="card shadow-sm h-100">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-geo-alt-fill me-2 text-orange"></i>Locations</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-geo-alt-fill me-2 text-orange"></i><%- t('dash.locations', 'Locations') %></div></div>
       <div class="card-body p-0" id="blockLocations"><div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div></div>
     </div>
   </div>
   <div class="col-lg-8">
     <div class="card shadow-sm h-100">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Activity Chart</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-bar-chart-fill me-2 text-primary"></i><%- t('dash.activity_chart', 'Activity Chart') %></div></div>
       <div class="card-body" style="height:280px;"><canvas id="activityChart"></canvas></div>
     </div>
   </div>

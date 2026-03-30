@@ -18,10 +18,10 @@ var isSuperAdmin = user && user.is_super_admin;
 
     <% if (isSuperAdmin) { %>
     <div class="card shadow-sm mb-3">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i><%- t('general.company') %></div></div>
       <div class="card-body">
         <select name="company_id" id="selCompany" class="form-select">
-          <option value="global" <%- (!isEdit || !rec.organization_id) ? 'selected' : '' %>>Global (Super Admin)</option>
+          <option value="global" <%- (!isEdit || !rec.organization_id) ? 'selected' : '' %>><%- t('general.global_super_admin') %></option>
           <% orgs.forEach(function(o) { %>
           <option value="<%- o.id %>" <%- (isEdit && rec.organization_id && String(rec.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
           <% }) %>
@@ -31,15 +31,15 @@ var isSuperAdmin = user && user.is_super_admin;
     <% } %>
 
     <div class="card shadow-sm">
-      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-calendar3 me-1 text-primary"></i><%- t('vehicle_years.information') || 'Year Information' %></div></div>
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-calendar3 me-1 text-primary"></i><%- t('vehicle_years.information') %></div></div>
       <div class="card-body">
-        <label class="form-label fw-medium"><%- t('vehicle_years.year') || 'Year' %> <span class="text-danger">*</span></label>
+        <label class="form-label fw-medium"><%- t('vehicle_years.year') %> <span class="text-danger">*</span></label>
         <input type="number" name="year" id="fYear" class="form-control" required autofocus
                min="1900" max="2100" step="1"
                value="<%= isEdit ? (rec.year || '') : '' %>"
                placeholder="e.g. 2024"
                onkeypress="return event.charCode >= 48 && event.charCode <= 57"/>
-        <div class="form-hint mt-1">Enter a 4-digit year between 1900 and 2100.</div>
+        <div class="form-hint mt-1"><%- t('vehicle_years.year_hint') %></div>
       </div>
     </div>
 
@@ -58,7 +58,7 @@ var isSuperAdmin = user && user.is_super_admin;
     <div class="card mt-3 shadow-sm">
       <div class="card-body py-3">
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? t('general.update') : t('general.create') %> <%- t('vehicle_years.title') || 'Vehicle Year' %></button>
+          <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? t('general.update') : t('general.create') %> <%- t('vehicle_years.title') %></button>
           <a href="/vehicle-years" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel') %></a>
         </div>
       </div>

@@ -1,5 +1,6 @@
 /* roles.js */
 'use strict';
+var T=function(k,f){return SMS_T(k,f);};
 
 var _page = 1;
 var _pp   = 15;
@@ -18,10 +19,10 @@ function _filters() {
    LOAD TABLE
 ══════════════════════════════════════════════════════════ */
 function loadRoles() {
-    $('#tableBody').html('<tr><td colspan="5" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…</td></tr>');
+    $('#tableBody').html('<tr><td colspan="5" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
     $.post(BASE_URL + '/roles/paginate', _filters(), function(res) {
         if (!res || res.status !== 200) {
-            $('#tableBody').html('<tr><td colspan="5" class="text-center py-4 text-danger">Failed to load.</td></tr>');
+            $('#tableBody').html('<tr><td colspan="5" class="text-center py-4 text-danger">'+T('general.failed_to_load','Failed to load.')+'</td></tr>');
             return;
         }
         var data = (res.data && res.data.data) || [];
@@ -30,7 +31,7 @@ function loadRoles() {
 
         if (!data.length) {
             $('#tableBody').html('<tr><td colspan="5" class="text-center py-5 text-muted">' +
-                '<i class="bi bi-shield-x d-block mb-2" style="font-size:36px;opacity:.3;"></i>No roles found</td></tr>');
+                '<i class="bi bi-shield-x d-block mb-2" style="font-size:36px;opacity:.3;"></i>'+T('roles.no_roles_found','No roles found')+'</td></tr>');
             return;
         }
 
@@ -38,8 +39,8 @@ function loadRoles() {
         var rows  = '';
         data.forEach(function(r, i) {
             var status = parseInt(r.status)
-                ? '<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>Active</span>'
-                : '<span class="badge bg-danger-lt">Inactive</span>';
+                ? '<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>'+T('status.active','Active')+'</span>'
+                : '<span class="badge bg-danger-lt">'+T('status.inactive','Inactive')+'</span>';
             var permCount     = r.permission_count     || 0;
             var b2bCount      = r.b2b_permission_count || 0;
             var b2cCount      = r.b2c_permission_count || 0;
@@ -49,10 +50,11 @@ function loadRoles() {
             if (editable) {
                 actions = '<div class="btn-group btn-group-sm">' +
                     '<a href="' + BASE_URL + '/roles/' + r.uuid + '/edit" class="btn btn-ghost-secondary" title="Edit role"><i class="bi bi-pencil"></i></a>' +
+                    '<button class="btn btn-ghost-info" onclick="showUsage(\'' + H.esc(r.uuid) + '\',\'' + H.esc(r.name || '') + '\')" title="Usage"><i class="bi bi-diagram-3"></i></button>' +
                     '<button class="btn btn-ghost-danger" onclick="delRole(\'' + H.esc(r.uuid) + '\',\'' + H.esc(r.name || '') + '\')" title="Delete role"><i class="bi bi-trash3"></i></button>' +
                     '</div>';
             } else {
-                actions = '<span class="badge bg-secondary-lt" title="System role — cannot be modified"><i class="bi bi-lock-fill me-1"></i>System</span>';
+                actions = '<span class="badge bg-secondary-lt" title="'+T('roles.system_role_hint','System role — cannot be modified')+'"><i class="bi bi-lock-fill me-1"></i>'+T('roles.system','System')+'</span>';
             }
 
             rows += '<tr>' +
@@ -75,12 +77,12 @@ function loadRoles() {
         /* Info text */
         var from = pg.from || (start + 1);
         var to   = pg.to || (start + data.length);
-        $('#tableInfo').text('Showing ' + from + '–' + to + ' of ' + (pg.total || 0));
+        $('#tableInfo').text(T('general.showing','Showing') + ' ' + from + '–' + to + ' ' + T('general.of','of') + ' ' + (pg.total || 0));
 
         /* Pagination */
         $('#tablePagination').html(smsPagination(pg));
     }).fail(function() {
-        $('#tableBody').html('<tr><td colspan="5" class="text-center py-4 text-danger">Network error.</td></tr>');
+        $('#tableBody').html('<tr><td colspan="5" class="text-center py-4 text-danger">'+T('general.network_error','Network error.')+'</td></tr>');
     });
 }
 
@@ -133,18 +135,47 @@ function smsPagination(pg) {
 /* ══════════════════════════════════════════════════════════
    DELETE
 ══════════════════════════════════════════════════════════ */
+function showUsage(uuid, name) {
+    var $b = $('#usageBody');
+    $('#usageModalName').text('Usage: ' + (name || ''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
+    $.get(BASE_URL + '/roles/' + uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">'+T('msg.failed','Failed.')+'</div>'); return; }
+        var d = res.data || {};
+        if (!d.hasDependencies || !d.dependencies || !d.dependencies.length) {
+            $b.html('<div class="text-center py-4"><i class="bi bi-check-circle text-success d-block mb-2" style="font-size:48px;"></i><p class="text-muted">'+T('general.not_used_anywhere','This record is not used anywhere.')+'</p></div>');
+            return;
+        }
+        var h = '';
+        d.dependencies.forEach(function(dep) {
+            h += '<div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><strong>' + H.esc(dep.label || dep.table) + '</strong><span class="badge bg-primary rounded-pill">' + dep.count + '</span></div>';
+            if (dep.records && dep.records.length) {
+                h += '<div class="table-responsive"><table class="table table-sm table-hover mb-0"><tbody>';
+                dep.records.forEach(function(r, i) {
+                    h += '<tr><td class="text-muted" style="width:40px;">' + (i + 1) + '</td><td>' + H.esc(r.display_name || r.name || r.full_name || r.uuid || '-') + '</td></tr>';
+                });
+                h += '</tbody></table></div>';
+                if (dep.count > dep.records.length) h += '<div class="card-footer text-muted small">and ' + (dep.count - dep.records.length) + ' more...</div>';
+            }
+            h += '</div>';
+        });
+        $b.html(h);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Network error.')+'</div>'); });
+}
+
 function delRole(uuid, name) {
     smsConfirm({
-        icon: '🗑️', title: 'Delete Role',
-        msg: 'Delete <strong>' + H.esc(name) + '</strong>?<br><small class="text-muted">Users with this role will lose their permissions.</small>',
-        btnClass: 'btn-danger', btnText: 'Delete',
+        icon: '🗑️', title: T('btn.delete','Delete') + ' ' + T('roles.role','Role'),
+        msg: T('btn.delete','Delete') + ' <strong>' + H.esc(name) + '</strong>?<br><small class="text-muted">'+T('roles.delete_warning','Users with this role will lose their permissions.')+'</small>',
+        btnClass: 'btn-danger', btnText: T('btn.delete','Delete'),
         onConfirm: function() {
             showLoading();
             $.post(BASE_URL + '/roles/' + uuid + '/delete', function(r) {
                 hideLoading();
                 if (r.status === 200) { toastr.success(r.message); loadRoles(); }
                 else toastr.error(r.message);
-            }).fail(function() { hideLoading(); toastr.error('Network error.'); });
+            }).fail(function() { hideLoading(); toastr.error(T('general.network_error','Network error.')); });
         }
     });
 }

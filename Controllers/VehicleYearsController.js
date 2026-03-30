@@ -58,6 +58,7 @@ exports.viewData = async (req, res) => { res.json(await api.get('/vehicle-years/
 exports.destroy = async (req, res) => { res.json(await api.del('/vehicle-years/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/vehicle-years/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover = async (req, res) => { res.json(await api.post('/vehicle-years/' + req.params.uuid + '/recover', {}, req.session.token)); };
+exports.usage = async (req, res) => { res.json(await api.get('/vehicle-years/' + req.params.uuid + '/usage', req.session.token)); };
 exports.bulkAction = async (req, res) => { res.json(await api.post('/vehicle-years/bulk-action', req.body, req.session.token)); };
 
 exports.importSingleRow = async (req, res) => {

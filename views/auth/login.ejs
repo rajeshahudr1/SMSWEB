@@ -14,8 +14,8 @@
       <div class="sms-cover-brand">
         <div class="sms-cover-brand__icon">♻</div>
         <div>
-          <div class="sms-cover-brand__name">SMS Platform</div>
-          <div class="sms-cover-brand__sub">Scrap Management System</div>
+          <div class="sms-cover-brand__name"><%- t('auth.sms_platform', 'SMS Platform') %></div>
+          <div class="sms-cover-brand__sub"><%- t('auth.scrap_mgmt', 'Scrap Management System') %></div>
         </div>
       </div>
 
@@ -28,28 +28,28 @@
       <div class="sms-cover-features">
         <div class="sms-cover-feat">
           <span class="sms-cover-feat__dot"></span>
-          <span>MoRTH-compliant Registered Vehicle Scrapping Facility (RVSF) management</span>
+          <span><%- t('auth.feature_1', 'MoRTH-compliant Registered Vehicle Scrapping Facility (RVSF) management') %></span>
         </div>
         <div class="sms-cover-feat">
           <span class="sms-cover-feat__dot"></span>
-          <span>Real-time weighbridge &amp; inventory tracking with VAHAN sync</span>
+          <span><%- t('auth.feature_2', 'Real-time weighbridge & inventory tracking with VAHAN sync') %></span>
         </div>
         <div class="sms-cover-feat">
           <span class="sms-cover-feat__dot"></span>
-          <span>Multi-yard B2B &amp; B2C operations with role-based access</span>
+          <span><%- t('auth.feature_3', 'Multi-yard B2B & B2C operations with role-based access') %></span>
         </div>
         <div class="sms-cover-feat">
           <span class="sms-cover-feat__dot"></span>
-          <span>Automated compliance reports, depollution certificates &amp; audit logs</span>
+          <span><%- t('auth.feature_4', 'Automated compliance reports, depollution certificates & audit logs') %></span>
         </div>
       </div>
 
       <!-- Trust badges -->
       <div class="sms-cover-badges">
-        <span class="sms-cover-badge"><i class="bi bi-shield-check"></i> ISO 9001</span>
-        <span class="sms-cover-badge"><i class="bi bi-lock"></i> SSL Secured</span>
-        <span class="sms-cover-badge"><i class="bi bi-buildings"></i> 500+ Yards</span>
-        <span class="sms-cover-badge"><i class="bi bi-flag"></i> MoRTH</span>
+        <span class="sms-cover-badge"><i class="bi bi-shield-check"></i> <%- t('auth.badge_iso', 'ISO 9001') %></span>
+        <span class="sms-cover-badge"><i class="bi bi-lock"></i> <%- t('auth.badge_ssl', 'SSL Secured') %></span>
+        <span class="sms-cover-badge"><i class="bi bi-buildings"></i> <%- t('auth.badge_yards', '500+ Yards') %></span>
+        <span class="sms-cover-badge"><i class="bi bi-flag"></i> <%- t('auth.badge_morth', 'MoRTH') %></span>
       </div>
     </div>
   </div>
@@ -61,28 +61,28 @@
       <!-- Mobile logo -->
       <div class="sms-mobile-logo">
         <div class="sms-mobile-logo__icon">♻</div>
-        <div style="font-size:19px; font-weight:800; color:#1a2332;">SMS Platform</div>
-        <div style="font-size:12px; color:#667380;">Scrap Management System</div>
+        <div style="font-size:19px; font-weight:800; color:#1a2332;"><%- t('auth.sms_platform', 'SMS Platform') %></div>
+        <div style="font-size:12px; color:#667380;"><%- t('auth.scrap_mgmt', 'Scrap Management System') %></div>
       </div>
 
-      <h2 class="sms-auth-title">Welcome back 👋</h2>
-      <p class="sms-auth-subtitle">Sign in to your SMS account to continue</p>
+      <h2 class="sms-auth-title"><%- t('auth.welcome', 'Welcome back') %> 👋</h2>
+      <p class="sms-auth-subtitle"><%- t('auth.login_subtitle', 'Sign in to your SMS account to continue') %></p>
 
       <!-- Google -->
       <button type="button" class="sms-btn-google" id="btnGoogleLogin">
         <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" height="20" alt="Google" loading="lazy"/>
-        Continue with Google
+        <%- t('auth.continue_google', 'Continue with Google') %>
       </button>
 
-      <div class="sms-divider">or sign in with email</div>
+      <div class="sms-divider"><%- t('auth.or_signin_email', 'or sign in with email') %></div>
 
       <!-- Panel chips -->
       <div class="sms-panel-chips">
         <button type="button" class="sms-panel-chip active" data-panel="b2b">
-          <i class="bi bi-buildings"></i> Business (B2B)
+          <i class="bi bi-buildings"></i> <%- t('auth.b2b', 'Business (B2B)') %>
         </button>
         <button type="button" class="sms-panel-chip" data-panel="b2c">
-          <i class="bi bi-person-circle"></i> Individual (B2C)
+          <i class="bi bi-person-circle"></i> <%- t('auth.b2c', 'Individual (B2C)') %>
         </button>
       </div>
 
@@ -92,7 +92,7 @@
 
         <div class="mb-3">
           <div class="sms-label">
-            <span>Email address <span style="color:#d63939;">*</span></span>
+            <span><%- t('auth.email', 'Email address') %> <span style="color:#d63939;">*</span></span>
           </div>
           <div class="sms-input-group">
             <span class="sms-input-group__icon"><i class="bi bi-envelope"></i></span>
@@ -103,13 +103,13 @@
 
         <div class="mb-3">
           <div class="sms-label">
-            <span>Password <span style="color:#d63939;">*</span></span>
-            <a href="/forgot-password" class="text-primary">Forgot password?</a>
+            <span><%- t('auth.password', 'Password') %> <span style="color:#d63939;">*</span></span>
+            <a href="/forgot-password" class="text-primary"><%- t('auth.forgot', 'Forgot password?') %></a>
           </div>
           <div class="sms-input-group">
             <span class="sms-input-group__icon"><i class="bi bi-lock"></i></span>
             <input type="password" id="fPassword" name="password" placeholder="••••••••" autocomplete="current-password"/>
-            <button type="button" class="sms-input-group__btn" id="btnTogglePw" tabindex="-1" aria-label="Toggle password">
+            <button type="button" class="sms-input-group__btn" id="btnTogglePw" tabindex="-1" aria-label="<%- t('auth.toggle_password', 'Toggle password') %>">
               <i class="bi bi-eye" id="eyeIcon"></i>
             </button>
           </div>
@@ -119,25 +119,25 @@
         <div class="mb-4 d-flex justify-content-between align-items-center">
           <label class="form-check mb-0">
             <input class="form-check-input" type="checkbox" name="remember_me" value="1"/>
-            <span class="form-check-label small text-secondary">Keep me signed in</span>
+            <span class="form-check-label small text-secondary"><%- t('auth.keep_signed_in', 'Keep me signed in') %></span>
           </label>
         </div>
 
         <button type="submit" id="btnLogin" class="sms-btn-auth">
-          <i class="bi bi-box-arrow-in-right"></i> Sign in to SMS
+          <i class="bi bi-box-arrow-in-right"></i> <%- t('auth.signin_btn', 'Sign in to SMS') %>
         </button>
       </form>
 
-      <div class="sms-divider mt-3">new to sms?</div>
+      <div class="sms-divider mt-3"><%- t('auth.new_to_sms', 'new to sms?') %></div>
 
       <a href="/signup" class="sms-btn-outline">
-        <i class="bi bi-person-plus"></i> Create a free account
+        <i class="bi bi-person-plus"></i> <%- t('auth.create_free', 'Create a free account') %>
       </a>
 
       <p class="text-center mt-4 mb-0" style="font-size:12px; color:#adb5bd;">
-        By signing in you agree to our
-        <a href="/terms" class="text-primary text-decoration-none">Terms of Service</a> &amp;
-        <a href="/privacy" class="text-primary text-decoration-none">Privacy Policy</a>
+        <%- t('auth.agree_text', 'By signing in you agree to our') %>
+        <a href="/terms" class="text-primary text-decoration-none"><%- t('auth.terms', 'Terms of Service') %></a> &amp;
+        <a href="/privacy" class="text-primary text-decoration-none"><%- t('auth.privacy', 'Privacy Policy') %></a>
       </p>
 
     </div>

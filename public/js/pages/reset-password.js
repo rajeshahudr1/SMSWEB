@@ -1,4 +1,5 @@
 /* ── reset-password.js ── SMS Web ── */
+var T=function(k,f){return SMS_T(k,f);};
 
 $(function () {
 
@@ -39,27 +40,27 @@ $(function () {
 
         // Client-side validation
         if (!token) {
-            toastr.error('Reset token is missing. Please request a new reset link.');
+            toastr.error(T('auth.token_missing','Reset token is missing. Please request a new reset link.'));
             return;
         }
         if (!pw) {
-            $('#err-password').text('Password is required.');
+            $('#err-password').text(T('auth.pw_required','Password is required.'));
             $('#newPw').addClass('is-invalid'); ok = false;
         } else if (pw.length < 8) {
-            $('#err-password').text('Password must be at least 8 characters.');
+            $('#err-password').text(T('auth.pw_min_8','Password must be at least 8 characters.'));
             $('#newPw').addClass('is-invalid'); ok = false;
         }
         if (!cpw) {
-            $('#err-confirm_password').text('Please confirm your password.');
+            $('#err-confirm_password').text(T('auth.confirm_pw','Please confirm your password.'));
             $('#cfmPw').addClass('is-invalid'); ok = false;
         } else if (pw !== cpw) {
-            $('#err-confirm_password').text('Passwords do not match.');
+            $('#err-confirm_password').text(T('auth.pw_mismatch','Passwords do not match.'));
             $('#cfmPw').addClass('is-invalid'); ok = false;
         }
         if (!ok) return;
 
         var $btn = $('#btnReset');
-        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Resetting…');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('auth.resetting','Resetting…'));
 
         $.ajax({
             url:      BASE_URL + '/reset-password',
@@ -68,15 +69,15 @@ $(function () {
             dataType: 'json',
             success: function (res) {
                 if (res.status === 200) {
-                    toastr.success('Password reset! Redirecting to login…');
+                    toastr.success(T('auth.pw_reset_success','Password reset! Redirecting to login…'));
                     setTimeout(function () { window.location.href = BASE_URL + '/login'; }, 1500);
                 } else {
-                    toastr.error(res.message || 'Reset failed. Link may have expired.');
+                    toastr.error(res.message || T('auth.reset_failed','Reset failed. Link may have expired.'));
                     $btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Reset Password');
                 }
             },
             error: function () {
-                toastr.error('Server error. Please try again.');
+                toastr.error(T('general.server_error','Server error. Please try again.'));
                 $btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Reset Password');
             }
         });

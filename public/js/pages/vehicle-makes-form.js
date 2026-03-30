@@ -2,6 +2,7 @@
 'use strict';
 $(function() {
     var FD = window._FORM_DATA || {};
+    var T = function(k,f){ return SMS_T(k,f); };
 
     function getCompanyId() {
         var co = $('#selCompany').val();
@@ -111,8 +112,8 @@ $(function() {
                     var tr = res.data.translations, n = 0;
                     for (var lid in tr) { var $i = $('input[name="trans_' + lid + '"]'); if ($i.length && tr[lid]) { $i.val(tr[lid]); $i.css('background', '#d4edda'); (function(el) { setTimeout(function() { el.css('background', ''); }, 1500); })($i); n++; } }
                     toastr.success(n + ' translations filled');
-                } else toastr.error(res.message || 'Failed.');
-            }, error: function() { $b.prop('disabled', false).html(o); toastr.error('Network error.'); }
+                } else toastr.error(res.message || T('msg.failed','Failed.'));
+            }, error: function() { $b.prop('disabled', false).html(o); toastr.error(T('general.network_error','Network error.')); }
         });
     });
     $(document).on('click', '.ai-single-btn', function() {
@@ -121,8 +122,8 @@ $(function() {
         $b.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
         $.ajax({ url: BASE_URL + '/vehicle-models/translate', type: 'POST', contentType: 'application/json',
             data: JSON.stringify({ text: text, languages: [{ id: lid, name: lnm, code: lcd }], provider: (_aiConfig && _aiConfig.provider) || 'openai' }),
-            success: function(res) { $b.prop('disabled', false).html(o); if (res.status === 200 && res.data && res.data.translations && res.data.translations[lid]) { var $i = $('input[name="trans_' + lid + '"]'); $i.val(res.data.translations[lid]); $i.css('background', '#d4edda'); setTimeout(function() { $i.css('background', ''); }, 1500); } else toastr.error('Failed.'); },
-            error: function() { $b.prop('disabled', false).html(o); toastr.error('Network error.'); }
+            success: function(res) { $b.prop('disabled', false).html(o); if (res.status === 200 && res.data && res.data.translations && res.data.translations[lid]) { var $i = $('input[name="trans_' + lid + '"]'); $i.val(res.data.translations[lid]); $i.css('background', '#d4edda'); setTimeout(function() { $i.css('background', ''); }, 1500); } else toastr.error(T('msg.failed','Failed.')); },
+            error: function() { $b.prop('disabled', false).html(o); toastr.error(T('general.network_error','Network error.')); }
         });
     });
 
@@ -155,8 +156,8 @@ $(function() {
 
         btnLoading($btn);
         $.ajax({ url: $(this).attr('action'), type: 'POST', data: fd, processData: false, contentType: false,
-            success: function(r) { btnReset($btn); if (r.status === 200 || r.status === 201) { toastr.success(r.message || 'Saved.'); setTimeout(function() { window.location = '/vehicle-models'; }, 800); } else toastr.error(r.message || 'Error.'); },
-            error: function() { btnReset($btn); toastr.error('Network error.'); }
+            success: function(r) { btnReset($btn); if (r.status === 200 || r.status === 201) { toastr.success(r.message || T('msg.settings_saved','Saved.')); setTimeout(function() { window.location = '/vehicle-models'; }, 800); } else toastr.error(r.message || T('general.error','Error.')); },
+            error: function() { btnReset($btn); toastr.error(T('general.network_error','Network error.')); }
         });
     });
 

@@ -1,5 +1,6 @@
 /* users.js */
 'use strict';
+var T=function(k,f){return SMS_T(k,f);};
 
 var _page  = 1;
 var _pp    = 15;
@@ -25,10 +26,10 @@ function ava(name, img) {
    LOAD TABLE
 ══════════════════════════════════════════════════════════ */
 function loadUsers() {
-    $('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr>');
+    $('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
     $.post(BASE_URL + '/users/paginate', _filters(), function(res) {
         if (!res || res.status !== 200) {
-            $('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-1"></i>Failed to load.</td></tr>');
+            $('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-1"></i>'+T('general.failed_to_load','Failed to load.')+'</td></tr>');
             return;
         }
         var data = (res.data && res.data.data) || [];
@@ -36,7 +37,7 @@ function loadUsers() {
         $('#badgeTotal').text((pg.total || 0).toLocaleString());
 
         if (!data.length) {
-            $('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-people d-block mb-2" style="font-size:36px;opacity:.3;"></i>No users found</td></tr>');
+            $('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-people d-block mb-2" style="font-size:36px;opacity:.3;"></i>'+T('users.no_users_found','No users found')+'</td></tr>');
             $('#tableInfo').text(''); $('#tablePagination').html('');
             return;
         }
@@ -45,8 +46,8 @@ function loadUsers() {
         var rows  = '';
         data.forEach(function(u, i) {
             var status = parseInt(u.status)
-                ? '<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>Active</span>'
-                : '<span class="badge bg-danger-lt">Inactive</span>';
+                ? '<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>'+T('status.active','Active')+'</span>'
+                : '<span class="badge bg-danger-lt">'+T('status.inactive','Inactive')+'</span>';
             var editable  = u.is_editable !== false;
             var deletable = u.is_deletable !== false;
 
@@ -78,11 +79,11 @@ function loadUsers() {
 
         var from = pg.from || (start + 1);
         var to   = pg.to || (start + data.length);
-        $('#tableInfo').text('Showing ' + from + '–' + to + ' of ' + (pg.total || 0));
+        $('#tableInfo').text(T('general.showing','Showing') + ' ' + from + '–' + to + ' ' + T('general.of','of') + ' ' + (pg.total || 0));
         $('#tablePagination').html(smsPagination(pg));
         updateBulk();
     }).fail(function() {
-        $('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Network error.</td></tr>');
+        $('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">'+T('general.network_error','Network error.')+'</td></tr>');
     });
 }
 
@@ -125,7 +126,7 @@ function viewUser(uuid) {
 
     $.get(BASE_URL + '/users/' + uuid + '/view-data', function(res) {
         if (!res || res.status !== 200) {
-            $body.html('<div class="alert alert-danger m-3">Failed to load user details.</div>');
+            $body.html('<div class="alert alert-danger m-3">'+T('users.failed_to_load_details','Failed to load user details.')+'</div>');
             return;
         }
         var u     = res.data.user || {};
@@ -148,30 +149,30 @@ function viewUser(uuid) {
         html += '<h4 class="mb-1">' + H.esc(u.name || '') + '</h4>';
         html += '<div class="text-muted small">' + H.esc(u.email || '') + '</div>';
         var sBadge = parseInt(u.status)
-            ? '<span class="badge bg-success-lt mt-2">Active</span>'
-            : '<span class="badge bg-danger-lt mt-2">Inactive</span>';
-        if (parseInt(u.is_super_admin)) sBadge += ' <span class="badge bg-red-lt mt-2">Super Admin</span>';
-        else if (parseInt(u.is_org_admin)) sBadge += ' <span class="badge bg-warning-lt mt-2">Org Admin</span>';
+            ? '<span class="badge bg-success-lt mt-2">'+T('status.active','Active')+'</span>'
+            : '<span class="badge bg-danger-lt mt-2">'+T('status.inactive','Inactive')+'</span>';
+        if (parseInt(u.is_super_admin)) sBadge += ' <span class="badge bg-red-lt mt-2">'+T('users.super_admin','Super Admin')+'</span>';
+        else if (parseInt(u.is_org_admin)) sBadge += ' <span class="badge bg-warning-lt mt-2">'+T('users.org_admin','Org Admin')+'</span>';
         html += '<div>' + sBadge + '</div>';
         html += '</div>';
 
         /* Info rows */
         html += '<div class="mb-3" style="border-top:1px solid var(--tblr-border-color);padding-top:16px;">';
-        html += _viewRow('bi-shield-check', 'Role',    '<span class="badge bg-primary-lt">' + H.esc(u.role_name || '—') + '</span>');
-        html += _viewRow('bi-telephone',    'Phone',   H.esc(u.phone || '—'));
-        html += _viewRow('bi-calendar3',    'Joined',  smsFormatDate(u.created_at));
-        if (u.gender) html += _viewRow('bi-person',  'Gender', u.gender.charAt(0).toUpperCase() + u.gender.slice(1));
-        if (u.dob)    html += _viewRow('bi-cake2',   'DOB',    smsFormatDate(u.dob));
-        if (u.address) html += _viewRow('bi-geo-alt', 'Address', H.esc(u.address));
-        if (u.zip_code) html += _viewRow('bi-mailbox', 'ZIP',   H.esc(u.zip_code));
-        if (u.aadhar_no) html += _viewRow('bi-credit-card', 'Aadhar', H.esc(u.aadhar_no));
-        if (u.pan_no)    html += _viewRow('bi-card-text',   'PAN',    H.esc(u.pan_no));
+        html += _viewRow('bi-shield-check', T('users.role','Role'),    '<span class="badge bg-primary-lt">' + H.esc(u.role_name || '—') + '</span>');
+        html += _viewRow('bi-telephone',    T('users.phone','Phone'),   H.esc(u.phone || '—'));
+        html += _viewRow('bi-calendar3',    T('users.joined','Joined'),  smsFormatDate(u.created_at));
+        if (u.gender) html += _viewRow('bi-person',  T('users.gender','Gender'), u.gender.charAt(0).toUpperCase() + u.gender.slice(1));
+        if (u.dob)    html += _viewRow('bi-cake2',   T('users.dob','DOB'),    smsFormatDate(u.dob));
+        if (u.address) html += _viewRow('bi-geo-alt', T('users.address','Address'), H.esc(u.address));
+        if (u.zip_code) html += _viewRow('bi-mailbox', T('users.zip','ZIP'),   H.esc(u.zip_code));
+        if (u.aadhar_no) html += _viewRow('bi-credit-card', T('users.aadhar','Aadhar'), H.esc(u.aadhar_no));
+        if (u.pan_no)    html += _viewRow('bi-card-text',   T('users.pan','PAN'),    H.esc(u.pan_no));
         html += '</div>';
 
         /* Menus accessible */
         if (menus.length) {
             html += '<div style="border-top:1px solid var(--tblr-border-color);padding-top:16px;">';
-            html += '<h6 class="fw-semibold mb-2" style="font-size:13px;"><i class="bi bi-list-nested me-1 text-primary"></i>Menus Accessible <span class="badge bg-secondary-lt ms-1">' + menus.length + '</span></h6>';
+            html += '<h6 class="fw-semibold mb-2" style="font-size:13px;"><i class="bi bi-list-nested me-1 text-primary"></i>'+T('users.menus_accessible','Menus Accessible')+' <span class="badge bg-secondary-lt ms-1">' + menus.length + '</span></h6>';
             html += '<div class="d-flex flex-wrap gap-1">';
             menus.forEach(function(m) {
                 var icon = (m.icon || '').replace(/^bi\s+/, '').replace(/^ti\s+/, '') || 'circle';
@@ -200,7 +201,7 @@ function viewUser(uuid) {
                 }
             });
 
-            html += '<h6 class="fw-semibold mb-3" style="font-size:13px;"><i class="bi bi-key me-1 text-primary"></i>Permissions</h6>';
+            html += '<h6 class="fw-semibold mb-3" style="font-size:13px;"><i class="bi bi-key me-1 text-primary"></i>'+T('users.permissions','Permissions')+'</h6>';
 
             /* B2B / B2C Tabs */
             html += '<ul class="nav nav-tabs nav-fill mb-0" role="tablist">';
@@ -217,8 +218,8 @@ function viewUser(uuid) {
         } else {
             html += '<div class="text-center text-muted py-5">';
             html += '<i class="bi bi-key" style="font-size:48px;opacity:.12;display:block;margin-bottom:12px;"></i>';
-            html += '<p class="fw-semibold mb-1">No permissions assigned</p>';
-            html += '<p class="text-muted mb-0 small">This user has no role or the role has no permissions.</p>';
+            html += '<p class="fw-semibold mb-1">'+T('users.no_permissions_assigned','No permissions assigned')+'</p>';
+            html += '<p class="text-muted mb-0 small">'+T('users.no_permissions_desc','This user has no role or the role has no permissions.')+'</p>';
             html += '</div>';
         }
 
@@ -228,7 +229,7 @@ function viewUser(uuid) {
         html += '</div>'; /* end row */
         $body.html(html);
     }).fail(function() {
-        $body.html('<div class="alert alert-danger m-3">Network error loading user.</div>');
+        $body.html('<div class="alert alert-danger m-3">'+T('users.network_error_loading','Network error loading user.')+'</div>');
     });
 }
 
@@ -242,7 +243,7 @@ function _viewRow(icon, label, value) {
 
 function _renderPermTable(groups) {
     var keys = Object.keys(groups);
-    if (!keys.length) return '<div class="text-muted text-center py-4 small">No permissions in this panel.</div>';
+    if (!keys.length) return '<div class="text-muted text-center py-4 small">'+T('users.no_permissions_panel','No permissions in this panel.')+'</div>';
     var aColor = { view:'azure', add:'green', edit:'orange', 'delete':'red', 'export':'purple', 'import':'teal' };
     var aIcon  = { view:'bi-eye', add:'bi-plus-lg', edit:'bi-pencil', 'delete':'bi-trash3', 'export':'bi-download', 'import':'bi-upload' };
     var html = '';
@@ -269,16 +270,16 @@ function _renderPermTable(groups) {
 ══════════════════════════════════════════════════════════ */
 function delUser(uuid, name) {
     smsConfirm({
-        icon: '🗑️', title: 'Delete User',
-        msg: 'Delete <strong>' + H.esc(name) + '</strong>? This cannot be undone.',
-        btnClass: 'btn-danger', btnText: 'Delete',
+        icon: '🗑️', title: T('btn.delete','Delete') + ' ' + T('users.user','User'),
+        msg: T('btn.delete','Delete') + ' <strong>' + H.esc(name) + '</strong>? ' + T('general.cannot_be_undone','This cannot be undone.'),
+        btnClass: 'btn-danger', btnText: T('btn.delete','Delete'),
         onConfirm: function() {
             showLoading();
             $.post(BASE_URL + '/users/' + uuid + '/delete', function(r) {
                 hideLoading();
                 if (r.status === 200) { toastr.success(r.message); loadUsers(); }
                 else toastr.error(r.message);
-            }).fail(function() { hideLoading(); toastr.error('Network error.'); });
+            }).fail(function() { hideLoading(); toastr.error(T('general.network_error','Network error.')); });
         }
     });
 }
@@ -293,8 +294,8 @@ function updateBulk() {
 function bulkAction(action) {
     if (!_sel.length) return;
     smsConfirm({
-        icon: '⚡', title: 'Bulk ' + action,
-        msg: _sel.length + ' users will be affected.',
+        icon: '⚡', title: T('general.bulk','Bulk') + ' ' + action,
+        msg: _sel.length + ' ' + T('users.users_will_be_affected','users will be affected.'),
         btnClass: action === 'delete' ? 'btn-danger' : 'btn-primary',
         btnText: action.charAt(0).toUpperCase() + action.slice(1),
         onConfirm: function() {
@@ -303,7 +304,7 @@ function bulkAction(action) {
                 hideLoading();
                 if (r.status === 200) { toastr.success(r.message); loadUsers(); }
                 else toastr.error(r.message);
-            }).fail(function() { hideLoading(); toastr.error('Network error.'); });
+            }).fail(function() { hideLoading(); toastr.error(T('general.network_error','Network error.')); });
         }
     });
 }

@@ -7,6 +7,7 @@
    - Modal add/edit (no page navigation)
 ═══════════════════════════════════════════════════════════ */
 'use strict';
+var T=function(k,f){return SMS_T(k,f);};
 
 /* ── state ───────────────────────────────────────────── */
 var _panel     = 'b2b';
@@ -223,11 +224,11 @@ function _initSelect2Modal() {
 function loadGrouped() {
     $('#permGroups').html(
         '<div class="text-center py-5 text-muted">' +
-        '<div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…</div>'
+        '<div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</div>'
     );
     $.get(BASE_URL + '/permissions/data', Object.assign({ grouped: 1 }, _filters()), function(res) {
         if (!res || res.status !== 200) {
-            $('#permGroups').html('<div class="text-center text-danger py-4">Failed to load.</div>');
+            $('#permGroups').html('<div class="text-center text-danger py-4">'+T('general.failed_to_load','Failed to load.')+'</div>');
             return;
         }
         var groups = res.data;
@@ -271,8 +272,8 @@ function loadGrouped() {
         if (!html) {
             html = '<div class="text-center text-muted py-5">' +
                 '<i class="bi bi-key" style="font-size:48px;opacity:.12;display:block;margin:0 auto 12px;"></i>' +
-                '<p class="fw-semibold mb-1" style="font-size:14px;">No permissions found</p>' +
-                '<p class="text-muted mb-0" style="font-size:13px;">Try changing your filters or panel.</p></div>';
+                '<p class="fw-semibold mb-1" style="font-size:14px;">'+T('permissions.no_permissions_found','No permissions found')+'</p>' +
+                '<p class="text-muted mb-0" style="font-size:13px;">'+T('permissions.try_changing_filters','Try changing your filters or panel.')+'</p></div>';
         }
         $('#permGroups').html(html);
         $('#badgeTotal').text(total);
@@ -285,7 +286,7 @@ function loadGrouped() {
 function loadFlat() {
     $('#flatTableBody').html(
         '<tr><td colspan="7" class="text-center py-5 text-muted">' +
-        '<div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading…</td></tr>'
+        '<div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>'
     );
     $.get(BASE_URL + '/permissions/data', Object.assign({ page: _page, per_page: _pp }, _filters()), function(res) {
         if (!res || res.status !== 200) return;
@@ -298,7 +299,7 @@ function loadFlat() {
         });
 
         if (!data.length) {
-            $('#flatTableBody').html('<tr><td colspan="7" class="text-center py-5 text-muted">No permissions found.</td></tr>');
+            $('#flatTableBody').html('<tr><td colspan="7" class="text-center py-5 text-muted">'+T('permissions.no_permissions_found','No permissions found.')+'</td></tr>');
             return;
         }
         var start = ((_page - 1) * _pp);
@@ -318,7 +319,7 @@ function loadFlat() {
                 '</div></td></tr>';
         });
         $('#flatTableBody').html(rows);
-        $('#tableInfo').text('Showing ' + (pg.from || start + 1) + '–' + (pg.to || start + data.length) + ' of ' + (pg.total || 0));
+        $('#tableInfo').text(T('general.showing','Showing') + ' ' + (pg.from || start + 1) + '–' + (pg.to || start + data.length) + ' ' + T('general.of','of') + ' ' + (pg.total || 0));
         $('#tablePagination').html(buildPagination(pg, function(p) { _page = p; loadFlat(); }));
     });
 }
@@ -368,7 +369,7 @@ function openAddPerm() {
 ══════════════════════════════════════════════════════════ */
 function openEditPerm(uuid) {
     var p = _allPerms.find(function(x) { return x.uuid === uuid; });
-    if (!p) { toastr.error('Permission not found. Please refresh.'); return; }
+    if (!p) { toastr.error(T('permissions.not_found_refresh','Permission not found. Please refresh.')); return; }
 
     $('#frmPermission')[0].reset();
     $('#editUuid').val(uuid);
@@ -416,12 +417,12 @@ function submitPerm(e) {
 
     /* Validation */
     if (!$('#fldMenuId').val()) {
-        toastr.error('Please select a menu.');
+        toastr.error(T('permissions.select_menu','Please select a menu.'));
         $('#fldMenuId').focus();
         return;
     }
     if (!$('#fldDisplayName').val().trim()) {
-        toastr.error('Display name is required.');
+        toastr.error(T('permissions.display_name_required','Display name is required.'));
         $('#fldDisplayName').focus();
         return;
     }
@@ -432,7 +433,7 @@ function submitPerm(e) {
 
     var $btn = $('#btnPermSave');
     var orig = $btn.html();
-    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>'+T('general.saving','Saving...'));
 
     smsAjax({
         url:  url,
@@ -440,16 +441,16 @@ function submitPerm(e) {
         success: function(r) {
             $btn.prop('disabled', false).html(orig);
             if (r.status === 200 || r.status === 201) {
-                toastr.success(r.message || 'Saved.');
+                toastr.success(r.message || T('msg.settings_saved','Saved.'));
                 bootstrap.Modal.getInstance(document.getElementById('modalPerm'))?.hide();
                 loadAll();
             } else {
-                toastr.error(r.message || 'Error saving.');
+                toastr.error(r.message || T('permissions.error_saving','Error saving.'));
             }
         },
         error: function() {
             $btn.prop('disabled', false).html(orig);
-            toastr.error('Network error.');
+            toastr.error(T('general.network_error','Network error.'));
         }
     });
 }
@@ -460,17 +461,17 @@ function submitPerm(e) {
 function delPerm(uuid, name) {
     smsConfirm({
         icon: '🗑️',
-        title: 'Delete Permission',
-        msg: 'Delete <strong>' + H.esc(name) + '</strong>?<br><small class="text-muted">This will also remove it from all roles.</small>',
+        title: T('btn.delete','Delete') + ' ' + T('permissions.permission','Permission'),
+        msg: T('btn.delete','Delete') + ' <strong>' + H.esc(name) + '</strong>?<br><small class="text-muted">'+T('permissions.delete_warning','This will also remove it from all roles.')+'</small>',
         btnClass: 'btn-danger',
-        btnText: 'Delete',
+        btnText: T('btn.delete','Delete'),
         onConfirm: function() {
             showLoading();
             $.post(BASE_URL + '/permissions/' + uuid + '/delete', function(r) {
                 hideLoading();
                 if (r.status === 200) { toastr.success(r.message); loadAll(); }
                 else toastr.error(r.message);
-            }).fail(function() { hideLoading(); toastr.error('Network error.'); });
+            }).fail(function() { hideLoading(); toastr.error(T('general.network_error','Network error.')); });
         }
     });
 }

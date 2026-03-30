@@ -14,6 +14,7 @@ router.post('/import/single',          requirePermission('import_vehicle_years')
 router.post('/bulk-action',            requirePermission('edit_vehicle_years'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_vehicle_years'),    Ctrl.create);
 router.post('/',                       requirePermission('add_vehicle_years'),    Ctrl.store);
+router.get('/:uuid/usage',             requirePermission('view_vehicle_years'),   Ctrl.usage);
 router.get('/:uuid/view-data',         requirePermission('view_vehicle_years'),   Ctrl.viewData);
 router.get('/:uuid/edit',              requirePermission('edit_vehicle_years'),   Ctrl.edit);
 router.post('/:uuid',                  requirePermission('edit_vehicle_years'),   Ctrl.update);

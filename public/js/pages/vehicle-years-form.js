@@ -2,6 +2,8 @@
 'use strict';
 
 $(function() {
+    var T = function(k,f){ return SMS_T(k,f); };
+
     // Block non-numeric input
     $('#fYear').on('input', function() {
         this.value = this.value.replace(/[^0-9]/g, '');
@@ -39,13 +41,13 @@ $(function() {
             success: function(r) {
                 btnReset($btn);
                 if (r.status === 200 || r.status === 201) {
-                    toastr.success(r.message || 'Saved.');
+                    toastr.success(r.message || T('msg.settings_saved','Saved.'));
                     setTimeout(function() { window.location = '/vehicle-years'; }, 800);
                 } else {
-                    toastr.error(r.message || 'Error.');
+                    toastr.error(r.message || T('general.error','Error.'));
                 }
             },
-            error: function() { btnReset($btn); toastr.error('Network error.'); }
+            error: function() { btnReset($btn); toastr.error(T('general.network_error','Network error.')); }
         });
     });
 });

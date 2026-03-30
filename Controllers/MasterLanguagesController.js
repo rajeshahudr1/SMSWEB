@@ -48,3 +48,5 @@ exports.toggleStatus = async (req, res) => {
     const result = await api.patch('/master-languages/' + req.params.uuid + '/toggle-status', {}, req.session.token);
     res.json({ status: result.status, message: result.message });
 };
+
+exports.usage = async (req, res) => { res.json(await api.get('/master-languages/' + req.params.uuid + '/usage', req.session.token)); };

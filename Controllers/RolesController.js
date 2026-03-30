@@ -112,3 +112,5 @@ exports.destroy = async (req, res) => {
     const result = await api.del('/roles/' + req.params.uuid, req.session.token);
     res.json({ status: result.status, message: result.message });
 };
+
+exports.usage = async (req, res) => { res.json(await api.get('/roles/' + req.params.uuid + '/usage', req.session.token)); };

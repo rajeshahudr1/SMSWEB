@@ -1,16 +1,16 @@
 <%- layout('../layouts/main') %>
 <% var r = typeof record !== 'undefined' && record ? record : null; var isEdit = !!r; %>
 <div class="card shadow-sm" style="max-width:700px;margin:0 auto;">
-  <div class="card-header py-3"><h3 class="card-title mb-0"><i class="bi bi-building me-2 text-primary"></i><%= isEdit ? 'Edit' : 'Add' %> City</h3></div>
+  <div class="card-header py-3"><h3 class="card-title mb-0"><i class="bi bi-building me-2 text-primary"></i><%- isEdit ? t('cities.edit', 'Edit City') : t('cities.add', 'Add City') %></h3></div>
   <div class="card-body">
     <form id="frmSave">
-      <div class="mb-3"><label class="form-label">City Name <span class="text-danger">*</span></label><input type="text" class="form-control" name="name" id="fldName" value="<%= r ? r.name : '' %>" required autofocus/></div>
+      <div class="mb-3"><label class="form-label"><%- t('cities.name', 'City Name') %> <span class="text-danger">*</span></label><input type="text" class="form-control" name="name" id="fldName" value="<%= r ? r.name : '' %>" required autofocus/></div>
       <div class="mb-3">
-        <label class="form-label">State <span class="text-danger">*</span></label>
+        <label class="form-label"><%- t('cities.state', 'State') %> <span class="text-danger">*</span></label>
         <select class="form-select" name="state_id" id="fldState" required style="width:100%;"></select>
       </div>
-      <div class="mb-3"><label class="form-label">Status</label><select class="form-select" name="status" id="fldStatus"><option value="1" <%= r && !parseInt(r.status) ? '' : 'selected' %>>Active</option><option value="0" <%= r && !parseInt(r.status) ? 'selected' : '' %>>Inactive</option></select></div>
-      <div class="d-flex gap-2"><button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg me-1"></i><%= isEdit ? 'Update' : 'Save' %></button><a href="/cities" class="btn btn-ghost-secondary">Cancel</a></div>
+      <div class="mb-3"><label class="form-label"><%- t('general.status', 'Status') %></label><select class="form-select" name="status" id="fldStatus"><option value="1" <%= r && !parseInt(r.status) ? '' : 'selected' %>><%- t('general.active', 'Active') %></option><option value="0" <%= r && !parseInt(r.status) ? 'selected' : '' %>><%- t('general.inactive', 'Inactive') %></option></select></div>
+      <div class="d-flex gap-2"><button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg me-1"></i><%- isEdit ? t('btn.update', 'Update') : t('btn.save', 'Save') %></button><a href="/cities" class="btn btn-ghost-secondary"><%- t('btn.cancel', 'Cancel') %></a></div>
     </form>
   </div>
 </div>

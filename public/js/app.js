@@ -298,6 +298,85 @@ $(function() {
     }
 });
 
+/* ── Usage Modal — shared renderer with Edit / Delete actions ── */
+var _usageCtx = {}; // tracks which record's usage modal is open
+
+function smsRenderUsageBody(data, sourceModule, sourceUuid, sourceName) {
+    _usageCtx = { module: sourceModule, uuid: sourceUuid, name: sourceName };
+    var $b = $('#usageBody');
+    var d = data || {};
+    if (!d.hasDependencies || !d.dependencies || !d.dependencies.length) {
+        $b.html('<div class="text-center py-4"><i class="bi bi-check-circle text-success d-block mb-2" style="font-size:48px;"></i><p class="text-muted">' + SMS_T('usage.not_used', 'This record is not used anywhere.') + '</p></div>');
+        return;
+    }
+    var h = '';
+    d.dependencies.forEach(function(dep) {
+        var mod = dep.module || dep.table;
+        h += '<div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><strong>' + H.esc(dep.label || dep.table) + '</strong><span class="badge bg-primary rounded-pill">' + dep.count + '</span></div>';
+        if (dep.records && dep.records.length) {
+            h += '<div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead><tr><th style="width:36px">#</th><th>' + SMS_T('table.name','Name') + '</th><th style="width:80px" class="text-end">' + SMS_T('table.actions','Actions') + '</th></tr></thead><tbody>';
+            dep.records.forEach(function(r, i) {
+                var nm = r.display_name || r.name || r.full_name || r.uuid || '-';
+                h += '<tr><td class="text-muted">' + (i + 1) + '</td>';
+                h += '<td>' + H.esc(nm) + '</td>';
+                h += '<td class="text-end text-nowrap">';
+                if (r.uuid) {
+                    h += '<a href="' + BASE_URL + '/' + H.esc(mod) + '/' + H.esc(r.uuid) + '/edit" class="btn btn-sm btn-ghost-primary py-0 px-1" title="' + SMS_T('btn.edit','Edit') + '" target="_blank"><i class="bi bi-pencil"></i></a>';
+                    h += ' <button class="btn btn-sm btn-ghost-danger py-0 px-1 usage-del-btn" title="' + SMS_T('btn.delete','Delete') + '" data-mod="' + H.esc(mod) + '" data-uuid="' + H.esc(r.uuid) + '" data-name="' + H.esc(nm) + '"><i class="bi bi-trash"></i></button>';
+                }
+                h += '</td></tr>';
+            });
+            h += '</tbody></table></div>';
+            if (dep.count > dep.records.length) h += '<div class="card-footer text-muted small">' + SMS_T('usage.and_more', 'and') + ' ' + (dep.count - dep.records.length) + ' ' + SMS_T('usage.more', 'more...') + '</div>';
+        }
+        h += '</div>';
+    });
+    $b.html(h);
+}
+
+/* Delete a dependent record from inside the usage modal */
+$(document).on('click', '.usage-del-btn', function() {
+    var $btn = $(this);
+    var mod  = $btn.data('mod');
+    var uuid = $btn.data('uuid');
+    var name = $btn.data('name');
+    smsConfirm({
+        icon: '🗑️',
+        title: SMS_T('btn.delete', 'Delete'),
+        msg: SMS_T('general.are_you_sure', 'Are you sure?') + ' <strong>' + H.esc(name) + '</strong>',
+        btnClass: 'btn-danger',
+        btnText: SMS_T('btn.yes_delete', 'Yes, delete'),
+        onConfirm: function() {
+            $.post(BASE_URL + '/' + mod + '/' + uuid + '/delete', function(r) {
+                if (r.status === 200) {
+                    toastr.success(r.message);
+                    // Refresh usage modal to reflect the deletion
+                    smsRefreshUsage();
+                    // Reload the parent page table if available
+                    if (typeof loadData === 'function') loadData();
+                } else {
+                    toastr.error(r.message);
+                }
+            }).fail(function() {
+                toastr.error(SMS_T('general.network_error', 'Network error.'));
+            });
+        }
+    });
+});
+
+/* Reload usage modal content after a dependent record is deleted */
+function smsRefreshUsage() {
+    if (!_usageCtx.module) return;
+    var $b = $('#usageBody');
+    $b.html('<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>');
+    $.get(BASE_URL + '/' + _usageCtx.module + '/' + _usageCtx.uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">' + SMS_T('general.failed_load', 'Failed.') + '</div>'); return; }
+        smsRenderUsageBody(res.data, _usageCtx.module, _usageCtx.uuid, _usageCtx.name);
+    }).fail(function() {
+        $b.html('<div class="alert alert-danger m-3">' + SMS_T('general.network_error', 'Network error.') + '</div>');
+    });
+}
+
 /* ── Tooltip init — call after dynamic content loads ── */
 function smsInitTooltips(container) {
     var sel = container || document;
