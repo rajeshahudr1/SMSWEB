@@ -92,7 +92,14 @@ var pcAttributes = (pc && pc.attributes) ? pc.attributes : [];
             <label class="form-label fw-medium"><%- t('part_catalogs.vehicle_type', 'Vehicle Type') %></label>
             <select name="vehicle_type_id" id="selVehicleType" class="form-select" style="width:100%;"></select>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('part_catalogs.vehicle_percentage', 'Vehicle %') %></label>
+            <div class="input-group">
+              <input type="number" name="vehicle_percentage" id="fVehiclePercentage" class="form-control" step="0.01" min="0" max="100" value="<%= isEdit ? (pc.vehicle_percentage||0) : '' %>" placeholder="0"/>
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+          <div class="col-md-3">
             <label class="form-label fw-medium"><%- t('part_catalogs.num_car_doors', 'Number of Car Doors') %></label>
             <input type="number" name="number_of_car_doors" id="fCarDoors" class="form-control" min="0" max="10" value="<%= isEdit ? (pc.number_of_car_doors||'') : '' %>" placeholder="0"/>
           </div>

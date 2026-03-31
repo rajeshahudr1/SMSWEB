@@ -50,15 +50,15 @@ function showAllImages($el){
 }
 
 function loadData(){
-    $('#tableBody').html('<tr><td colspan="12" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
+    $('#tableBody').html('<tr><td colspan="13" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
     var isDeleted=$('#filterDeleted').val()==='only';
     if(isDeleted)$('#btnBulkRecover').removeClass('d-none');else $('#btnBulkRecover').addClass('d-none');
 
     $.post(BASE_URL+'/part-catalogs/paginate',_filters(),function(res){
-        if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="12" class="text-center py-4 text-danger">'+T('general.failed_load','Failed.')+'</td></tr>');return;}
+        if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="13" class="text-center py-4 text-danger">'+T('general.failed_load','Failed.')+'</td></tr>');return;}
         var data=(res.data&&res.data.data)||[],pg=(res.data&&res.data.pagination)||{};
         $('#badgeTotal').text((pg.total||0).toLocaleString());
-        if(!data.length){$('#tableBody').html('<tr><td colspan="12" class="text-center py-5 text-muted"><i class="bi bi-journal-bookmark d-block mb-2" style="font-size:36px;opacity:.3;"></i>'+T('part_catalogs.no_data','No part catalogs found')+'</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+        if(!data.length){$('#tableBody').html('<tr><td colspan="13" class="text-center py-5 text-muted"><i class="bi bi-journal-bookmark d-block mb-2" style="font-size:36px;opacity:.3;"></i>'+T('part_catalogs.no_data','No part catalogs found')+'</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
 
         var start=((_page-1)*_pp),rows='';
         data.forEach(function(r,i){
@@ -72,17 +72,20 @@ function loadData(){
             var isMaster=(r.is_master_part===true||r.is_master_part===1||r.is_master_part==='1'||r._has_override&&r.is_master_part);
             var masterBadge=isMaster?'<span class="badge bg-purple-lt"><i class="bi bi-star-fill me-1" style="font-size:9px;"></i>Yes</span>':'<span class="text-muted small">No</span>';
 
-            var acts='<div class="btn-group btn-group-sm">';
-            acts+='<button class="btn btn-ghost-primary" onclick="viewPC(\''+r.uuid+'\')" title="'+T('general.preview','View')+'"><i class="bi bi-eye"></i></button>';
+            var isActive=(r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1);
+            var acts='<div class="dropdown">';
+            acts+='<button class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts+='<ul class="dropdown-menu dropdown-menu-end" style="min-width:160px;">';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewPC(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>'+T('general.preview','View')+'</a></li>';
             if(deleted){
-                acts+='<button class="btn btn-ghost-success" onclick="recoverPC(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')" title="'+T('bulk.recover','Recover')+'"><i class="bi bi-arrow-counterclockwise"></i></button>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="recoverPC(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>'+T('bulk.recover','Recover')+'</a></li>';
             }else{
-                if(editable)acts+='<a href="'+BASE_URL+'/part-catalogs/'+r.uuid+'/edit" class="btn btn-ghost-secondary" title="'+T('btn.edit','Edit')+'"><i class="bi bi-pencil"></i></a>';
-                if(editable)acts+='<button class="btn btn-ghost-'+((r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1)?'warning':'success')+'" onclick="togglePC(\''+r.uuid+'\')"><i class="bi bi-toggle-'+((r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1)?'on':'off')+'"></i></button>';
-                acts+='<button class="btn btn-ghost-info" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-diagram-3"></i></button>';
-                if(deletable)acts+='<button class="btn btn-ghost-danger" onclick="delPC(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-trash3"></i></button>';
+                if(editable)acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/part-catalogs/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>'+T('btn.edit','Edit')+'</a></li>';
+                if(editable)acts+='<li><a class="dropdown-item" href="#" onclick="togglePC(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(isActive?'on':'off')+' me-2 text-'+(isActive?'warning':'success')+'"></i>'+(isActive?T('general.deactivate','Deactivate'):T('general.activate','Activate'))+'</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>'+T('usage.title','Usage')+'</a></li>';
+                if(deletable){acts+='<li><hr class="dropdown-divider"/></li>';acts+='<li><a class="dropdown-item text-danger" href="#" onclick="delPC(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-trash3 me-2"></i>'+T('btn.delete','Delete')+'</a></li>';}
             }
-            acts+='</div>';
+            acts+='</ul></div>';
             var rowClass=deleted?' class="table-secondary"':'';
             rows+='<tr'+rowClass+'><td style="padding-left:1rem;"><input type="checkbox" class="form-check-input row-chk" data-uuid="'+r.uuid+'"/></td>'+
                 '<td class="text-muted small">'+(start+i+1)+'</td><td>'+pcImg(r)+'</td>'+
@@ -91,6 +94,7 @@ function loadData(){
                 '<td class="d-none d-lg-table-cell small">'+H.esc(r.part_location_name||'—')+'</td>'+
                 '<td class="d-none d-xl-table-cell small">'+H.esc(r.part_group_name||'—')+'</td>'+
                 '<td class="d-none d-xl-table-cell small">'+H.esc(r.part_side_name||'—')+'</td>'+
+                '<td class="d-none d-xl-table-cell small">'+(r.vehicle_percentage ? '<span class="badge bg-purple-lt">'+parseFloat(r.vehicle_percentage).toFixed(2)+'%</span>' : '<span class="text-muted">0%</span>')+'</td>'+
                 '<td>'+masterBadge+'</td>'+
                 '<td>'+status+'</td>'+
                 '<td class="d-none d-md-table-cell text-muted small">'+smsFormatDateTime(r.created_at)+'</td>'+
@@ -99,7 +103,7 @@ function loadData(){
         $('#tableBody').html(rows);
         $('#tableInfo').text(T('general.showing','Showing')+' '+(pg.from||1)+'–'+(pg.to||data.length)+' '+T('general.of','of')+' '+(pg.total||0));
         $('#tablePagination').html(smsPg(pg));updateBulk();
-    }).fail(function(){$('#tableBody').html('<tr><td colspan="12" class="text-center py-4 text-danger">'+T('general.network_error','Network error.')+'</td></tr>');});
+    }).fail(function(){$('#tableBody').html('<tr><td colspan="13" class="text-center py-4 text-danger">'+T('general.network_error','Network error.')+'</td></tr>');});
 }
 
 function smsPg(pg){if(!pg||pg.last_page<=1)return '';var cp=pg.current_page,lp=pg.last_page;var h='<nav><ul class="pagination pagination-sm mb-0 flex-wrap gap-1">';h+='<li class="page-item '+(cp<=1?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="1"><i class="bi bi-chevron-double-left"></i></a></li>';h+='<li class="page-item '+(cp<=1?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="'+(cp-1)+'"><i class="bi bi-chevron-left"></i></a></li>';var pgs=[],prev=0;for(var i=1;i<=lp;i++){if(i===1||i===lp||Math.abs(i-cp)<=1){if(prev&&i-prev>1)pgs.push('...');pgs.push(i);prev=i;}}pgs.forEach(function(p){if(p==='...')h+='<li class="page-item disabled"><span class="page-link">...</span></li>';else h+='<li class="page-item '+(p===cp?'active':'')+'"><a class="page-link sms-pg" href="#" data-p="'+p+'">'+p+'</a></li>';});h+='<li class="page-item '+(cp>=lp?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="'+(cp+1)+'"><i class="bi bi-chevron-right"></i></a></li>';h+='<li class="page-item '+(cp>=lp?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="'+lp+'"><i class="bi bi-chevron-double-right"></i></a></li></ul></nav>';return h;}
@@ -190,6 +194,30 @@ function delPC(u,n){smsConfirm({icon:'🗑️',title:T('part_catalogs.delete','D
 function recoverPC(u,n){smsConfirm({icon:'♻️',title:T('bulk.recover','Recover'),msg:T('bulk.recover','Recover')+' <strong>'+H.esc(n)+'</strong> and its translations?',btnClass:'btn-success',btnText:T('bulk.recover','Recover'),onConfirm:function(){showLoading();$.post(BASE_URL+'/part-catalogs/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 function updateBulk(){_sel=[];$('.row-chk:checked').each(function(){_sel.push($(this).data('uuid'));});$('#bulkCount').text(_sel.length);_sel.length>0?$('#bulkBar').removeClass('d-none'):$('#bulkBar').addClass('d-none');}
 function bulkAction(a){if(!_sel.length)return;var icons={delete:'🗑️',activate:'✅',deactivate:'⛔',recover:'♻️'};smsConfirm({icon:icons[a]||'⚠️',title:a.charAt(0).toUpperCase()+a.slice(1),msg:_sel.length+' '+T('part_catalogs.bulk_affected','items.'),btnClass:a==='delete'?'btn-danger':'btn-primary',btnText:a.charAt(0).toUpperCase()+a.slice(1),onConfirm:function(){showLoading();$.post(BASE_URL+'/part-catalogs/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
+
+/* Bulk Percentage */
+var _pctParts = {}; // {id: {name, pct}}
+function openBulkPercentage(){
+    _pctParts = {};
+    $('#bulkPctValue').val('');
+    $('#pctPartSearch').val('');
+    $('#pctSearchDropdown').hide();
+    _renderPctParts();
+    bootstrap.Modal.getOrCreateInstance($('#modalBulkPct')[0]).show();
+    setTimeout(function(){$('#pctPartSearch').focus();},300);
+}
+function _renderPctParts(){
+    var keys=Object.keys(_pctParts);
+    $('#pctSelectedCount').text(keys.length);
+    if(!keys.length){$('#pctSelectedParts').html('<tr id="pctEmptyMsg"><td colspan="3" class="text-muted text-center py-3">Search and add parts above</td></tr>');return;}
+    var h='';
+    keys.forEach(function(id){
+        var p=_pctParts[id];
+        h+='<tr data-id="'+id+'"><td>'+H.esc(p.name)+'</td><td class="text-center"><span class="badge bg-purple-lt">'+(p.pct||0)+'%</span></td><td class="text-center"><button class="btn btn-sm btn-ghost-danger p-0 pct-remove" data-id="'+id+'" style="width:22px;height:22px;"><i class="bi bi-x-lg" style="font-size:10px;"></i></button></td></tr>';
+    });
+    $('#pctSelectedParts').html(h);
+}
+$(document).on('click','.pct-remove',function(){delete _pctParts[$(this).data('id')];_renderPctParts();});
 
 /* Export */
 function doExport(fmt){var p=_filters();p.format=fmt;delete p.page;delete p.per_page;if(fmt==='csv'||fmt==='excel'||fmt==='pdf'){window.location.href=BASE_URL+'/part-catalogs/export?'+$.param(p);return;}showLoading();$.post(BASE_URL+'/part-catalogs/export',p,function(res){hideLoading();if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error(T('general.no_data','No data.'));return;}var rows=res.data.rows,cols=Object.keys(rows[0]);var html='<html><head><title>Part Catalogs</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body><h2>Part Catalogs ('+rows.length+')</h2><table><thead><tr>';cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr></thead><tbody>';rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});html+='</tbody></table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();if(fmt==='print')setTimeout(function(){w.print();},400);}).fail(function(){hideLoading();toastr.error(T('msg.failed','Failed.'));});}
@@ -441,4 +469,54 @@ $(function(){
     $('#btnClearBulk').on('click',function(){$('#selectAll,.row-chk').prop('checked',false);updateBulk();});
     $('#frmImport').on('submit',function(e){e.preventDefault();var fd=new FormData(this),$b=$('#btnImport');$('#importStep1').addClass('d-none');$('#importProcessing').removeClass('d-none');$.ajax({url:BASE_URL+'/part-catalogs/import',type:'POST',data:fd,processData:false,contentType:false,success:function(r){$('#importProcessing').addClass('d-none');if(r.status===200&&r.data){if(r.data.mode==='background'){showImportProgress(r.data.jobId, r.data.total);}else if(r.data.results){$('#importStep2').removeClass('d-none');renderImportResults(r.data.results);}else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}}else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}},error:function(){$('#importProcessing').addClass('d-none');$('#importStep1').removeClass('d-none');toastr.error(T('general.network_error','Error.'));}});});
     $('#btnRetryAllErrors').on('click',function(){retryAllErrors();});
+
+    /* ── Bulk Percentage: Search + Add ── */
+    var _pctSearchTimer;
+    $('#pctPartSearch').on('input',function(){
+        clearTimeout(_pctSearchTimer);
+        var val=$(this).val().trim();
+        if(!val){$('#pctSearchDropdown').hide();return;}
+        _pctSearchTimer=setTimeout(function(){
+            $.get(BASE_URL+'/part-catalogs/autocomplete',{search:val,limit:20},function(res){
+                if(!res||res.status!==200||!res.data||!res.data.length){$('#pctSearchDropdown').html('<div class="text-muted small text-center py-2">No parts found</div>').show();return;}
+                var h='';
+                res.data.forEach(function(r){
+                    var added=!!_pctParts[r.id];
+                    h+='<div class="d-flex align-items-center justify-content-between py-2 px-3 border-bottom pct-search-row'+(added?' bg-light':'')+'" style="font-size:13px;cursor:pointer;" data-id="'+r.id+'" data-name="'+H.esc(r.name||'')+'" data-pct="'+(r.vehicle_percentage||0)+'">';
+                    h+='<span class="text-truncate me-2">'+H.esc(r.name||'')+'</span>';
+                    h+='<button type="button" class="btn btn-sm p-0 flex-shrink-0 pct-add-btn '+(added?'btn-success':'btn-outline-success')+'" data-id="'+r.id+'" data-name="'+H.esc(r.name||'')+'" data-pct="'+(r.vehicle_percentage||0)+'" style="width:26px;height:26px;border-radius:50%;" '+(added?'disabled':'')+'>'+(added?'<i class="bi bi-check-lg"></i>':'<i class="bi bi-plus-lg"></i>')+'</button>';
+                    h+='</div>';
+                });
+                $('#pctSearchDropdown').html(h).show();
+            });
+        },300);
+    });
+    $('#pctPartSearch').on('focus',function(){if($(this).val().trim())$('#pctSearchDropdown').show();});
+    $(document).on('click',function(e){if(!$(e.target).closest('#pctPartSearch,#pctSearchDropdown').length)$('#pctSearchDropdown').hide();});
+
+    $(document).on('click','.pct-search-row',function(){
+        var id=$(this).data('id'),nm=$(this).data('name'),pct=$(this).data('pct');
+        if(_pctParts[id])return;
+        _pctParts[id]={name:nm,pct:pct||0};
+        _renderPctParts();
+        // Update dropdown button state
+        $(this).addClass('bg-light').find('.pct-add-btn').prop('disabled',true).removeClass('btn-outline-success').addClass('btn-success').html('<i class="bi bi-check-lg"></i>');
+    });
+    $(document).on('click','.pct-add-btn',function(e){e.stopPropagation();$(this).closest('.pct-search-row').click();});
+
+    $('#btnApplyBulkPct').on('click',function(){
+        var ids=Object.keys(_pctParts);
+        var pct=$('#bulkPctValue').val();
+        if(!ids.length){toastr.error('Add at least one part.');return;}
+        if(!pct&&pct!=='0'){toastr.error('Enter a percentage.');return;}
+        var $btn=$(this);btnLoading($btn);
+        $.ajax({url:BASE_URL+'/part-catalogs/bulk-percentage',type:'POST',contentType:'application/json',
+            data:JSON.stringify({part_ids:ids.map(function(v){return parseInt(v);}),percentage:parseFloat(pct)}),
+            success:function(r){
+                btnReset($btn);
+                if(r.status===200){toastr.success(r.message||'Updated.');bootstrap.Modal.getOrCreateInstance($('#modalBulkPct')[0]).hide();loadData();}
+                else toastr.error(r.message||'Failed.');
+            },error:function(){btnReset($btn);toastr.error('Error.');}
+        });
+    });
 });

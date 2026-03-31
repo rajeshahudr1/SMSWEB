@@ -16,6 +16,7 @@ router.get('/ai-config',                  Ctrl.aiConfig);
 router.post('/translate',                 Ctrl.translate);
 router.post('/assignable-parts',          requirePermission('view_part_catalogs'),   Ctrl.assignablePartsPaginate);
 router.post('/bulk-action',               requirePermission('edit_part_catalogs'),   Ctrl.bulkAction);
+router.post('/bulk-percentage',           requirePermission('edit_part_catalogs'),   Ctrl.bulkUpdatePercentage);
 router.get('/roles/list',                 Ctrl.companyRoles);
 router.put('/attributes/:attrId',         requirePermission('edit_part_catalogs'),   Ctrl.updateAttribute);
 router.post('/attributes/:attrId/delete', requirePermission('edit_part_catalogs'),   Ctrl.deleteAttribute);

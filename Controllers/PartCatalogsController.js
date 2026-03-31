@@ -80,6 +80,7 @@ exports.destroy = async (req, res) => { res.json(await api.del('/part-catalogs/'
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/part-catalogs/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover = async (req, res) => { res.json(await api.post('/part-catalogs/' + req.params.uuid + '/recover', {}, req.session.token)); };
 exports.bulkAction = async (req, res) => { res.json(await api.post('/part-catalogs/bulk-action', req.body, req.session.token)); };
+exports.bulkUpdatePercentage = async (req, res) => { res.json(await api.post('/part-catalogs/bulk-percentage', req.body, req.session.token)); };
 exports.usage = async (req, res) => { res.json(await api.get('/part-catalogs/' + req.params.uuid + '/usage', req.session.token)); };
 
 // Import single error row retry
