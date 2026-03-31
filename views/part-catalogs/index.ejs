@@ -1,0 +1,242 @@
+<%- layout('../layouts/main') %>
+<%
+var orgs = typeof organizations !== 'undefined' ? organizations : [];
+var isSuperAdmin = user && user.is_super_admin;
+%>
+<div class="card shadow-sm">
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-journal-bookmark me-2 text-primary"></i><%- t('part_catalogs.title', 'Part Catalogs') %> <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
+      <% if (can('export_part_catalogs')) { %>
+      <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline"><%- t('btn.export', 'Export') %></span></button>
+        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li><li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
+      </div><% } %>
+      <% if (can('import_part_catalogs')) { %><button class="btn btn-sm btn-outline-info" onclick="openImport()"><i class="bi bi-upload me-1"></i><span class="d-none d-sm-inline"><%- t('btn.import', 'Import') %></span></button><% } %>
+      <% if (can('add_part_catalogs')) { %><a href="/part-catalogs/create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline"><%- t('part_catalogs.add', 'Add Part Catalog') %></span></a><% } %>
+    </div>
+  </div>
+
+  <!-- Inline Filters -->
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-4 col-lg-3"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="&#128269;  <%- t('part_catalogs.search_ph', 'Search by name, type, location, group, side...') %>"/></div>
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" id="filterStatus"><option value=""><%- t('general.all_status', 'All Status') %></option><option value="1"><%- t('general.active', 'Active') %></option><option value="0"><%- t('general.inactive', 'Inactive') %></option></select>
+      </div>
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" id="filterDeleted"><option value=""><%- t('general.active_records', 'Active Records') %></option><option value="only"><%- t('general.deleted_only', 'Deleted Only') %></option><option value="all"><%- t('general.all_records', 'All Records') %></option></select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar" title="<%- t('general.filters', 'Filters') %>"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline"><%- t('general.filters', 'Filters') %></span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk bar -->
+  <div id="bulkBar" class="d-none">
+    <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
+      <span class="fw-semibold"><span id="bulkCount">0</span> <%- t('general.selected_count', 'selected') %></span>
+      <div class="ms-auto d-flex gap-2">
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i><%- t('bulk.deactivate', 'Deactivate') %></button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i><%- t('bulk.activate', 'Activate') %></button>
+        <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')"><i class="bi bi-trash3 me-1"></i><%- t('btn.delete', 'Delete') %></button>
+        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i><%- t('bulk.recover', 'Recover') %></button>
+        <button class="btn btn-sm btn-outline-light" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover table-vcenter mb-0">
+      <thead><tr>
+        <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll"/></th>
+        <th style="width:36px;" class="text-muted">#</th>
+        <th style="width:60px;"><%- t('general.image', 'Image') %></th>
+        <th class="sortable" data-field="name"><%- t('part_catalogs.name', 'Name') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="d-none d-lg-table-cell sortable" data-field="part_type"><%- t('part_catalogs.part_type', 'Part Type') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="d-none d-lg-table-cell sortable" data-field="part_location"><%- t('part_catalogs.part_location', 'Part Location') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="d-none d-xl-table-cell sortable" data-field="part_group"><%- t('part_catalogs.part_group', 'Part Group') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="d-none d-xl-table-cell sortable" data-field="part_side"><%- t('part_catalogs.part_side', 'Part Side') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="sortable" data-field="is_master_part"><%- t('part_catalogs.is_master_part', 'Master Part') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="sortable" data-field="status"><%- t('general.status', 'Status') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="d-none d-md-table-cell sortable" data-field="created_at"><%- t('general.created_at', 'Created') %> <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="text-end" style="width:180px;"><%- t('general.actions', 'Actions') %></th>
+      </tr></thead>
+      <tbody id="tableBody"><tr><td colspan="12" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div><%- t('general.loading', 'Loading...') %></td></tr></tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
+</div>
+
+<!-- ═══ ADVANCED FILTER SIDEBAR ═══ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterSidebar" style="width:360px;">
+  <div class="offcanvas-header border-bottom py-3">
+    <h5 class="offcanvas-title fw-semibold mb-0"><i class="bi bi-funnel me-2 text-primary"></i><%- t('general.filters', 'Filters') %></h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <% if (isSuperAdmin && orgs.length) { %>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('general.company', 'Company') %></label>
+      <select class="form-select form-select-sm" id="filterCompany">
+        <option value="all"><%- t('general.all_companies', 'All Companies') %></option>
+        <% orgs.forEach(function(o) { %><option value="<%- o.id %>"><%- o.company_name %></option><% }) %>
+      </select>
+    </div>
+    <% } %>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.part_type', 'Part Type') %></label>
+      <select class="form-select form-select-sm" id="filterPartType" style="width:100%;"></select>
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.part_location', 'Part Location') %></label>
+      <select class="form-select form-select-sm" id="filterPartLocation" style="width:100%;"></select>
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.part_group', 'Part Group') %></label>
+      <select class="form-select form-select-sm" id="filterPartGroup" style="width:100%;"></select>
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.part_side', 'Part Side') %></label>
+      <select class="form-select form-select-sm" id="filterPartSide" style="width:100%;"></select>
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.vehicle_type', 'Vehicle Type') %></label>
+      <select class="form-select form-select-sm" id="filterVehicleType" style="width:100%;"></select>
+    </div>
+    <hr class="my-3"/>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.is_master_part', 'Master Part') %></label>
+      <select class="form-select form-select-sm" id="filterMasterPart">
+        <option value="">All</option><option value="1">Master Only</option><option value="0">Non-Master</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.depends_body_car', 'Depends Body Car') %></label>
+      <select class="form-select form-select-sm" id="filterBodyCar">
+        <option value="">All</option><option value="1">Yes</option><option value="0">No</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-medium small text-muted text-uppercase" style="letter-spacing:.5px;font-size:11px;"><%- t('part_catalogs.is_individual', 'Individual') %></label>
+      <select class="form-select form-select-sm" id="filterIndividual">
+        <option value="">All</option><option value="1">Yes</option><option value="0">No</option>
+      </select>
+    </div>
+  </div>
+  <div class="offcanvas-footer border-top p-3 d-flex gap-2">
+    <button class="btn btn-sm btn-outline-secondary flex-fill" id="btnClearAdvFilters"><i class="bi bi-x-lg me-1"></i>Clear All</button>
+    <button class="btn btn-sm btn-primary flex-fill" data-bs-dismiss="offcanvas"><i class="bi bi-check-lg me-1"></i>Apply</button>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal fade" id="modalView" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:720px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-journal-bookmark me-2 text-primary"></i><%- t('part_catalogs.details', 'Part Catalog Details') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="viewBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close', 'Close') %></button></div></div></div></div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="modalImage" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:600px;"><div class="modal-content"><div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0" id="imgModalTitle"><i class="bi bi-image me-2 text-primary"></i><%- t('part_catalogs.image_both_title', 'Images') %></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-3" id="imgModalBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close', 'Close') %></button></div></div></div></div>
+
+<!-- Usage Modal -->
+<% include ../partials/usage-modal %>
+
+<!-- Import Modal -->
+<div class="modal fade" id="modalImport" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:980px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i><%- t('part_catalogs.import_title', 'Import Part Catalogs') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body" style="max-height:75vh;overflow-y:auto;">
+  <!-- Processing spinner -->
+  <div id="importProcessing" class="d-none">
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+      <h5 class="text-primary mb-1"><%- t('general.import_in_process', 'Import in process...') %></h5>
+      <p class="text-muted small mb-0"><%- t('general.please_wait', 'Please wait while we process your file.') %></p>
+    </div>
+  </div>
+  <!-- Step 1: Instructions + File upload -->
+  <div id="importStep1">
+    <div class="sms-import-instructions" style="background:#f0f6ff;border:1px solid #c5d9f1;border-radius:8px;padding:20px;">
+      <h6 class="mb-3"><i class="bi bi-info-circle me-1 text-primary"></i>Import Instructions — Part Catalogs</h6>
+      <div class="sms-import-columns mb-3 d-flex flex-wrap gap-2">
+        <span class="badge bg-danger-lt px-2 py-1"><code>name</code> <small>(required)</small></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>part_type</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>part_location</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>part_group</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>part_side</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>vehicle_type</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>number_of_car_doors</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>height</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>weight</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>length</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>width</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>is_master_part</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>depends_body_car</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>is_individual</code></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>image_url</code></span>
+        <span class="badge bg-green-lt px-2 py-1"><code>Language name/code</code></span>
+      </div>
+      <div class="table-responsive mb-3">
+        <table class="table table-sm table-bordered mb-0" style="font-size:12px;">
+          <thead class="table-light"><tr><th style="width:150px;">Column</th><th style="width:70px;">Required</th><th>Description</th><th style="width:120px;">Example</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td class="text-center"><span class="text-danger fw-bold">Yes</span></td><td>Part catalog name (must be unique within company scope).</td><td><code>Front Bumper</code></td></tr>
+            <tr><td><code>part_type</code></td><td class="text-center text-muted">No</td><td>Part Type name. <strong>Smart match:</strong> company → global → auto-create.</td><td><code>Body</code></td></tr>
+            <tr><td><code>part_location</code></td><td class="text-center text-muted">No</td><td>Part Location name. <strong>Smart match:</strong> company → global → auto-create.</td><td><code>Front</code></td></tr>
+            <tr><td><code>part_group</code></td><td class="text-center text-muted">No</td><td>Part Group name. <strong>Smart match:</strong> company → global → auto-create.</td><td><code>Exterior</code></td></tr>
+            <tr><td><code>part_side</code></td><td class="text-center text-muted">No</td><td>Part Side name. <strong>Smart match:</strong> company → global → auto-create.</td><td><code>Left</code></td></tr>
+            <tr><td><code>vehicle_type</code></td><td class="text-center text-muted">No</td><td>Vehicle Type name. <strong>Smart match:</strong> company → global → auto-create.</td><td><code>SUV</code></td></tr>
+            <tr><td><code>number_of_car_doors</code></td><td class="text-center text-muted">No</td><td>Number of car doors (0–10).</td><td><code>4</code></td></tr>
+            <tr><td><code>height</code> / <code>weight</code> / <code>length</code> / <code>width</code></td><td class="text-center text-muted">No</td><td>Dimensions in decimal format.</td><td><code>25.50</code></td></tr>
+            <tr><td><code>is_master_part</code></td><td class="text-center text-muted">No</td><td>Boolean: <code>1</code>, <code>yes</code>, <code>true</code> = master. Default: no.</td><td><code>yes</code></td></tr>
+            <tr><td><code>depends_body_car</code></td><td class="text-center text-muted">No</td><td>Boolean: <code>1</code>, <code>yes</code>, <code>true</code>. Default: no.</td><td><code>no</code></td></tr>
+            <tr><td><code>is_individual</code></td><td class="text-center text-muted">No</td><td>Boolean: <code>1</code>, <code>yes</code>, <code>true</code>. Default: no.</td><td><code>yes</code></td></tr>
+            <tr><td><code>image_url</code></td><td class="text-center text-muted">No</td><td>External image URL (https://...).</td><td><code>https://img.com/part.jpg</code></td></tr>
+            <tr><td><code>Hindi</code> / <code>hi</code></td><td class="text-center text-muted">No</td><td>Translation column. Use language name or ISO code as header.</td><td>Translated name</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6"><div class="border rounded p-2 bg-white" style="font-size:12px;"><strong class="text-success"><i class="bi bi-check-circle me-1"></i>Smart Match Rules:</strong><ul class="mb-0 mt-1 ps-3"><li>Part Type, Location, Group, Side resolved by name — no IDs needed</li><li>Searches company records first, then global</li><li>Auto-creates if no match found</li><li>Part name must be unique (per company scope)</li><li>Boolean fields accept: 1/0, yes/no, true/false</li></ul></div></div>
+        <div class="col-md-6"><div class="border rounded p-2 bg-white" style="font-size:12px;"><strong class="text-info"><i class="bi bi-file-earmark-text me-1"></i>File Requirements:</strong><ul class="mb-0 mt-1 ps-3"><li>Formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></li><li><strong>Unlimited rows</strong> per import</li><li>First row = column headers</li><li>Headers are case-insensitive</li><li>Small files processed instantly, large files run in background</li></ul></div></div>
+      </div>
+    </div>
+    <div class="mt-3 d-flex align-items-center gap-3">
+      <a href="/templates/part-catalogs-import-template.csv" class="btn btn-sm btn-outline-primary" download><i class="bi bi-download me-1"></i><%- t('import.download_template', 'Download Template') %></a>
+      <form id="frmImport" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-grow-1">
+        <div class="flex-grow-1"><input type="file" name="file" id="importFile" class="form-control form-control-sm" accept=".csv,.xlsx,.xls" required/></div>
+        <button type="submit" class="btn btn-info btn-sm" id="btnImport"><i class="bi bi-upload me-1"></i><%- t('btn.import', 'Import') %></button>
+      </form>
+    </div>
+  </div>
+  <!-- Step 2: Results -->
+  <div id="importStep2" class="d-none">
+    <div id="importSummary" class="mb-3"></div>
+    <div id="importResultTable" style="max-height:450px;overflow-y:auto;overflow-x:auto;"></div>
+    <div id="importErrorActions" class="d-none mt-3 d-flex gap-2">
+      <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i>Retry All Errors</button>
+    </div>
+  </div>
+  <!-- Step 3: Background processing -->
+  <div id="importStep3" class="d-none">
+    <div class="text-center py-4">
+      <div class="mb-3"><i class="bi bi-cloud-upload text-primary" style="font-size:48px;"></i></div>
+      <h5 class="fw-semibold mb-1">Importing in background...</h5>
+      <p class="text-muted small mb-3">Processing your file. You can keep this window open.</p>
+      <div class="progress mb-3" style="height:24px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="impProgressBar" role="progressbar" style="width:0%;font-size:12px;"><span id="impPercent">0%</span></div>
+      </div>
+      <div class="d-flex justify-content-center gap-4 text-center">
+        <div><div class="text-muted small">Total</div><strong id="impTotal">0</strong></div>
+        <div><div class="text-muted small">Processed</div><strong id="impProcessed">0</strong></div>
+        <div><div class="text-muted small text-success">Success</div><strong id="impSuccess" class="text-success">0</strong></div>
+        <div><div class="text-muted small text-danger">Errors</div><strong id="impErrors" class="text-danger">0</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-footer py-2">
+  <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal" id="btnImportClose"><%- t('btn.close', 'Close') %></button>
+</div>
+</div></div></div>
+
+<script>window._IS_SUPER = <%= isSuperAdmin ? 'true' : 'false' %>;</script>
+<% block('scripts', '<script src="/js/pages/part-catalogs.js"></script>') %>

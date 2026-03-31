@@ -1,0 +1,37 @@
+'use strict';
+const express = require('express');
+const router  = express.Router();
+const Ctrl    = require('../Controllers/PartCatalogsController');
+const { requireLogin, requirePermission } = require('../Middlewares/auth');
+router.use(requireLogin);
+
+router.get('/organizations',             requirePermission('view_part_catalogs'),   Ctrl.organizations);
+router.get('/',                           requirePermission('view_part_catalogs'),   Ctrl.index);
+router.post('/paginate',                  requirePermission('view_part_catalogs'),   Ctrl.paginate);
+router.get('/export',                     requirePermission('export_part_catalogs'), Ctrl.exportData);
+router.post('/export',                    requirePermission('export_part_catalogs'), Ctrl.exportData);
+router.post('/import',                    requirePermission('import_part_catalogs'), Ctrl.importData);
+router.post('/import/single',             requirePermission('import_part_catalogs'), Ctrl.importSingleRow);
+router.get('/ai-config',                  Ctrl.aiConfig);
+router.post('/translate',                 Ctrl.translate);
+router.post('/assignable-parts',          requirePermission('view_part_catalogs'),   Ctrl.assignablePartsPaginate);
+router.post('/bulk-action',               requirePermission('edit_part_catalogs'),   Ctrl.bulkAction);
+router.get('/roles/list',                 Ctrl.companyRoles);
+router.put('/attributes/:attrId',         requirePermission('edit_part_catalogs'),   Ctrl.updateAttribute);
+router.post('/attributes/:attrId/delete', requirePermission('edit_part_catalogs'),   Ctrl.deleteAttribute);
+router.post('/attributes/:attrId/permissions', requirePermission('edit_part_catalogs'), Ctrl.saveAttributePermissions);
+router.get('/create',                     requirePermission('add_part_catalogs'),    Ctrl.create);
+router.post('/',                          requirePermission('add_part_catalogs'),    Ctrl.store);
+router.get('/:uuid/view-data',            requirePermission('view_part_catalogs'),   Ctrl.viewData);
+router.get('/:uuid/assigned-parts',       requirePermission('view_part_catalogs'),   Ctrl.assignedParts);
+router.post('/:uuid/assigned-parts',      requirePermission('edit_part_catalogs'),   Ctrl.saveAssignedParts);
+router.post('/:uuid/images',              requirePermission('edit_part_catalogs'),   Ctrl.uploadImages);
+router.post('/:uuid/images/delete',       requirePermission('edit_part_catalogs'),   Ctrl.deleteImage);
+router.get('/:uuid/edit',                 requirePermission('edit_part_catalogs'),   Ctrl.edit);
+router.post('/:uuid',                     requirePermission('edit_part_catalogs'),   Ctrl.update);
+router.post('/:uuid/toggle-status',       requirePermission('edit_part_catalogs'),   Ctrl.toggleStatus);
+router.post('/:uuid/recover',             requirePermission('edit_part_catalogs'),   Ctrl.recover);
+router.post('/:uuid/delete',              requirePermission('delete_part_catalogs'), Ctrl.destroy);
+router.get('/:uuid/usage',               requirePermission('view_part_catalogs'),   Ctrl.usage);
+
+module.exports = router;

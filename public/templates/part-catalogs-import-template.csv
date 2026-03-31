@@ -1,0 +1,4 @@
+name,part_type,part_location,part_group,part_side,vehicle_type,number_of_car_doors,height,weight,length,width,is_master_part,depends_body_car,is_individual,image_url
+Front Bumper,Body,Front,Exterior,Left,SUV,4,25.5,3.2,120.0,180.0,no,no,no,https://example.com/bumper.jpg
+Engine Hood,Body,Top,Exterior,,Sedan,2,,15.0,,200.0,yes,yes,no,
+Side Mirror,Accessories,Side,Exterior,Right,,,,,20.0,15.0,no,no,yes,
