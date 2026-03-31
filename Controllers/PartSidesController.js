@@ -51,6 +51,7 @@ exports.update = [(r,s,n) => { tempUpload.single('image')(r,s,(e) => { if (e) re
     const axios = require('axios'); const BASE = process.env.API_URL || 'http://localhost:3000/api'; const h = { ...fd.getHeaders(), Authorization: 'Bearer ' + req.session.token }; const r = await axios.put(BASE + '/part-sides/' + req.params.uuid, fd, { headers: h }); clean(req.file); return res.json(r.data); } catch(e) { clean(req.file); return res.json(e.response && e.response.data ? e.response.data : { status: 500, message: 'Failed.' }); }
 }];
 
+exports.usage = async (req, res) => { res.json(await api.get('/part-sides/' + req.params.uuid + '/usage', req.session.token)); };
 exports.viewData = async (req, res) => { res.json(await api.get('/part-sides/' + req.params.uuid + '/view', req.session.token)); };
 exports.destroy = async (req, res) => { res.json(await api.del('/part-sides/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/part-sides/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };

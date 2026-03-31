@@ -76,19 +76,49 @@ var isSuperAdmin = user && user.is_super_admin;
 <!-- Image Modal -->
 <div class="modal fade" id="modalImage" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:600px;"><div class="modal-content"><div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0" id="imgModalTitle"><i class="bi bi-image me-2 text-primary"></i><%- t('part_sides.image_both_title') %></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-3" id="imgModalBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal"><%- t('btn.close') %></button></div></div></div></div>
 
-<!-- Import Modal — full with error editing -->
-<div class="modal fade" id="modalImport" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:720px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i><%- t('part_sides.import_title') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-<div class="modal-body" style="max-height:70vh;overflow-y:auto;">
-  <!-- Step 1: File upload -->
-  <div id="importStep1">
-    <p class="text-muted small mb-3"><%- t('part_sides.import_hint') %></p>
-    <a href="/templates/part-sides-import-template.csv" class="btn btn-sm btn-outline-primary mb-3" download><i class="bi bi-download me-1"></i><%- t('part_sides.import_template') %></a>
-    <form id="frmImport" enctype="multipart/form-data">
-      <div class="mb-3"><input type="file" name="file" id="importFile" class="form-control" accept=".csv,.xlsx,.xls" required/></div>
-      <button type="submit" class="btn btn-info btn-sm" id="btnImport"><i class="bi bi-upload me-1"></i><%- t('btn.import') %></button>
-    </form>
+<% include ../partials/usage-modal %>
+
+<!-- Import Modal -->
+<div class="modal fade" id="modalImport" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:980px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i><%- t('part_sides.import_title', 'Import Part Sides') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body" style="max-height:75vh;overflow-y:auto;">
+  <div id="importProcessing" class="d-none">
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+      <h5 class="text-primary mb-1">Import in process...</h5>
+      <p class="text-muted small mb-0">Please wait while we process your file.</p>
+    </div>
   </div>
-  <!-- Step 2: Results -->
+  <div id="importStep1">
+    <div style="background:#f0f6ff;border:1px solid #c5d9f1;border-radius:8px;padding:20px;">
+      <h6 class="mb-3"><i class="bi bi-info-circle me-1 text-primary"></i>Import Instructions</h6>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <span class="badge bg-danger-lt px-2 py-1"><code>name</code> <small>(required)</small></span>
+        <span class="badge bg-blue-lt px-2 py-1"><code>image_url</code></span>
+        <span class="badge bg-green-lt px-2 py-1"><code>Language name/code</code></span>
+      </div>
+      <div class="table-responsive mb-3">
+        <table class="table table-sm table-bordered mb-0" style="font-size:12px;">
+          <thead class="table-light"><tr><th style="width:150px;">Column</th><th style="width:70px;">Required</th><th>Description</th><th style="width:120px;">Example</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td class="text-center"><span class="text-danger fw-bold">Yes</span></td><td>Part side name. Must be unique per company scope.</td><td><code>Left</code></td></tr>
+            <tr><td><code>image_url</code></td><td class="text-center text-muted">No</td><td>External image URL (https://...).</td><td><code>https://img.com/side.jpg</code></td></tr>
+            <tr><td><code>Hindi</code> / <code>hi</code></td><td class="text-center text-muted">No</td><td>Translation column. Use language name or ISO code as header.</td><td>Translated name</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6"><div class="border rounded p-2 bg-white" style="font-size:12px;"><strong class="text-success"><i class="bi bi-check-circle me-1"></i>Import Rules:</strong><ul class="mb-0 mt-1 ps-3"><li>Name must be unique per company scope</li><li>Duplicates are skipped with error</li><li>Small files processed instantly</li><li>Large files run in background with notification</li></ul></div></div>
+        <div class="col-md-6"><div class="border rounded p-2 bg-white" style="font-size:12px;"><strong class="text-info"><i class="bi bi-file-earmark-text me-1"></i>File Requirements:</strong><ul class="mb-0 mt-1 ps-3"><li>Formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></li><li>Unlimited rows per import</li><li>First row = column headers</li><li>Headers are case-insensitive</li></ul></div></div>
+      </div>
+    </div>
+    <div class="mt-3 d-flex align-items-center gap-3">
+      <a href="/templates/part-sides-import-template.csv" class="btn btn-sm btn-outline-primary" download><i class="bi bi-download me-1"></i>Download Template</a>
+      <form id="frmImport" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-grow-1">
+        <div class="flex-grow-1"><input type="file" name="file" id="importFile" class="form-control form-control-sm" accept=".csv,.xlsx,.xls" required/></div>
+        <button type="submit" class="btn btn-info btn-sm" id="btnImport"><i class="bi bi-upload me-1"></i>Import</button>
+      </form>
+    </div>
+  </div>
   <div id="importStep2" class="d-none">
     <div id="importSummary" class="mb-3"></div>
     <div id="importResultTable" style="max-height:450px;overflow-y:auto;overflow-x:auto;"></div>
@@ -96,21 +126,25 @@ var isSuperAdmin = user && user.is_super_admin;
       <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i>Retry All Errors</button>
     </div>
   </div>
-  <!-- Step 3: Background processing -->
   <div id="importStep3" class="d-none">
-    <div class="text-center py-3">
-      <h6 class="mb-3"><i class="bi bi-hourglass-split me-2 text-primary"></i>Processing in background...</h6>
-      <div class="progress mb-3" style="height:24px;"><div class="progress-bar progress-bar-striped progress-bar-animated" id="impProgressBar" role="progressbar" style="width:0%;">0%</div></div>
-      <div class="d-flex justify-content-center gap-4 text-muted small">
-        <span>Total: <strong id="impTotal">0</strong></span><span>Processed: <strong id="impProcessed">0</strong></span>
-        <span class="text-success">Success: <strong id="impSuccess">0</strong></span><span class="text-danger">Errors: <strong id="impErrors">0</strong></span>
+    <div class="text-center py-4">
+      <div class="mb-3"><i class="bi bi-cloud-upload text-primary" style="font-size:48px;"></i></div>
+      <h5 class="fw-semibold mb-1">Importing in background...</h5>
+      <p class="text-muted small mb-3">Processing your file. You can keep this window open.</p>
+      <div class="progress mb-3" style="height:24px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="impProgressBar" role="progressbar" style="width:0%;font-size:12px;"><span id="impPercent">0%</span></div>
       </div>
-      <div class="mt-2"><span id="impPercent" class="text-primary fw-bold">0%</span> complete</div>
+      <div class="d-flex justify-content-center gap-4 text-center">
+        <div><div class="text-muted small">Total</div><strong id="impTotal">0</strong></div>
+        <div><div class="text-muted small">Processed</div><strong id="impProcessed">0</strong></div>
+        <div><div class="text-muted small text-success">Success</div><strong id="impSuccess" class="text-success">0</strong></div>
+        <div><div class="text-muted small text-danger">Errors</div><strong id="impErrors" class="text-danger">0</strong></div>
+      </div>
     </div>
   </div>
 </div>
 <div class="modal-footer py-2">
-  <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal" id="btnImportClose"><%- t('btn.close') %></button>
+  <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal" id="btnImportClose">Close</button>
 </div>
 </div></div></div>
 

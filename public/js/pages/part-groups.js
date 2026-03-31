@@ -28,7 +28,7 @@ function loadData(){
         var start=((_page-1)*_pp),rows='';
         data.forEach(function(r,i){
             var deleted=!!r.deleted_at;
-            var status=deleted?'<span class="badge bg-dark-lt"><i class="bi bi-trash3 me-1"></i>Deleted</span>':(parseInt(r.status)?'<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>'+T('general.active','Active')+'</span>':'<span class="badge bg-danger-lt">'+T('general.inactive','Inactive')+'</span>');
+            var status=deleted?'<span class="badge bg-dark-lt"><i class="bi bi-trash3 me-1"></i>Deleted</span>':((r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1)?'<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>'+T('general.active','Active')+'</span>':'<span class="badge bg-danger-lt">'+T('general.inactive','Inactive')+'</span>');
             var isGlobal=!!r.is_global;
             var globalBadge=isGlobal?' <span class="badge bg-azure-lt" style="font-size:9px;">Global</span>':'';
             var editable=r.is_editable!==false&&!deleted;
@@ -40,7 +40,8 @@ function loadData(){
                 acts+='<button class="btn btn-ghost-success" onclick="recoverPT(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')" title="'+T('bulk.recover','Recover')+'"><i class="bi bi-arrow-counterclockwise"></i></button>';
             }else{
                 if(editable)acts+='<a href="'+BASE_URL+'/part-groups/'+r.uuid+'/edit" class="btn btn-ghost-secondary" title="'+T('btn.edit','Edit')+'"><i class="bi bi-pencil"></i></a>';
-                if(editable)acts+='<button class="btn btn-ghost-'+(parseInt(r.status)?'warning':'success')+'" onclick="togglePT(\''+r.uuid+'\')"><i class="bi bi-toggle-'+(parseInt(r.status)?'on':'off')+'"></i></button>';
+                if(editable)acts+='<button class="btn btn-ghost-'+((r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1)?'warning':'success')+'" onclick="togglePT(\''+r.uuid+'\')"><i class="bi bi-toggle-'+((r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1)?'on':'off')+'"></i></button>';
+                acts+='<button class="btn btn-ghost-info" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')" title="Usage"><i class="bi bi-diagram-3"></i></button>';
                 if(deletable)acts+='<button class="btn btn-ghost-danger" onclick="delPT(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-trash3"></i></button>';
             }
             acts+='</div>';
@@ -63,10 +64,10 @@ function smsPg(pg){if(!pg||pg.last_page<=1)return '';var cp=pg.current_page,lp=p
 function viewPT(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
     $.get(BASE_URL+'/part-groups/'+uuid+'/view-data',function(res){
         if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">'+T('general.not_found','Not found.')+'</div>');return;}
-        var pt=res.data.part_type||{},langs=res.data.languages||[],trans=pt.translations||[];
+        var pt=res.data.part_group||res.data.part_type||{},langs=res.data.languages||[],trans=pt.translations||[];
         var up=pt.uploaded_image_url||'',ext=pt.image_full_url||'';
         var h='<div class="p-4"><div class="text-center mb-4"><h4 class="mb-1">'+H.esc(pt.name||'')+'</h4>';
-        h+='<div>'+(parseInt(pt.status)?'<span class="badge bg-success-lt">'+T('general.active','Active')+'</span>':'<span class="badge bg-danger-lt">'+T('general.inactive','Inactive')+'</span>');
+        h+='<div>'+((pt.status===true||pt.status===1||pt.status==='1'||parseInt(pt.status)===1)?'<span class="badge bg-success-lt">'+T('general.active','Active')+'</span>':'<span class="badge bg-danger-lt">'+T('general.inactive','Inactive')+'</span>');
         h+='</div>';
         h+='</div>';
         /* Both images */
@@ -83,6 +84,16 @@ function viewPT(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py-
 
 /* Actions */
 function togglePT(u){$.post(BASE_URL+'/part-groups/'+u+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}
+function showUsage(uuid, name) {
+    var $b = $('#usageBody');
+    $('#usageModalName').text(SMS_T('usage.title', 'Usage') + ': ' + (name || ''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
+    $.get(BASE_URL + '/part-groups/' + uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">Failed.</div>'); return; }
+        smsRenderUsageBody(res.data, 'part-groups', uuid, name);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">Network error.</div>'); });
+}
 function delPT(u,n){smsConfirm({icon:'🗑️',title:T('part_groups.delete','Delete'),msg:T('general.are_you_sure','Sure?')+' <strong>'+H.esc(n)+'</strong>',btnClass:'btn-danger',btnText:T('btn.delete','Delete'),onConfirm:function(){showLoading();$.post(BASE_URL+'/part-groups/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 function recoverPT(u,n){smsConfirm({icon:'♻️',title:T('bulk.recover','Recover'),msg:T('bulk.recover','Recover')+' <strong>'+H.esc(n)+'</strong> and its translations?',btnClass:'btn-success',btnText:T('bulk.recover','Recover'),onConfirm:function(){showLoading();$.post(BASE_URL+'/part-groups/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 function updateBulk(){_sel=[];$('.row-chk:checked').each(function(){_sel.push($(this).data('uuid'));});$('#bulkCount').text(_sel.length);_sel.length>0?$('#bulkBar').removeClass('d-none'):$('#bulkBar').addClass('d-none');}
@@ -238,6 +249,6 @@ $(function(){
     $(document).on('change','#selectAll',function(){$('.row-chk').prop('checked',$(this).is(':checked'));updateBulk();});
     $(document).on('change','.row-chk',updateBulk);
     $('#btnClearBulk').on('click',function(){$('#selectAll,.row-chk').prop('checked',false);updateBulk();});
-    $('#frmImport').on('submit',function(e){e.preventDefault();var fd=new FormData(this),$b=$('#btnImport');btnLoading($b);$.ajax({url:BASE_URL+'/part-groups/import',type:'POST',data:fd,processData:false,contentType:false,success:function(r){btnReset($b);if(r.status===200&&r.data){if(r.data.mode==='background'){$('#importStep1').addClass('d-none');showImportProgress(r.data.jobId, r.data.total);}else if(r.data.results){$('#importStep1').addClass('d-none');$('#importStep2').removeClass('d-none');renderImportResults(r.data.results);}else{toastr.error(r.message||'Failed.');}}else{toastr.error(r.message||'Failed.');}},error:function(){btnReset($b);toastr.error(T('general.network_error','Error.'));}});});
+    $('#frmImport').on('submit',function(e){e.preventDefault();var fd=new FormData(this);$('#importStep1').addClass('d-none');$('#importProcessing').removeClass('d-none');$.ajax({url:BASE_URL+'/part-groups/import',type:'POST',data:fd,processData:false,contentType:false,success:function(r){$('#importProcessing').addClass('d-none');if(r.status===200&&r.data){if(r.data.mode==='background'){showImportProgress(r.data.jobId, r.data.total);}else if(r.data.results){$('#importStep2').removeClass('d-none');renderImportResults(r.data.results);}else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}}else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}},error:function(){$('#importProcessing').addClass('d-none');$('#importStep1').removeClass('d-none');toastr.error(T('general.network_error','Error.'));}});});
     $('#btnRetryAllErrors').on('click',function(){retryAllErrors();});
 });

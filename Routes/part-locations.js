@@ -16,6 +16,7 @@ router.post('/translate',              Ctrl.translate);
 router.post('/bulk-action',            requirePermission('edit_part_locations'),   Ctrl.bulkAction);
 router.get('/create',                  requirePermission('add_part_locations'),    Ctrl.create);
 router.post('/',                       requirePermission('add_part_locations'),    Ctrl.store);
+router.get('/:uuid/usage',             requirePermission('view_part_locations'),   Ctrl.usage);
 router.get('/:uuid/view-data',         requirePermission('view_part_locations'),   Ctrl.viewData);
 router.get('/:uuid/edit',              requirePermission('edit_part_locations'),   Ctrl.edit);
 router.post('/:uuid',                  requirePermission('edit_part_locations'),   Ctrl.update);

@@ -5,6 +5,8 @@ const { authGuard } = require('../Middlewares/auth');
 
 // Public (auth) routes — NO authGuard here
 router.use('/', require('./auth'));
+// Public location routes (needed for signup/google-complete pages before login)
+router.use('/locations', require('./location'));
 
 // ── All protected routes use authGuard ──
 // authGuard = requireLogin + periodic token validation with API
@@ -15,7 +17,7 @@ router.use('/permissions',      authGuard, require('./permissions'));
 router.use('/menus',            authGuard, require('./menus'));
 router.use('/profile',          authGuard, require('./profile'));
 router.use('/settings',         authGuard, require('./settings'));
-router.use('/locations',        authGuard, require('./location'));
+// locations already mounted publicly above for signup/google-complete
 router.use('/pages',            authGuard, require('./pages'));
 router.use('/languages',        authGuard, require('./languages'));
 router.use('/master-languages', authGuard, require('./master-languages'));
@@ -26,6 +28,7 @@ router.use('/part-locations',   authGuard, require('./part-locations'));
 router.use('/part-groups',      authGuard, require('./part-groups'));
 router.use('/part-sides',       authGuard, require('./part-sides'));
 router.use('/part-brands',      authGuard, require('./part-brands'));
+router.use('/part-catalogs',    authGuard, require('./part-catalogs'));
 
 // Vehicle Catalog
 router.use('/vehicle-categories', authGuard, require('./vehicle-categories'));
@@ -39,6 +42,8 @@ router.use('/vehicle-engines',    authGuard, require('./vehicle-engines'));
 
 // Vehicle Autocomplete (shared proxy — serves all /vehicle-*/autocomplete routes)
 router.use('/', authGuard, require('./vehicle-autocomplete'));
+// Part Autocomplete (shared proxy — serves all /part-*/autocomplete routes)
+router.use('/', authGuard, require('./part-autocomplete'));
 
 router.use('/notifications', authGuard, require('./notifications'));
 
