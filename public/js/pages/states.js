@@ -16,16 +16,19 @@ function loadData(){
         data.forEach(function(r,i){
             var del=!!r.deleted_at;
             var st=del?'<span class="badge bg-dark-lt"><i class="bi bi-trash3 me-1"></i>Deleted</span>':(parseInt(r.status)?'<span class="badge bg-success-lt"><span class="status-dot status-dot-animated bg-success me-1"></span>Active</span>':'<span class="badge bg-danger-lt">Inactive</span>');
-            var acts='<div class="btn-group btn-group-sm">';
-            acts+='<button class="btn btn-ghost-primary" onclick="viewRec(\''+r.uuid+'\')"><i class="bi bi-eye"></i></button>';
-            if(del)acts+='<button class="btn btn-ghost-success" onclick="recoverRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-arrow-counterclockwise"></i></button>';
-            else{
-                acts+='<a href="'+BASE_URL+'/states/'+r.uuid+'/edit" class="btn btn-ghost-secondary"><i class="bi bi-pencil"></i></a>';
-                acts+='<button class="btn btn-ghost-'+(parseInt(r.status)?'warning':'success')+'" onclick="toggleRec(\''+r.uuid+'\')"><i class="bi bi-toggle-'+(parseInt(r.status)?'on':'off')+'"></i></button>';
-                acts+='<button class="btn btn-ghost-info" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-diagram-3"></i></button>';
-                acts+='<button class="btn btn-ghost-danger" onclick="delRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\')"><i class="bi bi-trash3"></i></button>';
+            var acts='<div class="dropdown">';
+            acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts+='<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewRec(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>View Details</a></li>';
+            if(del){
+                acts+='<li><a class="dropdown-item" href="#" onclick="recoverRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>Recover</a></li>';
+            }else{
+                acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/states/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="toggleRec(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(parseInt(r.status)?'off':'on')+' me-2 text-'+(parseInt(r.status)?'warning':'success')+'"></i>'+(parseInt(r.status)?'Deactivate':'Activate')+'</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>';
+                acts+='<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delRec(\''+r.uuid+'\',\''+H.esc(r.name||'')+'\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
             }
-            acts+='</div>';
+            acts+='</ul></div>';
             rows+='<tr'+(del?' class="table-secondary"':'')+'><td style="padding-left:1rem;"><input type="checkbox" class="form-check-input row-chk" data-uuid="'+r.uuid+'"/></td>';
             rows+='<td class="text-muted small">'+(start+i+1)+'</td>';
             rows+='<td><span class="fw-medium">'+H.esc(r.name||'')+'</span></td>';

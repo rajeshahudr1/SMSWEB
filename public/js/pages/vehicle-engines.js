@@ -234,15 +234,52 @@ $(function(){
     $(document).on('change','.row-chk',function(){updateBulk();});
     $('#btnClearBulk').on('click',function(){$('#selectAll').prop('checked',false);$('.row-chk').prop('checked',false);updateBulk();});
 
+    // Import — progress polling for background jobs
+    var _pollTimer = null;
+    function showImportProgress(jobId, total){
+        $('#importProcessing').addClass('d-none');$('#importStep1').addClass('d-none');$('#importStep2').addClass('d-none');$('#importStep3').removeClass('d-none');
+        $('#impTotal').text(total.toLocaleString());$('#impProcessed').text('0');$('#impSuccess').text('0');$('#impErrors').text('0');$('#impPercent').text('0%');
+        $('#impProgressBar').css('width','0%').removeClass('bg-success bg-danger');
+        _pollTimer = setInterval(function(){ pollImportStatus(jobId); }, 2000);
+    }
+    function pollImportStatus(jobId){
+        $.get(BASE_URL+'/notifications/job/'+jobId,function(res){
+            if(!res||res.status!==200){clearInterval(_pollTimer);_pollTimer=null;toastr.error('Failed to check status.');return;}
+            var d=res.data;
+            $('#impProcessed').text((d.processed_rows||0).toLocaleString());$('#impSuccess').text((d.success_count||0).toLocaleString());
+            $('#impErrors').text((d.error_count||0).toLocaleString());$('#impPercent').text((d.progress||0)+'%');
+            $('#impProgressBar').css('width',(d.progress||0)+'%');
+            if(d.status==='completed'){
+                clearInterval(_pollTimer);_pollTimer=null;
+                $('#impProgressBar').addClass(d.error_count>0?'bg-warning':'bg-success');
+                if(typeof fetchUnreadCount==='function')fetchUnreadCount();
+                if(d.error_count>0&&d.results&&d.results.length){
+                    toastr.warning('Import done: '+d.success_count+' imported, '+d.error_count+' errors.');
+                    setTimeout(function(){$('#importStep3').addClass('d-none');$('#importStep2').removeClass('d-none');_importResults=d.results;showImportResults(d.results);},800);
+                }else{
+                    toastr.success('All '+d.success_count+' rows imported!');
+                    $('#importStep3').find('.d-flex').first().after('<div class="text-center py-3 mt-2"><div style="font-size:42px;">✅</div><h5 class="text-success mt-2">All '+d.success_count+' rows imported!</h5></div>');
+                    loadData();setTimeout(function(){try{bootstrap.Modal.getOrCreateInstance($('#modalImport')[0]).hide();}catch(e){}},3000);
+                }
+            }else if(d.status==='failed'){
+                clearInterval(_pollTimer);_pollTimer=null;$('#impProgressBar').addClass('bg-danger');
+                toastr.error('Import failed: '+(d.error_message||'Unknown error'));
+            }
+        }).fail(function(){clearInterval(_pollTimer);_pollTimer=null;toastr.error('Connection lost.');});
+    }
+
     // Import form
     var _importResults = [];
-    $('#frmImport').on('submit',function(e){e.preventDefault();var fd=new FormData(this);var $btn=$('#btnImport');btnLoading($btn);
+    $('#frmImport').on('submit',function(e){e.preventDefault();var fd=new FormData(this);
+        $('#importStep1').addClass('d-none');$('#importProcessing').removeClass('d-none');
         $.ajax({url:BASE_URL+'/vehicle-engines/import',type:'POST',data:fd,processData:false,contentType:false,success:function(r){
-                btnReset($btn);$('#importStep1').addClass('d-none');$('#importStep2').removeClass('d-none');
-                if(r.status!==200){$('#importSummary').html('<div class="alert alert-danger py-2">'+H.esc(r.message||'Failed')+'</div>');return;}
-                _importResults = (r.data && r.data.results) || [];
-                showImportResults(_importResults);
-            },error:function(){btnReset($btn);toastr.error(T('general.network_error','Network error.'));}});
+                $('#importProcessing').addClass('d-none');
+                if(r.status===200&&r.data){
+                    if(r.data.mode==='background'){showImportProgress(r.data.jobId,r.data.total);}
+                    else if(r.data.results){$('#importStep2').removeClass('d-none');_importResults=r.data.results;showImportResults(_importResults);}
+                    else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}
+                }else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}
+            },error:function(){$('#importProcessing').addClass('d-none');$('#importStep1').removeClass('d-none');toastr.error(T('general.network_error','Network error.'));}});
     });
 
     function showImportResults(results){

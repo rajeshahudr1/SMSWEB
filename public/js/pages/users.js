@@ -54,16 +54,17 @@ function loadUsers() {
             var deletable = u.is_deletable !== false;
 
             /* Action buttons */
-            var acts = '<div class="btn-group btn-group-sm">';
-            /* View — always */
-            acts += '<button class="btn btn-ghost-primary" onclick="viewUser(\'' + u.uuid + '\')" title="View details"><i class="bi bi-eye"></i></button>';
+            var acts = '<div class="dropdown">';
+            acts += '<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts += '<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+            acts += '<li><a class="dropdown-item" href="#" onclick="viewUser(\'' + u.uuid + '\');return false;"><i class="bi bi-eye me-2 text-primary"></i>View Details</a></li>';
             if (editable) {
-                acts += '<a href="' + BASE_URL + '/users/' + u.uuid + '/edit" class="btn btn-ghost-secondary" title="Edit user"><i class="bi bi-pencil"></i></a>';
+                acts += '<li><a class="dropdown-item" href="' + BASE_URL + '/users/' + u.uuid + '/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>';
             }
             if (deletable) {
-                acts += '<button class="btn btn-ghost-danger" onclick="delUser(\'' + u.uuid + '\',\'' + H.esc(u.name || '') + '\')" title="Delete user"><i class="bi bi-trash3"></i></button>';
+                acts += '<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delUser(\'' + u.uuid + '\',\'' + H.esc(u.name || '') + '\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
             }
-            acts += '</div>';
+            acts += '</ul></div>';
 
             rows += '<tr data-uuid="' + u.uuid + '">' +
                 '<td style="padding-left:1rem;"><input type="checkbox" class="form-check-input row-chk" data-uuid="' + u.uuid + '" title="Select"/></td>' +

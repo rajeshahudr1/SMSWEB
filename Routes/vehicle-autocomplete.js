@@ -25,6 +25,8 @@ router.get('/vehicle-types/autocomplete',    proxy('/vehicle-types/autocomplete'
 router.get('/vehicle-makes/autocomplete',    proxy('/vehicle-makes/autocomplete'));
 router.get('/vehicle-models/autocomplete',   proxy('/vehicle-models/autocomplete'));
 router.get('/vehicle-variants/autocomplete', proxy('/vehicle-variants/autocomplete'));
-router.get('/vehicle-engines/autocomplete',  proxy('/vehicle-engines/autocomplete'));
+router.get('/vehicle-engines/autocomplete',    proxy('/vehicle-engines/autocomplete'));
+router.get('/vehicle-fuels/autocomplete',      proxy('/vehicle-fuels/autocomplete'));
+router.get('/vehicle-categories/autocomplete', proxy('/vehicle-categories/autocomplete'));
 
 module.exports = router;

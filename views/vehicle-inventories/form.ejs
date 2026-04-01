@@ -1,0 +1,871 @@
+<%- layout('../layouts/main') %>
+<%
+var rec = typeof record !== 'undefined' ? record : null;
+var isEdit = !!rec;
+var formAction = isEdit ? '/vehicle-inventories/' + rec.uuid : '/vehicle-inventories';
+// Helper to format date for HTML input (YYYY-MM-DD)
+function fmtDate(v) {
+  if (!v) return '';
+  var s = String(v);
+  if (s.length >= 10) return s.substring(0, 10);
+  return s;
+}
+%>
+
+<style>
+  .nav-tabs .nav-link.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+    color: #6c757d !important;
+    cursor: not-allowed;
+  }
+  .section-card { margin-bottom: .75rem; }
+  .section-card .card-header { cursor: pointer; user-select: none; }
+  .section-card .card-header .card-title { font-size: 13px; font-weight: 600; }
+  .section-card .card-header .collapse-arrow { transition: transform .2s; font-size: 12px; opacity: .5; }
+  .section-card .card-header.collapsed .collapse-arrow { transform: rotate(-90deg); }
+</style>
+
+<div class="d-flex align-items-center gap-2 mb-2">
+  <a href="/vehicle-inventories" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i><%- t('general.back', 'Back') %></a>
+  <% if (isEdit && rec.vehicle_internal_id) { %><span class="badge bg-primary-lt" style="font-size:12px;">#<%- rec.vehicle_internal_id %></span><% } %>
+  <% if (isEdit && rec.registration_plate_no) { %><span class="badge bg-azure-lt" style="font-size:12px;"><%- rec.registration_plate_no %></span><% } %>
+</div>
+
+<form id="frmVehicleInventory" method="POST" action="<%- formAction %>" enctype="multipart/form-data" novalidate>
+
+<!-- Bootstrap Tabs -->
+<ul class="nav nav-tabs mb-3" id="vehicleTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="tab-vehicle-info" data-bs-toggle="tab" data-bs-target="#pane-vehicle-info" type="button" role="tab" aria-controls="pane-vehicle-info" aria-selected="true">
+      <i class="bi bi-car-front me-1"></i><%- t('vehicle_inventories.tab_vehicle_info', 'Vehicle Info') %>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link<%= !isEdit ? ' disabled' : '' %>" id="tab-extra-info" data-bs-toggle="<%= isEdit ? 'tab' : '' %>" data-bs-target="#pane-extra-info" type="button" role="tab" aria-controls="pane-extra-info" aria-selected="false"<%= !isEdit ? ' tabindex="-1" aria-disabled="true" title="Save vehicle first"' : '' %>>
+      <i class="bi bi-card-list me-1"></i><%- t('vehicle_inventories.tab_extra_info', 'Extra Info') %><% if (!isEdit) { %> <i class="bi bi-lock-fill ms-1" style="font-size:10px;"></i><% } %>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link<%= !isEdit ? ' disabled' : '' %>" id="tab-images" data-bs-toggle="<%= isEdit ? 'tab' : '' %>" data-bs-target="#pane-images" type="button" role="tab" aria-controls="pane-images" aria-selected="false"<%= !isEdit ? ' tabindex="-1" aria-disabled="true" title="Save vehicle first"' : '' %>>
+      <i class="bi bi-images me-1"></i><%- t('vehicle_inventories.tab_images', 'Images') %><% if (!isEdit) { %> <i class="bi bi-lock-fill ms-1" style="font-size:10px;"></i><% } %>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link<%= !isEdit ? ' disabled' : '' %>" id="tab-videos" data-bs-toggle="<%= isEdit ? 'tab' : '' %>" data-bs-target="#pane-videos" type="button" role="tab" aria-controls="pane-videos" aria-selected="false"<%= !isEdit ? ' tabindex="-1" aria-disabled="true" title="Save vehicle first"' : '' %>>
+      <i class="bi bi-camera-video me-1"></i><%- t('vehicle_inventories.tab_videos', 'Videos') %><% if (!isEdit) { %> <i class="bi bi-lock-fill ms-1" style="font-size:10px;"></i><% } %>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link<%= !isEdit ? ' disabled' : '' %>" id="tab-owner" data-bs-toggle="<%= isEdit ? 'tab' : '' %>" data-bs-target="#pane-owner" type="button" role="tab" aria-controls="pane-owner" aria-selected="false"<%= !isEdit ? ' tabindex="-1" aria-disabled="true" title="Save vehicle first"' : '' %>>
+      <i class="bi bi-person me-1"></i><%- t('vehicle_inventories.tab_owner', 'Owner') %><% if (!isEdit) { %> <i class="bi bi-lock-fill ms-1" style="font-size:10px;"></i><% } %>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link<%= !isEdit ? ' disabled' : '' %>" id="tab-documents" data-bs-toggle="<%= isEdit ? 'tab' : '' %>" data-bs-target="#pane-documents" type="button" role="tab" aria-controls="pane-documents" aria-selected="false"<%= !isEdit ? ' tabindex="-1" aria-disabled="true" title="Save vehicle first"' : '' %>>
+      <i class="bi bi-file-earmark-text me-1"></i><%- t('vehicle_inventories.tab_documents', 'Documents') %><% if (!isEdit) { %> <i class="bi bi-lock-fill ms-1" style="font-size:10px;"></i><% } %>
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content" id="vehicleTabContent">
+
+  <!-- ============================================================ -->
+  <!-- TAB 1: Vehicle Info -->
+  <!-- ============================================================ -->
+  <div class="tab-pane fade show active" id="pane-vehicle-info" role="tabpanel" aria-labelledby="tab-vehicle-info">
+
+    <!-- Section: Vehicle Selection -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-car-front me-1 text-primary"></i><%- t('vehicle_inventories.vehicle_selection', 'Vehicle Selection') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_type', 'Vehicle Type') %> <span class="text-danger">*</span></label>
+            <select name="vehicle_type_id" id="selVehicleType" class="form-select" style="width:100%;" required></select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_year', 'Vehicle Year') %> <span class="text-danger">*</span></label>
+            <select name="vehicle_year_id" id="selVehicleYear" class="form-select" style="width:100%;" required></select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_make', 'Vehicle Make') %> <span class="text-danger">*</span></label>
+            <select name="vehicle_make_id" id="selVehicleMake" class="form-select" style="width:100%;" required></select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_model', 'Vehicle Model') %> <span class="text-danger">*</span></label>
+            <select name="vehicle_model_id" id="selVehicleModel" class="form-select" style="width:100%;" required></select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_variant', 'Vehicle Variant') %> <span class="text-danger">*</span></label>
+            <select name="vehicle_variant_id" id="selVehicleVariant" class="form-select" style="width:100%;" required></select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_engine', 'Vehicle Engine') %></label>
+            <select name="vehicle_engine_id" id="selVehicleEngine" class="form-select" style="width:100%;"></select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_fuel', 'Vehicle Fuel') %></label>
+            <select name="vehicle_fuel_id" id="selVehicleFuel" class="form-select" style="width:100%;"></select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_category', 'Vehicle Category') %></label>
+            <select name="vehicle_category_id" id="selVehicleCategory" class="form-select" style="width:100%;"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Registration & Identification -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-card-text me-1 text-primary"></i><%- t('vehicle_inventories.registration_identification', 'Registration & Identification') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.registration_plate_no', 'Registration Plate No') %></label>
+            <input type="text" name="registration_plate_no" id="fRegistrationPlateNo" class="form-control" value="<%= isEdit ? (rec.registration_plate_no||'') : '' %>" placeholder="<%- t('vehicle_inventories.registration_plate_no', 'Registration Plate No') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.registration_no', 'Registration No') %></label>
+            <input type="text" name="registration_no" id="fRegistrationNo" class="form-control" value="<%= isEdit ? (rec.registration_no||'') : '' %>" placeholder="<%- t('vehicle_inventories.registration_no', 'Registration No') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_vin', 'Vehicle VIN') %></label>
+            <input type="text" name="vehicle_vin" id="fVehicleVin" class="form-control" value="<%= isEdit ? (rec.vehicle_vin||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_vin', 'Vehicle VIN') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.certificate_number', 'Certificate Number') %></label>
+            <input type="text" name="certificate_number" id="fCertificateNumber" class="form-control" value="<%= isEdit ? (rec.certificate_number||'') : '' %>" placeholder="<%- t('vehicle_inventories.certificate_number', 'Certificate Number') %>"/>
+          </div>
+          <!-- Internal ID shown in top header badge only -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Process Dates -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-calendar-range me-1 text-primary"></i><%- t('vehicle_inventories.process_dates', 'Process Dates') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.process_start_date', 'Process Start Date') %></label>
+            <input type="date" name="process_start_date" id="fProcessStartDate" class="form-control" value="<%= isEdit ? fmtDate(rec.process_start_date) : '' %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.process_end_date', 'Process End Date') %></label>
+            <input type="date" name="process_end_date" id="fProcessEndDate" class="form-control" value="<%= isEdit ? fmtDate(rec.process_end_date) : '' %>"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Vehicle Details -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-info-circle me-1 text-primary"></i><%- t('vehicle_inventories.vehicle_details', 'Vehicle Details') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.brand', 'Brand') %></label>
+            <input type="text" name="brand" id="fBrand" class="form-control" value="<%= isEdit ? (rec.brand||'') : '' %>" placeholder="<%- t('vehicle_inventories.brand', 'Brand') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.booklet_model', 'Booklet Model') %></label>
+            <input type="text" name="booklet_model" id="fBookletModel" class="form-control" value="<%= isEdit ? (rec.booklet_model||'') : '' %>" placeholder="<%- t('vehicle_inventories.booklet_model', 'Booklet Model') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_model_text', 'Vehicle Model Text') %></label>
+            <input type="text" name="vehicle_model_text" id="fVehicleModelText" class="form-control" value="<%= isEdit ? (rec.vehicle_model_text||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_model_text', 'Vehicle Model Text') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_tare', 'Vehicle Tare') %></label>
+            <input type="text" name="vehicle_tare" id="fVehicleTare" class="form-control" value="<%= isEdit ? (rec.vehicle_tare||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_tare', 'Vehicle Tare') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_year_text', 'Vehicle Year Text') %></label>
+            <input type="number" name="vehicle_year_text" id="fVehicleYearText" class="form-control" min="1900" max="2100" value="<%= isEdit ? (rec.vehicle_year_text||'') : '' %>" placeholder="e.g. 2024"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_kms', 'Vehicle KMS') %></label>
+            <input type="number" name="vehicle_kms" id="fVehicleKms" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.vehicle_kms||'') : '' %>" placeholder="0.00"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_doors', 'Vehicle Doors') %></label>
+            <select name="vehicle_doors" id="selVehicleDoors" class="form-select">
+              <option value="">-- <%- t('general.select', 'Select') %> --</option>
+              <% for (var d = 1; d <= 5; d++) { %>
+              <option value="<%- d %>" <%- (isEdit && rec.vehicle_doors && parseInt(rec.vehicle_doors) === d) ? 'selected' : '' %>><%- d %></option>
+              <% } %>
+            </select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_approval', 'Vehicle Approval') %></label>
+            <input type="text" name="vehicle_approval" id="fVehicleApproval" class="form-control" value="<%= isEdit ? (rec.vehicle_approval||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_approval', 'Vehicle Approval') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_color', 'Vehicle Color') %></label>
+            <input type="text" name="vehicle_color" id="fVehicleColor" class="form-control" value="<%= isEdit ? (rec.vehicle_color||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_color', 'Vehicle Color') %>"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Dimensions & Weight -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-rulers me-1 text-primary"></i><%- t('vehicle_inventories.dimensions_weight', 'Dimensions & Weight') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_total_gross_weight', 'Vehicle Total Gross Weight') %></label>
+            <input type="number" name="vehicle_total_gross_weight" id="fVehicleTotalGrossWeight" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.vehicle_total_gross_weight||'') : '' %>" placeholder="0.00"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_parts', 'Vehicle Parts') %></label>
+            <input type="number" name="vehicle_parts" id="fVehicleParts" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.vehicle_parts||'') : '' %>" placeholder="0.00"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_eei', 'Vehicle EEI') %></label>
+            <input type="number" name="vehicle_eei" id="fVehicleEei" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.vehicle_eei||'') : '' %>" placeholder="0.00"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_experience_value', 'Vehicle Experience Value') %></label>
+            <input type="number" name="vehicle_experience_value" id="fVehicleExperienceValue" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.vehicle_experience_value||'') : '' %>" placeholder="0.00"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_cylinder', 'Vehicle Cylinder') %></label>
+            <input type="number" name="vehicle_cylinder" id="fVehicleCylinder" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.vehicle_cylinder||'') : '' %>" placeholder="0.00"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Engine & Performance -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-speedometer me-1 text-primary"></i><%- t('vehicle_inventories.engine_performance', 'Engine & Performance') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.motorization', 'Motorization') %></label>
+            <input type="text" name="motorization" id="fMotorization" class="form-control" value="<%= isEdit ? (rec.motorization||'') : '' %>" placeholder="<%- t('vehicle_inventories.motorization', 'Motorization') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.ccm3', 'Ccm3') %></label>
+            <input type="text" name="ccm3" id="fCcm3" class="form-control" value="<%= isEdit ? (rec.ccm3||'') : '' %>" placeholder="<%- t('vehicle_inventories.ccm3', 'Ccm3') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.power_kw', 'Power Kw') %></label>
+            <input type="text" name="power_kw" id="fPowerKw" class="form-control" value="<%= isEdit ? (rec.power_kw||'') : '' %>" placeholder="<%- t('vehicle_inventories.power_kw', 'Power Kw') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.hp', 'HP') %></label>
+            <input type="text" name="hp" id="fHp" class="form-control" value="<%= isEdit ? (rec.hp||'') : '' %>" placeholder="<%- t('vehicle_inventories.hp', 'HP') %>"/>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_provenance', 'Vehicle Provenance') %></label>
+            <input type="text" name="vehicle_provenance" id="fVehicleProvenance" class="form-control" value="<%= isEdit ? (rec.vehicle_provenance||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_provenance', 'Vehicle Provenance') %>"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: References -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-bookmark me-1 text-primary"></i><%- t('vehicle_inventories.references', 'References') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_internal_reference', 'Vehicle Internal Reference') %></label>
+            <input type="text" name="vehicle_internal_reference" id="fVehicleInternalReference" class="form-control" value="<%= isEdit ? (rec.vehicle_internal_reference||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_internal_reference', 'Vehicle Internal Reference') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_external_reference', 'Vehicle External Reference') %></label>
+            <input type="text" name="vehicle_external_reference" id="fVehicleExternalReference" class="form-control" value="<%= isEdit ? (rec.vehicle_external_reference||'') : '' %>" placeholder="<%- t('vehicle_inventories.vehicle_external_reference', 'Vehicle External Reference') %>"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Status & Classification -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-tags me-1 text-primary"></i><%- t('vehicle_inventories.status_classification', 'Status & Classification') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.inventory_status', 'Inventory Status') %></label>
+            <select name="inventory_status" id="selInventoryStatus" class="form-select">
+              <option value="">-- <%- t('general.select', 'Select') %> --</option>
+              <option value="1" <%- (isEdit && parseInt(rec.inventory_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.in_stock', 'In Stock') %></option>
+              <option value="2" <%- (isEdit && parseInt(rec.inventory_status) === 2) ? 'selected' : '' %>><%- t('vehicle_inventories.out_of_stock', 'Out of Stock') %></option>
+              <option value="3" <%- (isEdit && parseInt(rec.inventory_status) === 3) ? 'selected' : '' %>><%- t('vehicle_inventories.sent_to_wastage', 'Sent to Wastage') %></option>
+            </select>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.depolution_status', 'Depolution Status') %></label>
+            <select name="depolution_status" id="selDepolutionStatus" class="form-select">
+              <option value="">-- <%- t('general.select', 'Select') %> --</option>
+              <option value="1" <%- (isEdit && parseInt(rec.depolution_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.pending', 'Pending') %></option>
+              <option value="2" <%- (isEdit && parseInt(rec.depolution_status) === 2) ? 'selected' : '' %>><%- t('vehicle_inventories.in_depollution', 'In Depollution') %></option>
+              <option value="3" <%- (isEdit && parseInt(rec.depolution_status) === 3) ? 'selected' : '' %>><%- t('vehicle_inventories.depolluted', 'Depolluted') %></option>
+            </select>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.dismantle_status', 'Dismantle Status') %></label>
+            <select name="dismantle_status" id="selDismantleStatus" class="form-select">
+              <option value="">-- <%- t('general.select', 'Select') %> --</option>
+              <option value="1" <%- (isEdit && parseInt(rec.dismantle_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.pending', 'Pending') %></option>
+              <option value="2" <%- (isEdit && parseInt(rec.dismantle_status) === 2) ? 'selected' : '' %>><%- t('vehicle_inventories.in_dismantling', 'In Dismantling') %></option>
+              <option value="3" <%- (isEdit && parseInt(rec.dismantle_status) === 3) ? 'selected' : '' %>><%- t('vehicle_inventories.dismantled', 'Dismantled') %></option>
+            </select>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.state_parking', 'State Parking') %></label>
+            <select name="state_parking" id="selStateParking" class="form-select">
+              <option value="">-- <%- t('general.select', 'Select') %> --</option>
+              <option value="1" <%- (isEdit && parseInt(rec.state_parking) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.with_declaration', 'With Declaration') %></option>
+              <option value="2" <%- (isEdit && parseInt(rec.state_parking) === 2) ? 'selected' : '' %>><%- t('vehicle_inventories.with_certificate', 'With Certificate') %></option>
+              <option value="3" <%- (isEdit && parseInt(rec.state_parking) === 3) ? 'selected' : '' %>><%- t('vehicle_inventories.pending_to_accept', 'Pending to Accept') %></option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Steering & Options -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-arrow-left-right me-1 text-primary"></i><%- t('vehicle_inventories.steering_options', 'Steering & Options') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.steering_wheel_side', 'Steering Wheel Side') %></label>
+            <div class="d-flex flex-wrap gap-3 mt-1">
+              <label class="form-check">
+                <input type="radio" class="form-check-input" name="steering_wheel_side" value="1" <%- (isEdit && parseInt(rec.steering_wheel_side) === 1) ? 'checked' : '' %>/>
+                <span class="form-check-label"><%- t('vehicle_inventories.left', 'Left') %></span>
+              </label>
+              <label class="form-check">
+                <input type="radio" class="form-check-input" name="steering_wheel_side" value="2" <%- (isEdit && parseInt(rec.steering_wheel_side) === 2) ? 'checked' : '' %>/>
+                <span class="form-check-label"><%- t('vehicle_inventories.right', 'Right') %></span>
+              </label>
+              <label class="form-check">
+                <input type="radio" class="form-check-input" name="steering_wheel_side" value="3" <%- (isEdit && parseInt(rec.steering_wheel_side) === 3) ? 'checked' : (!isEdit ? 'checked' : '') %>/>
+                <span class="form-check-label"><%- t('vehicle_inventories.not_applicable', 'Not Applicable') %></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Important Dates -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-calendar-event me-1 text-primary"></i><%- t('vehicle_inventories.important_dates', 'Important Dates') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.decontamination_date', 'Decontamination Date') %></label>
+            <input type="date" name="decontamination_date" id="fDecontaminationDate" class="form-control" value="<%= isEdit ? fmtDate(rec.decontamination_date) : '' %>"/>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.vehicle_arrival_date', 'Vehicle Arrival Date') %></label>
+            <input type="date" name="vehicle_arrival_date" id="fVehicleArrivalDate" class="form-control" value="<%= isEdit ? fmtDate(rec.vehicle_arrival_date) : '' %>"/>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.sent_to_waste_date', 'Sent to Waste Date') %></label>
+            <input type="date" name="sent_to_waste_date" id="fSentToWasteDate" class="form-control" value="<%= isEdit ? fmtDate(rec.sent_to_waste_date) : '' %>"/>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.neutralization_date', 'Neutralization Date') %></label>
+            <input type="date" name="neutralization_date" id="fNeutralizationDate" class="form-control" value="<%= isEdit ? fmtDate(rec.neutralization_date) : '' %>"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 1 Save + Nav -->
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <div></div>
+      <div class="d-flex gap-2">
+        <% if (isEdit) { %>
+        <button type="submit" class="btn btn-primary" id="btnSubmitTab1"><i class="bi bi-floppy me-1"></i><%- t('vehicle_inventories.save_vehicle_info', 'Save') %></button>
+        <% } else { %>
+        <button type="submit" class="btn btn-primary" id="btnSubmitTab1"><i class="bi bi-plus-lg me-1"></i><%- t('vehicle_inventories.create_vehicle', 'Create') %></button>
+        <% } %>
+        <% if (isEdit) { %><button type="button" class="btn btn-outline-primary sms-tab-next" data-target="#tab-extra-info"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button><% } %>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 2: Extra Info -->
+  <!-- ============================================================ -->
+  <div class="tab-pane fade" id="pane-extra-info" role="tabpanel" aria-labelledby="tab-extra-info">
+
+    <!-- Section: Tires & Weight -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-circle me-1 text-primary"></i><%- t('vehicle_inventories.tires_weight', 'Tires & Weight') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.tires_front', 'Tires Front') %></label>
+            <input type="text" name="tires_front" id="fTiresFront" class="form-control" value="<%= isEdit ? (rec.tires_front||'') : '' %>" placeholder="<%- t('vehicle_inventories.tires_front', 'Tires Front') %>"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.tires_rear', 'Tires Rear') %></label>
+            <input type="text" name="tires_rear" id="fTiresRear" class="form-control" value="<%= isEdit ? (rec.tires_rear||'') : '' %>" placeholder="<%- t('vehicle_inventories.tires_rear', 'Tires Rear') %>"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.max_weight_front', 'Max Weight Front') %></label>
+            <input type="number" name="max_weight_front" id="fMaxWeightFront" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.max_weight_front||'') : '' %>" placeholder="0.00"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.max_weight_rear', 'Max Weight Rear') %></label>
+            <input type="number" name="max_weight_rear" id="fMaxWeightRear" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.max_weight_rear||'') : '' %>" placeholder="0.00"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Box & Dimensions -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-box me-1 text-primary"></i><%- t('vehicle_inventories.box_dimensions', 'Box & Dimensions') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.power_lifting', 'Power Lifting') %></label>
+            <input type="text" name="power_lifting" id="fPowerLifting" class="form-control" value="<%= isEdit ? (rec.power_lifting||'') : '' %>" placeholder="<%- t('vehicle_inventories.power_lifting', 'Power Lifting') %>"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.box_type', 'Box Type') %></label>
+            <input type="text" name="box_type" id="fBoxType" class="form-control" value="<%= isEdit ? (rec.box_type||'') : '' %>" placeholder="<%- t('vehicle_inventories.box_type', 'Box Type') %>"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.comp_max_box', 'Comp Max Box') %></label>
+            <input type="text" name="comp_max_box" id="fCompMaxBox" class="form-control" value="<%= isEdit ? (rec.comp_max_box||'') : '' %>" placeholder="<%- t('vehicle_inventories.comp_max_box', 'Comp Max Box') %>"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.box_width', 'Box Width') %></label>
+            <input type="number" name="box_width" id="fBoxWidth" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.box_width||'') : '' %>" placeholder="0.00"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.axel_distance', 'Axel Distance') %></label>
+            <input type="number" name="axel_distance" id="fAxelDistance" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.axel_distance||'') : '' %>" placeholder="0.00"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Emissions -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-cloud-haze me-1 text-primary"></i><%- t('vehicle_inventories.emissions', 'Emissions') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.co2_gkm', 'Co2 g/km') %></label>
+            <input type="text" name="co2_gkm" id="fCo2Gkm" class="form-control" value="<%= isEdit ? (rec.co2_gkm||'') : '' %>" placeholder="<%- t('vehicle_inventories.co2_gkm', 'Co2 g/km') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.particles_gkm', 'Particles g/km') %></label>
+            <input type="text" name="particles_gkm" id="fParticlesGkm" class="form-control" value="<%= isEdit ? (rec.particles_gkm||'') : '' %>" placeholder="<%- t('vehicle_inventories.particles_gkm', 'Particles g/km') %>"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Doors & Capacity -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-door-open me-1 text-primary"></i><%- t('vehicle_inventories.doors_capacity', 'Doors & Capacity') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.no_of_right_doors', 'No of Right Doors') %></label>
+            <input type="number" name="no_of_right_doors" id="fNoOfRightDoors" class="form-control" min="0" value="<%= isEdit ? (rec.no_of_right_doors||'') : '' %>" placeholder="0"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.no_of_left_doors', 'No of Left Doors') %></label>
+            <input type="number" name="no_of_left_doors" id="fNoOfLeftDoors" class="form-control" min="0" value="<%= isEdit ? (rec.no_of_left_doors||'') : '' %>" placeholder="0"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.no_of_rear_doors', 'No of Rear Doors') %></label>
+            <input type="number" name="no_of_rear_doors" id="fNoOfRearDoors" class="form-control" min="0" value="<%= isEdit ? (rec.no_of_rear_doors||'') : '' %>" placeholder="0"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.capacity', 'Capacity') %></label>
+            <input type="number" name="capacity" id="fCapacity" class="form-control" step="0.01" min="0" value="<%= isEdit ? (rec.capacity||'') : '' %>" placeholder="0.00"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Registration & Origin -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-globe me-1 text-primary"></i><%- t('vehicle_inventories.registration_origin', 'Registration & Origin') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.previous_registration', 'Previous Registration') %></label>
+            <input type="text" name="previous_registration" id="fPreviousRegistration" class="form-control" value="<%= isEdit ? (rec.previous_registration||'') : '' %>" placeholder="<%- t('vehicle_inventories.previous_registration', 'Previous Registration') %>"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.registration_date', 'Registration Date') %></label>
+            <input type="date" name="registration_date" id="fRegistrationDate" class="form-control" value="<%= isEdit ? fmtDate(rec.registration_date) : '' %>"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.origin_country', 'Origin Country') %></label>
+            <input type="text" name="origin_country" id="fOriginCountry" class="form-control" value="<%= isEdit ? (rec.origin_country||'') : '' %>" placeholder="<%- t('vehicle_inventories.origin_country', 'Origin Country') %>"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.origin_state', 'Origin State') %></label>
+            <input type="text" name="origin_state" id="fOriginState" class="form-control" value="<%= isEdit ? (rec.origin_state||'') : '' %>" placeholder="<%- t('vehicle_inventories.origin_state', 'Origin State') %>"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Notes -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-journal-text me-1 text-primary"></i><%- t('vehicle_inventories.notes', 'Notes') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.comments', 'Comments') %></label>
+            <textarea name="comments" id="fComments" class="form-control" rows="3" placeholder="<%- t('vehicle_inventories.comments', 'Comments') %>"><%= isEdit ? (rec.comments||'') : '' %></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.special_notes', 'Special Notes') %></label>
+            <textarea name="special_notes" id="fSpecialNotes" class="form-control" rows="3" placeholder="<%- t('vehicle_inventories.special_notes', 'Special Notes') %>"><%= isEdit ? (rec.special_notes||'') : '' %></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Options -->
+    <div class="card shadow-sm section-card">
+      <div class="card-header py-2">
+        <div class="card-title mb-0"><i class="bi bi-toggles me-1 text-primary"></i><%- t('vehicle_inventories.options', 'Options') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.brake_option', 'Brake Option') %></label>
+            <div class="d-flex flex-wrap gap-3 mt-1">
+              <label class="form-check">
+                <input type="radio" class="form-check-input" name="brake_option" value="1" <%- (isEdit && parseInt(rec.brake_option) === 1) ? 'checked' : '' %>/>
+                <span class="form-check-label"><%- t('vehicle_inventories.with_brake', 'With Brake') %></span>
+              </label>
+              <label class="form-check">
+                <input type="radio" class="form-check-input" name="brake_option" value="2" <%- (isEdit && parseInt(rec.brake_option) === 2) ? 'checked' : '' %>/>
+                <span class="form-check-label"><%- t('vehicle_inventories.without_brake', 'Without Brake') %></span>
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.is_towable', 'Is Towable') %></label>
+            <div class="mt-1">
+              <label class="form-check form-switch">
+                <input type="checkbox" class="form-check-input" name="is_towable" id="fIsTowable" value="1" <%- (isEdit && (rec.is_towable === true || rec.is_towable === 1 || rec.is_towable === '1')) ? 'checked' : '' %>/>
+                <span class="form-check-label"><%- t('vehicle_inventories.towable', 'Towable') %></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2 Save + Nav -->
+    <% if (isEdit) { %>
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <button type="button" class="btn btn-outline-primary sms-tab-prev" data-target="#tab-vehicle-info"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" id="btnSubmitTab2"><i class="bi bi-floppy me-1"></i><%- t('vehicle_inventories.save_extra_info', 'Save') %></button>
+        <button type="button" class="btn btn-outline-primary sms-tab-next" data-target="#tab-images"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+      </div>
+    </div>
+    <% } %>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 3: Images -->
+  <!-- ============================================================ -->
+  <div class="tab-pane fade" id="pane-images" role="tabpanel" aria-labelledby="tab-images">
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-images me-1 text-primary"></i><%- t('vehicle_inventories.images', 'Images') %> <% if (isEdit) { %><span class="badge bg-primary-lt ms-1" style="font-size:10px;" id="imageGalleryCount">0</span><% } %></div>
+      </div>
+      <div class="card-body">
+        <% if (isEdit) { %>
+        <div class="row g-2 mb-3" id="imageGalleryGrid">
+          <!-- Images rendered dynamically from window._FORM_DATA.images -->
+        </div>
+        <% } else { %>
+        <div class="text-muted small text-center py-3 mb-2"><%- t('vehicle_inventories.images_after_save', 'Images can be uploaded after saving the record.') %></div>
+        <% } %>
+        <% if (isEdit) { %>
+        <div id="imageUploadPreview" class="row g-2 mb-3"></div>
+        <input type="file" name="images" id="fImages" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.gif,.webp" multiple/>
+        <div class="form-hint mt-1"><%- t('vehicle_inventories.images_hint', 'Select images then click Save below. Drag and drop to reorder.') %></div>
+        <% } %>
+      </div>
+    </div>
+    <% if (isEdit) { %>
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <button type="button" class="btn btn-outline-primary sms-tab-prev" data-target="#tab-extra-info"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" id="btnUploadImages"><i class="bi bi-cloud-upload me-1"></i><%- t('vehicle_inventories.save_images', 'Save Images') %></button>
+        <button type="button" class="btn btn-outline-primary sms-tab-next" data-target="#tab-videos"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 4: Videos -->
+  <!-- ============================================================ -->
+  <div class="tab-pane fade" id="pane-videos" role="tabpanel" aria-labelledby="tab-videos">
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-camera-video me-1 text-primary"></i><%- t('vehicle_inventories.videos', 'Videos') %> <% if (isEdit) { %><span class="badge bg-primary-lt ms-1" style="font-size:10px;" id="videoGalleryCount">0</span><% } %></div>
+      </div>
+      <div class="card-body">
+        <% if (isEdit) { %>
+        <div class="row g-2 mb-3" id="videoGalleryGrid">
+          <!-- Videos rendered dynamically from window._FORM_DATA.videos -->
+        </div>
+        <% } else { %>
+        <div class="text-muted small text-center py-3 mb-2"><%- t('vehicle_inventories.videos_after_save', 'Videos can be uploaded after saving the record.') %></div>
+        <% } %>
+        <% if (isEdit) { %>
+        <div id="videoUploadPreview" class="row g-2 mb-3"></div>
+        <input type="file" name="videos" id="fVideos" class="form-control form-control-sm" accept=".mp4,.mov,.avi,.mkv,.webm,.wmv,.flv,.m4v" multiple/>
+        <div class="form-hint mt-1"><%- t('vehicle_inventories.videos_hint', 'Select videos then click Save below. Drag and drop to reorder.') %></div>
+        <% } %>
+      </div>
+    </div>
+    <% if (isEdit) { %>
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <button type="button" class="btn btn-outline-primary sms-tab-prev" data-target="#tab-images"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" id="btnUploadVideos"><i class="bi bi-cloud-upload me-1"></i><%- t('vehicle_inventories.save_videos', 'Save Videos') %></button>
+        <button type="button" class="btn btn-outline-primary sms-tab-next" data-target="#tab-owner"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 5: Owner -->
+  <!-- ============================================================ -->
+  <div class="tab-pane fade" id="pane-owner" role="tabpanel" aria-labelledby="tab-owner">
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-person me-1 text-primary"></i><%- t('vehicle_inventories.owner_information', 'Owner Information') %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.owner_name', 'Owner Name') %></label>
+            <input type="text" name="owner_name" id="fOwnerName" class="form-control" value="<%= isEdit ? (rec.owner_name||'') : '' %>" placeholder="<%- t('vehicle_inventories.owner_name', 'Owner Name') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.owner_certificate_number', 'Certificate Number') %></label>
+            <input type="text" name="owner_certificate_number" id="fOwnerCertificateNumber" class="form-control" value="<%= isEdit ? (rec.owner_certificate_number||'') : '' %>" placeholder="<%- t('vehicle_inventories.owner_certificate_number', 'Certificate Number') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.postal_code', 'Postal Code') %></label>
+            <input type="text" name="owner_postal_code" id="fOwnerPostalCode" class="form-control" value="<%= isEdit ? (rec.owner_postal_code||'') : '' %>" placeholder="<%- t('vehicle_inventories.postal_code', 'Postal Code') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.country', 'Country') %></label>
+            <select name="owner_country_id" id="selOwnerCountry" class="form-select" style="width:100%;"></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.nif', 'NIF') %></label>
+            <input type="text" name="owner_nif" id="fOwnerNif" class="form-control" value="<%= isEdit ? (rec.owner_nif||'') : '' %>" placeholder="<%- t('vehicle_inventories.nif', 'NIF') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.bicc', 'BICC') %></label>
+            <input type="text" name="owner_bicc" id="fOwnerBicc" class="form-control" value="<%= isEdit ? (rec.owner_bicc||'') : '' %>" placeholder="<%- t('vehicle_inventories.bicc', 'BICC') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.telephone', 'Telephone') %></label>
+            <input type="text" name="owner_telephone" id="fOwnerTelephone" class="form-control" value="<%= isEdit ? (rec.owner_telephone||'') : '' %>" placeholder="<%- t('vehicle_inventories.telephone', 'Telephone') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.cellphone', 'CellPhone') %></label>
+            <input type="text" name="owner_cellphone" id="fOwnerCellphone" class="form-control" value="<%= isEdit ? (rec.owner_cellphone||'') : '' %>" placeholder="<%- t('vehicle_inventories.cellphone', 'CellPhone') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.email', 'Email') %></label>
+            <input type="email" name="owner_email" id="fOwnerEmail" class="form-control" value="<%= isEdit ? (rec.owner_email||'') : '' %>" placeholder="<%- t('vehicle_inventories.email', 'Email') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.company_certificate_code', 'Company Certificate Code') %></label>
+            <input type="text" name="owner_company_certificate_code" id="fOwnerCompanyCertificateCode" class="form-control" value="<%= isEdit ? (rec.owner_company_certificate_code||'') : '' %>" placeholder="<%- t('vehicle_inventories.company_certificate_code', 'Company Certificate Code') %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.validity', 'Validity') %></label>
+            <input type="date" name="owner_validity" id="fOwnerValidity" class="form-control" value="<%= isEdit ? fmtDate(rec.owner_validity) : '' %>"/>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-medium"><%- t('vehicle_inventories.address', 'Address') %></label>
+            <textarea name="owner_address" id="fOwnerAddress" class="form-control" rows="3" placeholder="<%- t('vehicle_inventories.address', 'Address') %>"><%= isEdit ? (rec.owner_address||'') : '' %></textarea>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <% if (isEdit) { %>
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <button type="button" class="btn btn-outline-primary sms-tab-prev" data-target="#tab-videos"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" id="btnSubmitTab5"><i class="bi bi-floppy me-1"></i><%- t('vehicle_inventories.save_owner', 'Save') %></button>
+        <button type="button" class="btn btn-outline-primary sms-tab-next" data-target="#tab-documents"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 6: Documents -->
+  <!-- ============================================================ -->
+  <div class="tab-pane fade" id="pane-documents" role="tabpanel" aria-labelledby="tab-documents">
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-file-earmark-text me-1 text-primary"></i><%- t('vehicle_inventories.documents', 'Documents') %> <% if (isEdit) { %><span class="badge bg-primary-lt ms-1" style="font-size:10px;" id="documentCount">0</span><% } %></div>
+      </div>
+      <div class="card-body">
+        <% if (isEdit) { %>
+        <!-- Add document row -->
+        <div class="border rounded p-3 mb-3" style="background:var(--tblr-bg-surface-secondary);">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label fw-medium small"><%- t('vehicle_inventories.document_type', 'Type') %> <span class="text-danger">*</span></label>
+              <select id="selDocumentType" class="form-select form-select-sm">
+                <option value="">-- <%- t('general.select', 'Select') %> --</option>
+                <option value="1"><%- t('vehicle_inventories.doc_citizen_card', 'Citizen Card') %></option>
+                <option value="2"><%- t('vehicle_inventories.doc_certificate', 'Certificate') %></option>
+                <option value="3"><%- t('vehicle_inventories.doc_single_car', 'Single Car') %></option>
+                <option value="4"><%- t('vehicle_inventories.doc_model_imtt', 'Model IMTT') %></option>
+                <option value="5"><%- t('vehicle_inventories.doc_chassis_number', 'Chassis Number') %></option>
+                <option value="6"><%- t('vehicle_inventories.doc_tax_authority', 'Tax Authority File') %></option>
+                <option value="7"><%- t('vehicle_inventories.doc_other', 'Other File') %></option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-medium small"><%- t('vehicle_inventories.document_file', 'File') %> <span class="text-danger">*</span></label>
+              <input type="file" id="fDocumentFile" class="form-control form-control-sm"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-medium small"><%- t('vehicle_inventories.document_comment', 'Comment') %></label>
+              <input type="text" id="txtDocumentComment" class="form-control form-control-sm" placeholder="<%- t('vehicle_inventories.optional_comment', 'Optional...') %>"/>
+            </div>
+            <div class="col-md-2">
+              <button type="button" class="btn btn-sm btn-outline-primary w-100" id="btnAddDocToQueue"><i class="bi bi-plus-lg me-1"></i><%- t('general.add', 'Add') %></button>
+            </div>
+          </div>
+          <div class="form-hint mt-1 small"><%- t('vehicle_inventories.doc_hint', 'Types 1-6: one document per type. Type "Other File": multiple allowed.') %></div>
+        </div>
+
+        <!-- Document queue (pending upload) -->
+        <div id="docQueue" class="mb-3"></div>
+
+        <hr class="my-3"/>
+
+        <!-- Document list -->
+        <div id="documentList">
+          <div class="text-muted small text-center py-3" id="noDocumentsMsg"><%- t('vehicle_inventories.no_documents', 'No documents uploaded yet.') %></div>
+        </div>
+        <% } else { %>
+        <div class="text-muted small text-center py-3"><%- t('vehicle_inventories.documents_after_save', 'Documents can be uploaded after saving the record.') %></div>
+        <% } %>
+      </div>
+    </div>
+    <% if (isEdit) { %>
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <button type="button" class="btn btn-outline-primary sms-tab-prev" data-target="#tab-owner"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+      <button type="button" class="btn btn-primary" id="btnUploadDocument"><i class="bi bi-cloud-upload me-1"></i><%- t('vehicle_inventories.add_save_document', 'Add & Save Document') %></button>
+    </div>
+    <% } %>
+  </div>
+
+</div>
+<!-- /tab-content -->
+
+<!-- ============================================================ -->
+<!-- Bottom section: Status + Cancel (edit only) -->
+<!-- ============================================================ -->
+<% if (isEdit) { %>
+<div class="card mt-3 shadow-sm">
+  <div class="card-body py-3">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-2 mb-md-0">
+        <label class="form-label fw-medium mb-1"><%- t('general.status', 'Status') %></label>
+        <select name="status" class="form-select">
+          <option value="1" <%- (isEdit && parseInt(rec.status)) ? 'selected' : '' %>><%- t('general.active', 'Active') %></option>
+          <option value="0" <%- (isEdit && !parseInt(rec.status)) ? 'selected' : '' %>><%- t('general.inactive', 'Inactive') %></option>
+        </select>
+      </div>
+      <div class="col-md-8">
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="/vehicle-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+</form>
+
+<script>
+window._FORM_DATA = {
+  isEdit: <%= isEdit ? 'true' : 'false' %>,
+  uuid: '<%= isEdit ? rec.uuid : '' %>',
+  vehicleType: <%- isEdit && rec.vehicle_type_id ? JSON.stringify({id: rec.vehicle_type_id, text: rec.vehicle_type_name || ''}) : 'null' %>,
+  vehicleYear: <%- isEdit && rec.vehicle_year_id ? JSON.stringify({id: rec.vehicle_year_id, text: rec.vehicle_year_name || ''}) : 'null' %>,
+  vehicleMake: <%- isEdit && rec.vehicle_make_id ? JSON.stringify({id: rec.vehicle_make_id, text: rec.vehicle_make_name || ''}) : 'null' %>,
+  vehicleModel: <%- isEdit && rec.vehicle_model_id ? JSON.stringify({id: rec.vehicle_model_id, text: rec.vehicle_model_name || ''}) : 'null' %>,
+  vehicleVariant: <%- isEdit && rec.vehicle_variant_id ? JSON.stringify({id: rec.vehicle_variant_id, text: rec.vehicle_variant_name || ''}) : 'null' %>,
+  vehicleEngine: <%- isEdit && rec.vehicle_engine_id ? JSON.stringify({id: rec.vehicle_engine_id, text: rec.vehicle_engine_name || ''}) : 'null' %>,
+  vehicleFuel: <%- isEdit && rec.vehicle_fuel_id ? JSON.stringify({id: rec.vehicle_fuel_id, text: rec.vehicle_fuel_name || ''}) : 'null' %>,
+  vehicleCategory: <%- isEdit && rec.vehicle_category_id ? JSON.stringify({id: rec.vehicle_category_id, text: rec.vehicle_category_name || ''}) : 'null' %>,
+  ownerCountry: <%- isEdit && rec.owner_country_id ? JSON.stringify({id: rec.owner_country_id, text: rec.owner_country_name || ''}) : 'null' %>,
+  images: <%- isEdit && rec.images ? JSON.stringify(rec.images) : '[]' %>,
+  videos: <%- isEdit && rec.videos ? JSON.stringify(rec.videos) : '[]' %>,
+  documents: <%- isEdit && rec.documents ? JSON.stringify(rec.documents) : '[]' %>
+};
+</script>
+<% block('scripts', '<script src="/js/pages/vehicle-inventories-form.js"></script>') %>

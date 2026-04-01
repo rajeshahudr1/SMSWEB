@@ -24,17 +24,19 @@ function loadData(){
             var editable=r.is_editable!==false&&!deleted;
             var deletable=r.is_deletable!==false&&!deleted;
 
-            var acts='<div class="btn-group btn-group-sm">';
-            acts+='<button class="btn btn-ghost-primary" onclick="viewRec(\''+r.uuid+'\')" title="'+T('general.preview','View')+'"><i class="bi bi-eye"></i></button>';
+            var acts='<div class="dropdown">';
+            acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts+='<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewRec(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>View Details</a></li>';
             if(deleted){
-                acts+='<button class="btn btn-ghost-success" onclick="recoverRec(\''+r.uuid+'\',\''+r.year+'\')" title="'+T('bulk.recover','Recover')+'"><i class="bi bi-arrow-counterclockwise"></i></button>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="recoverRec(\''+r.uuid+'\',\''+r.year+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>Recover</a></li>';
             }else{
-                if(editable)acts+='<a href="'+BASE_URL+'/vehicle-years/'+r.uuid+'/edit" class="btn btn-ghost-secondary" title="'+T('btn.edit','Edit')+'"><i class="bi bi-pencil"></i></a>';
-                if(editable)acts+='<button class="btn btn-ghost-'+(parseInt(r.status)?'warning':'success')+'" onclick="toggleRec(\''+r.uuid+'\')"><i class="bi bi-toggle-'+(parseInt(r.status)?'on':'off')+'"></i></button>';
-                acts+='<button class="btn btn-ghost-info" onclick="showUsage(\''+r.uuid+'\',\''+(r.year||r.name||'')+'\')"><i class="bi bi-diagram-3"></i></button>';
-                if(deletable)acts+='<button class="btn btn-ghost-danger" onclick="delRec(\''+r.uuid+'\',\''+r.year+'\')"><i class="bi bi-trash3"></i></button>';
+                if(editable)acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/vehicle-years/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>';
+                if(editable)acts+='<li><a class="dropdown-item" href="#" onclick="toggleRec(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(parseInt(r.status)?'off':'on')+' me-2 text-'+(parseInt(r.status)?'warning':'success')+'"></i>'+(parseInt(r.status)?'Deactivate':'Activate')+'</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="showUsage(\''+r.uuid+'\',\''+(r.year||r.name||'')+'\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>';
+                if(deletable){acts+='<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delRec(\''+r.uuid+'\',\''+r.year+'\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';}
             }
-            acts+='</div>';
+            acts+='</ul></div>';
             var rowClass=deleted?' class="table-secondary"':(isGlobal?' class="table-light"':'');
             rows+='<tr'+rowClass+'><td style="padding-left:1rem;"><input type="checkbox" class="form-check-input row-chk" data-uuid="'+r.uuid+'"/></td>'+
                 '<td class="text-muted small">'+(start+i+1)+'</td>'+

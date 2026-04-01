@@ -268,7 +268,7 @@ function pollImportStatus(jobId){
                 toastr.success('All '+d.success_count+' rows imported successfully!');
                 $('#impProgressBar').addClass('bg-success').css('width','100%').text('100%');
                 $('#importStep3').find('.d-flex').first().after(
-                    '<div class="text-center py-3 mt-2"><div style="font-size:42px;">OK</div><h5 class="text-success mt-2">All '+d.success_count+' rows imported!</h5><p class="text-muted small">Check your notifications for details.</p></div>'
+                    '<div class="text-center py-3 mt-2"><div style="font-size:42px;">✅</div><h5 class="text-success mt-2">All '+d.success_count+' rows imported!</h5><p class="text-muted small">Check your notifications for details.</p></div>'
                 );
                 loadData();
                 setTimeout(function(){ try{bootstrap.Modal.getOrCreateInstance($('#modalImport')[0]).hide();}catch(e){} },3000);
@@ -291,7 +291,7 @@ function renderImportResults(results) {
     if (err === 0) {
         $('#importResultTable').html(
             '<div class="text-center py-4">' +
-            '<div style="font-size:52px;margin-bottom:12px;">OK</div>' +
+            '<div style="font-size:52px;margin-bottom:12px;">✅</div>' +
             '<h5 class="text-success mb-2">All ' + ok + ' rows imported successfully!</h5>' +
             '<p class="text-muted small mb-0">The list has been refreshed with new data.</p>' +
             '</div>'

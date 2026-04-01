@@ -62,10 +62,12 @@ function loadData(){
             var desc=esc(r.description||''); if(desc.length>60)desc=desc.substring(0,60)+'…';
             var rec=r.record_name?esc(r.record_name):'<span class="text-muted">–</span>';
             var dt=typeof smsFormatDateTime==='function'?smsFormatDateTime(r.created_at):new Date(r.created_at).toLocaleString();
-            var acts='<div class="btn-group btn-group-sm">';
-            acts+='<button class="btn btn-ghost-primary btn-sm" onclick="viewDetail('+r.id+')" title="View"><i class="bi bi-eye"></i></button>';
-            if(r.record_uuid&&r.module)acts+='<button class="btn btn-ghost-info btn-sm" onclick="viewHistory(\''+esc(r.module)+'\',\''+esc(r.record_uuid)+'\')" title="History"><i class="bi bi-clock-history"></i></button>';
-            acts+='</div>';
+            var acts='<div class="dropdown">';
+            acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts+='<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewDetail('+r.id+');return false;"><i class="bi bi-eye me-2 text-primary"></i>View Details</a></li>';
+            if(r.record_uuid&&r.module)acts+='<li><a class="dropdown-item" href="#" onclick="viewHistory(\''+esc(r.module)+'\',\''+esc(r.record_uuid)+'\');return false;"><i class="bi bi-clock-history me-2 text-info"></i>History</a></li>';
+            acts+='</ul></div>';
             rows+='<tr><td class="text-muted small">'+(start+i+1)+'</td><td><div class="fw-medium small">'+un+'</div>'+(r.ip_address?'<div class="text-muted" style="font-size:11px;">'+esc(r.ip_address)+'</div>':'')+'</td><td>'+moduleBadge(r.module)+'</td><td>'+actionBadge(r.action)+'</td><td class="small">'+desc+'</td><td class="d-none d-lg-table-cell small">'+rec+'</td><td class="d-none d-md-table-cell text-muted small">'+dt+'</td><td class="text-end">'+acts+'</td></tr>';
         });
         $('#tableBody').html(rows);

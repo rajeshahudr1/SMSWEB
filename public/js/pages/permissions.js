@@ -313,10 +313,12 @@ function loadFlat() {
                 '<td class="d-none d-md-table-cell"><span class="badge bg-secondary-lt">' + H.esc(p.group_name || '') + '</span></td>' +
                 '<td class="d-none d-md-table-cell"><span class="badge bg-' + color + '-lt">' + H.esc(p.action || '') + '</span></td>' +
                 '<td><span class="badge bg-azure-lt">' + H.esc(p.panel_type || '') + '</span></td>' +
-                '<td class="text-end"><div class="btn-group btn-group-sm">' +
-                '<button class="btn btn-ghost-warning" onclick="openEditPerm(\'' + H.esc(p.uuid) + '\')"><i class="bi bi-pencil"></i></button>' +
-                '<button class="btn btn-ghost-danger" onclick="delPerm(\'' + H.esc(p.uuid) + '\',\'' + H.esc(p.display_name || p.name) + '\')"><i class="bi bi-trash3"></i></button>' +
-                '</div></td></tr>';
+                '<td class="text-end"><div class="dropdown">' +
+                '<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>' +
+                '<ul class="dropdown-menu dropdown-menu-end shadow-sm">' +
+                '<li><a class="dropdown-item" href="#" onclick="openEditPerm(\'' + H.esc(p.uuid) + '\');return false;"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>' +
+                '<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delPerm(\'' + H.esc(p.uuid) + '\',\'' + H.esc(p.display_name || p.name) + '\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>' +
+                '</ul></div></td></tr>';
         });
         $('#flatTableBody').html(rows);
         $('#tableInfo').text(T('general.showing','Showing') + ' ' + (pg.from || start + 1) + '–' + (pg.to || start + data.length) + ' ' + T('general.of','of') + ' ' + (pg.total || 0));

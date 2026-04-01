@@ -96,7 +96,7 @@ exports.exportData = async (req, res) => {
 const FormData = require('form-data');
 const fsMod = require('fs');
 const multer = require('multer'); const pathMod = require('path'); const os = require('os');
-const tempImport = multer({ dest: os.tmpdir(), limits: { fileSize: 5*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.csv','.xlsx','.xls'].includes(pathMod.extname(f.originalname).toLowerCase())); } });
+const tempImport = multer({ dest: os.tmpdir(), limits: { fileSize: 50*1024*1024 }, fileFilter(r,f,cb) { cb(null, ['.csv','.xlsx','.xls'].includes(pathMod.extname(f.originalname).toLowerCase())); } });
 
 exports.importData = [(r,s,n) => { tempImport.single('file')(r,s,(e) => { if (e) return s.json({ status: 422, message: e.message }); n(); }); }, async (req, res) => {
     try {

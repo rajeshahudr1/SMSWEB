@@ -5,12 +5,33 @@ var T=function(k,f){return SMS_T(k,f);};
 $(function () {
     'use strict';
 
+    /* ── Auto collapsible cards on settings page ── */
+    $('.col-xl-8 .card, .col-lg-7 .card').each(function(i) {
+        var $card = $(this);
+        var $header = $card.find('.card-header').first();
+        var $body = $card.find('.card-body').first();
+        if (!$header.length || !$body.length) return;
+        // Skip if already has collapse
+        if ($header.attr('data-bs-toggle') === 'collapse') return;
+        var colId = 'settingsCol_' + i;
+        $body.wrap('<div class="collapse show" id="' + colId + '"></div>');
+        $header.attr({ 'data-bs-toggle': 'collapse', 'data-bs-target': '#' + colId, 'aria-expanded': 'true' }).css('cursor', 'pointer');
+        $header.find('.card-title').append(' <i class="bi bi-chevron-down ms-2" style="font-size:12px;opacity:.5;transition:transform .2s;"></i>');
+    });
+    // Rotate chevron on collapse toggle
+    $(document).on('shown.bs.collapse hidden.bs.collapse', '[id^="settingsCol_"]', function(e) {
+        var $hdr = $('[data-bs-target="#' + this.id + '"]');
+        $hdr.find('.bi-chevron-down').css('transform', e.type === 'shown' ? '' : 'rotate(-90deg)');
+    });
+
     var _radiusMap = { none:'0', sm:'4px', md:'8px', lg:'12px', xl:'16px' };
 
     /* ── Collect all current settings ── */
     function collectSettings() {
         return {
             theme_color:    $('#fThemeColor').val()    || '#0054a6',
+            text_color:     $('#fTextColor').val()     || '#1a2332',
+            icon_color:     $('#fIconColor').val()     || 'theme',
             dark_mode:      $('#fDarkMode').val()      || '0',
             direction:      $('#fDirection').val()     || 'ltr',
             sidebar_style:  $('#fSidebarStyle').val()  || 'dark',
@@ -67,6 +88,10 @@ $(function () {
         /* ─ Update real page CSS vars ─ */
         var r = document.documentElement;
         r.style.setProperty('--tblr-primary', color);
+        r.style.setProperty('--sms-text', s.text_color);
+        r.style.setProperty('--tblr-body-color', s.text_color);
+        var iconC = s.icon_color === 'theme' ? s.theme_color : s.icon_color;
+        r.style.setProperty('--sms-icon-color', iconC);
         r.style.setProperty('--tblr-font-size', s.font_size);
         r.style.setProperty('--tblr-border-radius', rad);
         r.style.setProperty('--tblr-border-radius-sm', 'calc('+rad+'*.6)');
@@ -99,6 +124,9 @@ $(function () {
         var previewPx = Math.max(8, Math.round(px * 0.7)); /* scale down for preview */
         $('#pvFontText').css('font-size', previewPx + 'px');
         $('#pvFontSample').css('border-radius', pxRad);
+
+        /* ─ Icon color preview ─ */
+        $pvSb.find('.sms-pv-nav-item i').css('color', iconC);
 
         /* ─ Datetime sample ─ */
         $('#pvDatetime').text('📅 ' + getSampleDatetime(s.date_format, s.time_format));
@@ -137,6 +165,37 @@ $(function () {
         $('.sms-cp-picker-wrap').addClass('active');
         $('.sms-cp-picker-label').text(c).show();
         $('#fThemeColor').val(c);
+        updatePreview();
+    });
+
+    /* Text colour swatches */
+    $(document).on('click', '.sms-tc-swatch[data-text-color]', function () {
+        $('.sms-tc-swatch').removeClass('active');
+        $(this).addClass('active');
+        var c = $(this).data('text-color');
+        $('#fTextColor').val(c);
+        $('#fTextColorPicker').val(c);
+        updatePreview();
+    });
+    $('#fTextColorPicker').on('input change', function () {
+        var c = $(this).val();
+        $('.sms-tc-swatch').removeClass('active');
+        $('#fTextColor').val(c);
+        updatePreview();
+    });
+
+    /* Icon colour swatches */
+    $(document).on('click', '.sms-ic-swatch[data-icon-color]', function () {
+        $('.sms-ic-swatch').removeClass('active');
+        $(this).addClass('active');
+        var c = $(this).data('icon-color');
+        $('#fIconColor').val(c);
+        updatePreview();
+    });
+    $('#fIconColorPicker').on('input change', function () {
+        var c = $(this).val();
+        $('.sms-ic-swatch').removeClass('active');
+        $('#fIconColor').val(c);
         updatePreview();
     });
 
@@ -328,6 +387,88 @@ window.saveAiConfig = function () {
             $btn.prop('disabled', false).html(origHtml);
             toastr.error(T('general.network_error_saving','Network error while saving.'));
         }
+    });
+};
+
+/* ══════════════════════════════════════════════════════
+   VEHICLE INVENTORY SETTINGS
+   ══════════════════════════════════════════════════════ */
+(function(){
+    // Load current values
+    $.get(BASE_URL + '/vehicle-inventories/settings', function(res) {
+        if (res && res.status === 200 && res.data) {
+            $('#fViMaxImageSize').val(res.data.max_image_size || 5);
+            $('#fViMaxVideoSize').val(res.data.max_video_size || 50);
+            $('#fViMaxImageCount').val(res.data.max_image_count || 20);
+            $('#fViMaxVideoCount').val(res.data.max_video_count || 10);
+        }
+    });
+})();
+
+// Load column config
+var _viAllCols = {}, _viConfiguredCols = null;
+(function(){
+    $.get(BASE_URL + '/vehicle-inventories/enums', function(res) {
+        if (!res || res.status !== 200 || !res.data) return;
+        _viAllCols = res.data.list_columns || {};
+        _viConfiguredCols = res.data.configured_columns || null;
+        _renderViColumns();
+    });
+})();
+
+function _renderViColumns() {
+    var $box = $('#viColumnCheckboxes');
+    if (!Object.keys(_viAllCols).length) { $box.html('<div class="text-muted small">No columns available.</div>'); return; }
+    // Determine which are checked: configured > defaults
+    var checked = {};
+    if (_viConfiguredCols && _viConfiguredCols.length) {
+        _viConfiguredCols.forEach(function(c) { checked[c] = true; });
+    } else {
+        for (var k in _viAllCols) { if (_viAllCols[k].default) checked[k] = true; }
+    }
+    var h = '';
+    for (var key in _viAllCols) {
+        var col = _viAllCols[key];
+        h += '<div class="col-md-4 col-sm-6 col-6"><label class="form-check mb-0" style="font-size:12px;">' +
+            '<input type="checkbox" class="form-check-input vi-col-chk" data-col="' + key + '" ' + (checked[key] ? 'checked' : '') + '/>' +
+            '<span class="form-check-label">' + (col.label || key) + '</span></label></div>';
+    }
+    $box.html(h);
+}
+
+$('#btnViColSelectAll').on('click', function() { $('.vi-col-chk').prop('checked', true); });
+$('#btnViColReset').on('click', function() {
+    $('.vi-col-chk').each(function() {
+        var key = $(this).data('col');
+        $(this).prop('checked', _viAllCols[key] && _viAllCols[key].default);
+    });
+});
+
+window.saveViColumns = function() {
+    var cols = [];
+    $('.vi-col-chk:checked').each(function() { cols.push($(this).data('col')); });
+    var $btn = $('#btnSaveViColumns'); btnLoading($btn);
+    $.ajax({
+        url: BASE_URL + '/vehicle-inventories/list-columns', type: 'POST',
+        contentType: 'application/json', data: JSON.stringify({ columns: cols }),
+        success: function(r) { btnReset($btn); if (r.status === 200) toastr.success('Column config saved.'); else toastr.error(r.message || 'Failed.'); },
+        error: function() { btnReset($btn); toastr.error('Error.'); }
+    });
+};
+
+window.saveViSettings = function() {
+    var $btn = $('#btnSaveViSettings'); btnLoading($btn);
+    $.ajax({
+        url: BASE_URL + '/vehicle-inventories/settings', type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            max_image_size: parseInt($('#fViMaxImageSize').val()) || 5,
+            max_video_size: parseInt($('#fViMaxVideoSize').val()) || 50,
+            max_image_count: parseInt($('#fViMaxImageCount').val()) || 20,
+            max_video_count: parseInt($('#fViMaxVideoCount').val()) || 10,
+        }),
+        success: function(r) { btnReset($btn); if (r.status === 200) toastr.success('Vehicle inventory settings saved.'); else toastr.error(r.message || 'Failed.'); },
+        error: function() { btnReset($btn); toastr.error('Error.'); }
     });
 };
 

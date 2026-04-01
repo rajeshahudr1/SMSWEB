@@ -26,6 +26,17 @@ var presetColors = [
 ];
 var curColor = s.theme_color || '#0054a6';
 var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
+
+var presetTextColors = [
+  { label:'Dark',     value:'#1a2332' },
+  { label:'Charcoal', value:'#344054' },
+  { label:'Black',    value:'#111827' },
+  { label:'Navy',     value:'#1e3a5f' },
+  { label:'Slate',    value:'#374151' },
+  { label:'Gray',     value:'#4b5563' },
+];
+var curTextColor = s.text_color || '#1a2332';
+var isCustomText = !presetTextColors.some(function(c){ return c.value === curTextColor; });
 %>
 
 <div class="row g-4">
@@ -40,7 +51,7 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
           <i class="bi bi-palette me-2 text-primary"></i>
           <%- t('settings.appearance') %>
         </div>
-        <div class="card-options text-secondary" style="font-size:12px;">Live preview updates automatically</div>
+        <div class="card-options small">Live preview updates automatically</div>
       </div>
       <div class="card-body">
         <div class="row g-4">
@@ -72,6 +83,32 @@ var isCustom  = !presetColors.some(function(c){ return c.value === curColor; });
 
             </div>
             <input type="hidden" id="fThemeColor" name="theme_color" value="<%- curColor %>"/>
+          </div>
+
+          <!-- Text Colour -->
+          <div class="col-12">
+            <label class="form-label fw-semibold mb-2"><%- t('settings.text_color', 'Text Colour') %></label>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <% presetTextColors.forEach(function(c) {
+                   var isActive = curTextColor === c.value;
+              %>
+              <button type="button"
+                      class="sms-cp-swatch sms-tc-swatch <%- isActive ? 'active' : '' %>"
+                      data-text-color="<%- c.value %>"
+                      style="background:<%- c.value %>;"
+                      title="<%- c.label %>">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <% }); %>
+              <div class="sms-cp-picker-wrap <%- isCustomText ? 'active' : '' %>" title="Custom text colour">
+                <input type="color" id="fTextColorPicker"
+                       value="<%- curTextColor %>"
+                       class="sms-cp-native"/>
+                <i class="bi bi-eyedropper-fill sms-cp-picker-icon"></i>
+                <% if (isCustomText) { %><span class="sms-cp-picker-label"><%- curTextColor %></span><% } %>
+              </div>
+            </div>
+            <input type="hidden" id="fTextColor" name="text_color" value="<%- curTextColor %>"/>
           </div>
 
           <!-- Mode -->

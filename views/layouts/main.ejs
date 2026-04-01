@@ -21,6 +21,9 @@ var htmlDir   = isRTL ? 'rtl' : 'ltr';
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
 
 <!-- ALL LOCAL — no CDN -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/libs/css/tabler.min.css"/>
 <% if (isRTL) { %>
 <link rel="stylesheet" href="/libs/css/tabler-rtl.min.css"/>
@@ -32,11 +35,15 @@ var htmlDir   = isRTL ? 'rtl' : 'ltr';
 <link rel="stylesheet" href="/libs/css/toastr.min.css"/>
 <link rel="stylesheet" href="/libs/css/flatpickr.min.css"/>
 <link rel="stylesheet" href="/css/app.css"/>
+<link rel="stylesheet" href="/css/modern-theme.css"/>
 <link rel="stylesheet" href="/css/phone-group.css"/>
 
 <style>
 :root{
   --tblr-primary:          <%- themeColor %>;
+  --sms-text:              <%- (settings && settings.text_color) || '#1a2332' %>;
+  --tblr-body-color:       <%- (settings && settings.text_color) || '#1a2332' %>;
+  --sms-icon-color:        <%- (settings && settings.icon_color && settings.icon_color !== 'theme') ? settings.icon_color : ((settings && settings.theme_color) || '#0054a6') %>;
   --tblr-font-size:        <%- fontSize %>;
   --tblr-border-radius:    <%- borderRad %>;
   --tblr-border-radius-sm: calc(<%- borderRad %> * .6);
@@ -116,6 +123,8 @@ H.trunc = function(s, max, cls) {
 
 var SMS_PENDING_THEME = {
   theme_color:   SMS_SETTINGS.theme_color   || '#0054a6',
+  text_color:    SMS_SETTINGS.text_color    || '#1a2332',
+  icon_color:    SMS_SETTINGS.icon_color    || 'theme',
   dark_mode:     SMS_SETTINGS.dark_mode      || '0',
   direction:     SMS_SETTINGS.direction      || 'ltr',
   border_radius: SMS_SETTINGS.border_radius  || 'md',
@@ -128,6 +137,10 @@ var _RM = {none:'0',sm:'4px',md:'8px',lg:'12px',xl:'16px'};
 function smsLiveTheme(){
   var r = document.documentElement, rad = _RM[SMS_PENDING_THEME.border_radius]||'8px';
   r.style.setProperty('--tblr-primary',         SMS_PENDING_THEME.theme_color);
+  r.style.setProperty('--sms-text',              SMS_PENDING_THEME.text_color);
+  r.style.setProperty('--tblr-body-color',       SMS_PENDING_THEME.text_color);
+  var _ic = SMS_PENDING_THEME.icon_color === 'theme' ? SMS_PENDING_THEME.theme_color : SMS_PENDING_THEME.icon_color;
+  r.style.setProperty('--sms-icon-color',        _ic);
   r.style.setProperty('--tblr-font-size',        SMS_PENDING_THEME.font_size);
   r.style.setProperty('--tblr-border-radius',    rad);
   r.style.setProperty('--tblr-border-radius-sm', 'calc('+rad+'*.6)');
@@ -375,6 +388,28 @@ $(function(){
   $(document).on('input','#tpCustomColor',function(){
     $('.tp-color[data-color]').removeClass('active').empty();
     SMS_PENDING_THEME.theme_color=$(this).val(); smsLiveTheme();
+  });
+  /* Icon colour */
+  $(document).on('click','.tp-icon-color[data-icon-color]',function(){
+    var c=$(this).data('icon-color');
+    $('.tp-icon-color').removeClass('active').empty();
+    $(this).addClass('active').html('<i class="bi bi-check-lg" style="color:#fff;"></i>');
+    SMS_PENDING_THEME.icon_color=c; smsLiveTheme();
+  });
+  $(document).on('input','#tpCustomIconColor',function(){
+    $('.tp-icon-color[data-icon-color]').removeClass('active').empty();
+    SMS_PENDING_THEME.icon_color=$(this).val(); smsLiveTheme();
+  });
+  /* Text colour */
+  $(document).on('click','.tp-text-color[data-text-color]',function(){
+    var c=$(this).data('text-color');
+    $('.tp-text-color').removeClass('active').empty();
+    $(this).addClass('active').html('<i class="bi bi-check-lg" style="color:#fff;"></i>');
+    SMS_PENDING_THEME.text_color=c; smsLiveTheme();
+  });
+  $(document).on('input','#tpCustomTextColor',function(){
+    $('.tp-text-color[data-text-color]').removeClass('active').empty();
+    SMS_PENDING_THEME.text_color=$(this).val(); smsLiveTheme();
   });
 
   /* ── Theme panel: buttons ── */

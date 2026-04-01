@@ -34,17 +34,20 @@ function loadData(){
             var editable=r.is_editable!==false&&!deleted;
             var deletable=r.is_deletable!==false&&!deleted;
 
-            var acts='<div class="btn-group btn-group-sm">';
-            acts+='<button class="btn btn-ghost-primary" onclick="viewPT(\''+r.uuid+'\')" title="'+T('general.preview','View')+'"><i class="bi bi-eye"></i></button>';
+            var isActive=(r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1);
+            var acts='<div class="dropdown">';
+            acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts+='<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewPT(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>View Details</a></li>';
             if(deleted){
-                acts+='<button class="btn btn-ghost-success" onclick="recoverPT(\''+r.uuid+'\',\''+H.esc(r.part_name||'')+'\')" title="'+T('bulk.recover','Recover')+'"><i class="bi bi-arrow-counterclockwise"></i></button>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="recoverPT(\''+r.uuid+'\',\''+H.esc(r.part_name||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>Recover</a></li>';
             }else{
-                if(editable)acts+='<a href="'+BASE_URL+'/part-types/'+r.uuid+'/edit" class="btn btn-ghost-secondary" title="'+T('btn.edit','Edit')+'"><i class="bi bi-pencil"></i></a>';
-                if(editable)acts+='<button class="btn btn-ghost-'+((r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1)?'warning':'success')+'" onclick="togglePT(\''+r.uuid+'\')"><i class="bi bi-toggle-'+((r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1)?'on':'off')+'"></i></button>';
-                acts+='<button class="btn btn-ghost-info" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.part_name||'')+'\')" title="Usage"><i class="bi bi-diagram-3"></i></button>';
-                if(deletable)acts+='<button class="btn btn-ghost-danger" onclick="delPT(\''+r.uuid+'\',\''+H.esc(r.part_name||'')+'\')"><i class="bi bi-trash3"></i></button>';
+                if(editable)acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/part-types/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>';
+                if(editable)acts+='<li><a class="dropdown-item" href="#" onclick="togglePT(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(isActive?'off':'on')+' me-2 text-'+(isActive?'warning':'success')+'"></i>'+(isActive?'Deactivate':'Activate')+'</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="showUsage(\''+r.uuid+'\',\''+H.esc(r.part_name||'')+'\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>';
+                if(deletable){acts+='<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delPT(\''+r.uuid+'\',\''+H.esc(r.part_name||'')+'\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';}
             }
-            acts+='</div>';
+            acts+='</ul></div>';
             var rowClass=deleted?' class="table-secondary"':(isGlobal?' class="table-light"':'');
             rows+='<tr'+rowClass+'><td style="padding-left:1rem;"><input type="checkbox" class="form-check-input row-chk" data-uuid="'+r.uuid+'"/></td>'+
                 '<td class="text-muted small">'+(start+i+1)+'</td><td>'+ptImg(r)+'</td>'+

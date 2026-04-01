@@ -39,6 +39,7 @@ router.use('/vehicle-makes',      authGuard, require('./vehicle-makes'));
 router.use('/vehicle-models',     authGuard, require('./vehicle-models'));
 router.use('/vehicle-variants',   authGuard, require('./vehicle-variants'));
 router.use('/vehicle-engines',    authGuard, require('./vehicle-engines'));
+router.use('/vehicle-inventories', authGuard, require('./vehicle-inventories'));
 
 // Vehicle Autocomplete (shared proxy — serves all /vehicle-*/autocomplete routes)
 router.use('/', authGuard, require('./vehicle-autocomplete'));

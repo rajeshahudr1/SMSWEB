@@ -221,13 +221,33 @@ function smsInitPerPage(selector) {
     SMS_PER_PAGE_OPTIONS.forEach(function(n) {
         html += '<option value="' + n + '"' + (String(n) === String(current) ? ' selected' : '') + '>' + n + ' rows</option>';
     });
-    html += '<option value="all"' + (current === 'all' ? ' selected' : '') + '>All rows</option>';
     $sel.html(html);
-    return current === 'all' ? 99999 : (parseInt(current) || 15);
+    return parseInt(current) || 15;
 }
 
 /* ── Global DOM ready ── */
 $(function() {
+    // Fix dropdown inside table-responsive: reposition to fixed on show
+    $(document).on('show.bs.dropdown', '.table-responsive .dropdown, .table .dropdown', function() {
+        var $menu = $(this).find('.dropdown-menu');
+        var $btn = $(this).find('[data-bs-toggle="dropdown"]');
+        var btnRect = $btn[0].getBoundingClientRect();
+        $menu.css({
+            position: 'fixed',
+            top: btnRect.bottom + 2 + 'px',
+            left: 'auto',
+            right: (window.innerWidth - btnRect.right) + 'px',
+            transform: 'none',
+            'z-index': 1070
+        });
+        $('body').append($menu.detach());
+        $(this).data('sms-menu', $menu);
+    });
+    $(document).on('hide.bs.dropdown', '.table-responsive .dropdown, .table .dropdown', function() {
+        var $menu = $(this).data('sms-menu');
+        if ($menu) { $(this).append($menu.detach()); $(this).removeData('sms-menu'); }
+    });
+
     // Init Select2 on all pages
     initSelect2();
 

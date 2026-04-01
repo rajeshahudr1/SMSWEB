@@ -24,7 +24,6 @@ var isSuperAdmin = user && user.is_super_admin;
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i><%- t('export.csv', 'CSV') %></a></li>
           <li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i><%- t('export.excel', 'Excel') %></a></li>
-          <li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i><%- t('export.pdf', 'PDF') %></a></li>
         </ul>
       </div>
       <button class="btn btn-sm btn-outline-primary" id="btnToggleFilter" title="<%- t('actlog.advanced_filter', 'Advanced Filter') %>"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline"><%- t('actlog.filters', 'Filters') %></span></button>

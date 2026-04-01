@@ -50,11 +50,13 @@ function loadRoles() {
 
             var actions = '';
             if (editable) {
-                actions = '<div class="btn-group btn-group-sm">' +
-                    '<a href="' + BASE_URL + '/roles/' + r.uuid + '/edit" class="btn btn-ghost-secondary" title="Edit role"><i class="bi bi-pencil"></i></a>' +
-                    '<button class="btn btn-ghost-info" onclick="showUsage(\'' + H.esc(r.uuid) + '\',\'' + H.esc(r.name || '') + '\')" title="Usage"><i class="bi bi-diagram-3"></i></button>' +
-                    '<button class="btn btn-ghost-danger" onclick="delRole(\'' + H.esc(r.uuid) + '\',\'' + H.esc(r.name || '') + '\')" title="Delete role"><i class="bi bi-trash3"></i></button>' +
-                    '</div>';
+                actions = '<div class="dropdown">' +
+                    '<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>' +
+                    '<ul class="dropdown-menu dropdown-menu-end shadow-sm">' +
+                    '<li><a class="dropdown-item" href="' + BASE_URL + '/roles/' + r.uuid + '/edit"><i class="bi bi-pencil me-2 text-secondary"></i>Edit</a></li>' +
+                    '<li><a class="dropdown-item" href="#" onclick="showUsage(\'' + H.esc(r.uuid) + '\',\'' + H.esc(r.name || '') + '\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>' +
+                    '<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delRole(\'' + H.esc(r.uuid) + '\',\'' + H.esc(r.name || '') + '\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>' +
+                    '</ul></div>';
             } else {
                 actions = '<span class="badge bg-secondary-lt" title="'+T('roles.system_role_hint','System role — cannot be modified')+'"><i class="bi bi-lock-fill me-1"></i>'+T('roles.system','System')+'</span>';
             }

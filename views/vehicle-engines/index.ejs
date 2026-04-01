@@ -10,7 +10,7 @@ var isSuperAdmin = user && user.is_super_admin;
       <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
       <% if (can('export_vehicle_engines')) { %>
       <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline"><%- t('btn.export') %></span></button>
-        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li><li><a class="dropdown-item" href="#" onclick="doExport('pdf');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
+        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
       </div><% } %>
       <% if (can('import_vehicle_engines')) { %><button class="btn btn-sm btn-outline-info" onclick="openImport()"><i class="bi bi-upload me-1"></i><span class="d-none d-sm-inline"><%- t('btn.import') %></span></button><% } %>
       <% if (can('add_vehicle_engines')) { %><a href="/vehicle-engines/create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline"><%- t('vehicle_engines.add') %></span></a><% } %>
@@ -133,6 +133,13 @@ var isSuperAdmin = user && user.is_super_admin;
 <!-- Import Modal -->
 <div class="modal fade" id="modalImport" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:980px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-upload me-2 text-info"></i><%- t('vehicle_engines.import_title') %></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
+  <div id="importProcessing" class="d-none">
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+      <h5 class="text-primary mb-1">Import in process...</h5>
+      <p class="text-muted small mb-0">Please wait while we process your file.</p>
+    </div>
+  </div>
   <div id="importStep1">
     <h6 class="mb-3"><i class="bi bi-info-circle me-1 text-primary"></i><%- t('vehicle_engines.import_instructions', 'Import Instructions — Vehicle Engines') %></h6>
     <div class="row g-3 mb-3">
@@ -193,6 +200,22 @@ var isSuperAdmin = user && user.is_super_admin;
       <button class="btn btn-sm btn-warning" id="btnRetryAllErrors"><i class="bi bi-arrow-repeat me-1"></i><%- t('import.retry_all_errors', 'Retry All Errors') %></button>
     </div>
   </div>
+  <div id="importStep3" class="d-none">
+    <div class="text-center py-4">
+      <div class="mb-3"><i class="bi bi-cloud-upload text-primary" style="font-size:48px;"></i></div>
+      <h5 class="fw-semibold mb-1">Importing in background...</h5>
+      <p class="text-muted small mb-3">Processing your file. You can keep this window open.</p>
+      <div class="progress mb-3" style="height:24px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="impProgressBar" role="progressbar" style="width:0%;font-size:12px;"><span id="impPercent">0%</span></div>
+      </div>
+      <div class="d-flex justify-content-center gap-4 text-center">
+        <div><div class="text-muted small">Total</div><strong id="impTotal">0</strong></div>
+        <div><div class="text-muted small">Processed</div><strong id="impProcessed">0</strong></div>
+        <div><div class="text-muted small text-success">Success</div><strong id="impSuccess" class="text-success">0</strong></div>
+        <div><div class="text-muted small text-danger">Errors</div><strong id="impErrors" class="text-danger">0</strong></div>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="modal-footer py-2">
   <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal" id="btnImportClose"><%- t('btn.close') %></button>
@@ -200,11 +223,7 @@ var isSuperAdmin = user && user.is_super_admin;
 </div></div></div>
 
 
-<style>
-/* Fix dropdown clipping inside table-responsive scroll */
-.table-responsive { overflow: clip visible !important; }
-@supports not (overflow: clip visible) { .table-responsive { overflow: visible !important; } }
-</style>
+<!-- dropdown overflow fix now in modern-theme.css -->
 
 
 <!-- Variant Edit Modal -->

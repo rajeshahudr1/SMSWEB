@@ -1,6 +1,8 @@
 <%
 var s   = settings || {};
 var _tc = s.theme_color   || '#0054a6';
+var _xt = s.text_color    || '#1a2332';
+var _ic = s.icon_color    || 'theme';
 var _dm = s.dark_mode     === '1';
 var _rt = s.direction     === 'rtl';
 var _br = s.border_radius || 'md';
@@ -13,6 +15,11 @@ var colors = [
   {val:'#4263eb',name:'Indigo'}, {val:'#9b59b6',name:'Purple'},
   {val:'#0ca678',name:'Teal'},   {val:'#2fb344',name:'Green'},
   {val:'#f76707',name:'Orange'}, {val:'#d63939',name:'Red'},
+];
+var textColors = [
+  {val:'#1a2332',name:'Dark'},     {val:'#344054',name:'Charcoal'},
+  {val:'#111827',name:'Black'},    {val:'#1e3a5f',name:'Navy'},
+  {val:'#374151',name:'Slate'},    {val:'#4b5563',name:'Gray'},
 ];
 %>
 
@@ -47,6 +54,47 @@ var colors = [
         <label class="tp-custom-color" title="Custom">
           <i class="bi bi-circle"></i>
           <input type="color" id="tpCustomColor" value="<%- _tc %>"
+                 style="opacity:0;position:absolute;width:0;height:0;"/>
+        </label>
+      </div>
+    </div>
+
+    <!-- Text Colour -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Text Colour</div>
+      <div class="sms-tp-colors">
+        <% textColors.forEach(function(c){ %>
+        <button type="button" class="tp-text-color <%- _xt===c.val?'active':'' %>"
+                data-text-color="<%- c.val %>" style="background:<%- c.val %>;" title="<%- c.name %>">
+          <% if(_xt===c.val){ %><i class="bi bi-check-lg" style="color:#fff;"></i><% } %>
+        </button>
+        <% }) %>
+        <label class="tp-custom-color" title="Custom text color">
+          <i class="bi bi-circle"></i>
+          <input type="color" id="tpCustomTextColor" value="<%- _xt %>"
+                 style="opacity:0;position:absolute;width:0;height:0;"/>
+        </label>
+      </div>
+    </div>
+
+    <!-- Icon Colour -->
+    <div class="sms-tp-section">
+      <div class="sms-tp-label">Icon Colour</div>
+      <div class="sms-tp-colors">
+        <%
+        var iconPresets = [
+          {val:'theme',name:'Theme'}, {val:'#0054a6',name:'Blue'}, {val:'#4263eb',name:'Indigo'},
+          {val:'#0ca678',name:'Teal'}, {val:'#f76707',name:'Orange'}, {val:'#1a2332',name:'Dark'}, {val:'#667085',name:'Gray'}
+        ];
+        iconPresets.forEach(function(c){ var bg = c.val==='theme' ? _tc : c.val; %>
+        <button type="button" class="tp-icon-color <%- _ic===c.val?'active':'' %>"
+                data-icon-color="<%- c.val %>" style="background:<%- bg %>;" title="<%- c.name %>">
+          <% if(_ic===c.val){ %><i class="bi bi-check-lg" style="color:#fff;"></i><% } %>
+        </button>
+        <% }) %>
+        <label class="tp-custom-color" title="Custom icon color">
+          <i class="bi bi-circle"></i>
+          <input type="color" id="tpCustomIconColor" value="<%- _ic==='theme'?_tc:_ic %>"
                  style="opacity:0;position:absolute;width:0;height:0;"/>
         </label>
       </div>

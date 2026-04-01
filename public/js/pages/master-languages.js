@@ -74,12 +74,14 @@ function loadData() {
             }
 
             rows += '<td>' + def + '</td><td class="text-muted">' + (r.sort_order || 0) + '</td><td>' + status + '</td>' +
-                '<td class="text-end"><div class="btn-group btn-group-sm">';
-            if (editable) rows += '<button class="btn btn-ghost-primary" onclick="editLang(\'' + r.uuid + '\')" title="' + T('btn.edit','Edit') + '"><i class="bi bi-pencil"></i></button>';
-            rows += '<button class="btn btn-ghost-' + (parseInt(r.status) ? 'warning' : 'success') + '" onclick="toggleLang(\'' + r.uuid + '\')"' + (!editable ? ' disabled' : '') + '><i class="bi bi-toggle-' + (parseInt(r.status) ? 'on' : 'off') + '"></i></button>';
-            rows += '<button class="btn btn-ghost-info" onclick="showUsage(\'' + r.uuid + '\',\'' + H.esc(r.name) + '\')"><i class="bi bi-diagram-3"></i></button>';
-            if (deletable) rows += '<button class="btn btn-ghost-danger" onclick="delLang(\'' + r.uuid + '\',\'' + H.esc(r.name) + '\')"><i class="bi bi-trash3"></i></button>';
-            rows += '</div></td></tr>';
+                '<td class="text-end"><div class="dropdown">';
+            rows += '<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" data-bs-auto-close="true" title="Actions"><i class="bi bi-three-dots-vertical"></i></button>';
+            rows += '<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+            if (editable) rows += '<li><a class="dropdown-item" href="#" onclick="editLang(\'' + r.uuid + '\');return false;"><i class="bi bi-pencil me-2 text-secondary"></i>' + T('btn.edit','Edit') + '</a></li>';
+            rows += '<li><a class="dropdown-item" href="#" onclick="toggleLang(\'' + r.uuid + '\');return false;"' + (!editable ? ' style="pointer-events:none;opacity:.5;"' : '') + '><i class="bi bi-toggle-' + (parseInt(r.status) ? 'off' : 'on') + ' me-2 text-' + (parseInt(r.status) ? 'warning' : 'success') + '"></i>' + (parseInt(r.status) ? 'Deactivate' : 'Activate') + '</a></li>';
+            rows += '<li><a class="dropdown-item" href="#" onclick="showUsage(\'' + r.uuid + '\',\'' + H.esc(r.name) + '\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>';
+            if (deletable) rows += '<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delLang(\'' + r.uuid + '\',\'' + H.esc(r.name) + '\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
+            rows += '</ul></div></td></tr>';
         });
         $('#tableBody').html(rows);
         $('#tableInfo').text(T('general.showing','Showing') + ' ' + (pg.from || 1) + '–' + (pg.to || data.length) + ' ' + T('general.of','of') + ' ' + (pg.total || 0));
