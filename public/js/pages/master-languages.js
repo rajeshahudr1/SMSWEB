@@ -62,13 +62,15 @@ function loadData() {
             var editable = r.is_editable !== false;
             var deletable = r.is_deletable !== false;
 
-            rows += '<tr><td class="text-muted small">' + (start + i + 1) + '</td>' +
+            var rowId = 'lr_' + i;
+
+            rows += '<tr class="sms-lang-row" data-target="#' + rowId + '" style="cursor:pointer;">' +
+                '<td class="text-muted small">' + (start + i + 1) + '</td>' +
                 '<td style="font-size:20px;">' + H.esc(r.flag || '—') + '</td>' +
                 '<td><span class="fw-medium">' + H.esc(r.name) + '</span></td>' +
                 '<td><code class="text-primary">' + H.esc(r.code) + '</code></td>' +
                 '<td class="d-none d-md-table-cell text-muted">' + H.esc(r.native_name || '—') + '</td>';
 
-            // Company column (super admin only)
             if (typeof IS_SUPER !== 'undefined' && IS_SUPER) {
                 rows += '<td class="d-none d-md-table-cell">' + (r.is_global ? '<span class="badge bg-azure-lt">' + T('general.global_super_admin','Global') + '</span>' : '<span class="text-muted small">' + H.esc(r.company_name || '—') + '</span>') + '</td>';
             }
@@ -82,6 +84,20 @@ function loadData() {
             rows += '<li><a class="dropdown-item" href="#" onclick="showUsage(\'' + r.uuid + '\',\'' + H.esc(r.name) + '\');return false;"><i class="bi bi-diagram-3 me-2 text-info"></i>Usage</a></li>';
             if (deletable) rows += '<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delLang(\'' + r.uuid + '\',\'' + H.esc(r.name) + '\');return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
             rows += '</ul></div></td></tr>';
+
+            // Expandable detail row
+            rows += '<tr class="sms-lang-detail" id="' + rowId + '" style="display:none;">' +
+                '<td colspan="' + colSpan + '" style="background:var(--tblr-bg-surface-secondary);padding:10px 16px;">' +
+                '<div class="row g-2" style="font-size:12px;">' +
+                '<div class="col-sm-4"><span class="text-muted">Name:</span> <strong>' + H.esc(r.name) + '</strong></div>' +
+                '<div class="col-sm-4"><span class="text-muted">Code:</span> <code>' + H.esc(r.code) + '</code></div>' +
+                '<div class="col-sm-4"><span class="text-muted">Native:</span> ' + H.esc(r.native_name || '—') + '</div>' +
+                '<div class="col-sm-4"><span class="text-muted">Flag:</span> <span style="font-size:18px;">' + H.esc(r.flag || '—') + '</span></div>' +
+                '<div class="col-sm-4"><span class="text-muted">Default:</span> ' + (parseInt(r.is_default) ? '<span class="badge bg-warning-lt">Yes</span>' : 'No') + '</div>' +
+                '<div class="col-sm-4"><span class="text-muted">Sort Order:</span> ' + (r.sort_order || 0) + '</div>' +
+                (r.created_at ? '<div class="col-sm-6"><span class="text-muted">Created:</span> ' + smsFormatDateTime(r.created_at) + '</div>' : '') +
+                (r.updated_at ? '<div class="col-sm-6"><span class="text-muted">Updated:</span> ' + smsFormatDateTime(r.updated_at) + '</div>' : '') +
+                '</div></td></tr>';
         });
         $('#tableBody').html(rows);
         $('#tableInfo').text(T('general.showing','Showing') + ' ' + (pg.from || 1) + '–' + (pg.to || data.length) + ' ' + T('general.of','of') + ' ' + (pg.total || 0));
@@ -158,6 +174,32 @@ function delLang(uuid, name) {
     });
 }
 
+/* Export */
+function doExport(fmt) {
+    var p = _filters(); delete p.page; delete p.per_page; p.per_page = 99999;
+    showLoading();
+    $.post(BASE_URL + '/master-languages/paginate', p, function(res) {
+        hideLoading();
+        if (!res || res.status !== 200 || !res.data || !res.data.data || !res.data.data.length) { toastr.error('No data.'); return; }
+        var rows = res.data.data;
+        var html = '<html><head><title>Master Languages</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
+        html += '<h2>Master Languages (' + rows.length + ')</h2><table><thead><tr><th>#</th><th>Flag</th><th>Name</th><th>Code</th><th>Native Name</th><th>Default</th><th>Sort</th><th>Status</th></tr></thead><tbody>';
+        rows.forEach(function(r, i) {
+            html += '<tr><td>' + (i+1) + '</td><td>' + H.esc(r.flag || '') + '</td><td>' + H.esc(r.name) + '</td><td>' + H.esc(r.code) + '</td><td>' + H.esc(r.native_name || '') + '</td><td>' + (parseInt(r.is_default) ? 'Yes' : 'No') + '</td><td>' + (r.sort_order || 0) + '</td><td>' + (parseInt(r.status) ? 'Active' : 'Inactive') + '</td></tr>';
+        });
+        html += '</tbody></table></body></html>';
+        if (fmt === 'csv') {
+            var csv = '#,Flag,Name,Code,Native Name,Default,Sort,Status\n';
+            rows.forEach(function(r, i) { csv += (i+1) + ',"' + (r.flag||'') + '","' + (r.name||'') + '","' + (r.code||'') + '","' + (r.native_name||'') + '",' + (parseInt(r.is_default)?'Yes':'No') + ',' + (r.sort_order||0) + ',' + (parseInt(r.status)?'Active':'Inactive') + '\n'; });
+            var blob = new Blob([csv], { type: 'text/csv' });
+            var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'master-languages.csv'; a.click();
+            return;
+        }
+        var w = window.open('', '_blank'); w.document.write(html); w.document.close();
+        if (fmt === 'print') setTimeout(function() { w.print(); }, 400);
+    }).fail(function() { hideLoading(); toastr.error('Failed.'); });
+}
+
 $(function() {
     _pp = smsInitPerPage('#perPageSel');
     loadAvailableLangs(); loadData();
@@ -171,4 +213,14 @@ $(function() {
     $(document).on('click', 'th.sortable', function() { var f = $(this).data('field'); if (_sort.field === f) _sort.dir = _sort.dir === 'asc' ? 'desc' : 'asc'; else { _sort.field = f; _sort.dir = 'asc'; } $('th.sortable i').attr('class', 'bi bi-arrow-down-up text-muted small'); $(this).find('i').attr('class', 'bi bi-sort-' + (_sort.dir === 'asc' ? 'up' : 'down') + ' text-primary small'); _page = 1; loadData(); });
     $(document).on('click', '.sms-pg', function(e) { e.preventDefault(); var p = parseInt($(this).data('p')); if (p > 0 && p !== _page) { _page = p; loadData(); } });
     $('#frmLang').on('submit', function(e) { e.preventDefault(); saveLang(); });
+
+    /* Expand/Collapse row details */
+    $(document).on('click', '.sms-lang-row', function(e) {
+        if ($(e.target).closest('.dropdown, .btn, a').length) return; // don't toggle on dropdown click
+        var $detail = $($(this).data('target'));
+        $detail.toggle();
+        $(this).toggleClass('table-active');
+    });
+    $('#btnExpandAll').on('click', function() { $('.sms-lang-detail').show(); $('.sms-lang-row').addClass('table-active'); });
+    $('#btnCollapseAll').on('click', function() { $('.sms-lang-detail').hide(); $('.sms-lang-row').removeClass('table-active'); });
 });

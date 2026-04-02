@@ -20,11 +20,18 @@
         </select>
       </div>
       <div class="col-12 col-sm-auto d-none" id="headerBtns">
-        <div class="d-flex gap-2 flex-wrap">
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="smsLangAddKey()">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <!-- Expand / Collapse All — same look as Add Key -->
+          <button class="btn btn-sm btn-outline-primary sms-btn-addkey" id="btnExpandAllLang" title="Expand all groups">
+            <i class="bi bi-chevron-bar-down me-1"></i><span class="d-none d-md-inline">Expand</span>
+          </button>
+          <button class="btn btn-sm btn-outline-primary sms-btn-addkey" id="btnCollapseAllLang" title="Collapse all groups">
+            <i class="bi bi-chevron-bar-up me-1"></i><span class="d-none d-md-inline">Collapse</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary sms-btn-addkey" onclick="smsLangAddKey()">
             <i class="bi bi-plus-lg me-1"></i><span class="d-none d-md-inline">Add Key</span>
           </button>
-          <button type="button" class="btn btn-sm btn-primary" id="btnSaveTop" onclick="smsLangSave()">
+          <button type="button" class="btn btn-sm btn-primary sms-btn-save" id="btnSaveTop" onclick="smsLangSave()">
             <i class="bi bi-check-lg me-1"></i><%- t('btn.save') %>
           </button>
         </div>
@@ -103,10 +110,10 @@
         </div>
         <div class="col-auto">
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="smsLangAddKey()">
+            <button type="button" class="btn btn-sm btn-outline-primary sms-btn-addkey" onclick="smsLangAddKey()">
               <i class="bi bi-plus-lg me-1"></i><span class="d-none d-md-inline">Add Key</span>
             </button>
-            <button type="button" class="btn btn-sm btn-primary" id="btnSaveBottom" onclick="smsLangSave()">
+            <button type="button" class="btn btn-sm btn-primary sms-btn-save" id="btnSaveBottom" onclick="smsLangSave()">
               <i class="bi bi-check-lg me-1"></i><%- t('btn.save') %>
             </button>
           </div>

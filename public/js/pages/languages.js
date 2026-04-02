@@ -74,15 +74,16 @@ $(function(){
             var lbl  = LBL[g] || g.charAt(0).toUpperCase()+g.slice(1);
             var miss = keys.filter(function(k){ return !(trD[k]||'').trim(); }).length;
 
+            var hdrClass = miss ? 'sms-grp-hdr-warn' : 'sms-grp-hdr-ok';
             h += '<div class="card shadow-sm mb-2 sms-lang-grp" data-g="'+g+'">';
-            h += '<div class="card-header d-flex align-items-center gap-2 cursor-pointer" onclick="window.smsLangTog(this)">';
+            h += '<div class="card-header sms-grp-hdr '+hdrClass+' d-flex align-items-center gap-2 cursor-pointer" onclick="window.smsLangTog(this)">';
             h += '  <i class="bi bi-chevron-down sms-chv"></i>';
-            h += '  <span class="fw-semibold small">'+lbl+'</span>';
-            h += '  <span class="badge bg-secondary-lt">'+keys.length+'</span>';
+            h += '  <span class="fw-semibold" style="font-size:13px;">'+lbl+'</span>';
+            h += '  <span class="sms-grp-count">'+keys.length+' keys</span>';
             h += miss
-                ? '  <span class="badge bg-warning-lt">'+miss+' missing</span>'
-                : '  <span class="badge bg-success-lt"><i class="bi bi-check2"></i></span>';
-            h += '  <code class="text-muted ms-auto d-none d-sm-inline small">'+g+'.*</code>';
+                ? '  <span class="sms-grp-miss">'+miss+' missing</span>'
+                : '  <span class="sms-grp-done"><i class="bi bi-check2 me-1"></i>Complete</span>';
+            h += '  <code class="ms-auto d-none d-sm-inline sms-grp-code">'+g+'.*</code>';
             h += '</div>';
             h += '<div class="sms-grp-body">';
             h += '<div class="table-responsive">';
@@ -173,6 +174,16 @@ $(function(){
         hd.nextElementSibling.classList.toggle('d-none');
         hd.querySelector('.sms-chv').classList.toggle('shut');
     };
+
+    /* ── Expand / Collapse All Groups ── */
+    $('#btnExpandAllLang').on('click', function() {
+        document.querySelectorAll('.sms-grp-body').forEach(function(b) { b.classList.remove('d-none'); });
+        document.querySelectorAll('.sms-chv').forEach(function(c) { c.classList.remove('shut'); });
+    });
+    $('#btnCollapseAllLang').on('click', function() {
+        document.querySelectorAll('.sms-grp-body').forEach(function(b) { b.classList.add('d-none'); });
+        document.querySelectorAll('.sms-chv').forEach(function(c) { c.classList.add('shut'); });
+    });
 
     /* ── Filter / Search ── */
     window.smsLangFilter = function(){

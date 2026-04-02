@@ -8,31 +8,151 @@
 /* ── Empty state icon ── */
 .sms-lang-empty-icon { font-size:48px; opacity:.2; }
 
+/* ── Language select dropdown — bigger & proper width ── */
+#langSelect + .select2-container {
+  min-width: 280px !important;
+}
+#langSelect + .select2-container .select2-selection--single {
+  min-height: 40px !important;
+  font-size: 14px !important;
+  padding: 5px 10px !important;
+  border-color: var(--sms-border, #e8ecf1) !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+}
+#langSelect + .select2-container .select2-selection__rendered {
+  line-height: 30px !important;
+  font-size: 14px !important;
+  padding-left: 4px !important;
+}
+#langSelect + .select2-container .select2-selection__arrow {
+  height: 38px !important;
+}
+.select2-dropdown { border-radius: 8px !important; border-color: var(--sms-border, #e8ecf1) !important; box-shadow: 0 8px 24px rgba(0,0,0,.1) !important; overflow: hidden; min-width: 320px !important; }
+.select2-results__option { font-size: 13px !important; padding: 8px 14px !important; }
+.select2-results__option--highlighted { background: var(--tblr-primary) !important; }
+.select2-search--dropdown .select2-search__field { padding: 8px 12px !important; font-size: 13px !important; border-radius: 6px !important; }
+
+/* ── Filter pill buttons (All / Done / Missing) ── */
+[data-filter] {
+  border-radius: 20px !important;
+  padding: 4px 14px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  border: 1px solid var(--sms-border, #e8ecf1) !important;
+  transition: all .2s !important;
+}
+[data-filter]:hover {
+  background: rgba(var(--tblr-primary-rgb), .08) !important;
+  border-color: var(--tblr-primary) !important;
+  color: var(--tblr-primary) !important;
+}
+[data-filter].active {
+  background: var(--tblr-primary) !important;
+  border-color: var(--tblr-primary) !important;
+  color: #fff !important;
+}
+[data-filter="missing"]:hover,
+[data-filter="missing"].active {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #fff !important;
+}
+[data-filter="translated"]:hover,
+[data-filter="translated"].active {
+  background: #22c55e !important;
+  border-color: #22c55e !important;
+  color: #fff !important;
+}
+
+/* ── Header buttons hover ── */
+#headerBtns .btn {
+  transition: all .2s !important;
+  border-radius: 6px !important;
+}
+#headerBtns .btn-outline-secondary:hover {
+  background: rgba(var(--tblr-primary-rgb), .08) !important;
+  border-color: var(--tblr-primary) !important;
+  color: var(--tblr-primary) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(var(--tblr-primary-rgb), .15) !important;
+}
+#headerBtns .btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(var(--tblr-primary-rgb), .3) !important;
+}
+
 /* ── Group cards ── */
-.sms-lang-grp > .card-header { padding:.5rem .75rem; cursor:pointer; transition:background .15s; }
-.sms-lang-grp > .card-header:hover { background:var(--tblr-bg-surface-secondary); }
+.sms-lang-grp { border-radius: 8px !important; overflow: hidden; border: none !important; }
+.sms-lang-grp > .sms-grp-hdr {
+  padding: 10px 14px !important;
+  cursor: pointer;
+  transition: all .15s;
+  color: #fff !important;
+  border-bottom: none !important;
+}
+.sms-lang-grp > .sms-grp-hdr:hover { filter: brightness(1.08); }
+
+/* Complete groups — green header */
+.sms-grp-hdr-ok { background: #059669 !important; }
+/* Has missing — amber/orange header */
+.sms-grp-hdr-warn { background: #d97706 !important; }
+
+/* Group header — force all children white */
+.sms-grp-hdr, .sms-grp-hdr * { color: #fff !important; }
+.sms-grp-hdr .fw-semibold { color: #fff !important; }
+
+/* Group header badges */
+.sms-grp-count { background: rgba(255,255,255,.25); color: #fff !important; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; display: inline-block; }
+.sms-grp-miss { background: rgba(255,255,255,.3); color: #fff !important; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; display: inline-block; }
+.sms-grp-done { background: rgba(255,255,255,.3); color: #fff !important; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; display: inline-block; }
+.sms-grp-code { font-size: 10px; color: rgba(255,255,255,.7) !important; background: rgba(255,255,255,.1); padding: 1px 6px; border-radius: 4px; }
 
 /* ── Chevron toggle ── */
-.sms-lang-grp .sms-chv { font-size:11px; transition:transform .15s; display:inline-block; }
-.sms-lang-grp .sms-chv.shut { transform:rotate(-90deg); }
+.sms-lang-grp .sms-chv { font-size: 12px; transition: transform .2s; display: inline-block; color: #fff; }
+.sms-lang-grp .sms-chv.shut { transform: rotate(-90deg); }
+
+/* ── Table header text — light bg, muted text ── */
+.sms-lang-grp .table thead th {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  padding: 7px 12px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
 
 /* ── Table full width ── */
 .sms-lang-grp .table { width:100%; margin:0; }
 .sms-lang-grp .sms-col-en { width:30%; }
 
+/* ── Table rows ── */
+.sms-lang-grp .table tbody td {
+  padding: 6px 12px !important;
+  vertical-align: middle;
+  font-size: 13px;
+  border-bottom: 1px solid var(--sms-border, #e8ecf1);
+}
+.sms-lang-grp .table tbody tr:hover {
+  background: rgba(var(--tblr-primary-rgb), .02);
+}
+
 /* ── Translation input ── */
 .sms-lang-grp .sms-tinput {
   display:block; width:100%; font-size:13px;
-  padding:.3rem .5rem; line-height:1.5;
-  border:1px solid var(--tblr-border-color);
-  border-radius:var(--tblr-border-radius);
-  background:transparent; color:var(--tblr-body-color);
+  padding: 6px 10px; line-height:1.5;
+  border:1px solid var(--sms-border, #e8ecf1);
+  border-radius: 6px;
+  background: #fff; color:var(--tblr-body-color);
   transition:border-color .15s, box-shadow .15s;
   outline:0;
 }
 .sms-lang-grp .sms-tinput:focus {
   border-color:var(--tblr-primary);
-  box-shadow:0 0 0 .2rem rgba(var(--tblr-primary-rgb),.1);
+  box-shadow:0 0 0 3px rgba(var(--tblr-primary-rgb),.1);
 }
 .sms-lang-grp .sms-tinput.is-dirty {
   border-color:var(--tblr-primary) !important;
@@ -40,18 +160,18 @@
 }
 
 /* ── Missing translation row ── */
-.sms-lang-grp .sms-row-miss { background:#fffbeb; }
-.sms-lang-grp .sms-row-miss .sms-tinput { border-color:#d4a017; }
-.sms-lang-grp .sms-row-miss .sms-tinput::placeholder { color:#a67c00; opacity:.7; }
+.sms-lang-grp .sms-row-miss { background: #fffbeb; }
+.sms-lang-grp .sms-row-miss .sms-tinput { border-color: #d4a017; }
+.sms-lang-grp .sms-row-miss .sms-tinput::placeholder { color: #a67c00; opacity:.7; }
 
 /* ── Per-row AI translate button ── */
 .sms-lang-grp .sms-ai-one-btn {
   width:28px; height:28px;
   display:inline-flex; align-items:center; justify-content:center;
-  border-radius:4px; flex-shrink:0; font-size:13px;
-  opacity:.5; transition:opacity .15s;
+  border-radius: 6px; flex-shrink:0; font-size:13px;
+  opacity:.4; transition: all .2s;
 }
-.sms-lang-grp .sms-ai-one-btn:hover { opacity:1; }
+.sms-lang-grp .sms-ai-one-btn:hover { opacity:1; background: rgba(var(--tblr-primary-rgb),.08); }
 
 /* ── AI Provider selector badges ── */
 .sms-ai-provider { cursor:pointer; transition:all .15s; }
@@ -59,16 +179,94 @@
 .sms-ai-provider.active { background:var(--tblr-primary) !important; color:#fff !important; }
 .sms-ai-provider.disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
 
+/* ── AI Buttons ── */
+.sms-ai-btn {
+  border-radius: 20px !important;
+  padding: 4px 14px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  transition: all .2s !important;
+}
+.sms-ai-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,.1) !important;
+}
+
+/* ── Stats badges ── */
+#toolbarRow .badge {
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  font-weight: 500 !important;
+}
+
+/* ── Key code link ── */
+.sms-key-link {
+  font-size: 12px !important;
+  color: var(--tblr-primary) !important;
+  transition: color .15s;
+}
+.sms-key-link:hover {
+  color: var(--tblr-body-color) !important;
+}
+
+/* ── Bottom bar buttons ── */
+#bottomBar .btn {
+  border-radius: 6px !important;
+  transition: all .2s !important;
+}
+#bottomBar .btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ── Add Key Modal ── */
+#addKeyModal .form-label { font-size: 12.5px; color: var(--sms-text-secondary, #667085); }
+#addKeyModal .form-text { font-size: 11px; }
+
+/* Expand/Collapse use .sms-btn-addkey class — no separate styling needed */
+
+/* ── Add Key button — dynamic outline primary ── */
+.sms-btn-addkey {
+  border-color: var(--tblr-primary) !important;
+  color: var(--tblr-primary) !important;
+  background: transparent !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  transition: all .2s !important;
+}
+.sms-btn-addkey:hover {
+  background: var(--tblr-primary) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(var(--tblr-primary-rgb), .25) !important;
+}
+
+/* ── Save button ── */
+.sms-btn-save {
+  background: var(--tblr-primary) !important;
+  border-color: var(--tblr-primary) !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  transition: all .2s !important;
+}
+.sms-btn-save:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(var(--tblr-primary-rgb), .3) !important;
+}
+
 /* ── Mobile: stack table rows ── */
 @media (max-width: 575.98px) {
   .sms-lang-grp .table thead { display:none; }
   .sms-lang-grp .table tbody tr {
     display:block; padding:.5rem .75rem;
-    border-bottom:1px solid var(--tblr-border-color);
+    border-bottom:1px solid var(--sms-border, #e8ecf1);
   }
   .sms-lang-grp .table tbody td {
     display:block; width:100% !important;
-    padding:.1rem 0; border:0;
+    padding:.1rem 0 !important; border:0 !important;
   }
   .sms-lang-grp .table tbody td:nth-child(2) { margin-bottom:.25rem; }
+  [data-filter] { padding: 3px 10px !important; font-size: 11px !important; }
+  .sms-ai-btn { font-size: 11px !important; padding: 3px 10px !important; }
 }
