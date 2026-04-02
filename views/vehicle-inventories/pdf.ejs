@@ -1,0 +1,304 @@
+<%
+var r = record || {};
+var images = r.images || [];
+var videos = r.videos || [];
+var docs = r.documents || [];
+
+function fmt(v) { if (!v && v !== 0) return ''; return String(v); }
+function fmtDate(v) {
+    if (!v) return '';
+    var s = String(v);
+    if (s.length >= 10) { var d = new Date(s); if (!isNaN(d)) return d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}); }
+    return s.substring(0, 10);
+}
+
+var INV_STATUS = {1:'In Stock', 2:'Out of Stock', 3:'Sent to Wastage'};
+var INV_COLOR = {1:'#059669', 2:'#d97706', 3:'#dc2626'};
+var BRAKE = {1:'With Brake', 2:'Without Brake'};
+var STEERING = {1:'Left Hand Drive', 2:'Right Hand Drive'};
+var DOC_TYPES = {1:'Citizen Card',2:'Certificate',3:'Single Car',4:'Model IMTT',5:'Tax Authority File',6:'CMR - Cancellation',7:'Other File'};
+var DOC_COLORS = {1:'#3b82f6',2:'#8b5cf6',3:'#10b981',4:'#f59e0b',5:'#ef4444',6:'#06b6d4',7:'#6b7280'};
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vehicle - <%= r.vehicle_internal_id || r.registration_plate_no || 'Details' %></title>
+<style>
+@page { size: A4; margin: 10mm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; font-size: 10.5px; color: #1a2332; background: #fff; line-height: 1.5; }
+
+/* ─── Header ─── */
+.hdr { background: linear-gradient(135deg, #0054a6, #0369a1); color: #fff; padding: 16px 20px; border-radius: 6px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+.hdr h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.hdr .meta { text-align: right; font-size: 9px; opacity: .8; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 9.5px; font-weight: 600; margin-right: 4px; }
+.tag-white { background: rgba(255,255,255,.2); color: #fff; }
+.tag-green { background: rgba(255,255,255,.25); color: #fff; }
+
+/* ─── Section ─── */
+.sec { margin-bottom: 14px; page-break-inside: avoid; }
+.sec-title { font-size: 12px; font-weight: 700; color: #0054a6; padding: 5px 12px; background: #eff6ff; border-left: 3px solid #0054a6; border-radius: 0 4px 4px 0; margin-bottom: 6px; }
+.sub-title { font-size: 10px; font-weight: 700; color: #0054a6; padding: 3px 0; margin: 6px 0 3px; border-bottom: 1px solid #dbeafe; }
+
+/* ─── Data rows ─── */
+.dtbl { width: 100%; border-collapse: collapse; }
+.dtbl td { padding: 3px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; font-size: 10.5px; }
+.dtbl .lbl { width: 140px; font-weight: 600; color: #475569; background: #f8fafc; }
+.dtbl .val { color: #1a2332; }
+.dtbl tr:last-child td { border-bottom: none; }
+.dtbl a { color: #0054a6; text-decoration: none; }
+.dtbl a:hover { text-decoration: underline; }
+
+/* ─── Two columns ─── */
+.cols { display: flex; gap: 12px; }
+.cols .c { flex: 1; }
+
+/* ─── Images ─── */
+.imgs { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.imgs a { display: block; }
+.imgs img { width: 120px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #e5e7eb; }
+
+/* ─── Videos ─── */
+.vids { margin: 6px 0; }
+.vid-link { display: flex; align-items: center; gap: 8px; padding: 5px 10px; background: #f0f7ff; border: 1px solid #dbeafe; border-radius: 6px; margin-bottom: 4px; text-decoration: none; color: #0054a6; font-size: 10.5px; }
+.vid-link:hover { background: #dbeafe; }
+.vid-icon { width: 28px; height: 28px; background: #0054a6; color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.vid-name { font-weight: 600; }
+.vid-url { font-size: 8.5px; color: #6b7280; word-break: break-all; }
+
+/* ─── Documents ─── */
+.doc-tbl { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 10.5px; }
+.doc-tbl th { background: #0054a6; color: #fff; padding: 5px 8px; text-align: left; font-size: 9.5px; font-weight: 600; }
+.doc-tbl td { padding: 4px 8px; border-bottom: 1px solid #e5e7eb; }
+.doc-tbl tr:nth-child(even) td { background: #f8fafc; }
+.doc-badge { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 8.5px; font-weight: 600; color: #fff; }
+.doc-tbl a { color: #0054a6; text-decoration: none; font-weight: 500; }
+.doc-tbl a:hover { text-decoration: underline; }
+
+/* ─── Footer ─── */
+.ftr { margin-top: 16px; padding-top: 8px; border-top: 2px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 8.5px; color: #9ca3af; }
+
+/* ─── Print bar (screen only) ─── */
+.print-bar { position: fixed; top: 0; left: 0; right: 0; background: #0054a6; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 100; }
+.print-bar span { color: #fff; font-size: 13px; font-weight: 600; }
+.print-bar button { padding: 5px 16px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; margin-left: 6px; }
+.print-bar .bp { background: #fff; color: #0054a6; }
+.print-bar .bc { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); }
+@media print { .print-bar { display: none !important; } body { padding-top: 0 !important; } }
+@media screen { body { padding-top: 48px; background: #f1f5f9; } .page { max-width: 800px; margin: 12px auto; background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,.08); border-radius: 6px; padding: 20px; } }
+</style>
+</head>
+<body>
+
+<div class="print-bar">
+    <span>Vehicle PDF Preview</span>
+    <div>
+        <button class="bp" onclick="window.print()">Print / Save PDF</button>
+        <button class="bc" onclick="window.close()">Close</button>
+    </div>
+</div>
+
+<div class="page">
+
+<!-- HEADER -->
+<div class="hdr">
+    <div>
+        <h1>Vehicle Inventory</h1>
+        <div style="margin-top:4px;">
+            <% if (r.vehicle_internal_id) { %><span class="tag tag-white">#<%= r.vehicle_internal_id %></span><% } %>
+            <% if (r.registration_plate_no) { %><span class="tag tag-white"><%= r.registration_plate_no %></span><% } %>
+            <% if (INV_STATUS[r.inventory_status]) { %><span class="tag tag-green"><%= INV_STATUS[r.inventory_status] %></span><% } %>
+            <% if (r.vin_number) { %><span class="tag tag-white">VIN: <%= r.vin_number %></span><% } %>
+        </div>
+    </div>
+    <div class="meta">Generated<br/><%= new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) %> <%= new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) %></div>
+</div>
+
+<!-- 1. VEHICLE INFO -->
+<div class="sec">
+    <div class="sec-title">1. Vehicle Information</div>
+    <div class="cols">
+        <div class="c"><table class="dtbl">
+            <tr><td class="lbl">Internal ID</td><td class="val"><%= fmt(r.vehicle_internal_id) %></td></tr>
+            <tr><td class="lbl">Reg. Plate</td><td class="val"><strong><%= fmt(r.registration_plate_no) %></strong></td></tr>
+            <tr><td class="lbl">Reg. Number</td><td class="val"><%= fmt(r.registration_number) %></td></tr>
+            <tr><td class="lbl">VIN</td><td class="val"><%= fmt(r.vin_number) %></td></tr>
+            <tr><td class="lbl">Type</td><td class="val"><%= fmt(r.vehicle_type_name) %></td></tr>
+            <tr><td class="lbl">Make</td><td class="val"><%= fmt(r.vehicle_make_name) %></td></tr>
+            <tr><td class="lbl">Model</td><td class="val"><%= fmt(r.vehicle_model_name) %></td></tr>
+            <tr><td class="lbl">Variant</td><td class="val"><%= fmt(r.vehicle_variant_name) %></td></tr>
+        </table></div>
+        <div class="c"><table class="dtbl">
+            <tr><td class="lbl">Year</td><td class="val"><%= fmt(r.vehicle_year_name) %></td></tr>
+            <tr><td class="lbl">Fuel</td><td class="val"><%= fmt(r.vehicle_fuel_name) %></td></tr>
+            <tr><td class="lbl">Category</td><td class="val"><%= fmt(r.vehicle_category_name) %></td></tr>
+            <tr><td class="lbl">Engine</td><td class="val"><%= fmt(r.vehicle_engine_name) %></td></tr>
+            <tr><td class="lbl">Color</td><td class="val"><%= fmt(r.color) %></td></tr>
+            <tr><td class="lbl">KMs</td><td class="val"><%= fmt(r.kms) %></td></tr>
+            <tr><td class="lbl">Location</td><td class="val"><%= fmt(r.location) %></td></tr>
+            <tr><td class="lbl">Status</td><td class="val"><strong><%= INV_STATUS[r.inventory_status] || '' %></strong></td></tr>
+        </table></div>
+    </div>
+    <% if (r.first_registration_date || r.entry_date || r.purchase_price || r.selling_price) { %>
+    <div class="sub-title">Dates & Pricing</div>
+    <div class="cols">
+        <div class="c"><table class="dtbl">
+            <% if (r.first_registration_date) { %><tr><td class="lbl">First Reg.</td><td class="val"><%= fmtDate(r.first_registration_date) %></td></tr><% } %>
+            <% if (r.cancellation_date) { %><tr><td class="lbl">Cancellation</td><td class="val"><%= fmtDate(r.cancellation_date) %></td></tr><% } %>
+            <% if (r.purchase_price) { %><tr><td class="lbl">Purchase Price</td><td class="val"><strong><%= fmt(r.purchase_price) %></strong></td></tr><% } %>
+        </table></div>
+        <div class="c"><table class="dtbl">
+            <% if (r.entry_date) { %><tr><td class="lbl">Entry Date</td><td class="val"><%= fmtDate(r.entry_date) %></td></tr><% } %>
+            <% if (r.sales_date) { %><tr><td class="lbl">Sales Date</td><td class="val"><%= fmtDate(r.sales_date) %></td></tr><% } %>
+            <% if (r.selling_price) { %><tr><td class="lbl">Selling Price</td><td class="val"><strong><%= fmt(r.selling_price) %></strong></td></tr><% } %>
+        </table></div>
+    </div>
+    <% } %>
+</div>
+
+<!-- 2. EXTRA INFO -->
+<div class="sec">
+    <div class="sec-title">2. Extra Information</div>
+    <div class="cols">
+        <div class="c"><table class="dtbl">
+            <% if (r.seats) { %><tr><td class="lbl">Seats</td><td class="val"><%= r.seats %></td></tr><% } %>
+            <% if (r.doors) { %><tr><td class="lbl">Doors</td><td class="val"><%= r.doors %></td></tr><% } %>
+            <% if (r.steering_side) { %><tr><td class="lbl">Steering</td><td class="val"><%= STEERING[r.steering_side] || '' %></td></tr><% } %>
+            <% if (r.brake_option) { %><tr><td class="lbl">Brake</td><td class="val"><%= BRAKE[r.brake_option] || '' %></td></tr><% } %>
+            <tr><td class="lbl">Towable</td><td class="val"><%= (r.is_towable === true || r.is_towable === 1) ? 'Yes' : 'No' %></td></tr>
+        </table></div>
+        <div class="c"><table class="dtbl">
+            <% if (r.engine_no) { %><tr><td class="lbl">Engine No</td><td class="val"><%= r.engine_no %></td></tr><% } %>
+            <% if (r.cylinder) { %><tr><td class="lbl">Cylinder</td><td class="val"><%= r.cylinder %></td></tr><% } %>
+            <% if (r.power_hp) { %><tr><td class="lbl">Power (HP)</td><td class="val"><%= r.power_hp %></td></tr><% } %>
+            <% if (r.power_kw) { %><tr><td class="lbl">Power (KW)</td><td class="val"><%= r.power_kw %></td></tr><% } %>
+            <% if (r.weight) { %><tr><td class="lbl">Weight</td><td class="val"><%= r.weight %> kg</td></tr><% } %>
+            <% if (r.gross_weight) { %><tr><td class="lbl">Gross Weight</td><td class="val"><%= r.gross_weight %> kg</td></tr><% } %>
+        </table></div>
+    </div>
+    <% if (r.depolution_status || r.dismantle_status || r.state_parking) { %>
+    <div class="sub-title">Process Status</div>
+    <table class="dtbl">
+        <% if (r.depolution_status) { %><tr><td class="lbl">Depollution</td><td class="val"><%= r.depolution_status %></td></tr><% } %>
+        <% if (r.dismantle_status) { %><tr><td class="lbl">Dismantle</td><td class="val"><%= r.dismantle_status %></td></tr><% } %>
+        <% if (r.state_parking) { %><tr><td class="lbl">State Parking</td><td class="val"><%= r.state_parking %></td></tr><% } %>
+    </table>
+    <% } %>
+    <% if (r.comment || r.internal_notes) { %>
+    <div class="sub-title">Notes</div>
+    <table class="dtbl">
+        <% if (r.comment) { %><tr><td class="lbl">Comment</td><td class="val"><%= r.comment %></td></tr><% } %>
+        <% if (r.internal_notes) { %><tr><td class="lbl">Internal Notes</td><td class="val"><%= r.internal_notes %></td></tr><% } %>
+    </table>
+    <% } %>
+</div>
+
+<!-- 3. IMAGES -->
+<div class="sec">
+    <div class="sec-title">3. Images (<%= images.length %>)</div>
+    <% if (images.length) { %>
+    <div class="imgs">
+        <% images.forEach(function(img, i) { var u = img.display_url || img.image_url || ''; %>
+        <a href="<%= u %>" target="_blank" title="Image <%= i+1 %> - Click to open">
+            <img src="<%= u %>" onerror="this.style.display='none'"/>
+        </a>
+        <% }); %>
+    </div>
+    <% } else { %>
+    <div style="color:#9ca3af;padding:8px;text-align:center;font-size:10px;">No images</div>
+    <% } %>
+</div>
+
+<!-- 4. VIDEOS -->
+<div class="sec">
+    <div class="sec-title">4. Videos (<%= videos.length %>)</div>
+    <% if (videos.length) { %>
+    <div class="vids">
+        <% videos.forEach(function(v, i) { var u = v.display_url || v.video_url || ''; %>
+        <a href="<%= u %>" target="_blank" class="vid-link">
+            <div class="vid-icon">&#9654;</div>
+            <div>
+                <div class="vid-name">Video <%= i + 1 %></div>
+                <div class="vid-url"><%= u %></div>
+            </div>
+        </a>
+        <% }); %>
+    </div>
+    <% } else { %>
+    <div style="color:#9ca3af;padding:8px;text-align:center;font-size:10px;">No videos</div>
+    <% } %>
+</div>
+
+<!-- 5. OWNER -->
+<% if (r.owner_name || r.owner_telephone || r.owner_email) { %>
+<div class="sec">
+    <div class="sec-title">5. Owner Details</div>
+    <div class="cols">
+        <div class="c">
+            <div class="sub-title">Personal</div>
+            <table class="dtbl">
+                <% if (r.owner_name) { %><tr><td class="lbl">Name</td><td class="val"><strong><%= r.owner_name %></strong></td></tr><% } %>
+                <% if (r.owner_certificate_number) { %><tr><td class="lbl">Certificate</td><td class="val"><%= r.owner_certificate_number %></td></tr><% } %>
+                <% if (r.owner_nif) { %><tr><td class="lbl">NIF</td><td class="val"><%= r.owner_nif %></td></tr><% } %>
+                <% if (r.owner_bicc) { %><tr><td class="lbl">BICC</td><td class="val"><%= r.owner_bicc %></td></tr><% } %>
+                <% if (r.owner_postal_code) { %><tr><td class="lbl">Postal Code</td><td class="val"><%= r.owner_postal_code %></td></tr><% } %>
+                <% if (r.owner_country_name) { %><tr><td class="lbl">Country</td><td class="val"><%= r.owner_country_name %></td></tr><% } %>
+            </table>
+        </div>
+        <div class="c">
+            <div class="sub-title">Contact</div>
+            <table class="dtbl">
+                <% if (r.owner_telephone) { %><tr><td class="lbl">Telephone</td><td class="val"><a href="tel:<%= r.owner_telephone %>"><%= r.owner_telephone %></a></td></tr><% } %>
+                <% if (r.owner_cellphone) { %><tr><td class="lbl">CellPhone</td><td class="val"><a href="tel:<%= r.owner_cellphone %>"><%= r.owner_cellphone %></a></td></tr><% } %>
+                <% if (r.owner_email) { %><tr><td class="lbl">Email</td><td class="val"><a href="mailto:<%= r.owner_email %>"><%= r.owner_email %></a></td></tr><% } %>
+            </table>
+            <% if (r.owner_company_certificate_code || r.owner_validity) { %>
+            <div class="sub-title">Company</div>
+            <table class="dtbl">
+                <% if (r.owner_company_certificate_code) { %><tr><td class="lbl">Company Code</td><td class="val"><%= r.owner_company_certificate_code %></td></tr><% } %>
+                <% if (r.owner_validity) { %><tr><td class="lbl">Validity</td><td class="val"><%= fmtDate(r.owner_validity) %></td></tr><% } %>
+            </table>
+            <% } %>
+        </div>
+    </div>
+    <% if (r.owner_address) { %>
+    <table class="dtbl" style="margin-top:3px;"><tr><td class="lbl">Address</td><td class="val"><%= r.owner_address %></td></tr></table>
+    <% } %>
+</div>
+<% } %>
+
+<!-- 6. DOCUMENTS -->
+<% if (docs.length) { %>
+<div class="sec">
+    <div class="sec-title">6. Documents (<%= docs.length %>)</div>
+    <table class="doc-tbl">
+        <thead><tr><th style="width:120px;">Type</th><th>File Name</th><th style="width:100px;">Comment</th><th style="width:50px;">Link</th></tr></thead>
+        <tbody>
+        <% docs.forEach(function(d) {
+            var tn = d.type_name || DOC_TYPES[d.document_type] || 'Other';
+            var dc = DOC_COLORS[d.document_type] || '#6b7280';
+            var u = d.display_url || d.file_url || '';
+        %>
+        <tr>
+            <td><span class="doc-badge" style="background:<%= dc %>"><%= tn %></span></td>
+            <td><%= d.original_name || '' %></td>
+            <td style="color:#6b7280;"><%= d.comment || '' %></td>
+            <td><% if (u) { %><a href="<%= u %>" target="_blank">Open</a><% } %></td>
+        </tr>
+        <% }); %>
+        </tbody>
+    </table>
+</div>
+<% } %>
+
+<!-- FOOTER -->
+<div class="ftr">
+    <span>Created: <%= fmtDate(r.created_at) %> | Updated: <%= fmtDate(r.updated_at) %></span>
+    <span>Scrap Management System</span>
+</div>
+
+</div>
+</body>
+</html>
