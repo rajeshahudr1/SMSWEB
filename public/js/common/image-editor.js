@@ -25,6 +25,7 @@ window.SMS_ImageEditor = (function($) {
     var _canvasW = 0;
     var _canvasH = 0;
     var _zoom = 1;
+    var _editActions = []; // Track all edit operations for audit log
 
     var FILTERS = [
         { name: 'None', filter: null },
@@ -296,6 +297,7 @@ window.SMS_ImageEditor = (function($) {
        ═══════════════════════════════════════════ */
     function _applyCrop() {
         if (!_cropRect || !_canvas) return;
+        _editActions.push('Crop');
         var l = _cropRect.left, t = _cropRect.top;
         var w = _cropRect.width * _cropRect.scaleX;
         var h = _cropRect.height * _cropRect.scaleY;
@@ -319,6 +321,7 @@ window.SMS_ImageEditor = (function($) {
        ═══════════════════════════════════════════ */
     function _applyFilter(idx) {
         if (!_canvas) return;
+        if (FILTERS[idx]) _editActions.push('Filter: ' + FILTERS[idx].name);
         var bgImg = null;
         _canvas.forEachObject(function(o) { if (o._isBgImage) bgImg = o; });
         if (!bgImg) return;
@@ -362,6 +365,7 @@ window.SMS_ImageEditor = (function($) {
        ═══════════════════════════════════════════ */
     function _rotateCanvas(deg) {
         if (!_canvas) return;
+        _editActions.push('Rotate ' + deg + '°');
         var w = _canvasW, h = _canvasH;
         // Use toDataURL — safe, no DPI issues
         var dataUrl = _canvas.toDataURL({ format: 'png' });
@@ -408,6 +412,7 @@ window.SMS_ImageEditor = (function($) {
        ═══════════════════════════════════════════ */
     function _setBg(color) {
         if (!_canvas) return;
+        _editActions.push('Background: ' + color);
         _bgColor = color;
         if (color === 'transparent') {
             _canvas.backgroundColor = null;
@@ -430,6 +435,7 @@ window.SMS_ImageEditor = (function($) {
      */
     function _removeBgByColor(targetRGB, tolerance) {
         if (!_canvas) return;
+        _editActions.push('BG Remove (rgb ' + targetRGB.join(',') + ', tolerance ' + tolerance + ')');
         var savedZoom = _zoom;
         _canvas.setZoom(1);
         _canvas.setWidth(_canvasW);
@@ -567,6 +573,7 @@ window.SMS_ImageEditor = (function($) {
                 setTimeout(function() {
                     var userText = prompt('Enter text:');
                     if (!userText || !userText.trim()) return;
+                    _editActions.push('Text: "' + userText.trim().substring(0, 30) + '"');
                     var txt = new fabric.IText(userText.trim(), {
                         left: posX, top: posY,
                         fontSize: 28,
@@ -653,7 +660,7 @@ window.SMS_ImageEditor = (function($) {
                 var ep = _canvas.getPointer(o.e);
                 _canvas.remove(_tempShape);
                 var arr = _createArrow(_startPoint.x, _startPoint.y, ep.x, ep.y, _activeColor, _activeStroke);
-                if (arr) _canvas.add(arr);
+                if (arr) { _canvas.add(arr); _editActions.push('Arrow'); }
                 _canvas.renderAll();
                 _saveState();
                 _setTool('select');
@@ -662,6 +669,7 @@ window.SMS_ImageEditor = (function($) {
             }
 
             if (_tempShape) {
+                _editActions.push(_drawingMode === 'circle' ? 'Circle' : _drawingMode === 'rect' ? 'Rectangle' : 'Shape');
                 _tempShape.set({ selectable: true, evented: true });
                 _canvas.renderAll();
                 _saveState();
@@ -680,7 +688,7 @@ window.SMS_ImageEditor = (function($) {
         });
 
         /* Freehand done */
-        _canvas.on('path:created', function() { _saveState(); });
+        _canvas.on('path:created', function() { _editActions.push('Freehand Draw'); _saveState(); });
 
         /* Object modified */
         _canvas.on('object:modified', function() { _saveState(); });
@@ -833,9 +841,8 @@ window.SMS_ImageEditor = (function($) {
             var blob = _getBlob();
             if (!blob) return;
             if (_onSave) {
-                // onSave returns false if validation fails → keep editor open
-                var result = _onSave(blob, null, 'replace');
-                if (result === false) return; // validation failed, stay open
+                var result = _onSave(blob, null, 'replace', _editActions.slice());
+                if (result === false) return;
             }
             var m = bootstrap.Modal.getInstance($('#smsImageEditorModal')[0]);
             if (m) m.hide();
@@ -847,8 +854,8 @@ window.SMS_ImageEditor = (function($) {
             var blob = _getBlob();
             if (!blob) return;
             if (_onSave) {
-                var result = _onSave(blob, null, 'new');
-                if (result === false) return; // validation failed, stay open
+                var result = _onSave(blob, null, 'new', _editActions.slice());
+                if (result === false) return;
             }
             var m = bootstrap.Modal.getInstance($('#smsImageEditorModal')[0]);
             if (m) m.hide();
@@ -864,7 +871,7 @@ window.SMS_ImageEditor = (function($) {
         _buildModal();
         _history = []; _historyIdx = -1; _drawingMode = null; _isCropping = false;
         _cropRect = null; _startPoint = null; _tempShape = null;
-        _activeColor = '#ff0000'; _activeStroke = 3; _bgColor = '#ffffff'; _savingState = false; _zoom = 1;
+        _activeColor = '#ff0000'; _activeStroke = 3; _bgColor = '#ffffff'; _savingState = false; _zoom = 1; _editActions = [];
 
         $('#ieColor').val('#ff0000'); $('#ieStroke').val('3'); $('#ieFilter').val('0');
         $('#ieCropApply').remove(); $('#ieBgDd').removeClass('show'); $('#ieZoomLabel').text('100%');

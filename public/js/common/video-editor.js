@@ -22,7 +22,8 @@ window.SMS_VideoEditor = (function($) {
     var _originalBlob = null; // original video
     var _currentBlob = null;  // current working video (after applied operations)
     var _processing = false;
-    var _opCount = 0; // how many operations applied
+    var _opCount = 0;
+    var _editActions = []; // Track all edit operations for audit log
 
     /* ═══════════════════════════════════════════
        LOAD FFMPEG
@@ -100,6 +101,7 @@ window.SMS_VideoEditor = (function($) {
         if (result) {
             _currentBlob = result;
             _opCount++;
+            _editActions.push(label);
             _updatePlayer();
             _updateOpBadge();
             _setStatus('<span class="text-success"><i class="bi bi-check-circle me-1"></i>' + label + ' applied! (' + _fmtSize(result.size) + ') — ' + _opCount + ' operation(s) total</span>');
@@ -322,6 +324,7 @@ window.SMS_VideoEditor = (function($) {
         _currentBlob = null;
         _processing = false;
         _opCount = 0;
+        _editActions = [];
 
         _buildModal();
 
@@ -486,6 +489,7 @@ window.SMS_VideoEditor = (function($) {
                 var blob = new Blob([out.buffer], { type: 'video/mp4' });
                 _currentBlob = blob;
                 _opCount++;
+                _editActions.push('Watermark: "' + text + '"');
                 _updatePlayer();
                 _updateOpBadge();
                 _setStatus('<span class="text-success"><i class="bi bi-check-circle me-1"></i>Watermark "' + text + '" applied! (' + _fmtSize(blob.size) + ')</span>');
@@ -533,6 +537,7 @@ window.SMS_VideoEditor = (function($) {
             e.preventDefault();
             _currentBlob = _originalBlob;
             _opCount = 0;
+            _editActions = [];
             _updatePlayer();
             _updateOpBadge();
             $('#veExportArea').html('');
@@ -543,8 +548,8 @@ window.SMS_VideoEditor = (function($) {
         $(document).on('click.smsve', '.sms-ve-save-new', function(e) {
             e.preventDefault();
             if (_currentBlob && _onSave) {
-                var result = _onSave(_currentBlob, _fileName, 'new');
-                if (result === false) return; // validation failed, keep editor open
+                var result = _onSave(_currentBlob, _fileName, 'new', _editActions.slice());
+                if (result === false) return;
                 var m = bootstrap.Modal.getInstance($('#smsVideoEditorModal')[0]);
                 if (m) m.hide();
             }
@@ -554,8 +559,8 @@ window.SMS_VideoEditor = (function($) {
         $(document).on('click.smsve', '.sms-ve-save-replace', function(e) {
             e.preventDefault();
             if (_currentBlob && _onSave) {
-                var result = _onSave(_currentBlob, _fileName, 'replace');
-                if (result === false) return; // validation failed, keep editor open
+                var result = _onSave(_currentBlob, _fileName, 'replace', _editActions.slice());
+                if (result === false) return;
                 var m = bootstrap.Modal.getInstance($('#smsVideoEditorModal')[0]);
                 if (m) m.hide();
             }

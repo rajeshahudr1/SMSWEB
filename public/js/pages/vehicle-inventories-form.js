@@ -472,27 +472,25 @@ $(function() {
             }
             SMS_ImageEditor.open({
                 imageUrl: imageUrl,
-                onSave: function(blob, dataUrl, mode) {
-                    // mode = 'replace' or 'new' (from save bar inside editor)
+                onSave: function(blob, dataUrl, mode, editActions) {
                     var $msg = $('#ieSaveMsg');
+                    var actionsStr = (editActions && editActions.length) ? editActions.join(', ') : '';
 
-                    // Validate size
                     if (blob.size > _maxImgSize * 1024 * 1024) {
                         $msg.html('<span style="color:#ef4444;"><i class="bi bi-exclamation-triangle me-1"></i>Image size (' + (blob.size / 1048576).toFixed(1) + ' MB) exceeds limit of ' + _maxImgSize + ' MB</span>');
                         toastr.error('Image too large! Max: ' + _maxImgSize + ' MB');
-                        return false; // keep editor open
+                        return false;
                     }
 
                     if (mode === 'new') {
-                        // Validate count
                         if (_images.length >= _maxImgCount) {
-                            $msg.html('<span style="color:#ef4444;"><i class="bi bi-exclamation-triangle me-1"></i>Maximum ' + _maxImgCount + ' images reached. Delete one first.</span>');
+                            $msg.html('<span style="color:#ef4444;"><i class="bi bi-exclamation-triangle me-1"></i>Maximum ' + _maxImgCount + ' images reached.</span>');
                             toastr.error('Maximum ' + _maxImgCount + ' images allowed.');
-                            return false; // keep editor open
+                            return false;
                         }
-                        // Upload as new
                         var fd = new FormData();
                         fd.append('images', blob, 'edited-image.png');
+                        if (actionsStr) fd.append('edit_actions', actionsStr);
                         $msg.html('<span style="color:#3b82f6;"><span class="spinner-border spinner-border-sm me-1"></span>Uploading as new...</span>');
                         $.ajax({
                             url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/images',
@@ -507,9 +505,9 @@ $(function() {
                             error: function() { $msg.html('<span style="color:#ef4444;">Upload failed</span>'); }
                         });
                     } else {
-                        // Replace original
                         var fd2 = new FormData();
                         fd2.append('image', blob, 'edited-image.png');
+                        if (actionsStr) fd2.append('edit_actions', actionsStr);
                         $msg.html('<span style="color:#3b82f6;"><span class="spinner-border spinner-border-sm me-1"></span>Replacing...</span>');
                         $.ajax({
                             url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/images/' + imageId + '/replace',
@@ -772,8 +770,8 @@ $(function() {
                 SMS_VideoEditor.open({
                     videoUrl: url,
                     fileName: 'video_' + vidId + '.mp4',
-                    onSave: function(blob, filename, mode) {
-                        // Validate size — return false to keep editor open
+                    onSave: function(blob, filename, mode, editActions) {
+                        var vidActionsStr = (editActions && editActions.length) ? editActions.join(', ') : '';
                         if (blob.size > _maxVidSize * 1024 * 1024) {
                             toastr.error('Video size (' + (blob.size / 1048576).toFixed(1) + ' MB) exceeds limit of ' + _maxVidSize + ' MB. Try compressing first.');
                             $('#veStatus').html('<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Video too large! Max: ' + _maxVidSize + ' MB. Use Compress to reduce size.</span>');
@@ -787,8 +785,8 @@ $(function() {
 
                         var fd = new FormData();
                         if (mode === 'replace' && vidId) {
-                            // Replace: delete old + upload new
                             fd.append('videos', blob, filename);
+                            if (vidActionsStr) fd.append('edit_actions', vidActionsStr);
                             showLoading();
                             // Delete old first
                             $.post(BASE_URL + '/vehicle-inventories/' + FD.uuid + '/videos/delete', { video_id: vidId }, function() {
@@ -808,8 +806,8 @@ $(function() {
                                 });
                             }).fail(function() { hideLoading(); toastr.error('Delete failed.'); });
                         } else {
-                            // Add as new
                             fd.append('videos', blob, filename);
+                            if (vidActionsStr) fd.append('edit_actions', vidActionsStr);
                             showLoading();
                             $.ajax({
                                 url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/videos',

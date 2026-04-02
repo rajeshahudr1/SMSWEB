@@ -140,6 +140,7 @@ exports.uploadImages = [(r,s,n) => { tempUpload.array('images', 20)(r,s,(e) => {
         if (!req.files || !req.files.length) return res.json({ status: 422, message: 'No files.' });
         const fd = new FormData();
         req.files.forEach(f => { fd.append('images', fs.createReadStream(f.path), { filename: f.originalname, contentType: f.mimetype }); });
+        if (req.body.edit_actions) fd.append('edit_actions', req.body.edit_actions);
         const axios = require('axios'); const BASE = process.env.API_URL || 'http://localhost:3000/api';
         const r = await axios.post(BASE + '/vehicle-inventories/' + req.params.uuid + '/images', fd, { headers: { ...fd.getHeaders(), Authorization: 'Bearer ' + req.session.token } });
         cleanFiles(req.files); return res.json(r.data);
@@ -151,6 +152,7 @@ exports.replaceImage = [(r,s,n) => { tempUpload.single('image')(r,s,(e) => { if 
         if (!req.file) return res.json({ status: 422, message: 'No file.' });
         const fd = new FormData();
         fd.append('image', fs.createReadStream(req.file.path), { filename: req.file.originalname || 'edited.png', contentType: req.file.mimetype });
+        if (req.body.edit_actions) fd.append('edit_actions', req.body.edit_actions);
         const axios = require('axios'); const BASE = process.env.API_URL || 'http://localhost:3000/api';
         const r = await axios.post(BASE + '/vehicle-inventories/' + req.params.uuid + '/images/' + req.params.imageId + '/replace', fd, { headers: { ...fd.getHeaders(), Authorization: 'Bearer ' + req.session.token } });
         clean(req.file); return res.json(r.data);
@@ -164,6 +166,7 @@ exports.uploadVideos = [(r,s,n) => { tempUpload.array('videos', 10)(r,s,(e) => {
         if (!req.files || !req.files.length) return res.json({ status: 422, message: 'No files.' });
         const fd = new FormData();
         req.files.forEach(f => { fd.append('videos', fs.createReadStream(f.path), { filename: f.originalname, contentType: f.mimetype }); });
+        if (req.body.edit_actions) fd.append('edit_actions', req.body.edit_actions);
         const axios = require('axios'); const BASE = process.env.API_URL || 'http://localhost:3000/api';
         const r = await axios.post(BASE + '/vehicle-inventories/' + req.params.uuid + '/videos', fd, { headers: { ...fd.getHeaders(), Authorization: 'Bearer ' + req.session.token } });
         cleanFiles(req.files); return res.json(r.data);
