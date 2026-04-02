@@ -1,0 +1,750 @@
+/* ================================================================
+   modern-theme.css — SMS Web — Modern Clean Design Override
+   Inspired by: Clean SaaS dashboard with icon sidebar,
+   tab-based details, accordion sections, modern cards.
+   ================================================================ */
+
+/* ── Design Tokens ── */
+:root {
+  --sms-bg: #f5f7fa;
+  --sms-card-bg: #ffffff;
+  --sms-card-radius: 12px;
+  --sms-card-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.02);
+  --sms-card-shadow-hover: 0 4px 12px rgba(0,0,0,.08);
+  --sms-border: #e8ecf1;
+  --sms-text: #1a2332;
+  --sms-text-secondary: #667085;
+  --sms-text-muted: #98a2b3;
+  --sms-green: #22c55e;
+  --sms-sidebar-width: 72px;
+  --sms-sidebar-expanded: 240px;
+  --sms-header-height: 60px;
+  --sms-radius-sm: 8px;
+  --sms-radius-md: 12px;
+  --sms-radius-lg: 16px;
+  --sms-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sms-transition: all .25s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Typography ── */
+body {
+  font-family: var(--sms-font-family) !important;
+  background: var(--sms-bg) !important;
+  color: var(--sms-text) !important;
+  letter-spacing: -0.01em;
+}
+h1,h2,h3,h4,h5,h6 { font-weight: 600; letter-spacing: -0.02em; color: var(--sms-text) !important; }
+p, span, div, td, li, a { color: inherit; }
+.text-body, .fw-medium, .fw-semibold, .fw-bold { color: var(--sms-text) !important; }
+
+/* ── Dynamic Icon Color ── */
+/* Apply icon color only to standalone icons (not inside colored contexts) */
+.card-title > .bi,
+.form-label > .bi,
+.breadcrumb-item > .bi,
+.sms-label > .bi,
+h1 > .bi, h2 > .bi, h3 > .bi, h4 > .bi, h5 > .bi, h6 > .bi,
+.page-body > .bi {
+  color: var(--sms-icon-color) !important;
+}
+/* Icons that use text-primary class should follow icon color */
+.bi.text-primary,
+i.text-primary {
+  color: var(--sms-icon-color) !important;
+}
+.table { color: var(--sms-text) !important; }
+.form-control, .form-select { color: var(--sms-text) !important; }
+.dropdown-item { color: var(--sms-text) !important; }
+
+/* ── Page Wrapper ── */
+.page-wrapper {
+  background: var(--sms-bg) !important;
+}
+.page-body {
+  padding: 0.5rem !important;
+}
+@media (min-width: 576px) {
+  .page-body { padding: 0.75rem !important; }
+}
+@media (min-width: 992px) {
+  .page-body { padding: 0.75rem 1rem !important; }
+}
+.page-body > .container-xl {
+  max-width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.card-body { padding: 16px !important; }
+.card-header { padding: 12px 16px !important; }
+
+/* ================================================================
+   SIDEBAR — Modern icon-bar style (collapsed = icon only)
+   ================================================================ */
+.sms-sidebar {
+  --sb-bg: #1a2332;
+  --sb-hover: rgba(255,255,255,.08);
+  --sb-active: rgba(255,255,255,.14);
+  --sb-accent: var(--tblr-primary, #0054a6);
+  --sb-text: rgba(255,255,255,.75);
+  --sb-muted: rgba(255,255,255,.4);
+  --sb-border: rgba(255,255,255,.06);
+  border-right: none !important;
+  box-shadow: 2px 0 8px rgba(0,0,0,.08);
+}
+/* Light sidebar */
+.sms-sidebar[data-bs-theme="light"],
+[data-bs-theme="light"] .sms-sidebar {
+  --sb-bg: #ffffff;
+  --sb-hover: rgba(0,0,0,.04);
+  --sb-active: rgba(var(--tblr-primary-rgb, 0,84,166),.08);
+  --sb-accent: var(--tblr-primary, #0054a6);
+  --sb-text: #344054;
+  --sb-muted: #98a2b3;
+  --sb-border: #e8ecf1;
+  box-shadow: 1px 0 4px rgba(0,0,0,.04);
+}
+
+/* Brand area */
+.sms-brand { padding: 16px 12px !important; }
+.sms-brand__icon {
+  width: 40px !important; height: 40px !important;
+  border-radius: var(--sms-radius-sm) !important;
+  font-size: 18px !important;
+  background: var(--tblr-primary, #0054a6) !important;
+  color: #fff !important;
+}
+.sms-brand__name { font-size: 15px !important; font-weight: 700 !important; letter-spacing: -0.02em; }
+
+/* Nav items */
+.sms-nav__link {
+  border-radius: var(--sms-radius-sm) !important;
+  padding: 8px 12px !important;
+  margin: 1px 8px !important;
+  transition: var(--sms-transition) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+.sms-nav__link:hover { background: var(--sb-hover) !important; }
+.sms-nav__link.active {
+  background: var(--sb-active) !important;
+  color: var(--sb-accent) !important;
+  font-weight: 600 !important;
+}
+.sms-nav__icon {
+  width: 32px !important; height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  display: flex; align-items: center; justify-content: center;
+}
+.sms-nav__link.active .sms-nav__icon {
+  background: var(--sb-accent) !important;
+  color: #fff !important;
+}
+
+/* Sub-nav styling */
+.sms-subnav__link {
+  border-radius: 6px !important;
+  margin: 1px 4px !important;
+  font-size: 12.5px !important;
+}
+
+/* ================================================================
+   HEADER — Clean minimal top bar
+   ================================================================ */
+.sms-header {
+  background: var(--sms-card-bg) !important;
+  border-bottom: 1px solid var(--sms-border) !important;
+  box-shadow: none !important;
+  min-height: var(--sms-header-height) !important;
+}
+.sms-header__title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--sms-text) !important;
+}
+
+/* ================================================================
+   CARDS — Modern rounded cards with subtle shadow
+   ================================================================ */
+.card {
+  border: 1px solid var(--sms-border) !important;
+  border-radius: var(--sms-card-radius) !important;
+  box-shadow: var(--sms-card-shadow) !important;
+  overflow: hidden;
+  transition: box-shadow .2s ease;
+}
+.card:hover { box-shadow: var(--sms-card-shadow-hover) !important; }
+.card-header {
+  background: var(--tblr-primary, #0054a6) !important;
+  border-bottom: none !important;
+  padding: 14px 20px !important;
+  color: #fff !important;
+}
+.card-header .card-title,
+.card-header h3, .card-header h4, .card-header h5, .card-header h6 {
+  color: #fff !important;
+}
+.card-header .text-primary { color: #fff !important; }
+.card-header .badge { background: rgba(255,255,255,.2) !important; color: #fff !important; }
+.card-header .btn-outline-secondary,
+.card-header .btn-sm {
+  border-color: rgba(255,255,255,.3) !important;
+  color: #fff !important;
+}
+.card-header .btn-outline-secondary:hover,
+.card-header .btn-sm:hover {
+  background: rgba(255,255,255,.15) !important;
+}
+.card-header .btn-primary {
+  background: rgba(255,255,255,.2) !important;
+  border-color: rgba(255,255,255,.3) !important;
+}
+.card-header .btn-primary:hover { background: rgba(255,255,255,.3) !important; }
+.card-header .btn-outline-info,
+.card-header .btn-outline-purple {
+  border-color: rgba(255,255,255,.3) !important;
+  color: #fff !important;
+}
+.card-header .form-select {
+  background-color: rgba(255,255,255,.15) !important;
+  border-color: rgba(255,255,255,.25) !important;
+  color: #fff !important;
+}
+.card-header .form-select option { color: #333; background: #fff; }
+.card-header .dropdown-toggle { color: #fff !important; border-color: rgba(255,255,255,.3) !important; }
+.card-body { padding: 20px !important; }
+.card-footer {
+  background: var(--sms-card-bg) !important;
+  border-top: 1px solid var(--sms-border) !important;
+  padding: 12px 20px !important;
+}
+.card-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--sms-text) !important;
+}
+
+/* ================================================================
+   TABLES — Clean modern tables
+   ================================================================ */
+.table {
+  font-size: 13px !important;
+  color: var(--sms-text) !important;
+}
+.table thead th {
+  background: var(--tblr-primary, #0054a6) !important;
+  border-bottom: none !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #fff !important;
+  padding: 10px 12px !important;
+  white-space: nowrap;
+}
+.table thead th .form-check-input { border-color: rgba(255,255,255,.5) !important; }
+.table thead th .form-check-input:checked { background-color: #fff !important; border-color: #fff !important; }
+.table thead th i { color: rgba(255,255,255,.6) !important; }
+.table thead th.sortable:hover { color: #fff !important; }
+.table thead th.sortable:hover i { color: #fff !important; }
+.table tbody td {
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #f2f4f7 !important;
+}
+.table-hover tbody tr:hover {
+  background: #f9fafb !important;
+}
+.table .sortable { cursor: pointer; user-select: none; }
+.table .sortable:hover { color: var(--tblr-primary) !important; }
+
+/* Action dropdown in tables — JS handles positioning via show.bs.dropdown */
+
+/* ================================================================
+   FORMS — Clean inputs and labels
+   ================================================================ */
+.form-control, .form-select {
+  border: 1px solid var(--sms-border) !important;
+  border-radius: var(--sms-radius-sm) !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  color: var(--sms-text) !important;
+  transition: border-color .2s, box-shadow .2s !important;
+  background: #fff !important;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--tblr-primary, #0054a6) !important;
+  box-shadow: 0 0 0 3px rgba(0,84,166,.1) !important;
+}
+.form-control::placeholder { color: var(--sms-text-muted) !important; }
+.form-label {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--sms-text-secondary) !important;
+  margin-bottom: 4px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.form-hint {
+  font-size: 11.5px !important;
+  color: var(--sms-text-muted) !important;
+}
+.form-check-input {
+  border-radius: 4px !important;
+  border: 1.5px solid #d0d5dd !important;
+}
+.form-check-input:checked {
+  background-color: var(--tblr-primary, #0054a6) !important;
+  border-color: var(--tblr-primary, #0054a6) !important;
+}
+.form-switch .form-check-input {
+  border-radius: 20px !important;
+}
+textarea.form-control {
+  border-radius: var(--sms-radius-sm) !important;
+  resize: vertical;
+}
+
+/* ================================================================
+   BUTTONS — Modern button styles
+   ================================================================ */
+.btn {
+  border-radius: var(--sms-radius-sm) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 7px 14px !important;
+  transition: var(--sms-transition) !important;
+  letter-spacing: -0.01em;
+}
+.btn-sm {
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+  border-radius: 6px !important;
+}
+.btn-primary {
+  background: var(--tblr-primary) !important;
+  border-color: var(--tblr-primary) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08) !important;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 6px rgba(0,84,166,.25) !important;
+}
+.btn-outline-secondary {
+  border-color: var(--sms-border) !important;
+  color: var(--sms-text-secondary) !important;
+}
+.btn-ghost-primary, .btn-ghost-secondary, .btn-ghost-danger,
+.btn-ghost-success, .btn-ghost-warning, .btn-ghost-info, .btn-ghost-purple {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px 8px !important;
+}
+/* 3-dot action button — always visible in table rows */
+.table tbody .dropdown .btn-ghost-secondary,
+.table tbody .dropdown [data-bs-toggle="dropdown"] {
+  color: var(--sms-text-secondary, #667085) !important;
+  background: transparent !important;
+}
+.table tbody .dropdown .btn-ghost-secondary:hover,
+.table tbody .dropdown [data-bs-toggle="dropdown"]:hover {
+  color: var(--sms-text, #1a2332) !important;
+  background: rgba(0,0,0,.05) !important;
+  border-radius: 6px;
+}
+
+/* ================================================================
+   BADGES — Pill badges with modern colors
+   ================================================================ */
+.badge {
+  border-radius: 20px !important;
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.02em;
+  padding: 3px 10px !important;
+}
+
+/* ================================================================
+   TABS — Modern tab navigation (like the reference design)
+   ================================================================ */
+.nav-tabs {
+  border-bottom: 2px solid var(--sms-border) !important;
+  gap: 0 !important;
+}
+.nav-tabs .nav-link {
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  margin-bottom: -2px !important;
+  padding: 10px 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--sms-text-secondary) !important;
+  transition: var(--sms-transition) !important;
+  border-radius: 0 !important;
+}
+.nav-tabs .nav-link:hover {
+  color: var(--sms-text) !important;
+  background: transparent !important;
+}
+.nav-tabs .nav-link.active {
+  color: var(--tblr-primary) !important;
+  border-bottom-color: var(--tblr-primary) !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+}
+
+/* ================================================================
+   ACCORDION — Clean accordion for detail sections
+   ================================================================ */
+.accordion-item {
+  border: none !important;
+  border-bottom: 1px solid var(--sms-border) !important;
+}
+.accordion-button {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--sms-text) !important;
+  padding: 16px 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.accordion-button:not(.collapsed) {
+  color: var(--sms-text) !important;
+  background: transparent !important;
+}
+.accordion-body { padding: 0 0 16px 0 !important; }
+
+/* ================================================================
+   SELECT2 — Match modern input style
+   ================================================================ */
+.select2-container--bootstrap-5 .select2-selection {
+  border: 1px solid var(--sms-border) !important;
+  border-radius: var(--sms-radius-sm) !important;
+  min-height: 36px !important;
+  font-size: 13px !important;
+}
+.select2-container--bootstrap-5.select2-container--focus .select2-selection {
+  border-color: var(--tblr-primary) !important;
+  box-shadow: 0 0 0 3px rgba(0,84,166,.1) !important;
+}
+.select2-results__option--highlighted { background: var(--tblr-primary) !important; }
+.select2-dropdown { border-radius: var(--sms-radius-sm) !important; border: 1px solid var(--sms-border) !important; box-shadow: var(--sms-card-shadow) !important; }
+
+/* ================================================================
+   MODALS — Modern popup design
+   ================================================================ */
+.modal-content {
+  border-radius: var(--sms-radius-lg) !important;
+  border: none !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15) !important;
+  overflow: hidden;
+}
+.modal-header {
+  padding: 16px 24px !important;
+  border-bottom: none !important;
+  background: var(--tblr-primary, #0054a6) !important;
+  color: #fff !important;
+}
+.modal-header .modal-title,
+.modal-header h5, .modal-header h6 { color: #fff !important; }
+.modal-header .modal-title i { color: #fff !important; }
+.modal-header .btn-close { filter: brightness(0) invert(1) !important; opacity: .8; }
+.modal-header .btn-close:hover { opacity: 1; }
+.modal-footer .btn-ghost-secondary,
+.modal-footer .btn-outline-secondary {
+  color: var(--sms-text-secondary, #667085) !important;
+}
+.modal-body { padding: 24px !important; }
+.modal-footer {
+  padding: 12px 24px !important;
+  border-top: 1px solid var(--sms-border) !important;
+}
+.modal-title { font-size: 16px !important; font-weight: 600 !important; }
+
+/* ================================================================
+   DROPDOWN — Clean action dropdown
+   ================================================================ */
+.dropdown-menu {
+  border-radius: var(--sms-radius-sm) !important;
+  border: 1px solid var(--sms-border) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
+  padding: 4px !important;
+  min-width: 180px !important;
+}
+.dropdown-item {
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--sms-text) !important;
+  transition: background .15s !important;
+}
+.dropdown-item:hover { background: #f5f7fa !important; }
+.dropdown-item.text-danger { color: #ef4444 !important; }
+.dropdown-item i { font-size: 15px; width: 20px; }
+.dropdown-divider { margin: 4px 0 !important; border-color: var(--sms-border) !important; }
+
+/* ================================================================
+   PAGINATION — Modern pill pagination
+   ================================================================ */
+.pagination .page-link {
+  border-radius: 6px !important;
+  border: none !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--sms-text-secondary) !important;
+  margin: 0 1px !important;
+}
+.pagination .page-item.active .page-link {
+  background: var(--tblr-primary) !important;
+  color: #fff !important;
+}
+.pagination .page-link:hover { background: #f2f4f7 !important; }
+
+/* ================================================================
+   OFFCANVAS — Filter sidebar
+   ================================================================ */
+.offcanvas {
+  border-left: none !important;
+  box-shadow: -8px 0 24px rgba(0,0,0,.1) !important;
+}
+.offcanvas-header {
+  padding: 16px 24px !important;
+  border-bottom: none !important;
+  background: var(--tblr-primary, #0054a6) !important;
+  color: #fff !important;
+}
+.offcanvas-header .offcanvas-title,
+.offcanvas-header h5 { color: #fff !important; }
+.offcanvas-header .offcanvas-title i { color: #fff !important; }
+.offcanvas-header .btn-close { filter: brightness(0) invert(1) !important; opacity: .8; }
+.offcanvas-header .btn-close:hover { opacity: 1; }
+.offcanvas-body { padding: 20px 24px !important; }
+
+/* ================================================================
+   TOASTR — Modern toast notifications (fix duplicate icons)
+   ================================================================ */
+#toast-container > div {
+  border-radius: var(--sms-radius-sm) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15) !important;
+  padding: 14px 16px 14px 50px !important;
+  background-size: 20px !important;
+  background-position: 15px center !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
+}
+.toast-success { background-color: #22c55e !important; }
+.toast-error   { background-color: #ef4444 !important; }
+.toast-warning { background-color: #f59e0b !important; }
+.toast-info    { background-color: #3b82f6 !important; }
+/* Remove duplicate background-image icons that show repeatedly */
+#toast-container > .toast-success { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; }
+#toast-container > .toast-error { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; }
+#toast-container > .toast-warning { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; }
+#toast-container > .toast-info { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.399l-.316-.016.089-.416h2.146zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; }
+/* Hide toastr default close button icon duplication */
+.toast-close-button { font-size: 16px !important; font-weight: 400 !important; text-shadow: none !important; }
+
+/* ================================================================
+   BREADCRUMBS — Minimal clean
+   ================================================================ */
+.breadcrumb { font-size: 12px !important; margin-bottom: 0.5rem !important; }
+.breadcrumb-item + .breadcrumb-item::before { color: var(--sms-text-muted) !important; }
+.breadcrumb-item a { color: var(--sms-text-secondary) !important; }
+.breadcrumb-item.active { color: var(--sms-text-muted) !important; }
+
+/* Cancel / outline-secondary buttons — use dynamic theme color */
+.btn-outline-secondary {
+  color: var(--sms-text-secondary, #667085) !important;
+  border-color: var(--sms-border, #e8ecf1) !important;
+}
+.btn-outline-secondary:hover {
+  background: rgba(0,0,0,.04) !important;
+  color: var(--sms-text, #1a2332) !important;
+}
+
+/* Reduce all page spacing — tighter layout */
+.mb-3 { margin-bottom: 0.75rem !important; }
+.mt-3 { margin-top: 0.75rem !important; }
+.card + .card { margin-top: 0.75rem; }
+.row.g-3 { --bs-gutter-y: 0.75rem; --bs-gutter-x: 0.75rem; }
+
+/* ================================================================
+   PILL FILTERS (like the Chip/Motherboard/Body tabs)
+   ================================================================ */
+.sms-pill-filters {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.sms-pill-filter {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--sms-border);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sms-text-secondary);
+  cursor: pointer;
+  transition: var(--sms-transition);
+}
+.sms-pill-filter:hover { border-color: var(--sms-text-muted); }
+.sms-pill-filter.active {
+  background: var(--sms-text);
+  color: #fff;
+  border-color: var(--sms-text);
+}
+
+/* ================================================================
+   DETAIL VIEW — Key-value layout (like the reference)
+   ================================================================ */
+.sms-detail-row {
+  display: flex;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f2f4f7;
+  font-size: 12px;
+  align-items: baseline;
+}
+.sms-detail-row:last-child { border-bottom: none; }
+.sms-detail-label {
+  flex: 0 0 130px;
+  color: var(--sms-text-muted);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.sms-detail-value {
+  flex: 1;
+  color: var(--sms-text);
+  font-weight: 500;
+}
+@media (max-width: 575.98px) {
+  .sms-detail-row { flex-direction: column; gap: 1px; padding: 5px 4px; }
+  .sms-detail-label { flex: none; }
+}
+
+/* ================================================================
+   BULK BAR — Modern floating bar
+   ================================================================ */
+.sms-bulk-bar {
+  background: var(--sms-text) !important;
+  color: #fff !important;
+  border-radius: 0 !important;
+}
+
+/* ================================================================
+   IMPORT INSTRUCTIONS — Blue info box
+   ================================================================ */
+.sms-import-instructions {
+  border-radius: var(--sms-card-radius) !important;
+}
+
+/* ================================================================
+   STATUS DOTS — Animated status indicator
+   ================================================================ */
+.status-dot-animated { animation: statusPulse 1.5s ease-in-out infinite; }
+@keyframes statusPulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media (max-width: 575.98px) {
+  .page-body { padding: 0.25rem !important; }
+  .card-body { padding: 10px !important; }
+  .card-header { padding: 10px 12px !important; }
+  .table { font-size: 12px !important; }
+  .table thead th { font-size: 11px !important; padding: 8px !important; }
+  .table tbody td { padding: 8px !important; }
+  .btn { font-size: 12px !important; padding: 6px 10px !important; }
+  .modal-body { padding: 16px !important; }
+  .form-control, .form-select { font-size: 14px !important; padding: 10px 12px !important; }
+  .nav-tabs .nav-link { padding: 8px 12px !important; font-size: 13px !important; }
+}
+@media (max-width: 767.98px) {
+  .d-none-mobile { display: none !important; }
+  .card-header .d-flex { flex-wrap: wrap; gap: 6px; }
+}
+
+/* ================================================================
+   DARK MODE OVERRIDES
+   ================================================================ */
+[data-bs-theme="dark"] {
+  --sms-bg: #0f1419;
+  --sms-card-bg: #1a2332;
+  --sms-border: rgba(255,255,255,.08);
+  --sms-text: #e5e7eb;
+  --sms-text-secondary: #9ca3af;
+  --sms-text-muted: #6b7280;
+}
+[data-bs-theme="dark"] .page-wrapper { background: var(--sms-bg) !important; }
+[data-bs-theme="dark"] .card { background: var(--sms-card-bg) !important; border-color: var(--sms-border) !important; }
+[data-bs-theme="dark"] .card-header { background: var(--tblr-primary, #0054a6) !important; }
+[data-bs-theme="dark"] .table thead th { background: var(--tblr-primary, #0054a6) !important; }
+[data-bs-theme="dark"] .table tbody td { border-color: rgba(255,255,255,.04) !important; }
+[data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select {
+  background: rgba(255,255,255,.05) !important;
+  border-color: rgba(255,255,255,.1) !important;
+  color: var(--sms-text) !important;
+}
+[data-bs-theme="dark"] .dropdown-menu { background: #1a2332 !important; border-color: rgba(255,255,255,.08) !important; }
+[data-bs-theme="dark"] .dropdown-item { color: var(--sms-text) !important; }
+[data-bs-theme="dark"] .dropdown-item:hover { background: rgba(255,255,255,.06) !important; }
+[data-bs-theme="dark"] .modal-content { background: #1a2332 !important; }
+[data-bs-theme="dark"] .sms-pill-filter { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); color: var(--sms-text-secondary); }
+[data-bs-theme="dark"] .sms-pill-filter.active { background: #fff; color: #0f1419; }
+[data-bs-theme="dark"] .offcanvas { background: #1a2332 !important; }
+
+/* ================================================================
+   THEME PANEL — Text color swatches
+   ================================================================ */
+.tp-text-color {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; transition: var(--sms-transition);
+}
+.tp-text-color:hover { transform: scale(1.15); }
+.tp-text-color.active { border-color: #fff; box-shadow: 0 0 0 3px currentColor; transform: scale(1.1); }
+
+.tp-icon-color {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; transition: var(--sms-transition);
+}
+.tp-icon-color:hover { transform: scale(1.15); }
+.tp-icon-color.active { border-color: #fff; box-shadow: 0 0 0 3px currentColor; transform: scale(1.1); }
+
+/* ================================================================
+   COLLAPSIBLE CARDS — Click card header to toggle body
+   ================================================================ */
+.card-header[data-bs-toggle="collapse"] {
+  cursor: pointer;
+  user-select: none;
+}
+.card-header[data-bs-toggle="collapse"] .collapse-icon {
+  transition: transform .2s ease;
+  font-size: 14px;
+  opacity: .5;
+}
+.card-header[data-bs-toggle="collapse"].collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+/* ================================================================
+   SCROLLBAR — Modern thin scrollbar
+   ================================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.25); }
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); }
+
+/* ================================================================
+   ANIMATION — Smooth page transitions
+   ================================================================ */
+.page-body { animation: smsFadeIn .3s ease; }
+@keyframes smsFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.card { animation: smsCardIn .4s ease; }
+@keyframes smsCardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

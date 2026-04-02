@@ -18,6 +18,13 @@ app.set('views', path.join(__dirname, 'views'));
 app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 
+// ── Cross-Origin headers (required for FFmpeg WASM / SharedArrayBuffer) ──
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    next();
+});
+
 // ── Static files ──────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 

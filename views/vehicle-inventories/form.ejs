@@ -868,4 +868,18 @@ window._FORM_DATA = {
   documents: <%- isEdit && rec.documents ? JSON.stringify(rec.documents) : '[]' %>
 };
 </script>
-<% block('scripts', '<script src="/js/pages/vehicle-inventories-form.js"></script>') %>
+
+<!-- Preview Modal (for image/video preview) -->
+<div class="modal fade" id="modalView" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title"><i class="bi bi-eye me-1"></i><%- t('general.preview','Preview') %></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="viewBody"></div>
+    </div>
+  </div>
+</div>
+
+<% block('scripts', '<script src="/js/common/image-editor.js"></script><script src="/js/common/video-editor.js"></script><script src="/js/pages/vehicle-inventories-form.js"></script>') %>

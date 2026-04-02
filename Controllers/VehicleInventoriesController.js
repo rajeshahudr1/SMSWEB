@@ -43,6 +43,78 @@ exports.update = async (req, res) => {
 };
 
 exports.viewData = async (req, res) => { res.json(await api.get('/vehicle-inventories/' + req.params.uuid + '/view', req.session.token)); };
+
+exports.pdf = async (req, res) => {
+    const r = await api.get('/vehicle-inventories/' + req.params.uuid + '/view', req.session.token);
+    if (!r || r.status !== 200) return res.status(404).send('Not found');
+
+    // If ?preview=1, render the HTML template (for debugging)
+    if (req.query.preview) {
+        return res.render('vehicle-inventories/pdf', { record: r.data, layout: false });
+    }
+
+    // Render EJS to HTML string using fs.readFileSync + ejs.render (avoids callback issues)
+    const ejs = require('ejs');
+    const templatePath = path.join(__dirname, '..', 'views', 'vehicle-inventories', 'pdf.ejs');
+    const template = fs.readFileSync(templatePath, 'utf8');
+    const html = ejs.render(template, { record: r.data, filename: templatePath });
+
+    // Convert to PDF via Puppeteer
+    let browser;
+    try {
+        const puppeteer = require('puppeteer');
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security']
+        });
+        const page = await browser.newPage();
+
+        // Set content with a base URL so images from API can load
+        const apiBase = process.env.API_URL || 'http://localhost:3000';
+        await page.setContent(html, {
+            waitUntil: ['load', 'networkidle2'],
+            timeout: 30000
+        });
+
+        // Wait a bit for images to render
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Hide print bar
+        await page.evaluate(() => {
+            var bar = document.querySelector('.print-bar');
+            if (bar) bar.remove();
+            document.body.style.paddingTop = '0';
+            document.body.style.background = '#fff';
+        });
+
+        const pdfBuf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '8mm', right: '8mm', bottom: '8mm', left: '8mm' }
+        });
+
+        await browser.close();
+        browser = null;
+
+        console.log('PDF generated, size:', pdfBuf.length, 'bytes');
+
+        if (!pdfBuf || pdfBuf.length < 100) {
+            return res.status(500).send('PDF generation produced empty file');
+        }
+
+        const fileName = 'Vehicle_' + (r.data.vehicle_internal_id || r.data.registration_plate_no || req.params.uuid) + '.pdf';
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="' + fileName + '"',
+            'Content-Length': pdfBuf.length
+        });
+        return res.end(pdfBuf);
+    } catch (e) {
+        if (browser) try { await browser.close(); } catch(_) {}
+        console.error('PDF generation error:', e);
+        return res.status(500).send('PDF generation failed: ' + e.message);
+    }
+};
 exports.destroy = async (req, res) => { res.json(await api.del('/vehicle-inventories/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/vehicle-inventories/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover = async (req, res) => { res.json(await api.post('/vehicle-inventories/' + req.params.uuid + '/recover', {}, req.session.token)); };
@@ -74,6 +146,16 @@ exports.uploadImages = [(r,s,n) => { tempUpload.array('images', 20)(r,s,(e) => {
     } catch(e) { cleanFiles(req.files); return res.json(e.response && e.response.data ? e.response.data : { status: 500, message: 'Failed.' }); }
 }];
 exports.deleteImage = async (req, res) => { res.json(await api.del('/vehicle-inventories/' + req.params.uuid + '/images/' + req.body.image_id, req.session.token)); };
+exports.replaceImage = [(r,s,n) => { tempUpload.single('image')(r,s,(e) => { if (e) return s.json({ status: 422, message: e.message }); n(); }); }, async (req, res) => {
+    try {
+        if (!req.file) return res.json({ status: 422, message: 'No file.' });
+        const fd = new FormData();
+        fd.append('image', fs.createReadStream(req.file.path), { filename: req.file.originalname || 'edited.png', contentType: req.file.mimetype });
+        const axios = require('axios'); const BASE = process.env.API_URL || 'http://localhost:3000/api';
+        const r = await axios.post(BASE + '/vehicle-inventories/' + req.params.uuid + '/images/' + req.params.imageId + '/replace', fd, { headers: { ...fd.getHeaders(), Authorization: 'Bearer ' + req.session.token } });
+        clean(req.file); return res.json(r.data);
+    } catch(e) { clean(req.file); return res.json(e.response && e.response.data ? e.response.data : { status: 500, message: 'Failed.' }); }
+}];
 exports.reorderImages = async (req, res) => { res.json(await api.post('/vehicle-inventories/' + req.params.uuid + '/images/reorder', req.body, req.session.token)); };
 
 // Videos

@@ -21,9 +21,9 @@ var htmlDir   = isRTL ? 'rtl' : 'ltr';
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
 
 <!-- ALL LOCAL — no CDN -->
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous"/>
 <link rel="stylesheet" href="/libs/css/tabler.min.css"/>
 <% if (isRTL) { %>
 <link rel="stylesheet" href="/libs/css/tabler-rtl.min.css"/>
@@ -98,6 +98,15 @@ var htmlDir   = isRTL ? 'rtl' : 'ltr';
 <script src="/libs/js/jquery.validate.min.js"></script>
 <script src="/libs/js/flatpickr.min.js"></script>
 <script src="/libs/js/toastr.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+<script>
+/* Patch Fabric.js 5.x — fix deprecated 'alphabetical' textBaseline for modern Chrome */
+(function(){if(typeof fabric!=='undefined'&&fabric.Text){var _o=fabric.Text.prototype._renderTextCommon;if(_o){fabric.Text.prototype._renderTextCommon=function(ctx,method){var _s=ctx.__lookupSetter__?null:undefined;try{_o.call(this,ctx,method);}catch(e){}};}}
+if(typeof CanvasRenderingContext2D!=='undefined'){var _d=Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype,'textBaseline');if(_d&&_d.set){var origSet=_d.set;Object.defineProperty(CanvasRenderingContext2D.prototype,'textBaseline',{set:function(v){origSet.call(this,v==='alphabetical'?'alphabetic':v);},get:_d.get,configurable:true});}}})();
+</script>
 <script src="/js/app.js"></script>
 <script src="/js/notifications.js"></script>
 

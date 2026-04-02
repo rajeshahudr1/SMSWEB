@@ -139,6 +139,7 @@ function loadData(){
             acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>';
             acts+='<ul class="dropdown-menu dropdown-menu-end">';
             acts+='<li><a class="dropdown-item" href="#" onclick="viewVI(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>'+T('general.preview','View')+'</a></li>';
+            acts+='<li><a class="dropdown-item" href="#" onclick="downloadPdfVI(\''+r.uuid+'\');return false;"><i class="bi bi-file-pdf me-2 text-danger"></i>'+T('general.download_pdf','Download PDF')+'</a></li>';
             if(deleted){
                 acts+='<li><a class="dropdown-item" href="#" onclick="recoverVI(\''+r.uuid+'\',\''+H.esc(r.vehicle_internal_id||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>'+T('bulk.recover','Recover')+'</a></li>';
             }else{
@@ -255,10 +256,21 @@ function viewVI(uuid){
         else h+='<div class="text-muted text-center py-3">No images</div>';
         h+='</div>';
 
-        // Tab 4: Videos
+        // Tab 4: Videos (thumbnails + click to play in modal)
         h+='<div class="tab-pane fade" id="vvTab4">';
-        if(videos.length){h+='<div class="row g-2">';videos.forEach(function(v){var u=v.display_url||v.video_url||'';h+='<div class="col-6 col-sm-4"><a href="'+H.esc(u)+'" target="_blank" class="d-flex align-items-center justify-content-center border rounded bg-light" style="height:80px;"><i class="bi bi-play-circle" style="font-size:28px;"></i></a></div>';});h+='</div>';}
-        else h+='<div class="text-muted text-center py-3">No videos</div>';
+        if(videos.length){
+            h+='<div class="row g-2">';
+            videos.forEach(function(v,vi){
+                var u=v.display_url||v.video_url||'';
+                h+='<div class="col-6 col-sm-4 col-md-3">' +
+                    '<div class="border rounded position-relative vv-play-btn" data-url="'+H.esc(u)+'" style="background:#000;overflow:hidden;cursor:pointer;">' +
+                    '<video src="'+H.esc(u)+'#t=1" preload="metadata" muted playsinline style="width:100%;height:80px;object-fit:cover;pointer-events:none;display:block;"></video>' +
+                    '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);">' +
+                    '<i class="bi bi-play-circle-fill" style="font-size:28px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);"></i></div>' +
+                    '</div></div>';
+            });
+            h+='</div>';
+        } else h+='<div class="text-muted text-center py-3">No videos</div>';
         h+='</div>';
 
         // Tab 5: Owner
@@ -294,10 +306,252 @@ function viewVI(uuid){
     }).fail(function(){$b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Error.')+'</div>');});
 }
 
+/* Play video from detail view — open in a simple popup */
+$(document).on('click', '.vv-play-btn', function(e) {
+    e.preventDefault();
+    var url = $(this).data('url');
+    if (!url) return;
+    var w = window.open('', '_blank', 'width=800,height=500');
+    w.document.write('<!DOCTYPE html><html><head><title>Video</title><style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;}video{max-width:100%;max-height:100%;}</style></head><body><video src="' + url + '" controls autoplay playsinline></video></body></html>');
+    w.document.close();
+});
+
 /* Actions */
 function toggleVI(u){$.post(BASE_URL+'/vehicle-inventories/'+u+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}
 function delVI(u,n){smsConfirm({icon:'\uD83D\uDDD1\uFE0F',title:T('vehicle_inventories.delete','Delete'),msg:T('general.are_you_sure','Sure?')+' <strong>'+H.esc(n)+'</strong>',btnClass:'btn-danger',btnText:T('btn.delete','Delete'),onConfirm:function(){showLoading();$.post(BASE_URL+'/vehicle-inventories/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 function recoverVI(u,n){smsConfirm({icon:'\u267B\uFE0F',title:T('bulk.recover','Recover'),msg:T('bulk.recover','Recover')+' <strong>'+H.esc(n)+'</strong>?',btnClass:'btn-success',btnText:T('bulk.recover','Recover'),onConfirm:function(){showLoading();$.post(BASE_URL+'/vehicle-inventories/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
+/* PDF Download — direct download from server */
+function downloadPdfVI(uuid) {
+    toastr.info('Generating PDF...');
+    // Direct download via hidden link (no popup blocker issues)
+    var a = document.createElement('a');
+    a.href = BASE_URL + '/vehicle-inventories/' + uuid + '/pdf';
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function _x_unused_pdf(uuid) {
+    showLoading();
+    $.get(BASE_URL + '/vehicle-inventories/' + uuid + '/view-data', function(res) {
+        hideLoading();
+        if (!res || res.status !== 200) { toastr.error('Not found'); return; }
+        var vi = res.data || {};
+        var images = vi.images || [], videos = vi.videos || [], docs = vi.documents || [];
+
+        function _e(v) { return v ? String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+        function _d(v) { return v ? smsFormatDate(v) : ''; }
+        function _row(l, v) { if (!v && v !== 0) return ''; return '<tr><td style="font-weight:600;color:#374151;width:180px;padding:4px 8px;font-size:11px;">' + _e(l) + '</td><td style="padding:4px 8px;font-size:11px;">' + _e(String(v)) + '</td></tr>'; }
+        function _rowH(l, html) { if (!html) return ''; return '<tr><td style="font-weight:600;color:#374151;width:180px;padding:4px 8px;font-size:11px;">' + _e(l) + '</td><td style="padding:4px 8px;font-size:11px;">' + html + '</td></tr>'; }
+        function _sec(title) { return '<tr><td colspan="2" style="background:#f0f4f8;font-weight:700;font-size:12px;padding:6px 8px;color:#1e40af;border-top:2px solid #3b82f6;">' + _e(title) + '</td></tr>'; }
+
+        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vehicle - ' + _e(vi.vehicle_internal_id || vi.registration_plate_no || uuid) + '</title>';
+        html += '<style>';
+        html += 'body{font-family:Inter,Arial,sans-serif;font-size:12px;color:#1f2937;margin:0;padding:20px;}';
+        html += '.header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #3b82f6;padding-bottom:10px;margin-bottom:16px;}';
+        html += '.header h1{font-size:18px;color:#1e40af;margin:0;}';
+        html += '.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-right:4px;}';
+        html += '.badge-blue{background:#dbeafe;color:#1e40af;} .badge-green{background:#d1fae5;color:#065f46;} .badge-red{background:#fee2e2;color:#991b1b;} .badge-gray{background:#f3f4f6;color:#374151;}';
+        html += 'table{width:100%;border-collapse:collapse;margin-bottom:16px;}';
+        html += 'table td{border:1px solid #e5e7eb;vertical-align:top;}';
+        html += '.tab-title{font-size:14px;font-weight:700;color:#1e40af;margin:16px 0 8px;padding:6px 0;border-bottom:2px solid #3b82f6;}';
+        html += '.img-grid{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}';
+        html += '.img-grid img{width:120px;height:80px;object-fit:cover;border-radius:4px;border:1px solid #e5e7eb;}';
+        html += '.vid-item{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#f0f4f8;border-radius:6px;font-size:11px;margin:4px;text-decoration:none;color:#1e40af;}';
+        html += '@media print{body{padding:10px;}.no-print{display:none;}}';
+        html += '</style></head><body>';
+
+        // Header
+        html += '<div class="header"><div>';
+        html += '<h1>Vehicle Inventory Details</h1>';
+        html += '<div style="margin-top:4px;">';
+        if (vi.vehicle_internal_id) html += '<span class="badge badge-blue">#' + _e(vi.vehicle_internal_id) + '</span>';
+        if (vi.registration_plate_no) html += '<span class="badge badge-blue">' + _e(vi.registration_plate_no) + '</span>';
+        if (INV_STATUS[vi.inventory_status]) html += '<span class="badge badge-green">' + _e(INV_STATUS[vi.inventory_status]) + '</span>';
+        html += '</div></div>';
+        html += '<div style="text-align:right;font-size:10px;color:#6b7280;">Generated: ' + new Date().toLocaleString() + '</div></div>';
+
+        // TAB 1: Vehicle Info
+        html += '<div class="tab-title">1. Vehicle Information</div>';
+        html += '<table>';
+        html += _sec('Basic Details');
+        html += _row('Internal ID', vi.vehicle_internal_id);
+        html += _row('Registration Plate', vi.registration_plate_no);
+        html += _row('Registration No', vi.registration_number);
+        html += _row('VIN', vi.vin_number);
+        html += _row('Type', vi.vehicle_type_name);
+        html += _row('Make', vi.vehicle_make_name);
+        html += _row('Model', vi.vehicle_model_name);
+        html += _row('Variant', vi.vehicle_variant_name);
+        html += _row('Year', vi.vehicle_year_name);
+        html += _row('Fuel', vi.vehicle_fuel_name);
+        html += _row('Category', vi.vehicle_category_name);
+        html += _row('Engine', vi.vehicle_engine_name);
+        html += _row('Color', vi.color);
+        html += _row('Kms', vi.kms);
+        html += _sec('Registration & Dates');
+        html += _row('First Reg. Date', _d(vi.first_registration_date));
+        html += _row('Cancellation Date', _d(vi.cancellation_date));
+        html += _row('Entry Date', _d(vi.entry_date));
+        html += _row('Sales Date', _d(vi.sales_date));
+        html += _sec('Status');
+        html += _row('Inventory Status', INV_STATUS[vi.inventory_status] || '');
+        html += _row('Location', vi.location);
+        html += _row('Purchase Price', vi.purchase_price);
+        html += _row('Selling Price', vi.selling_price);
+        html += '</table>';
+
+        // TAB 2: Extra Info
+        html += '<div class="tab-title">2. Extra Information</div>';
+        html += '<table>';
+        html += _sec('Vehicle Details');
+        html += _row('Seats', vi.seats);
+        html += _row('Doors', vi.doors);
+        html += _row('Steering Side', vi.steering_side === 1 ? 'Left' : vi.steering_side === 2 ? 'Right' : '');
+        html += _row('Brake', BRAKE_OPT[vi.brake_option] || '');
+        html += _row('Towable', (vi.is_towable === true || vi.is_towable === 1) ? 'Yes' : 'No');
+        html += _row('Engine No', vi.engine_no);
+        html += _row('Cylinder', vi.cylinder);
+        html += _row('Power (HP)', vi.power_hp);
+        html += _row('Power (KW)', vi.power_kw);
+        html += _row('Weight', vi.weight);
+        html += _row('Gross Weight', vi.gross_weight);
+        html += _sec('Process Status');
+        html += _row('Depollution Status', vi.depolution_status);
+        html += _row('Dismantle Status', vi.dismantle_status);
+        html += _row('State Parking', vi.state_parking);
+        html += _sec('Notes');
+        html += _row('Comment', vi.comment);
+        html += _row('Internal Notes', vi.internal_notes);
+        html += '</table>';
+
+        // TAB 3: Images
+        html += '<div class="tab-title">3. Images (' + images.length + ')</div>';
+        if (images.length) {
+            html += '<div class="img-grid">';
+            images.forEach(function(img) {
+                var u = img.display_url || img.image_url || '';
+                html += '<img src="' + _e(u) + '" onerror="this.style.display=\'none\'"/>';
+            });
+            html += '</div>';
+        } else { html += '<p style="color:#9ca3af;">No images</p>'; }
+
+        // TAB 4: Videos
+        html += '<div class="tab-title">4. Videos (' + videos.length + ')</div>';
+        if (videos.length) {
+            videos.forEach(function(v, i) {
+                var u = v.display_url || v.video_url || '';
+                html += '<a class="vid-item" href="' + _e(u) + '" target="_blank"><span style="font-size:16px;">&#9654;</span> Video ' + (i + 1) + ' — ' + _e(u.split('/').pop()) + '</a>';
+            });
+        } else { html += '<p style="color:#9ca3af;">No videos</p>'; }
+
+        // TAB 5: Owner
+        html += '<div class="tab-title">5. Owner Details</div>';
+        html += '<table>';
+        html += _sec('Owner Information');
+        html += _row('Name', vi.owner_name);
+        html += _row('Certificate No', vi.owner_certificate_number);
+        html += _row('Postal Code', vi.owner_postal_code);
+        html += _row('Country', vi.owner_country_name);
+        html += _row('NIF', vi.owner_nif);
+        html += _row('BICC', vi.owner_bicc);
+        html += _sec('Contact');
+        html += _row('Telephone', vi.owner_telephone);
+        html += _row('CellPhone', vi.owner_cellphone);
+        html += _row('Email', vi.owner_email);
+        html += _sec('Company & Address');
+        html += _row('Company Code', vi.owner_company_certificate_code);
+        html += _row('Validity', vi.owner_validity);
+        html += _row('Address', vi.owner_address);
+        html += '</table>';
+
+        // TAB 6: Documents
+        html += '<div class="tab-title">6. Documents (' + docs.length + ')</div>';
+        if (docs.length) {
+            html += '<table><tr style="background:#f0f4f8;"><td style="font-weight:700;padding:4px 8px;font-size:11px;">Type</td><td style="font-weight:700;padding:4px 8px;font-size:11px;">File</td><td style="font-weight:700;padding:4px 8px;font-size:11px;">Comment</td></tr>';
+            docs.forEach(function(d) {
+                var tn = d.type_name || DOC_TYPES[d.document_type] || '';
+                var u = d.display_url || d.file_url || '';
+                html += '<tr><td style="padding:4px 8px;font-size:11px;"><span class="badge badge-gray">' + _e(tn) + '</span></td>';
+                html += '<td style="padding:4px 8px;font-size:11px;">' + (u ? '<a href="' + _e(u) + '" target="_blank">' + _e(d.original_name || 'Download') + '</a>' : _e(d.original_name || '')) + '</td>';
+                html += '<td style="padding:4px 8px;font-size:11px;color:#6b7280;">' + _e(d.comment || '') + '</td></tr>';
+            });
+            html += '</table>';
+        } else { html += '<p style="color:#9ca3af;">No documents</p>'; }
+
+        // Footer
+        html += '<div style="border-top:1px solid #e5e7eb;margin-top:16px;padding-top:8px;font-size:10px;color:#9ca3af;display:flex;justify-content:space-between;">';
+        html += '<span>Created: ' + smsFormatDateTime(vi.created_at) + ' | Updated: ' + smsFormatDateTime(vi.updated_at) + '</span>';
+        html += '</div>';
+
+        html += '</body></html>';
+
+        // Render HTML into hidden div, then convert to PDF via html2canvas + jsPDF
+        var $container = $('<div id="pdfRender" style="position:fixed;left:-9999px;top:0;width:800px;background:#fff;padding:20px;z-index:-1;"></div>');
+        $('body').append($container);
+        $container.html(html.replace(/<!DOCTYPE.*?<body>/, '').replace(/<\/body>.*/, ''));
+
+        showLoading();
+        // Wait for images to load
+        var imgs = $container.find('img');
+        var loaded = 0;
+        var total = imgs.length || 1;
+        function _tryGenerate() {
+            if (typeof html2canvas === 'undefined' || typeof jspdf === 'undefined') {
+                // Fallback: open in new window for print
+                $container.remove();
+                hideLoading();
+                var w = window.open('', '_blank');
+                w.document.write(html); w.document.close();
+                setTimeout(function() { w.print(); }, 500);
+                return;
+            }
+            html2canvas($container[0], { scale: 2, useCORS: true, allowTaint: true, logging: false }).then(function(canvas) {
+                var imgData = canvas.toDataURL('image/jpeg', 0.92);
+                var pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                var pageW = pdf.internal.pageSize.getWidth();
+                var pageH = pdf.internal.pageSize.getHeight();
+                var imgW = pageW - 10;
+                var imgH = (canvas.height * imgW) / canvas.width;
+                var y = 5;
+                // Multi-page support
+                while (y < imgH + 5) {
+                    if (y > 5) pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 5, 5 - y + 5, imgW, imgH);
+                    y += pageH - 10;
+                }
+                var fileName = 'Vehicle_' + (vi.vehicle_internal_id || vi.registration_plate_no || uuid) + '.pdf';
+                pdf.save(fileName);
+                $container.remove();
+                hideLoading();
+                toastr.success('PDF downloaded: ' + fileName);
+            }).catch(function(e) {
+                $container.remove();
+                hideLoading();
+                toastr.error('PDF generation failed');
+                console.error(e);
+            });
+        }
+        if (imgs.length === 0) {
+            setTimeout(_tryGenerate, 200);
+        } else {
+            imgs.each(function() {
+                var img = this;
+                if (img.complete) { loaded++; if (loaded >= total) setTimeout(_tryGenerate, 200); }
+                else {
+                    $(img).on('load error', function() { loaded++; if (loaded >= total) setTimeout(_tryGenerate, 200); });
+                }
+            });
+            // Safety timeout
+            setTimeout(function() { if (loaded < total) _tryGenerate(); }, 3000);
+        }
+    }).fail(function() {
+        hideLoading();
+        toastr.error(T('general.network_error', 'Error.'));
+    });
+}
+
 function updateBulk(){_sel=[];$('.row-chk:checked').each(function(){_sel.push($(this).data('uuid'));});$('#bulkCount').text(_sel.length);_sel.length>0?$('#bulkBar').removeClass('d-none'):$('#bulkBar').addClass('d-none');}
 function bulkAction(a){if(!_sel.length)return;var icons={delete:'\uD83D\uDDD1\uFE0F',activate:'\u2705',deactivate:'\u26D4',recover:'\u267B\uFE0F'};smsConfirm({icon:icons[a]||'\u26A0\uFE0F',title:a.charAt(0).toUpperCase()+a.slice(1),msg:_sel.length+' '+T('vehicle_inventories.bulk_affected','items.'),btnClass:a==='delete'?'btn-danger':'btn-primary',btnText:a.charAt(0).toUpperCase()+a.slice(1),onConfirm:function(){showLoading();$.post(BASE_URL+'/vehicle-inventories/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 

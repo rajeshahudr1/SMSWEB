@@ -382,6 +382,7 @@ $(function() {
                 html += '<div class="col-6 col-sm-4 col-md-3 vi-image-card" draggable="true" data-id="' + imgId + '" data-idx="' + idx + '">' +
                     '<div class="border rounded p-1 text-center position-relative" style="cursor:grab;">' +
                     '<img src="' + H.esc(imgUrl) + '" class="rounded vi-preview-img" data-idx="' + idx + '" style="width:100%;height:100px;object-fit:cover;cursor:pointer;" onerror="this.src=\'/images/no-image.svg\';" title="' + T('general.click_preview','Click to preview') + '"/>' +
+                    '<button type="button" class="btn btn-sm btn-info position-absolute top-0 start-0 m-1 btn-edit-vi-image" data-id="' + imgId + '" data-url="' + H.esc(imgUrl) + '" style="width:24px;height:24px;padding:0;line-height:24px;font-size:11px;border-radius:50%;" title="' + T('vehicle_inventories.edit_image','Edit Image') + '"><i class="bi bi-pencil"></i></button>' +
                     '<button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 btn-delete-vi-image" data-id="' + imgId + '" style="width:24px;height:24px;padding:0;line-height:24px;font-size:11px;border-radius:50%;"><i class="bi bi-trash3"></i></button>' +
                     '<div class="text-muted mt-1" style="font-size:10px;"><i class="bi bi-grip-vertical"></i> ' + T('general.drag_to_reorder', 'Drag') + '</div>' +
                     '</div></div>';
@@ -458,55 +459,145 @@ $(function() {
             });
         }
 
-        /* Upload images */
+        /* Edit image — open SMS_ImageEditor */
+        $(document).on('click', '.btn-edit-vi-image', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var imageId = $(this).data('id');
+            var imageUrl = $(this).data('url');
+            if (!imageId || !imageUrl) return;
+            if (typeof SMS_ImageEditor === 'undefined') {
+                toastr.error('Image editor not loaded.');
+                return;
+            }
+            SMS_ImageEditor.open({
+                imageUrl: imageUrl,
+                onSave: function(blob, dataUrl, mode) {
+                    // mode = 'replace' or 'new' (from save bar inside editor)
+                    var $msg = $('#ieSaveMsg');
+
+                    // Validate size
+                    if (blob.size > _maxImgSize * 1024 * 1024) {
+                        $msg.html('<span style="color:#ef4444;"><i class="bi bi-exclamation-triangle me-1"></i>Image size (' + (blob.size / 1048576).toFixed(1) + ' MB) exceeds limit of ' + _maxImgSize + ' MB</span>');
+                        toastr.error('Image too large! Max: ' + _maxImgSize + ' MB');
+                        return false; // keep editor open
+                    }
+
+                    if (mode === 'new') {
+                        // Validate count
+                        if (_images.length >= _maxImgCount) {
+                            $msg.html('<span style="color:#ef4444;"><i class="bi bi-exclamation-triangle me-1"></i>Maximum ' + _maxImgCount + ' images reached. Delete one first.</span>');
+                            toastr.error('Maximum ' + _maxImgCount + ' images allowed.');
+                            return false; // keep editor open
+                        }
+                        // Upload as new
+                        var fd = new FormData();
+                        fd.append('images', blob, 'edited-image.png');
+                        $msg.html('<span style="color:#3b82f6;"><span class="spinner-border spinner-border-sm me-1"></span>Uploading as new...</span>');
+                        $.ajax({
+                            url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/images',
+                            type: 'POST', data: fd, processData: false, contentType: false,
+                            success: function(r) {
+                                if (r.status === 200 || r.status === 201) {
+                                    toastr.success('Image saved as new.');
+                                    if (Array.isArray(r.data)) { _images = r.data; }
+                                    renderImageGallery();
+                                } else { $msg.html('<span style="color:#ef4444;">' + (r.message || 'Error') + '</span>'); }
+                            },
+                            error: function() { $msg.html('<span style="color:#ef4444;">Upload failed</span>'); }
+                        });
+                    } else {
+                        // Replace original
+                        var fd2 = new FormData();
+                        fd2.append('image', blob, 'edited-image.png');
+                        $msg.html('<span style="color:#3b82f6;"><span class="spinner-border spinner-border-sm me-1"></span>Replacing...</span>');
+                        $.ajax({
+                            url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/images/' + imageId + '/replace',
+                            type: 'POST', data: fd2, processData: false, contentType: false,
+                            success: function(r) {
+                                if (r.status === 200) {
+                                    toastr.success('Image replaced.');
+                                    _images = r.data;
+                                    renderImageGallery();
+                                } else { $msg.html('<span style="color:#ef4444;">' + (r.message || 'Error') + '</span>'); }
+                            },
+                            error: function() { $msg.html('<span style="color:#ef4444;">Upload failed</span>'); }
+                        });
+                    }
+                    // Don't return false — let editor close after upload starts
+                }
+            });
+        });
+
+        /* Upload images — accumulate files across multiple selections */
         var _allowedImgExts = ['.jpg','.jpeg','.png','.gif','.webp'];
         var _allowedVidExts = ['.mp4','.mov','.avi','.mkv','.webm','.wmv','.flv','.m4v'];
+        var _pendingImgFiles = []; // accumulated files queue
+
+        function _renderImgPreview() {
+            var $preview = $('#imageUploadPreview');
+            $preview.html('');
+            if (!_pendingImgFiles.length) return;
+            _pendingImgFiles.forEach(function(file, idx) {
+                var url = URL.createObjectURL(file);
+                $preview.append(
+                    '<div class="col-4 col-sm-3" data-pending-idx="' + idx + '"><div class="border rounded p-1 text-center position-relative">' +
+                    '<img src="' + url + '" class="rounded" style="width:100%;height:70px;object-fit:cover;"/>' +
+                    '<button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 btn-remove-pending-img" data-idx="' + idx + '" style="width:20px;height:20px;padding:0;line-height:20px;font-size:10px;border-radius:50%;"><i class="bi bi-x"></i></button>' +
+                    '</div></div>'
+                );
+            });
+            $preview.append(
+                '<div class="col-12 mt-1"><span class="text-muted small me-2">' + _pendingImgFiles.length + ' ' + T('vehicle_inventories.files_selected','file(s) selected') + '</span>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger sms-clear-all-pending-img"><i class="bi bi-x-lg me-1"></i>' + T('general.clear_all','Clear All') + '</button></div>'
+            );
+        }
 
         $('#fImages').on('change', function() {
             var files = this.files;
-            var $preview = $('#imageUploadPreview');
-            $preview.html('');
             if (!files || !files.length) return;
-            // Validate count
-            if (_images.length + files.length > _maxImgCount) {
-                toastr.error(T('vehicle_inventories.max_images_reached', 'Maximum ') + _maxImgCount + T('vehicle_inventories.images_allowed',' images allowed. Currently: ') + _images.length);
+            // Validate total count
+            if (_images.length + _pendingImgFiles.length + files.length > _maxImgCount) {
+                toastr.error(T('vehicle_inventories.max_images_reached', 'Maximum ') + _maxImgCount + T('vehicle_inventories.images_allowed',' images allowed. Currently: ') + _images.length + ' + ' + _pendingImgFiles.length + ' pending');
                 $(this).val(''); return;
             }
             for (var i = 0; i < files.length; i++) {
-                // Validate format
                 var ext = '.' + files[i].name.split('.').pop().toLowerCase();
                 if (_allowedImgExts.indexOf(ext) === -1) {
                     toastr.error('"' + files[i].name + '" — ' + T('vehicle_inventories.invalid_image_format','Only JPG, PNG, GIF, WebP images are allowed.'));
-                    $(this).val(''); $preview.html(''); return;
+                    continue;
                 }
-                // Validate size from settings
                 if (files[i].size > _maxImgSize * 1024 * 1024) {
                     toastr.error('"' + files[i].name + '" ' + T('vehicle_inventories.exceeds_limit','exceeds ') + _maxImgSize + ' MB');
-                    $(this).val(''); $preview.html(''); return;
+                    continue;
                 }
-                (function(file) {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        $preview.append(
-                            '<div class="col-4 col-sm-3"><div class="border rounded p-1 text-center position-relative">' +
-                            '<img src="' + e.target.result + '" class="rounded" style="width:100%;height:70px;object-fit:cover;"/>' +
-                            '</div></div>'
-                        );
-                    };
-                    reader.readAsDataURL(file);
-                })(files[i]);
+                _pendingImgFiles.push(files[i]);
             }
-            // Add clear button
-            $preview.append('<div class="col-12 mt-1"><button type="button" class="btn btn-sm btn-outline-danger sms-clear-file-preview" data-input="#fImages" data-preview="#imageUploadPreview"><i class="bi bi-x-lg me-1"></i>' + T('general.clear_all','Clear All') + '</button></div>');
+            $(this).val(''); // reset input so same file can be selected again
+            _renderImgPreview();
+        });
+
+        // Remove single pending image
+        $(document).on('click', '.btn-remove-pending-img', function(e) {
+            e.preventDefault();
+            var idx = parseInt($(this).data('idx'));
+            _pendingImgFiles.splice(idx, 1);
+            _renderImgPreview();
+        });
+
+        // Clear all pending images
+        $(document).on('click', '.sms-clear-all-pending-img', function(e) {
+            e.preventDefault();
+            _pendingImgFiles = [];
+            _renderImgPreview();
         });
 
         $('#btnUploadImages').on('click', function() {
-            var files = $('#fImages')[0].files;
-            if (!files || !files.length) { toastr.error(T('vehicle_inventories.select_files', 'Please select files to upload.')); return; }
+            if (!_pendingImgFiles.length) { toastr.error(T('vehicle_inventories.select_files', 'Please select files to upload.')); return; }
 
             var fd = new FormData();
-            for (var i = 0; i < files.length; i++) {
-                fd.append('images', files[i]);
+            for (var i = 0; i < _pendingImgFiles.length; i++) {
+                fd.append('images', _pendingImgFiles[i]);
             }
 
             var $btn = $(this);
@@ -521,11 +612,10 @@ $(function() {
                     btnReset($btn);
                     if (r.status === 200 || r.status === 201) {
                         toastr.success(r.message || T('msg.uploaded', 'Uploaded.'));
-                        // API returns full image list — replace, don't concat
                         if (Array.isArray(r.data)) { _images = r.data; }
                         renderImageGallery();
-                        $('#fImages').val('');
-                        $('#imageUploadPreview').html('');
+                        _pendingImgFiles = [];
+                        _renderImgPreview();
                     } else {
                         toastr.error(r.message || T('general.error', 'Error.'));
                     }
@@ -622,17 +712,17 @@ $(function() {
             _videos.forEach(function(vid, idx) {
                 var vidUrl = vid.display_url || vid.video_url || vid.url || '';
                 var vidId  = vid.id || vid.video_id || '';
-                var thumb  = vid.thumbnail_url || '';
                 html += '<div class="col-6 col-sm-4 col-md-3 vi-video-card" draggable="true" data-id="' + vidId + '" data-idx="' + idx + '">' +
-                    '<div class="border rounded p-1 text-center position-relative" style="cursor:grab;">';
-                if (thumb) {
-                    html += '<img src="' + H.esc(thumb) + '" class="rounded vi-preview-vid" data-idx="' + idx + '" style="width:100%;height:100px;object-fit:cover;cursor:pointer;" onerror="this.src=\'/images/no-image.svg\';" title="' + T('general.click_preview','Click to preview') + '"/>';
-                } else {
-                    html += '<div class="d-flex align-items-center justify-content-center rounded bg-light vi-preview-vid" data-idx="' + idx + '" style="width:100%;height:100px;cursor:pointer;" title="' + T('general.click_preview','Click to preview') + '">' +
-                        '<i class="bi bi-play-circle" style="font-size:32px;opacity:.5;"></i></div>';
-                }
-                html += '<button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 btn-delete-vi-video" data-id="' + vidId + '" style="width:24px;height:24px;padding:0;line-height:24px;font-size:11px;border-radius:50%;"><i class="bi bi-trash3"></i></button>' +
-                    '<div class="text-muted mt-1" style="font-size:10px;"><i class="bi bi-grip-vertical"></i> ' + T('general.drag_to_reorder', 'Drag to reorder') + '</div>' +
+                    '<div class="border rounded p-1 text-center position-relative" style="cursor:grab;background:#000;">' +
+                    '<div class="vi-vid-thumb-wrap" data-idx="' + idx + '" data-url="' + H.esc(vidUrl) + '" style="position:relative;width:100%;height:100px;cursor:pointer;overflow:hidden;border-radius:4px;" title="' + T('general.click_preview','Click to play') + '">' +
+                    '<video src="' + H.esc(vidUrl) + '#t=1" preload="metadata" muted playsinline ' +
+                    'style="width:100%;height:100px;object-fit:cover;pointer-events:none;"></video>' +
+                    '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);">' +
+                    '<i class="bi bi-play-circle-fill" style="font-size:32px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5);"></i></div>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-sm btn-info position-absolute top-0 start-0 m-1 btn-edit-vi-video" data-idx="' + idx + '" data-url="' + H.esc(vidUrl) + '" style="width:24px;height:24px;padding:0;line-height:24px;font-size:11px;border-radius:50%;" title="' + T('vehicle_inventories.video_tools','Video Tools') + '"><i class="bi bi-scissors"></i></button>' +
+                    '<button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 btn-delete-vi-video" data-id="' + vidId + '" style="width:24px;height:24px;padding:0;line-height:24px;font-size:11px;border-radius:50%;"><i class="bi bi-trash3"></i></button>' +
+                    '<div class="text-muted mt-1" style="font-size:10px;"><i class="bi bi-grip-vertical"></i> ' + T('general.drag_to_reorder', 'Drag') + '</div>' +
                     '</div></div>';
             });
             if (_vidOrderChanged) html += '<div class="col-12 mt-2"><button type="button" class="btn btn-sm btn-warning" id="btnSaveVideoOrder"><i class="bi bi-arrows-move me-1"></i>' + T('vehicle_inventories.save_order','Save Order') + '</button></div>';
@@ -640,10 +730,263 @@ $(function() {
             initVideoDragDrop();
         }
 
-        /* Video preview */
-        $(document).on('click', '.vi-preview-vid', function(e) {
+        /* Video play — click thumbnail to open player modal */
+        $(document).on('click', '.vi-vid-thumb-wrap', function(e) {
             e.preventDefault();
-            _showPreview('video', parseInt($(this).data('idx')));
+            var idx = parseInt($(this).data('idx'));
+            _showVideoPlayer(idx);
+        });
+
+        function _showVideoPlayer(idx) {
+            if (!_videos[idx]) return;
+            var url = _videos[idx].display_url || _videos[idx].video_url || _videos[idx].url || '';
+            var h = '<div class="text-center" style="background:#000;border-radius:8px;overflow:hidden;">' +
+                '<video id="viVideoPlayer" src="' + H.esc(url) + '" controls autoplay playsinline style="max-width:100%;max-height:70vh;display:block;margin:0 auto;"></video>' +
+                '</div>' +
+                '<div class="d-flex justify-content-between align-items-center mt-3">' +
+                '<button class="btn btn-sm btn-outline-secondary vi-vid-nav" data-idx="' + (idx - 1) + '" ' + (idx <= 0 ? 'disabled' : '') + '><i class="bi bi-chevron-left me-1"></i>' + T('general.previous','Previous') + '</button>' +
+                '<span class="text-muted small">' + (idx + 1) + ' / ' + _videos.length + '</span>' +
+                '<button class="btn btn-sm btn-outline-secondary vi-vid-nav" data-idx="' + (idx + 1) + '" ' + (idx >= _videos.length - 1 ? 'disabled' : '') + '>' + T('general.next','Next') + '<i class="bi bi-chevron-right ms-1"></i></button>' +
+                '</div>';
+            $('#viewBody').html(h);
+            bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
+        }
+
+        $(document).on('click', '.vi-vid-nav', function(e) {
+            e.preventDefault();
+            _showVideoPlayer(parseInt($(this).data('idx')));
+        });
+
+        /* Video tools — opens video editor (FFmpeg WASM) or simple tools */
+        $(document).on('click', '.btn-edit-vi-video', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var idx = parseInt($(this).data('idx'));
+            var url = $(this).data('url');
+            if (!url) return;
+
+            // If SMS_VideoEditor is available (FFmpeg WASM), use full editor
+            if (typeof SMS_VideoEditor !== 'undefined') {
+                var vid = _videos[idx];
+                var vidId = vid ? (vid.id || vid.video_id) : '';
+                SMS_VideoEditor.open({
+                    videoUrl: url,
+                    fileName: 'video_' + vidId + '.mp4',
+                    onSave: function(blob, filename, mode) {
+                        // Validate size — return false to keep editor open
+                        if (blob.size > _maxVidSize * 1024 * 1024) {
+                            toastr.error('Video size (' + (blob.size / 1048576).toFixed(1) + ' MB) exceeds limit of ' + _maxVidSize + ' MB. Try compressing first.');
+                            $('#veStatus').html('<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Video too large! Max: ' + _maxVidSize + ' MB. Use Compress to reduce size.</span>');
+                            return false; // keep editor open
+                        }
+                        // Validate count for "new" mode
+                        if (mode === 'new' && _videos.length >= _maxVidCount) {
+                            toastr.error('Maximum ' + _maxVidCount + ' videos allowed. Delete one first.');
+                            return false; // keep editor open
+                        }
+
+                        var fd = new FormData();
+                        if (mode === 'replace' && vidId) {
+                            // Replace: delete old + upload new
+                            fd.append('videos', blob, filename);
+                            showLoading();
+                            // Delete old first
+                            $.post(BASE_URL + '/vehicle-inventories/' + FD.uuid + '/videos/delete', { video_id: vidId }, function() {
+                                // Then upload new
+                                $.ajax({
+                                    url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/videos',
+                                    type: 'POST', data: fd, processData: false, contentType: false,
+                                    success: function(r) {
+                                        hideLoading();
+                                        if (r.status === 200 || r.status === 201) {
+                                            toastr.success('Video replaced successfully.');
+                                            if (Array.isArray(r.data)) { _videos = r.data; }
+                                            renderVideoGallery();
+                                        } else { toastr.error(r.message || 'Error.'); }
+                                    },
+                                    error: function() { hideLoading(); toastr.error('Upload failed.'); }
+                                });
+                            }).fail(function() { hideLoading(); toastr.error('Delete failed.'); });
+                        } else {
+                            // Add as new
+                            fd.append('videos', blob, filename);
+                            showLoading();
+                            $.ajax({
+                                url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/videos',
+                                type: 'POST', data: fd, processData: false, contentType: false,
+                                success: function(r) {
+                                    hideLoading();
+                                    if (r.status === 200 || r.status === 201) {
+                                        toastr.success('Video saved as new.');
+                                        if (Array.isArray(r.data)) { _videos = r.data; }
+                                        renderVideoGallery();
+                                    } else { toastr.error(r.message || 'Error.'); }
+                                },
+                                error: function() { hideLoading(); toastr.error('Upload failed.'); }
+                            });
+                        }
+                    }
+                });
+            } else {
+                // Fallback to simple tools
+                _openVideoTools(idx, url);
+            }
+        });
+
+        function _openVideoTools(idx, url) {
+            var vid = _videos[idx];
+            var vidId = vid ? (vid.id || vid.video_id) : '';
+            var h = '<style>' +
+                '.ve-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f1f5f9;border-radius:8px;flex-wrap:wrap;margin-bottom:12px;}' +
+                '.ve-toolbar .btn{font-size:12px;}' +
+                '.ve-time{font-family:monospace;font-size:13px;color:#475569;min-width:100px;text-align:center;}' +
+                '.ve-speed-group .btn{padding:2px 8px;font-size:11px;}' +
+                '.ve-speed-group .btn.active{background:var(--tblr-primary);color:#fff;border-color:var(--tblr-primary);}' +
+                '@media(max-width:575px){.ve-toolbar{gap:4px;padding:6px 8px;}.ve-toolbar .btn{font-size:11px;padding:3px 8px;}}' +
+                '</style>' +
+                '<div class="text-center" style="background:#000;border-radius:8px;overflow:hidden;">' +
+                '<video id="vePlayer" src="' + H.esc(url) + '" controls playsinline style="max-width:100%;max-height:55vh;display:block;margin:0 auto;"></video></div>' +
+                /* Toolbar */
+                '<div class="ve-toolbar mt-2">' +
+                '<span class="ve-time" id="veTime">00:00 / 00:00</span>' +
+                '<div class="ie-sep" style="height:20px;width:1px;background:#cbd5e1;"></div>' +
+                /* Speed */
+                '<span style="font-size:11px;color:#64748b;">Speed:</span>' +
+                '<div class="btn-group btn-group-sm ve-speed-group">' +
+                '<button class="btn btn-outline-secondary ve-speed" data-speed="0.5">0.5x</button>' +
+                '<button class="btn btn-outline-secondary ve-speed active" data-speed="1">1x</button>' +
+                '<button class="btn btn-outline-secondary ve-speed" data-speed="1.5">1.5x</button>' +
+                '<button class="btn btn-outline-secondary ve-speed" data-speed="2">2x</button>' +
+                '</div>' +
+                '<div class="ie-sep" style="height:20px;width:1px;background:#cbd5e1;"></div>' +
+                /* Actions */
+                '<button class="btn btn-sm btn-outline-primary ve-capture-frame" title="Capture current frame as image"><i class="bi bi-camera me-1"></i>Capture Frame</button>' +
+                '<button class="btn btn-sm btn-outline-secondary ve-mute-toggle"><i class="bi bi-volume-mute me-1"></i>Mute</button>' +
+                '<button class="btn btn-sm btn-outline-secondary ve-fullscreen"><i class="bi bi-arrows-fullscreen me-1"></i>Fullscreen</button>' +
+                '<button class="btn btn-sm btn-outline-secondary ve-rotate" title="Rotate video 90°"><i class="bi bi-arrow-clockwise me-1"></i>Rotate</button>' +
+                '</div>' +
+                /* Frame capture info */
+                '<div id="veCaptureResult" class="mt-2"></div>';
+
+            $('#viewBody').html(h);
+            var modal = bootstrap.Modal.getOrCreateInstance($('#modalView')[0]);
+            modal.show();
+
+            // Update time display
+            var $player = $('#vePlayer');
+            $player.on('timeupdate', function() {
+                var cur = _fmtTime(this.currentTime);
+                var dur = _fmtTime(this.duration || 0);
+                $('#veTime').text(cur + ' / ' + dur);
+            });
+            $player.on('loadedmetadata', function() {
+                var dur = _fmtTime(this.duration || 0);
+                $('#veTime').text('00:00 / ' + dur);
+            });
+        }
+
+        function _fmtTime(sec) {
+            if (!sec || isNaN(sec)) return '00:00';
+            var m = Math.floor(sec / 60);
+            var s = Math.floor(sec % 60);
+            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        /* Speed control */
+        $(document).on('click', '.ve-speed', function(e) {
+            e.preventDefault();
+            var speed = parseFloat($(this).data('speed'));
+            var player = document.getElementById('vePlayer');
+            if (player) player.playbackRate = speed;
+            $('.ve-speed').removeClass('active');
+            $(this).addClass('active');
+        });
+
+        /* Mute toggle */
+        $(document).on('click', '.ve-mute-toggle', function(e) {
+            e.preventDefault();
+            var player = document.getElementById('vePlayer');
+            if (!player) return;
+            player.muted = !player.muted;
+            $(this).html(player.muted ?
+                '<i class="bi bi-volume-up me-1"></i>Unmute' :
+                '<i class="bi bi-volume-mute me-1"></i>Mute');
+        });
+
+        /* Fullscreen */
+        $(document).on('click', '.ve-fullscreen', function(e) {
+            e.preventDefault();
+            var player = document.getElementById('vePlayer');
+            if (!player) return;
+            if (player.requestFullscreen) player.requestFullscreen();
+            else if (player.webkitRequestFullscreen) player.webkitRequestFullscreen();
+        });
+
+        /* Rotate video (CSS transform) */
+        var _videoRotation = 0;
+        $(document).on('click', '.ve-rotate', function(e) {
+            e.preventDefault();
+            _videoRotation = (_videoRotation + 90) % 360;
+            var player = document.getElementById('vePlayer');
+            if (!player) return;
+            var scale = (_videoRotation === 90 || _videoRotation === 270) ? 0.65 : 1;
+            player.style.transform = 'rotate(' + _videoRotation + 'deg) scale(' + scale + ')';
+            player.style.transition = 'transform 0.3s';
+        });
+
+        /* Capture frame as image — saves to vehicle inventory images */
+        $(document).on('click', '.ve-capture-frame', function(e) {
+            e.preventDefault();
+            var player = document.getElementById('vePlayer');
+            if (!player || !player.videoWidth) {
+                toastr.error('Video not loaded yet');
+                return;
+            }
+            var c = document.createElement('canvas');
+            c.width = player.videoWidth;
+            c.height = player.videoHeight;
+            var ctx = c.getContext('2d');
+            // Apply rotation
+            if (_videoRotation === 90) {
+                c.width = player.videoHeight; c.height = player.videoWidth;
+                ctx.translate(c.width, 0); ctx.rotate(Math.PI / 2);
+            } else if (_videoRotation === 180) {
+                ctx.translate(c.width, c.height); ctx.rotate(Math.PI);
+            } else if (_videoRotation === 270) {
+                c.width = player.videoHeight; c.height = player.videoWidth;
+                ctx.translate(0, c.height); ctx.rotate(-Math.PI / 2);
+            }
+            ctx.drawImage(player, 0, 0, player.videoWidth, player.videoHeight);
+
+            c.toBlob(function(blob) {
+                if (!blob) { toastr.error('Failed to capture frame'); return; }
+                // Upload as image
+                var fd = new FormData();
+                fd.append('images', blob, 'frame-capture-' + Date.now() + '.png');
+                var $result = $('#veCaptureResult');
+                $result.html('<div class="d-flex align-items-center gap-2"><span class="spinner-border spinner-border-sm"></span><span class="small">Uploading captured frame...</span></div>');
+                $.ajax({
+                    url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/images',
+                    type: 'POST', data: fd, processData: false, contentType: false,
+                    success: function(r) {
+                        if (r.status === 200 || r.status === 201) {
+                            if (Array.isArray(r.data)) { _images = r.data; }
+                            renderImageGallery();
+                            var thumbUrl = c.toDataURL('image/jpeg', 0.5);
+                            $result.html(
+                                '<div class="d-flex align-items-center gap-2 p-2 bg-success-lt rounded">' +
+                                '<img src="' + thumbUrl + '" style="width:60px;height:40px;object-fit:cover;border-radius:4px;"/>' +
+                                '<span class="small text-success"><i class="bi bi-check-circle me-1"></i>Frame captured & saved to Images tab</span></div>'
+                            );
+                        } else {
+                            $result.html('<div class="small text-danger">' + (r.message || 'Failed') + '</div>');
+                        }
+                    },
+                    error: function() {
+                        $result.html('<div class="small text-danger">Upload failed</div>');
+                    }
+                });
+            }, 'image/png');
         });
 
         /* Delete video */
@@ -679,46 +1022,128 @@ $(function() {
         });
 
         /* Upload videos */
-        $('#fVideos').on('change', function() {
-            var files = this.files;
+        var _pendingVidFiles = [];
+
+        /* Generate thumbnail from video file */
+        function _generateVideoThumb(file, callback) {
+            var url = URL.createObjectURL(file);
+            var video = document.createElement('video');
+            video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+            video.onloadeddata = function() {
+                video.currentTime = Math.min(1, video.duration / 4);
+            };
+            video.onseeked = function() {
+                var c = document.createElement('canvas');
+                c.width = 160; c.height = 100;
+                var ctx = c.getContext('2d');
+                ctx.drawImage(video, 0, 0, c.width, c.height);
+                callback(c.toDataURL('image/jpeg', 0.7));
+                URL.revokeObjectURL(url);
+            };
+            video.onerror = function() {
+                callback(null);
+                URL.revokeObjectURL(url);
+            };
+            video.src = url;
+        }
+
+        function _renderVidPreview() {
             var $preview = $('#videoUploadPreview');
             $preview.html('');
+            if (!_pendingVidFiles.length) return;
+            _pendingVidFiles.forEach(function(file, idx) {
+                var cardId = 'pendVid_' + idx;
+                $preview.append(
+                    '<div class="col-4 col-sm-3" data-pending-vidx="' + idx + '" id="' + cardId + '"><div class="border rounded p-1 text-center position-relative" style="background:#000;">' +
+                    '<div class="d-flex align-items-center justify-content-center" style="width:100%;height:80px;">' +
+                    '<span class="spinner-border spinner-border-sm text-light"></span></div>' +
+                    '<button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 btn-remove-pending-vid" data-idx="' + idx + '" style="width:20px;height:20px;padding:0;line-height:20px;font-size:10px;border-radius:50%;"><i class="bi bi-x"></i></button>' +
+                    '<div class="text-light text-truncate px-1" style="font-size:9px;background:rgba(0,0,0,.6);">' + H.esc(file.name) + '</div>' +
+                    '</div></div>'
+                );
+                // Generate thumbnail async
+                (function(f, cid) {
+                    _generateVideoThumb(f, function(thumbUrl) {
+                        var $card = $('#' + cid + ' .d-flex');
+                        if (thumbUrl) {
+                            $card.replaceWith(
+                                '<div style="position:relative;width:100%;height:80px;cursor:pointer;" class="vi-pending-vid-play" data-idx="' + idx + '">' +
+                                '<img src="' + thumbUrl + '" style="width:100%;height:80px;object-fit:cover;border-radius:4px;"/>' +
+                                '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:28px;text-shadow:0 2px 8px rgba(0,0,0,.6);"><i class="bi bi-play-circle-fill"></i></div>' +
+                                '</div>'
+                            );
+                        } else {
+                            $card.html('<i class="bi bi-camera-video text-light" style="font-size:28px;opacity:.5;"></i>');
+                        }
+                    });
+                })(file, cardId);
+            });
+            $preview.append(
+                '<div class="col-12 mt-1"><span class="text-muted small me-2">' + _pendingVidFiles.length + ' ' + T('vehicle_inventories.files_selected','file(s) selected') + '</span>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger sms-clear-all-pending-vid"><i class="bi bi-x-lg me-1"></i>' + T('general.clear_all','Clear All') + '</button></div>'
+            );
+        }
+
+        /* Play pending video in modal */
+        $(document).on('click', '.vi-pending-vid-play', function(e) {
+            e.preventDefault();
+            var idx = parseInt($(this).data('idx'));
+            if (!_pendingVidFiles[idx]) return;
+            var url = URL.createObjectURL(_pendingVidFiles[idx]);
+            var h = '<div class="text-center">' +
+                '<video src="' + url + '" controls autoplay playsinline style="max-width:100%;max-height:70vh;border-radius:8px;"></video>' +
+                '</div>' +
+                '<div class="text-muted small text-center mt-2">' + H.esc(_pendingVidFiles[idx].name) + '</div>';
+            $('#viewBody').html(h);
+            bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
+            // Cleanup URL when modal closes
+            $('#modalView').off('hidden.bs.modal.vidclean').on('hidden.bs.modal.vidclean', function() {
+                URL.revokeObjectURL(url);
+            });
+        });
+
+        $('#fVideos').on('change', function() {
+            var files = this.files;
             if (!files || !files.length) return;
-            // Validate count
-            if (_videos.length + files.length > _maxVidCount) {
-                toastr.error(T('vehicle_inventories.max_videos_reached', 'Maximum ') + _maxVidCount + T('vehicle_inventories.videos_allowed',' videos allowed. Currently: ') + _videos.length);
+            if (_videos.length + _pendingVidFiles.length + files.length > _maxVidCount) {
+                toastr.error(T('vehicle_inventories.max_videos_reached', 'Maximum ') + _maxVidCount + T('vehicle_inventories.videos_allowed',' videos allowed. Currently: ') + _videos.length + ' + ' + _pendingVidFiles.length + ' pending');
                 $(this).val(''); return;
             }
             for (var i = 0; i < files.length; i++) {
-                // Validate format
                 var ext = '.' + files[i].name.split('.').pop().toLowerCase();
                 if (_allowedVidExts.indexOf(ext) === -1) {
                     toastr.error('"' + files[i].name + '" — ' + T('vehicle_inventories.invalid_video_format','Only MP4, MOV, AVI, MKV, WebM video formats are allowed.'));
-                    $(this).val(''); $preview.html(''); return;
+                    continue;
                 }
-                // Validate size from settings
                 if (files[i].size > _maxVidSize * 1024 * 1024) {
                     toastr.error('"' + files[i].name + '" ' + T('vehicle_inventories.exceeds_limit','exceeds ') + _maxVidSize + ' MB');
-                    $(this).val(''); $preview.html(''); return;
+                    continue;
                 }
-                $preview.append(
-                    '<div class="col-4 col-sm-3"><div class="border rounded p-2 text-center">' +
-                    '<i class="bi bi-camera-video d-block" style="font-size:24px;opacity:.5;"></i>' +
-                    '<div class="text-muted text-truncate" style="font-size:10px;">' + H.esc(files[i].name) + '</div>' +
-                    '</div></div>'
-                );
+                _pendingVidFiles.push(files[i]);
             }
-            // Add clear button
-            $preview.append('<div class="col-12 mt-1"><button type="button" class="btn btn-sm btn-outline-danger sms-clear-file-preview" data-input="#fVideos" data-preview="#videoUploadPreview"><i class="bi bi-x-lg me-1"></i>' + T('general.clear_all','Clear All') + '</button></div>');
+            $(this).val('');
+            _renderVidPreview();
+        });
+
+        $(document).on('click', '.btn-remove-pending-vid', function(e) {
+            e.preventDefault();
+            _pendingVidFiles.splice(parseInt($(this).data('idx')), 1);
+            _renderVidPreview();
+        });
+        $(document).on('click', '.sms-clear-all-pending-vid', function(e) {
+            e.preventDefault();
+            _pendingVidFiles = [];
+            _renderVidPreview();
         });
 
         $('#btnUploadVideos').on('click', function() {
-            var files = $('#fVideos')[0].files;
-            if (!files || !files.length) { toastr.error(T('vehicle_inventories.select_files', 'Please select files to upload.')); return; }
+            if (!_pendingVidFiles.length) { toastr.error(T('vehicle_inventories.select_files', 'Please select files to upload.')); return; }
 
             var fd = new FormData();
-            for (var i = 0; i < files.length; i++) {
-                fd.append('videos', files[i]);
+            for (var i = 0; i < _pendingVidFiles.length; i++) {
+                fd.append('videos', _pendingVidFiles[i]);
             }
 
             var $btn = $(this);
@@ -733,11 +1158,10 @@ $(function() {
                     btnReset($btn);
                     if (r.status === 200 || r.status === 201) {
                         toastr.success(r.message || T('msg.uploaded', 'Uploaded.'));
-                        // API returns full video list — replace, don't concat
                         if (Array.isArray(r.data)) { _videos = r.data; }
                         renderVideoGallery();
-                        $('#fVideos').val('');
-                        $('#videoUploadPreview').html('');
+                        _pendingVidFiles = [];
+                        _renderVidPreview();
                     } else {
                         toastr.error(r.message || T('general.error', 'Error.'));
                     }

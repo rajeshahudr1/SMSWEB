@@ -44,8 +44,9 @@ function smsAjax(opts) {
 
 /* ── Confirm dialog (modal) ── */
 function smsConfirm(opts) {
-    // opts: { icon, title, msg, btnClass, btnText, onConfirm }
+    // opts: { icon, title, msg, btnClass, btnText, onConfirm, extraBtn, onExtra }
     var $m = $('#smsModal');
+    var extraBtnHtml = opts.extraBtn ? opts.extraBtn : '';
     $m.html(
         '<div class="modal-dialog modal-sm modal-dialog-centered">' +
         '<div class="modal-content">' +
@@ -54,8 +55,9 @@ function smsConfirm(opts) {
         '<h4 class="mb-1">' + (opts.title||'Confirm') + '</h4>' +
         '<p class="text-secondary small mb-0">' + (opts.msg||'') + '</p>' +
         '</div>' +
-        '<div class="modal-footer justify-content-center border-0 pt-0 pb-4 gap-2">' +
+        '<div class="modal-footer justify-content-center border-0 pt-0 pb-4 gap-2 flex-wrap">' +
         '<button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>' +
+        extraBtnHtml +
         '<button class="btn ' + (opts.btnClass||'btn-danger') + '" id="smsConfirmBtn">' + (opts.btnText||'Confirm') + '</button>' +
         '</div></div></div>'
     );
@@ -64,6 +66,10 @@ function smsConfirm(opts) {
     $('#smsConfirmBtn').off('click').on('click', function() {
         modal.hide();
         if (typeof opts.onConfirm === 'function') opts.onConfirm();
+    });
+    $('.sms-confirm-extra').off('click').on('click', function() {
+        modal.hide();
+        if (typeof opts.onExtra === 'function') opts.onExtra();
     });
 }
 

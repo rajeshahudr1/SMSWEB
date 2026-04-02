@@ -17,6 +17,7 @@ router.post('/bulk-action',              requirePermission('edit_vehicle_invento
 router.get('/create',                    requirePermission('add_vehicle_inventories'),    Ctrl.create);
 router.post('/',                         requirePermission('add_vehicle_inventories'),    Ctrl.store);
 router.get('/:uuid/view-data',           requirePermission('view_vehicle_inventories'),   Ctrl.viewData);
+router.get('/:uuid/pdf',                requirePermission('view_vehicle_inventories'),   Ctrl.pdf);
 router.get('/:uuid/edit',                requirePermission('edit_vehicle_inventories'),   Ctrl.edit);
 router.post('/:uuid',                    requirePermission('edit_vehicle_inventories'),   Ctrl.update);
 router.post('/:uuid/toggle-status',      requirePermission('edit_vehicle_inventories'),   Ctrl.toggleStatus);
@@ -25,6 +26,7 @@ router.post('/:uuid/delete',             requirePermission('delete_vehicle_inven
 // Images
 router.post('/:uuid/images',             requirePermission('edit_vehicle_inventories'),   Ctrl.uploadImages);
 router.post('/:uuid/images/delete',      requirePermission('edit_vehicle_inventories'),   Ctrl.deleteImage);
+router.post('/:uuid/images/:imageId/replace', requirePermission('edit_vehicle_inventories'), Ctrl.replaceImage);
 router.post('/:uuid/images/reorder',     requirePermission('edit_vehicle_inventories'),   Ctrl.reorderImages);
 // Videos
 router.post('/:uuid/videos',             requirePermission('edit_vehicle_inventories'),   Ctrl.uploadVideos);
