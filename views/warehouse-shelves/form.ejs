@@ -1,0 +1,111 @@
+<%- layout('../layouts/main') %>
+<%
+var rec = typeof record !== 'undefined' ? record : null;
+var isEdit = !!rec;
+var formAction = isEdit ? '/warehouse-shelves/' + rec.uuid : '/warehouse-shelves';
+var orgs = typeof organizations !== 'undefined' ? organizations : [];
+var isSuperAdmin = user && user.is_super_admin;
+%>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/warehouse-shelves" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-bookshelf me-2 text-primary"></i><%= isEdit ? 'Edit Shelf' : 'Add Shelf' %></h3>
+</div>
+
+<form id="frmMain" method="POST" action="<%- formAction %>" novalidate>
+<div class="row g-3">
+
+  <div class="col-lg-8">
+
+    <% if (isSuperAdmin && orgs.length) { %>
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div>
+      </div>
+      <div class="card-body">
+        <select name="company_id" id="fCompany" class="form-select">
+          <option value="">Select Company *</option>
+          <% orgs.forEach(function(o) { %>
+          <option value="<%- o.id %>" <%- (isEdit && rec && rec.organization_id && String(rec.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
+          <% }) %>
+        </select>
+        <div class="form-hint mt-1">Select company first, then warehouse.</div>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building-fill me-1 text-primary"></i>Warehouse & Zone</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Warehouse <span class="text-danger">*</span></label>
+            <select name="warehouse_id" id="fWarehouse" class="form-select" required style="width:100%;">
+              <option value="">Select Warehouse *</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Zone <span class="text-danger">*</span></label>
+            <select name="zone_id" id="fZone" class="form-select" required style="width:100%;">
+              <option value="">Select Zone *</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-info-circle me-1 text-primary"></i>Shelf Information</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="fName" class="form-control" required value="<%= isEdit ? (rec.name||'') : '' %>" placeholder="Shelf name"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Code <span class="text-danger">*</span></label>
+            <input type="text" name="code" id="fCode" class="form-control" required value="<%= isEdit ? (rec.code||'') : '' %>" placeholder="e.g. S01"/>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-medium">Description</label>
+            <textarea name="description" id="fDescription" class="form-control" rows="3" placeholder="Optional description"><%= isEdit ? (rec.description||'') : '' %></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <% if (isEdit) { %>
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-toggle-on me-1 text-primary"></i>Status</div></div>
+      <div class="card-body"><select name="status" id="fStatus" class="form-select"><option value="1" <%- parseInt(rec.status) ? 'selected' : '' %>>Active</option><option value="0" <%- !parseInt(rec.status) ? 'selected' : '' %>>Inactive</option></select></div>
+    </div>
+    <% } %>
+
+    <div class="card shadow-sm">
+      <div class="card-body py-3">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%= isEdit ? 'Update' : 'Create' %> Shelf</button>
+          <a href="/warehouse-shelves" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+
+<script>
+window._FORM_DATA = {
+  isEdit: <%= isEdit ? 'true' : 'false' %>,
+  isSuperAdmin: <%= isSuperAdmin ? 'true' : 'false' %>,
+  warehouseId: <%= isEdit && rec.warehouse_id ? rec.warehouse_id : 'null' %>,
+  zoneId: <%= isEdit && rec.zone_id ? rec.zone_id : 'null' %>
+};
+</script>
+<% block('scripts', '<script src="/js/pages/warehouse-shelves-form.js"></script>') %>
