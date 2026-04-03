@@ -138,7 +138,7 @@ function loadData(){
             var acts='<div class="dropdown">';
             acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>';
             acts+='<ul class="dropdown-menu dropdown-menu-end">';
-            acts+='<li><a class="dropdown-item" href="#" onclick="viewVI(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>'+T('general.preview','View')+'</a></li>';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewVI(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>'+T('general.preview','Preview')+'</a></li>';
             acts+='<li><a class="dropdown-item" href="#" onclick="downloadPdfVI(\''+r.uuid+'\');return false;"><i class="bi bi-file-pdf me-2 text-danger"></i>'+T('general.download_pdf','Download PDF')+'</a></li>';
             if(deleted){
                 acts+='<li><a class="dropdown-item" href="#" onclick="recoverVI(\''+r.uuid+'\',\''+H.esc(r.vehicle_internal_id||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>'+T('bulk.recover','Recover')+'</a></li>';

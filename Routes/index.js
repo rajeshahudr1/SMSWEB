@@ -41,6 +41,13 @@ router.use('/vehicle-variants',   authGuard, require('./vehicle-variants'));
 router.use('/vehicle-engines',    authGuard, require('./vehicle-engines'));
 router.use('/vehicle-inventories', authGuard, require('./vehicle-inventories'));
 
+// Warehouse
+router.use('/warehouses',        authGuard, require('./warehouses'));
+router.use('/warehouse-zones',   authGuard, require('./warehouse-zones'));
+router.use('/warehouse-shelves', authGuard, require('./warehouse-shelves'));
+router.use('/warehouse-racks',   authGuard, require('./warehouse-racks'));
+router.use('/warehouse-bins',    authGuard, require('./warehouse-bins'));
+
 // Vehicle Autocomplete (shared proxy — serves all /vehicle-*/autocomplete routes)
 router.use('/', authGuard, require('./vehicle-autocomplete'));
 // Part Autocomplete (shared proxy — serves all /part-*/autocomplete routes)

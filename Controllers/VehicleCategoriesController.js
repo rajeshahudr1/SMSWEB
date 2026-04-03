@@ -52,6 +52,7 @@ exports.update = [(r,s,n) => { tempUpload.single('image')(r,s,(e) => { if (e) re
 }];
 
 exports.viewData = async (req, res) => { res.json(await api.get('/vehicle-categories/' + req.params.uuid + '/view', req.session.token)); };
+exports.usage = async (req, res) => { res.json(await api.get('/vehicle-categories/' + req.params.uuid + '/usage', req.session.token)); };
 exports.destroy = async (req, res) => { res.json(await api.del('/vehicle-categories/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/vehicle-categories/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover = async (req, res) => { res.json(await api.post('/vehicle-categories/' + req.params.uuid + '/recover', {}, req.session.token)); };

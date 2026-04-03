@@ -47,11 +47,42 @@ h1 > .bi, h2 > .bi, h3 > .bi, h4 > .bi, h5 > .bi, h6 > .bi,
 .page-body > .bi {
   color: var(--sms-icon-color) !important;
 }
-/* Icons that use text-primary class should follow icon color */
+/* Icons that use text-primary class should follow icon color — except inside dropdowns, badges, buttons */
 .bi.text-primary,
 i.text-primary {
   color: var(--sms-icon-color) !important;
 }
+.dropdown-item .bi.text-primary,
+.dropdown-item i.text-primary,
+.dropdown-item .bi.text-secondary,
+.dropdown-item i.text-secondary,
+.dropdown-item .bi.text-success,
+.dropdown-item i.text-success,
+.dropdown-item .bi.text-danger,
+.dropdown-item i.text-danger,
+.dropdown-item .bi.text-warning,
+.dropdown-item i.text-warning,
+.dropdown-item .bi.text-info,
+.dropdown-item i.text-info {
+  color: inherit !important;
+}
+.dropdown-item .bi.text-primary, .dropdown-item i.text-primary { color: var(--tblr-primary) !important; }
+.dropdown-item .bi.text-secondary, .dropdown-item i.text-secondary { color: #667085 !important; }
+.dropdown-item .bi.text-success, .dropdown-item i.text-success { color: #22c55e !important; }
+.dropdown-item .bi.text-danger, .dropdown-item i.text-danger { color: #ef4444 !important; }
+.dropdown-item .bi.text-warning, .dropdown-item i.text-warning { color: #f59e0b !important; }
+.dropdown-item .bi.text-info, .dropdown-item i.text-info { color: #3b82f6 !important; }
+/* Badges and buttons should keep their own icon colors */
+.badge .bi, .badge i,
+.btn .bi, .btn i,
+.nav-link .bi, .nav-link i { color: inherit !important; }
+/* Table action icons — keep specific colors */
+.table .bi.text-primary, .table i.text-primary { color: var(--tblr-primary) !important; }
+.table .bi.text-danger, .table i.text-danger { color: #ef4444 !important; }
+.table .bi.text-success, .table i.text-success { color: #22c55e !important; }
+.table .bi.text-warning, .table i.text-warning { color: #f59e0b !important; }
+.table .bi.text-info, .table i.text-info { color: #3b82f6 !important; }
+.table .bi.text-secondary, .table i.text-secondary { color: #667085 !important; }
 .table { color: var(--sms-text) !important; }
 .form-control, .form-select { color: var(--sms-text) !important; }
 .dropdown-item { color: var(--sms-text) !important; }
