@@ -1,0 +1,270 @@
+<%- layout('../layouts/main') %>
+<% block('styles', '<link rel="stylesheet" href="/css/part-inventories.css"/>') %>
+<%
+var rec = typeof record !== 'undefined' ? record : null;
+var isEdit = !!rec;
+var formAction = isEdit ? '/part-inventories/' + rec.uuid : '/part-inventories';
+var isSuperAdmin = user && user.is_super_admin;
+var orgs = typeof organizations !== 'undefined' ? organizations : [];
+var vehicleIdParam = typeof vehicleId !== 'undefined' ? vehicleId : '';
+var addFromVehicle = (typeof fromVehicle !== 'undefined' && fromVehicle) || !!vehicleIdParam || (isEdit && rec && rec.vehicle_inventory_id);
+function fmtDate(v) {
+  if (!v) return '';
+  var s = String(v);
+  if (s.length >= 10) return s.substring(0, 10);
+  return s;
+}
+%>
+
+
+<div class="d-flex align-items-center gap-2 mb-2">
+  <a href="/part-inventories" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i><%- t('general.back', 'Back') %></a>
+  <% if (isEdit && rec.part_code) { %><span class="badge bg-primary-lt" style="font-size:12px;">#<%- rec.part_code %></span><% } %>
+  <% if (isEdit && rec.part_catalog_name) { %><span class="badge bg-azure-lt" style="font-size:12px;"><%- rec.part_catalog_name %></span><% } %>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- BATCH ADD MODE — multiple parts with different vehicles      -->
+<!-- ============================================================ -->
+<form id="frmBatch" novalidate>
+  <ul class="nav nav-tabs mb-3" id="batchTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-bSel" data-bs-toggle="tab" data-bs-target="#pane-bSel" type="button" role="tab">
+        <i class="bi bi-list-check me-1"></i>1. <%- t('part_inventories.tab_select','Selection') %>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-bDetails" data-bs-toggle="tab" data-bs-target="#pane-bDetails" type="button" role="tab">
+        <i class="bi bi-box-seam me-1"></i>2. <%- t('part_inventories.tab_part_details','Part Details') %>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link disabled b-locked-tab" id="tab-bRefs" data-bs-target="#pane-bRefs" type="button" role="tab" tabindex="-1" aria-disabled="true" title="Save parts first">
+        <i class="bi bi-link-45deg me-1"></i>3. <%- t('part_inventories.tab_references','References') %> <i class="bi bi-lock-fill ms-1 b-lock-icon" style="font-size:10px;"></i>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link disabled b-locked-tab" id="tab-bDamages" data-bs-target="#pane-bDamages" type="button" role="tab" tabindex="-1" aria-disabled="true" title="Save parts first">
+        <i class="bi bi-exclamation-triangle me-1"></i>4. <%- t('part_inventories.tab_damages','Damages') %> <i class="bi bi-lock-fill ms-1 b-lock-icon" style="font-size:10px;"></i>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link disabled b-locked-tab" id="tab-bAttrs" data-bs-target="#pane-bAttrs" type="button" role="tab" tabindex="-1" aria-disabled="true" title="Save parts first">
+        <i class="bi bi-sliders me-1"></i>5. <%- t('part_inventories.tab_attributes','Attributes') %> <i class="bi bi-lock-fill ms-1 b-lock-icon" style="font-size:10px;"></i>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link disabled b-locked-tab" id="tab-bImages" data-bs-target="#pane-bImages" type="button" role="tab" tabindex="-1" aria-disabled="true" title="Save parts first">
+        <i class="bi bi-images me-1"></i>6. <%- t('part_inventories.tab_images','Images') %> <i class="bi bi-lock-fill ms-1 b-lock-icon" style="font-size:10px;"></i>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link disabled b-locked-tab" id="tab-bVideos" data-bs-target="#pane-bVideos" type="button" role="tab" tabindex="-1" aria-disabled="true" title="Save parts first">
+        <i class="bi bi-camera-video me-1"></i>7. <%- t('part_inventories.tab_videos','Videos') %> <i class="bi bi-lock-fill ms-1 b-lock-icon" style="font-size:10px;"></i>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link disabled b-locked-tab" id="tab-bLocations" data-bs-target="#pane-bLocations" type="button" role="tab" tabindex="-1" aria-disabled="true" title="Save parts first">
+        <i class="bi bi-geo-alt me-1"></i>8. <%- t('part_inventories.tab_locations','Locations') %> <i class="bi bi-lock-fill ms-1 b-lock-icon" style="font-size:10px;"></i>
+      </button>
+    </li>
+  </ul>
+  <div class="tab-content">
+
+    <!-- ===== Tab 1: Selection ===== -->
+    <div class="tab-pane fade show active" id="pane-bSel" role="tabpanel">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header py-2">
+          <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-plus-circle me-1 text-primary"></i><%- addFromVehicle ? t('part_inventories.add_from_vehicle','Add from Vehicle') : t('part_inventories.add_part','Add Part') %></div>
+        </div>
+        <div class="card-body">
+          <% if (addFromVehicle) { %>
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-medium"><%- t('part_inventories.vehicle_inventory','Vehicle') %> <span class="text-danger">*</span></label><select id="bVehicle" class="form-select" style="width:100%;"></select></div>
+            <div class="col-md-6"><label class="form-label fw-medium"><%- t('part_inventories.part_catalog','Catalog') %> <span class="text-danger">*</span></label><select id="bCatalog" class="form-select" style="width:100%;"></select></div>
+          </div>
+          <div class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i><%- t('part_inventories.from_vehicle_hint','Year / Type / Make / Model / Variant will be auto-filled from the selected vehicle.') %></div>
+          <% } else { %>
+          <div class="row g-3 mb-2">
+            <div class="col-md-4 col-sm-6"><label class="form-label fw-medium"><%- t('part_inventories.vehicle_year','Year') %> <span class="text-danger">*</span></label><select name="b_year" id="bYear" class="form-select" style="width:100%;"></select></div>
+            <div class="col-md-4 col-sm-6"><label class="form-label fw-medium"><%- t('part_inventories.vehicle_type','Type') %> <span class="text-danger">*</span></label><select name="b_type" id="bType" class="form-select" style="width:100%;"></select></div>
+            <div class="col-md-4 col-sm-6"><label class="form-label fw-medium"><%- t('part_inventories.vehicle_make','Make') %> <span class="text-danger">*</span></label><select name="b_make" id="bMake" class="form-select" style="width:100%;"></select></div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4 col-sm-6"><label class="form-label fw-medium"><%- t('part_inventories.vehicle_model','Model') %> <span class="text-danger">*</span></label><select name="b_model" id="bModel" class="form-select" style="width:100%;"></select></div>
+            <div class="col-md-4 col-sm-6"><label class="form-label fw-medium"><%- t('part_inventories.vehicle_variant','Variant') %> <span class="text-danger">*</span></label><select name="b_variant" id="bVariant" class="form-select" style="width:100%;"></select></div>
+            <div class="col-md-4 col-sm-6"><label class="form-label fw-medium"><%- t('part_inventories.part_catalog','Catalog') %> <span class="text-danger">*</span></label><select name="b_catalog" id="bCatalog" class="form-select" style="width:100%;"></select></div>
+          </div>
+          <% } %>
+          <div class="d-flex justify-content-end mt-2">
+            <button type="button" class="btn btn-sm btn-primary" id="btnBatchAdd"><i class="bi bi-plus-lg me-1"></i><%- t('part_inventories.add_to_list','Add to List') %></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header py-2">
+          <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-list-ul me-1 text-primary"></i><%- t('part_inventories.parts_in_batch','Parts in Batch') %> <span class="badge bg-primary-lt ms-1" id="bCount">0</span></div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0" style="font-size:12px;">
+              <thead><tr>
+                <th style="width:40px;">#</th>
+                <th><%- t('part_inventories.vehicle_year','Year') %></th>
+                <th><%- t('part_inventories.vehicle_make','Make') %></th>
+                <th><%- t('part_inventories.vehicle_model','Model') %></th>
+                <th><%- t('part_inventories.vehicle_variant','Variant') %></th>
+                <th><%- t('part_inventories.part_catalog','Catalog') %></th>
+                <th class="text-end" style="width:60px;"></th>
+              </tr></thead>
+              <tbody id="bRows"><tr id="bEmpty"><td colspan="7" class="text-center text-muted py-3"><%- t('part_inventories.no_parts_added','No parts added yet. Use form above to add.') %></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-2 mb-3">
+        <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+        <button type="button" class="btn btn-primary" id="btnBatchNext"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+      </div>
+    </div>
+
+    <!-- ===== Tab 2: Part Details (per-row sections) ===== -->
+    <div class="tab-pane fade" id="pane-bDetails" role="tabpanel">
+      <div id="bDetailsBody">
+        <div class="text-muted text-center py-5"><i class="bi bi-arrow-up-circle d-block mb-2" style="font-size:32px;opacity:.4;"></i><%- t('part_inventories.add_first','Please add at least one part in step 1 first.') %></div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <button type="button" class="btn btn-outline-primary" id="btnBatchPrev"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+        <div class="d-flex gap-2">
+          <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+          <button type="button" class="btn btn-primary" id="btnBatchSaveAll" disabled><i class="bi bi-floppy me-1"></i><%- t('part_inventories.save_all_parts','Save All Parts') %></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Tab 3: References (per-part sections) ===== -->
+    <div class="tab-pane fade" id="pane-bRefs" role="tabpanel">
+      <div id="bRefsBody"><div class="text-muted text-center py-5"><%- t('part_inventories.save_parts_first','Save parts first to manage references.') %></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <div class="d-flex gap-2">
+          <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+          <button type="button" class="btn btn-outline-primary b-tab-prev" data-target="#tab-bDetails"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary" id="btnSaveAllRefs"><i class="bi bi-floppy me-1"></i><%- t('part_inventories.save_all_references','Save All References') %></button>
+          <button type="button" class="btn btn-outline-primary b-tab-next" data-target="#tab-bDamages"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Tabs 4-8: placeholders (to be implemented) ===== -->
+    <!-- ===== Tab 4: Damages (per-part sections) ===== -->
+    <div class="tab-pane fade" id="pane-bDamages" role="tabpanel">
+      <div id="bDamagesBody"><div class="text-muted text-center py-5"><%- t('part_inventories.save_parts_first','Save parts first to manage damages.') %></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <div class="d-flex gap-2">
+          <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+          <button type="button" class="btn btn-outline-primary b-tab-prev" data-target="#tab-bRefs"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary" id="btnSaveAllDamages"><i class="bi bi-floppy me-1"></i><%- t('part_inventories.save_all_damages','Save All Damages') %></button>
+          <button type="button" class="btn btn-outline-primary b-tab-next" data-target="#tab-bAttrs"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+        </div>
+      </div>
+    </div>
+    <!-- ===== Tab 5: Attributes (per-part sections) ===== -->
+    <div class="tab-pane fade" id="pane-bAttrs" role="tabpanel">
+      <div id="bAttrsBody"><div class="text-muted text-center py-5"><%- t('part_inventories.save_parts_first','Save parts first to manage attributes.') %></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <div class="d-flex gap-2">
+          <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+          <button type="button" class="btn btn-outline-primary b-tab-prev" data-target="#tab-bDamages"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary" id="btnSaveAllAttrs"><i class="bi bi-floppy me-1"></i><%- t('part_inventories.save_all_attributes','Save All Attributes') %></button>
+          <button type="button" class="btn btn-outline-primary b-tab-next" data-target="#tab-bImages"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+        </div>
+      </div>
+    </div>
+    <!-- ===== Tab 6: Images (per-part) ===== -->
+    <div class="tab-pane fade" id="pane-bImages" role="tabpanel">
+      <div id="bImagesBody"><div class="text-muted text-center py-5"><%- t('part_inventories.save_parts_first','Save parts first to upload images.') %></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <div class="d-flex gap-2">
+          <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+          <button type="button" class="btn btn-outline-primary b-tab-prev" data-target="#tab-bAttrs"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary" id="btnSaveImageLinks"><i class="bi bi-floppy me-1"></i><%- t('part_inventories.save_image_damage_links','Save Image–Damage Links') %></button>
+          <button type="button" class="btn btn-outline-primary b-tab-next" data-target="#tab-bVideos"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Tab 7: Videos (per-part) ===== -->
+    <div class="tab-pane fade" id="pane-bVideos" role="tabpanel">
+      <div id="bVideosBody"><div class="text-muted text-center py-5"><%- t('part_inventories.save_parts_first','Save parts first to upload videos.') %></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <div class="d-flex gap-2">
+          <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+          <button type="button" class="btn btn-outline-primary b-tab-prev" data-target="#tab-bImages"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary" id="btnSaveVideoLinks"><i class="bi bi-floppy me-1"></i><%- t('part_inventories.save_video_damage_links','Save Video–Damage Links') %></button>
+          <button type="button" class="btn btn-outline-primary b-tab-next" data-target="#tab-bLocations"><%- t('general.next','Next') %> <i class="bi bi-chevron-right ms-1"></i></button>
+        </div>
+      </div>
+    </div>
+    <!-- ===== Tab 8: Locations (per-part) ===== -->
+    <div class="tab-pane fade" id="pane-bLocations" role="tabpanel">
+      <div id="bLocationsBody"><div class="text-muted text-center py-5"><%- t('part_inventories.save_parts_first','Save parts first to manage locations.') %></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <div class="d-flex gap-2">
+          <a href="/part-inventories" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel', 'Cancel') %></a>
+          <button type="button" class="btn btn-outline-primary b-tab-prev" data-target="#tab-bVideos"><i class="bi bi-chevron-left me-1"></i><%- t('general.previous','Prev') %></button>
+        </div>
+        <button type="button" class="btn btn-primary" id="btnSaveAllLocs"><i class="bi bi-floppy me-1"></i><%- t('part_inventories.save_all_locations','Save All Locations') %></button>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+
+<!-- Preview / Media Modal (reused) -->
+<div class="modal fade" id="modalView" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg"><div class="modal-content"><div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0" id="viewModalTitle"></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-3" id="viewBody"></div></div></div></div>
+
+<script>
+window._FORM_DATA = {
+    isEdit: <%= isEdit ? 'true' : 'false' %>,
+    fromVehicle: <%= addFromVehicle ? 'true' : 'false' %>,
+    uuid: '<%= isEdit ? rec.uuid : '' %>',
+    vehicleId: '<%= vehicleIdParam || '' %>',
+    companyId: '<%= isEdit && rec.company_id ? rec.company_id : '' %>',
+    isSuperAdmin: <%= isSuperAdmin ? 'true' : 'false' %>,
+    quantity: <%= isEdit ? (rec.quantity || 1) : 1 %>,
+    partCatalog: <%- isEdit && rec.part_catalog_id ? JSON.stringify({id: rec.part_catalog_id, text: rec.part_catalog_name || ''}) : 'null' %>,
+    partBrand: <%- isEdit && rec.part_brand_id ? JSON.stringify({id: rec.part_brand_id, text: rec.part_brand_name || ''}) : 'null' %>,
+    partType: <%- isEdit && rec.part_type_id ? JSON.stringify({id: rec.part_type_id, text: rec.part_type_name || ''}) : 'null' %>,
+    masterPart: <%- isEdit && rec.master_part_id ? JSON.stringify({id: rec.master_part_id, text: rec.master_part_code || ''}) : 'null' %>,
+    vehicleInventory: <%- isEdit && rec.vehicle_inventory_id ? JSON.stringify({id: rec.vehicle_inventory_id, text: rec.vehicle_inventory_name || rec.vehicle_inventory_code || ''}) : 'null' %>,
+    vehicleType: <%- isEdit && rec.vehicle_type_id ? JSON.stringify({id: rec.vehicle_type_id, text: rec.vehicle_type_name || ''}) : 'null' %>,
+    vehicleYear: <%- isEdit && rec.vehicle_year_id ? JSON.stringify({id: rec.vehicle_year_id, text: rec.vehicle_year_name || ''}) : 'null' %>,
+    vehicleMake: <%- isEdit && rec.vehicle_make_id ? JSON.stringify({id: rec.vehicle_make_id, text: rec.vehicle_make_name || ''}) : 'null' %>,
+    vehicleModel: <%- isEdit && rec.vehicle_model_id ? JSON.stringify({id: rec.vehicle_model_id, text: rec.vehicle_model_name || ''}) : 'null' %>,
+    vehicleVariant: <%- isEdit && rec.vehicle_variant_id ? JSON.stringify({id: rec.vehicle_variant_id, text: rec.vehicle_variant_name || ''}) : 'null' %>,
+    vehicleEngine: <%- isEdit && rec.vehicle_engine_id ? JSON.stringify({id: rec.vehicle_engine_id, text: rec.vehicle_engine_name || ''}) : 'null' %>,
+    vehicleFuel: <%- isEdit && rec.vehicle_fuel_id ? JSON.stringify({id: rec.vehicle_fuel_id, text: rec.vehicle_fuel_name || ''}) : 'null' %>,
+    images: <%- isEdit && rec.images ? JSON.stringify(rec.images) : '[]' %>,
+    videos: <%- isEdit && rec.videos ? JSON.stringify(rec.videos) : '[]' %>,
+    locations: <%- isEdit && rec.locations ? JSON.stringify(rec.locations) : '[]' %>,
+    references: <%- isEdit && rec.references ? JSON.stringify(rec.references) : '[]' %>,
+    damages: <%- isEdit && rec.damages ? JSON.stringify(rec.damages) : '[]' %>,
+    company: <%- isEdit && rec.company_id ? JSON.stringify({id: rec.company_id, text: rec.company_name || ''}) : 'null' %>,
+    record: <%- isEdit ? JSON.stringify(rec) : 'null' %>
+};
+</script>
+<% block('scripts', '<script src="/js/common/image-editor.js"></script><script src="/js/common/video-editor.js"></script><script src="/js/pages/part-inventories-batch.js"></script>') %>

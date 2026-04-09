@@ -1,0 +1,287 @@
+<%
+var r = record || {};
+var images = r.images || [];
+var videos = r.videos || [];
+var refs = r.references || [];
+var dmgs = r.damages || [];
+var locs = r.locations || [];
+var attrs = r.attributes || [];
+var subs = r.sub_parts || [];
+var isMaster = (r.is_master_part === true || r.is_master_part === 1);
+
+function fmt(v) { if (v == null || v === '') return '—'; return String(v); }
+function fmtDate(v) { if (!v) return '—'; var s = String(v); if (s.length >= 10) { var d = new Date(s); if (!isNaN(d)) return d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}); } return s.substring(0, 10); }
+function fmtNum(v) { if (v == null || v === '') return '—'; return parseFloat(v).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+var INV_STATUS = {1:'In Stock', 2:'Out of Stock', 4:'Returned', 5:'Scrapped'};
+var INV_COLOR  = {1:'#059669', 2:'#d97706', 4:'#3b82f6', 5:'#dc2626'};
+var CONDITION  = {1:'OEM', 2:'Aftermarket'};
+var PART_STATE = {1:'New', 2:'Used', 3:'Remanufactured', 4:'Not Working'};
+var DMG_TYPE   = {1:'Does Not Affect Function', 2:'Affects Function'};
+var DMG_LOC    = {1:'Internal', 2:'External'};
+var REF_COND   = {1:'OEM', 2:'Aftermarket'};
+var REF_TYPE   = {1:'Compatible', 2:'Written on Label'};
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Part <%= r.part_code || '' %></title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1f2937; margin: 0; padding: 0; background: #fff; }
+  .doc { padding: 4mm; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #206bc4; padding-bottom: 6px; margin-bottom: 10px; }
+  .title { font-size: 18px; font-weight: 700; color: #206bc4; margin: 0; }
+  .subtitle { font-size: 10px; color: #6b7280; margin-top: 2px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 600; color: #fff; }
+  .section { margin-top: 10px; page-break-inside: avoid; }
+  .section-title { font-size: 12px; font-weight: 700; color: #206bc4; padding: 4px 8px; background: #eef4fc; border-left: 3px solid #206bc4; margin-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; padding: 0 8px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 16px; padding: 0 8px; }
+  .row { display: flex; padding: 2px 0; border-bottom: 1px dotted #e5e7eb; font-size: 10.5px; }
+  .lbl { flex: 0 0 45%; color: #6b7280; font-weight: 500; }
+  .val { flex: 1; color: #1f2937; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { background: #f3f4f6; padding: 5px 6px; text-align: left; border: 1px solid #d1d5db; font-weight: 700; color: #374151; }
+  td { padding: 4px 6px; border: 1px solid #e5e7eb; }
+  .img-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 0 8px; }
+  .img-grid a { display: block; }
+  .img-grid img { width: 100%; height: 70px; object-fit: cover; border: 1px solid #d1d5db; border-radius: 3px; }
+  .vid-list { padding: 4px 8px; }
+  .vid-link { display: flex; align-items: center; gap: 8px; padding: 5px 8px; margin-bottom: 3px; border: 1px solid #e5e7eb; border-radius: 4px; text-decoration: none; color: #1f2937; }
+  .vid-icon { width: 22px; height: 22px; border-radius: 50%; background: #ef4444; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+  .vid-name { font-size: 10px; font-weight: 600; }
+  .vid-url { font-size: 8px; color: #6b7280; word-break: break-all; }
+  .note-box { padding: 6px 10px; background: #fafafa; border-left: 3px solid #d1d5db; margin: 4px 8px; font-size: 10px; color: #4b5563; }
+  .footer { margin-top: 14px; padding-top: 6px; border-top: 1px solid #e5e7eb; font-size: 9px; color: #9ca3af; text-align: center; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div>
+      <h1 class="title">Part Inventory</h1>
+      <div class="subtitle">
+        <% if (r.part_internal_id) { %><strong>#<%= r.part_internal_id %></strong> · <% } %>
+        <strong><%= fmt(r.part_code) %></strong>
+        <% if (r.part_catalog_name) { %> · <%= fmt(r.part_catalog_name) %><% } %>
+      </div>
+      <div style="margin-top:4px;">
+        <% if (isMaster) { %><span class="badge" style="background:#206bc4;">⚙ Master Part</span><% } %>
+        <% if (r.master_part_inventory_id) { %><span class="badge" style="background:#0891b2;">↖ Sub of <%= r.master_part_code || ('#'+r.master_part_internal_id) || '—' %></span><% } %>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <% if (INV_STATUS[r.inventory_status]) { %>
+      <span class="badge" style="background: <%= INV_COLOR[r.inventory_status] || '#6b7280' %>"><%= INV_STATUS[r.inventory_status] %></span>
+      <% } %>
+      <div class="subtitle">Generated <%= fmtDate(new Date()) %></div>
+    </div>
+  </div>
+
+  <!-- ── Catalog & Pricing ── -->
+  <div class="section">
+    <div class="section-title">Part Information</div>
+    <div class="grid">
+      <div class="row"><span class="lbl">Internal ID</span><span class="val"><%= fmt(r.part_internal_id) %></span></div>
+      <div class="row"><span class="lbl">Part Code</span><span class="val"><%= fmt(r.part_code) %></span></div>
+      <div class="row"><span class="lbl">Catalog</span><span class="val"><%= fmt(r.part_catalog_name) %></span></div>
+      <div class="row"><span class="lbl">Brand</span><span class="val"><%= fmt(r.part_brand_name) %></span></div>
+      <div class="row"><span class="lbl">Quantity</span><span class="val"><%= fmt(r.quantity) %></span></div>
+      <div class="row"><span class="lbl">Condition</span><span class="val"><%= CONDITION[r.condition] || '—' %></span></div>
+      <div class="row"><span class="lbl">Part State</span><span class="val"><%= PART_STATE[r.part_state] || '—' %></span></div>
+      <div class="row"><span class="lbl">Price 1</span><span class="val"><%= fmtNum(r.price_1) %></span></div>
+      <div class="row"><span class="lbl">Price 2</span><span class="val"><%= fmtNum(r.price_2) %></span></div>
+      <div class="row"><span class="lbl">Cost Price</span><span class="val"><%= fmtNum(r.cost_price || r.part_cost_price) %></span></div>
+      <div class="row"><span class="lbl">Rating</span><span class="val"><%= fmt(r.rating) %></span></div>
+    </div>
+  </div>
+
+  <!-- ── Vehicle ── -->
+  <div class="section">
+    <div class="section-title">Vehicle</div>
+    <div class="grid">
+      <div class="row"><span class="lbl">Year</span><span class="val"><%= fmt(r.vehicle_year_name) %></span></div>
+      <div class="row"><span class="lbl">Type</span><span class="val"><%= fmt(r.vehicle_type_name) %></span></div>
+      <div class="row"><span class="lbl">Make</span><span class="val"><%= fmt(r.vehicle_make_name) %></span></div>
+      <div class="row"><span class="lbl">Model</span><span class="val"><%= fmt(r.vehicle_model_name) %></span></div>
+      <div class="row"><span class="lbl">Variant</span><span class="val"><%= fmt(r.vehicle_variant_name) %></span></div>
+      <div class="row"><span class="lbl">Engine</span><span class="val"><%= fmt(r.vehicle_engine_name) %></span></div>
+      <div class="row"><span class="lbl">Fuel</span><span class="val"><%= fmt(r.vehicle_fuel_name) %></span></div>
+      <div class="row"><span class="lbl">Motorization</span><span class="val"><%= fmt(r.motorization) %></span></div>
+      <div class="row"><span class="lbl">CC</span><span class="val"><%= fmt(r.cc) %></span></div>
+      <div class="row"><span class="lbl">CV</span><span class="val"><%= fmt(r.cv) %></span></div>
+      <div class="row"><span class="lbl">KW</span><span class="val"><%= fmt(r.kw) %></span></div>
+      <div class="row"><span class="lbl">Reg # Dismantler</span><span class="val"><%= fmt(r.reg_number_dismantler) %></span></div>
+    </div>
+  </div>
+
+  <!-- ── Dimensions / Options ── -->
+  <% if (r.custom_size || r.print_label || r.vat_included) { %>
+  <div class="section">
+    <div class="section-title">Dimensions & Options</div>
+    <div class="grid">
+      <div class="row"><span class="lbl">Custom Size</span><span class="val"><%= r.custom_size ? 'Yes' : 'No' %></span></div>
+      <div class="row"><span class="lbl">Weight (kg)</span><span class="val"><%= fmt(r.weight_kg) %></span></div>
+      <div class="row"><span class="lbl">Width (cm)</span><span class="val"><%= fmt(r.width_cm) %></span></div>
+      <div class="row"><span class="lbl">Height (cm)</span><span class="val"><%= fmt(r.height_cm) %></span></div>
+      <div class="row"><span class="lbl">Length (cm)</span><span class="val"><%= fmt(r.length_cm) %></span></div>
+      <div class="row"><span class="lbl">Print Label</span><span class="val"><%= r.print_label ? 'Yes' : 'No' %></span></div>
+      <div class="row"><span class="lbl">VAT Included</span><span class="val"><%= r.vat_included ? 'Yes' : 'No' %></span></div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ── References ── -->
+  <% if (refs.length) { %>
+  <div class="section">
+    <div class="section-title">References (<%= refs.length %>)</div>
+    <table>
+      <thead><tr><th>Code</th><th>Condition</th><th>Type</th><th>Brand</th><th>Manufacturer</th></tr></thead>
+      <tbody>
+        <% refs.forEach(function(ref) { %>
+        <tr>
+          <td><%= fmt(ref.reference_code) %></td>
+          <td><%= REF_COND[ref.condition] || '—' %></td>
+          <td><%= REF_TYPE[ref.reference_type] || '—' %></td>
+          <td><%= fmt(ref.brand) %></td>
+          <td><%= fmt(ref.manufacturer) %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <!-- ── Damages ── -->
+  <% if (dmgs.length) { %>
+  <div class="section">
+    <div class="section-title">Damages (<%= dmgs.length %>)</div>
+    <table>
+      <thead><tr><th>#</th><th>Description</th><th>Type</th><th>Location</th><th>Rating</th></tr></thead>
+      <tbody>
+        <% dmgs.forEach(function(d, i) { %>
+        <tr>
+          <td><%= i + 1 %></td>
+          <td><%= fmt(d.damage_description || d.description) %></td>
+          <td><%= DMG_TYPE[d.damage_type] || '—' %></td>
+          <td><%= DMG_LOC[d.damage_location] || '—' %></td>
+          <td><%= d.damage_rating != null ? d.damage_rating : '—' %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <!-- ── Attributes ── -->
+  <% if (attrs.length) { %>
+  <div class="section">
+    <div class="section-title">Attributes (<%= attrs.length %>)</div>
+    <table>
+      <thead><tr><th>Attribute</th><th>Value</th></tr></thead>
+      <tbody>
+        <% attrs.forEach(function(a) { var v = a.value; if (Array.isArray(v)) v = v.join(', '); %>
+        <tr><td><%= fmt(a.label_name || a.name) %></td><td><%= fmt(v) %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <!-- ── Locations ── -->
+  <% if (locs.length) { %>
+  <div class="section">
+    <div class="section-title">Locations (<%= locs.length %>)</div>
+    <table>
+      <thead><tr><th>Unit</th><th>Warehouse</th><th>Zone</th><th>Shelf</th><th>Rack</th><th>Bin</th><th>Code</th><th>Notes</th></tr></thead>
+      <tbody>
+        <% locs.forEach(function(l) { %>
+        <tr>
+          <td><%= fmt(l.unit_number) %></td>
+          <td><%= fmt(l.warehouse_name) %></td>
+          <td><%= fmt(l.warehouse_zone_name) %></td>
+          <td><%= fmt(l.warehouse_shelf_name) %></td>
+          <td><%= fmt(l.warehouse_rack_name) %></td>
+          <td><%= fmt(l.warehouse_bin_name) %></td>
+          <td><%= fmt(l.location_code) %></td>
+          <td><%= fmt(l.notes) %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <!-- ── Notes ── -->
+  <% if (r.notes || r.extra_notes || r.internal_notes) { %>
+  <div class="section">
+    <div class="section-title">Notes</div>
+    <% if (r.notes) { %><div class="note-box"><strong>Notes:</strong> <%= fmt(r.notes) %></div><% } %>
+    <% if (r.extra_notes) { %><div class="note-box"><strong>Extra:</strong> <%= fmt(r.extra_notes) %></div><% } %>
+    <% if (r.internal_notes) { %><div class="note-box"><strong>Internal:</strong> <%= fmt(r.internal_notes) %></div><% } %>
+  </div>
+  <% } %>
+
+  <!-- ── Sub Parts (only when this is a master part) ── -->
+  <% if (isMaster && subs.length) { %>
+  <div class="section">
+    <div class="section-title">Sub Parts (<%= subs.length %>)</div>
+    <table>
+      <thead><tr><th>#</th><th>Internal ID</th><th>Part Code</th><th>Catalog</th><th>Brand</th><th>Qty</th><th>Status</th></tr></thead>
+      <tbody>
+        <% subs.forEach(function(s, i) { %>
+        <tr>
+          <td><%= i + 1 %></td>
+          <td>#<%= fmt(s.part_internal_id) %></td>
+          <td><%= fmt(s.part_code) %></td>
+          <td><%= fmt(s.part_catalog_name) %></td>
+          <td><%= fmt(s.part_brand_name) %></td>
+          <td><%= fmt(s.quantity) %></td>
+          <td><%= INV_STATUS[s.inventory_status] || '—' %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <!-- ── Images (clickable thumbnails) ── -->
+  <% if (images.length) { %>
+  <div class="section">
+    <div class="section-title">Images (<%= images.length %>)</div>
+    <div class="img-grid">
+      <% images.forEach(function(img, i) { var u = img.display_url || img.image_url || img.url || ''; %>
+      <a href="<%= u %>" target="_blank" title="Image <%= i+1 %> — Click to open"><img src="<%= u %>" onerror="this.style.display='none'"/></a>
+      <% }) %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ── Videos (clickable links) ── -->
+  <% if (videos.length) { %>
+  <div class="section">
+    <div class="section-title">Videos (<%= videos.length %>)</div>
+    <div class="vid-list">
+      <% videos.forEach(function(v, i) { var u = v.display_url || v.video_url || v.url || ''; %>
+      <a href="<%= u %>" target="_blank" class="vid-link">
+        <div class="vid-icon">&#9654;</div>
+        <div>
+          <div class="vid-name">Video <%= i + 1 %></div>
+          <div class="vid-url"><%= u %></div>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+  </div>
+  <% } %>
+
+  <div class="footer">
+    Created: <%= fmtDate(r.created_at) %> · Updated: <%= fmtDate(r.updated_at) %>
+  </div>
+</div>
+</body>
+</html>

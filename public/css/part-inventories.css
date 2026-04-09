@@ -1,0 +1,140 @@
+/* ======================================================================
+ * part-inventories.css — styles for part inventory list & form pages
+ * Extracted from inline <style> blocks in:
+ *   views/part-inventories/form.ejs
+ *   views/part-inventories/index.ejs
+ * ====================================================================== */
+
+/* ── Locked tab (Add → tab not yet unlocked) ── */
+.nav-tabs .nav-link.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+    color: #6c757d !important;
+    cursor: not-allowed;
+}
+
+/* ── Collapsible section cards on the form ── */
+.section-card { margin-bottom: .75rem; }
+.section-card .card-header { cursor: pointer; user-select: none; }
+.section-card .card-header .card-title { font-size: 13px; font-weight: 600; }
+.section-card .card-header .collapse-arrow { transition: transform .2s; font-size: 12px; opacity: .5; }
+.section-card .card-header.collapsed .collapse-arrow { transform: rotate(-90deg); }
+
+/* ── Inline form rows (locations / refs) ── */
+.loc-row td { vertical-align: middle; }
+.loc-row select { min-width: 120px; }
+.ref-row td { vertical-align: middle; }
+
+/* ── Damage card (legacy form) ── */
+.damage-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; margin-bottom: .75rem; background: #fafbfc; }
+.damage-card .damage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+.damage-media-badge { display: inline-block; padding: 2px 6px; font-size: 10px; border-radius: 4px; margin: 2px; cursor: pointer; }
+.damage-media-badge.bg-info-lt { background: #e8f4fd; color: #0b6bcb; }
+
+.attr-group { margin-bottom: .5rem; }
+
+/* ── Star rating widget ── */
+.sms-star-rating { display: inline-flex; align-items: center; gap: 4px; font-size: 22px; line-height: 1; }
+.sms-star-rating .sms-star { color: #dcdcdc; cursor: pointer; transition: color .15s, transform .1s; }
+.sms-star-rating .sms-star:hover { transform: scale(1.1); }
+.sms-star-rating .sms-star.active { color: #f5b301; }
+/* Half-star variant */
+.sms-star-rating .sms-star-wrap { position: relative; display: inline-block; width: 1em; height: 1em; cursor: pointer; }
+.sms-star-rating .sms-star-wrap .bi { position: absolute; top: 0; left: 0; color: #dcdcdc; transition: color .15s; }
+.sms-star-rating .sms-star-wrap .bi.full { z-index: 1; clip-path: inset(0 0 0 0); }
+.sms-star-rating .sms-star-wrap .bi.half { z-index: 2; clip-path: inset(0 50% 0 0); }
+.sms-star-rating .sms-star-wrap.on .bi.full,
+.sms-star-rating .sms-star-wrap.on .bi.half,
+.sms-star-rating .sms-star-wrap.half-on .bi.half { color: #f5b301; }
+.sms-star-rating .sms-star-wrap .star-l,
+.sms-star-rating .sms-star-wrap .star-r { position: absolute; top: 0; height: 100%; width: 50%; z-index: 3; }
+.sms-star-rating .sms-star-wrap .star-l { left: 0; }
+.sms-star-rating .sms-star-wrap .star-r { right: 0; }
+
+/* ── Per-row detail card header (batch flow Tab 2) ── */
+.b-detail-card .card-header { background: var(--tblr-primary, #206bc4); border-bottom: 0; }
+.b-detail-card .card-header,
+.b-detail-card .card-header .card-title,
+.b-detail-card .card-header .card-title *,
+.b-detail-card .card-header strong,
+.b-detail-card .card-header .text-muted { color: #fff !important; }
+.b-detail-card .card-header .text-muted { opacity: .85; }
+.b-detail-card .card-header .b-detail-rm { color: #fff !important; background: rgba(255, 255, 255, .1); }
+.b-detail-card .card-header .b-detail-rm:hover { color: #fff !important; background: #dc3545; }
+
+/* ── Delete-row trash buttons across batch tabs ── */
+.b-rm, .b-ref-rm, .b-dmg-rm, .b-loc-rm { color: var(--tblr-danger, #dc3545) !important; }
+.b-rm:hover, .b-ref-rm:hover, .b-dmg-rm:hover, .b-loc-rm:hover {
+    color: #fff !important;
+    background: var(--tblr-danger, #dc3545) !important;
+}
+
+/* ── Image / Video tile action buttons (Edit + Delete) ── */
+.btn-media-action {
+    width: 26px; height: 26px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; border-radius: 50%;
+    color: #fff !important; font-size: 12px; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+    transition: transform .15s, background .15s;
+    z-index: 5;
+}
+.btn-media-action:hover { transform: scale(1.1); }
+.btn-media-action.btn-edit { background: #3b82f6; }
+.btn-media-action.btn-edit:hover { background: #2563eb; }
+.btn-media-action.btn-del  { background: #ef4444; }
+.btn-media-action.btn-del:hover  { background: #dc2626; }
+.btn-media-action .bi { line-height: 1; }
+
+/* ======================================================================
+ *  LIST PAGE (index.ejs)
+ * ====================================================================== */
+
+/* ── Side-opening submenu inside the action dropdown ── */
+.sms-submenu { position: relative; }
+.sms-submenu > .sms-submenu-list {
+    display: none !important;
+    position: absolute !important;
+    top: 0 !important;
+    right: 100% !important;
+    left: auto !important;
+    margin: 0 .25rem 0 0 !important;
+    min-width: 220px;
+    z-index: 1100;
+}
+.sms-submenu.show > .sms-submenu-list,
+.sms-submenu:hover > .sms-submenu-list { display: block !important; }
+
+/* ── Count badges (References / Damages / Attributes / Images / Videos / Locations) ── */
+.sms-count-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none !important;
+    border: 1px solid transparent;
+    transition: all .15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.sms-count-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
+}
+/* Color variants */
+.sms-count-azure   { background: #e7f1fd; color: #0a58ca; border-color: #b6d4fe; }
+.sms-count-azure:hover   { background: #d2e3fc; color: #0a58ca; }
+.sms-count-warning { background: #fff3cd; color: #997404; border-color: #ffe69c; }
+.sms-count-warning:hover { background: #ffe69c; color: #664d03; }
+.sms-count-cyan    { background: #cff4fc; color: #055160; border-color: #9eeaf9; }
+.sms-count-cyan:hover    { background: #9eeaf9; color: #055160; }
+.sms-count-primary { background: #cfe2ff; color: #0a58ca; border-color: #9ec5fe; }
+.sms-count-primary:hover { background: #9ec5fe; color: #084298; }
+.sms-count-purple  { background: #ede5f9; color: #59359a; border-color: #d4c2ee; }
+.sms-count-purple:hover  { background: #d4c2ee; color: #432874; }
+.sms-count-green   { background: #d1e7dd; color: #0f5132; border-color: #a3cfbb; }
+.sms-count-green:hover   { background: #a3cfbb; color: #0a3622; }

@@ -1,0 +1,10 @@
+/* ======================================================================
+ * vehicle-variants.css
+ * Extracted from inline <style> in views/vehicle-variants/index.ejs
+ * ====================================================================== */
+
+/* Fix dropdown clipping inside table-responsive scroll */
+.table-responsive { overflow: clip visible !important; }
+@supports not (overflow: clip visible) {
+    .table-responsive { overflow: visible !important; }
+}

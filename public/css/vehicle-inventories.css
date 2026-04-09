@@ -1,0 +1,20 @@
+/* ======================================================================
+ * vehicle-inventories.css — styles for vehicle inventory form & list pages
+ * Extracted from inline <style> blocks in:
+ *   views/vehicle-inventories/form.ejs
+ * ====================================================================== */
+
+/* Locked tab (when not yet saved on add) */
+.nav-tabs .nav-link.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+    color: #6c757d !important;
+    cursor: not-allowed;
+}
+
+/* Collapsible section cards */
+.section-card { margin-bottom: .75rem; }
+.section-card .card-header { cursor: pointer; user-select: none; }
+.section-card .card-header .card-title { font-size: 13px; font-weight: 600; }
+.section-card .card-header .collapse-arrow { transition: transform .2s; font-size: 12px; opacity: .5; }
+.section-card .card-header.collapsed .collapse-arrow { transform: rotate(-90deg); }
