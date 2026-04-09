@@ -1,5 +1,6 @@
 /* warehouse-racks.js */
 'use strict';
+var T=function(k,f){return (typeof SMS_T==='function')?SMS_T(k,f):(f||k);};
 var _page=1,_pp=15,_sel=[],_sort={field:'created_at',dir:'desc'};
 
 function _filters(){
@@ -45,7 +46,7 @@ function _initSidebarSelect2(){
 
 function loadData(){
     var cols=10;
-    $('#tableBody').html('<tr><td colspan="'+cols+'" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr>');
+    $('#tableBody').html('<tr><td colspan="'+cols+'" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
     var isDeleted=$('#filterDeleted').val()==='only';
     if(isDeleted)$('#btnBulkRecover').removeClass('d-none');else $('#btnBulkRecover').addClass('d-none');
 
@@ -92,7 +93,7 @@ function loadData(){
                 '<td class="text-end">'+acts+'</td></tr>';
         });
         $('#tableBody').html(rows);
-        $('#tableInfo').text('Showing '+(pg.from||1)+'–'+(pg.to||data.length)+' of '+(pg.total||0));
+        $('#tableInfo').text(T('pagination.showing','Showing')+' '+(pg.from||1)+'–'+(pg.to||data.length)+' '+T('pagination.of','of')+' '+(pg.total||0));
         $('#tablePagination').html(smsPg(pg));updateBulk();
     }).fail(function(){$('#tableBody').html('<tr><td colspan="'+cols+'" class="text-center py-4 text-danger">Network error.</td></tr>');});
 }
@@ -100,20 +101,20 @@ function loadData(){
 function smsPg(pg){if(!pg||pg.last_page<=1)return '';var cp=pg.current_page,lp=pg.last_page;var h='<nav><ul class="pagination pagination-sm mb-0 flex-wrap gap-1">';h+='<li class="page-item '+(cp<=1?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="1"><i class="bi bi-chevron-double-left"></i></a></li>';h+='<li class="page-item '+(cp<=1?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="'+(cp-1)+'"><i class="bi bi-chevron-left"></i></a></li>';var pgs=[],prev=0;for(var i=1;i<=lp;i++){if(i===1||i===lp||Math.abs(i-cp)<=1){if(prev&&i-prev>1)pgs.push('...');pgs.push(i);prev=i;}}pgs.forEach(function(p){if(p==='...')h+='<li class="page-item disabled"><span class="page-link">...</span></li>';else h+='<li class="page-item '+(p===cp?'active':'')+'"><a class="page-link sms-pg" href="#" data-p="'+p+'">'+p+'</a></li>';});h+='<li class="page-item '+(cp>=lp?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="'+(cp+1)+'"><i class="bi bi-chevron-right"></i></a></li>';h+='<li class="page-item '+(cp>=lp?'disabled':'')+'"><a class="page-link sms-pg" href="#" data-p="'+lp+'"><i class="bi bi-chevron-double-right"></i></a></li></ul></nav>';return h;}
 
 function togglePT(u){$.post(BASE_URL+'/warehouse-racks/'+u+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}
-function delPT(u,n){smsConfirm({icon:'🗑️',title:'Delete',msg:'Are you sure you want to delete <strong>'+H.esc(n)+'</strong>?',btnClass:'btn-danger',btnText:'Delete',onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouse-racks/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error('Network error.');});}});}
-function recoverPT(u,n){smsConfirm({icon:'♻️',title:'Recover',msg:'Recover <strong>'+H.esc(n)+'</strong>?',btnClass:'btn-success',btnText:'Recover',onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouse-racks/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error('Network error.');});}});}
+function delPT(u,n){smsConfirm({icon:'🗑️',title:T('btn.delete','Delete'),msg:'Are you sure you want to delete <strong>'+H.esc(n)+'</strong>?',btnClass:'btn-danger',btnText:T('btn.delete','Delete'),onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouse-racks/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});}});}
+function recoverPT(u,n){smsConfirm({icon:'♻️',title:T('btn.recover','Recover'),msg:'Recover <strong>'+H.esc(n)+'</strong>?',btnClass:'btn-success',btnText:T('btn.recover','Recover'),onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouse-racks/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});}});}
 function updateBulk(){_sel=[];$('.row-chk:checked').each(function(){_sel.push($(this).data('uuid'));});$('#bulkCount').text(_sel.length);_sel.length>0?$('#bulkBar').removeClass('d-none'):$('#bulkBar').addClass('d-none');}
-function bulkAction(a){if(!_sel.length)return;var icons={delete:'🗑️',activate:'✅',deactivate:'⛔',recover:'♻️'};smsConfirm({icon:icons[a]||'⚠️',title:a,msg:_sel.length+' items will be affected.',btnClass:a==='delete'?'btn-danger':'btn-primary',btnText:a,onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouse-racks/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error('Network error.');});}});}
+function bulkAction(a){if(!_sel.length)return;var icons={delete:'🗑️',activate:'✅',deactivate:'⛔',recover:'♻️'};smsConfirm({icon:icons[a]||'⚠️',title:a,msg:_sel.length+' '+T('bulk.items_affected','items will be affected.'),btnClass:a==='delete'?'btn-danger':'btn-primary',btnText:a,onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouse-racks/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});}});}
 
 function showUsage(uuid, name) {
     var $b = $('#usageBody');
-    $('#usageModalName').text('Usage: ' + (name || ''));
+    $('#usageModalName').text(T('usage.title','Usage')+': ' + (name || ''));
     $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
     $.get(BASE_URL + '/warehouse-racks/' + uuid + '/usage', function(res) {
-        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">Failed to load.</div>'); return; }
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">'+T('general.failed_load','Failed.')+'</div>'); return; }
         smsRenderUsageBody(res.data, 'warehouse-racks', uuid, name);
-    }).fail(function() { $b.html('<div class="alert alert-danger m-3">Network error.</div>'); });
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Network error.')+'</div>'); });
 }
 
 /* View modal */
@@ -122,7 +123,7 @@ function viewRecord(uuid){
     $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
     $.get(BASE_URL+'/warehouse-racks/'+uuid+'/view-data',function(res){
-        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">Not found.</div>');return;}
+        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">'+T('general.not_found','Not found.')+'</div>');return;}
         var w=(res.data&&res.data.rack)||res.data||{};
 
         function _r(label,val){if(!val&&val!==0)return '';var v=String(val);if(/^\d{4}-\d{2}-\d{2}/.test(v))v=typeof smsFormatDate==='function'?smsFormatDate(v):v;return '<div class="col-sm-6"><div class="sms-detail-row"><span class="sms-detail-label">'+H.esc(label)+'</span><span class="sms-detail-value">'+H.esc(v)+'</span></div></div>';}
@@ -149,7 +150,7 @@ function viewRecord(uuid){
 
         h+='</div>';
         $b.html(h);
-    }).fail(function(){$b.html('<div class="alert alert-danger m-3">Network error.</div>');});
+    }).fail(function(){$b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Network error.')+'</div>');});
 }
 
 /* QR Code modal */
@@ -229,7 +230,7 @@ function downloadQR(name){
 $(document).on('click','#btnQRPrint',function(){ printQR(); });
 $(document).on('click','#btnQRDownload',function(){ downloadQR($('#qrFullCode').text()||'code'); });
 
-function doExport(fmt){var p=_filters();p.format=fmt;delete p.page;delete p.per_page;if(fmt==='csv'||fmt==='excel'||fmt==='pdf'){window.location.href=BASE_URL+'/warehouse-racks/export?'+$.param(p);return;}showLoading();$.post(BASE_URL+'/warehouse-racks/export',p,function(res){hideLoading();if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error('No data.');return;}var rows=res.data.rows,cols=Object.keys(rows[0]);var html='<html><head><title>Warehouse Racks</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body><h2>Warehouse Racks ('+rows.length+')</h2><table><thead><tr>';cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr></thead><tbody>';rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});html+='</tbody></table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();if(fmt==='print')setTimeout(function(){w.print();},400);}).fail(function(){hideLoading();toastr.error('Failed.');});}
+function doExport(fmt){var p=_filters();p.format=fmt;delete p.page;delete p.per_page;if(fmt==='csv'||fmt==='excel'||fmt==='pdf'){window.location.href=BASE_URL+'/warehouse-racks/export?'+$.param(p);return;}showLoading();$.post(BASE_URL+'/warehouse-racks/export',p,function(res){hideLoading();if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error(T('general.no_data','No data.'));return;}var rows=res.data.rows,cols=Object.keys(rows[0]);var html='<html><head><title>Warehouse Racks</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body><h2>Warehouse Racks ('+rows.length+')</h2><table><thead><tr>';cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr></thead><tbody>';rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});html+='</tbody></table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();if(fmt==='print')setTimeout(function(){w.print();},400);}).fail(function(){hideLoading();toastr.error(T('general.failed','Failed.'));});}
 
 $(function(){
     _pp=smsInitPerPage('#perPageSel');_initSidebarSelect2();loadData();

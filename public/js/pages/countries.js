@@ -5,7 +5,7 @@ var _page=1,_pp=15,_sel=[],_sort={field:'name',dir:'asc'},_importResults=[],_pol
 function _filters(){var p={page:_page,per_page:_pp,search:$('#searchInput').val().trim(),status:$('#filterStatus').val(),show_deleted:$('#filterDeleted').val(),sort_field:_sort.field,sort_dir:_sort.dir};return p;}
 
 function loadData(){
-    $('#tableBody').html('<tr><td colspan="7" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr>');
+    $('#tableBody').html('<tr><td colspan="7" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
     var isDel=$('#filterDeleted').val()==='only';if(isDel)$('#btnBulkRecover').removeClass('d-none');else $('#btnBulkRecover').addClass('d-none');
     $.post(BASE_URL+'/countries/paginate',_filters(),function(res){
         if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="7" class="text-center py-4 text-danger">'+T('msg.failed','Failed.')+'</td></tr>');return;}

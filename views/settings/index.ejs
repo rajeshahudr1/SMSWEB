@@ -513,6 +513,64 @@ var curIconColor = s.icon_color || 'theme';
         </div>
       </div>
     </div>
+
+    <!-- ── Part Inventory Settings (Admin Only) ────────────── -->
+    <div class="card mb-4" id="piSettingsCard">
+      <div class="card-header collapsed" data-bs-toggle="collapse" data-bs-target="#piSettingsBody">
+        <div class="card-title">
+          <i class="bi bi-boxes me-2"></i>
+          Part Inventory Settings
+          <i class="bi bi-chevron-down ms-auto collapse-icon"></i>
+        </div>
+      </div>
+      <div class="card-body collapse" id="piSettingsBody">
+        <p class="text-muted small mb-3">Configure file upload limits for your company's part inventory.</p>
+        <div class="row g-3">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold">Max Image Size (MB)</label>
+            <input type="number" class="form-control" id="fPiMaxImageSize" min="1" max="50" value="5" placeholder="5"/>
+            <div class="form-hint">Per file (1-50 MB)</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold">Max Images Count</label>
+            <input type="number" class="form-control" id="fPiMaxImageCount" min="1" max="100" value="20" placeholder="20"/>
+            <div class="form-hint">Max images per part</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold">Max Video Size (MB)</label>
+            <input type="number" class="form-control" id="fPiMaxVideoSize" min="1" max="500" value="50" placeholder="50"/>
+            <div class="form-hint">Per file (1-500 MB)</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label fw-semibold">Max Videos Count</label>
+            <input type="number" class="form-control" id="fPiMaxVideoCount" min="1" max="50" value="10" placeholder="10"/>
+            <div class="form-hint">Max videos per part</div>
+          </div>
+        </div>
+        <div class="text-end mt-3">
+          <button type="button" class="btn btn-primary" id="btnSavePiSettings" onclick="savePiSettings()">
+            <i class="bi bi-floppy me-1"></i>Save Upload Settings
+          </button>
+        </div>
+
+        <hr class="my-4"/>
+
+        <h6 class="fw-semibold mb-2"><i class="bi bi-table me-1"></i> List View Columns</h6>
+        <p class="text-muted small mb-2">Select which columns to show on the Part Inventory list page.</p>
+        <div class="border rounded p-2" style="max-height:240px;overflow-y:auto;">
+          <div class="row g-1" id="piColumnCheckboxes">
+            <div class="text-center py-2 text-muted small"><div class="spinner-border spinner-border-sm me-1"></div>Loading...</div>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnPiColSelectAll"><i class="bi bi-check-all me-1"></i>All</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnPiColReset"><i class="bi bi-arrow-clockwise me-1"></i>Default</button>
+          <button type="button" class="btn btn-primary btn-sm ms-auto" id="btnSavePiColumns" onclick="savePiColumns()">
+            <i class="bi bi-floppy me-1"></i>Save Columns
+          </button>
+        </div>
+      </div>
+    </div>
     <% } %>
 
   </div><!-- /col -->

@@ -40,6 +40,7 @@ router.use('/vehicle-models',     authGuard, require('./vehicle-models'));
 router.use('/vehicle-variants',   authGuard, require('./vehicle-variants'));
 router.use('/vehicle-engines',    authGuard, require('./vehicle-engines'));
 router.use('/vehicle-inventories', authGuard, require('./vehicle-inventories'));
+router.use('/part-inventories', authGuard, require('./part-inventories'));
 
 // Warehouse
 router.use('/warehouses',        authGuard, require('./warehouses'));

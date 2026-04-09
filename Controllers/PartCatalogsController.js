@@ -76,6 +76,7 @@ exports.update = [(r,s,n) => { tempMultiUpload.array('images', 20)(r,s,(e) => { 
 }];
 
 exports.viewData = async (req, res) => { res.json(await api.get('/part-catalogs/' + req.params.uuid + '/view', req.session.token)); };
+exports.subCatalogs = async (req, res) => { res.json(await api.get('/part-catalogs/' + req.params.id + '/sub-catalogs', req.session.token)); };
 exports.destroy = async (req, res) => { res.json(await api.del('/part-catalogs/' + req.params.uuid, req.session.token)); };
 exports.toggleStatus = async (req, res) => { res.json(await api.patch('/part-catalogs/' + req.params.uuid + '/toggle-status', {}, req.session.token)); };
 exports.recover = async (req, res) => { res.json(await api.post('/part-catalogs/' + req.params.uuid + '/recover', {}, req.session.token)); };

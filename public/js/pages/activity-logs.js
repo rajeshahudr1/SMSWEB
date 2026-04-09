@@ -1,5 +1,6 @@
 /* activity-logs.js */
 'use strict';
+var T=function(k,f){return (typeof SMS_T==='function')?SMS_T(k,f):(f||k);};
 var _page=1, _pp=15, _sort={field:'created_at',dir:'desc'};
 
 function _filters(){
@@ -88,7 +89,7 @@ function viewDetail(id){
     $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalDetail')[0]).show();
     $.get(BASE_URL+'/activity-logs/'+id,function(res){
-        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">Not found.</div>');return;}
+        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">'+T('general.not_found','Not found.')+'</div>');return;}
         var d=res.data,h='<div class="p-3">';
         h+='<div class="row mb-3"><div class="col-sm-6"><div class="text-muted small">User</div><div class="fw-semibold">'+(esc(d.user_name)||esc(d.user_email)||'System')+'</div></div>';
         h+='<div class="col-sm-6"><div class="text-muted small">Company</div><div class="fw-semibold">'+(esc(d.company_name)||'–')+'</div></div></div>';
@@ -146,7 +147,7 @@ function doCompare(oldId,newId){
     $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalCompare')[0]).show();
     $.post(BASE_URL+'/activity-logs/compare',{log_id_old:oldId,log_id_new:newId},function(res){
-        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">Failed.</div>');return;}
+        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">'+T('general.failed','Failed.')+'</div>');return;}
         var d=res.data,h='<div class="p-3">';
         h+='<div class="row mb-3"><div class="col-sm-6"><div class="p-2 rounded border bg-light"><div class="text-muted small">Older (#'+d.log_old.id+')</div><div class="fw-semibold small">'+esc(d.log_old.description||'–')+'</div><div class="text-muted" style="font-size:11px;">'+esc(d.log_old.user_name||'–')+' • '+(typeof smsFormatDateTime==='function'?smsFormatDateTime(d.log_old.created_at):new Date(d.log_old.created_at).toLocaleString())+'</div></div></div>';
         h+='<div class="col-sm-6"><div class="p-2 rounded border bg-light"><div class="text-muted small">Newer (#'+d.log_new.id+')</div><div class="fw-semibold small">'+esc(d.log_new.description||'–')+'</div><div class="text-muted" style="font-size:11px;">'+esc(d.log_new.user_name||'–')+' • '+(typeof smsFormatDateTime==='function'?smsFormatDateTime(d.log_new.created_at):new Date(d.log_new.created_at).toLocaleString())+'</div></div></div></div>';

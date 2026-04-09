@@ -99,7 +99,7 @@ function showAllImages($el){
     $('#imgModalBody').html('<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalImage')[0]).show();
     $.get(BASE_URL+'/vehicle-inventories/'+uuid+'/view-data',function(res){
-        if(!res||res.status!==200){$('#imgModalBody').html('<div class="text-muted text-center py-3">Failed to load.</div>');return;}
+        if(!res||res.status!==200){$('#imgModalBody').html('<div class="text-muted text-center py-3">'+T('general.failed_load','Failed.')+'</div>');return;}
         var vi=res.data.vehicle_inventory||res.data||{};
         var images=res.data.images||vi.images||[];
         if(!images.length){$('#imgModalBody').html('<div class="text-muted text-center py-3">'+T('general.no_image','No images')+'</div>');return;}
@@ -139,12 +139,14 @@ function loadData(){
             acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>';
             acts+='<ul class="dropdown-menu dropdown-menu-end">';
             acts+='<li><a class="dropdown-item" href="#" onclick="viewVI(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>'+T('general.preview','Preview')+'</a></li>';
+            acts+='<li><a class="dropdown-item" href="#" onclick="viewPartsForVehicle(\''+r.uuid+'\',\''+H.esc(r.vehicle_internal_id||'')+'\');return false;"><i class="bi bi-boxes me-2 text-info"></i>Part Details</a></li>';
             acts+='<li><a class="dropdown-item" href="#" onclick="downloadPdfVI(\''+r.uuid+'\');return false;"><i class="bi bi-file-pdf me-2 text-danger"></i>'+T('general.download_pdf','Download PDF')+'</a></li>';
             if(deleted){
                 acts+='<li><a class="dropdown-item" href="#" onclick="recoverVI(\''+r.uuid+'\',\''+H.esc(r.vehicle_internal_id||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>'+T('bulk.recover','Recover')+'</a></li>';
             }else{
                 if(editable)acts+='<li><a class="dropdown-item" href="'+BASE_URL+'/vehicle-inventories/'+r.uuid+'/edit"><i class="bi bi-pencil me-2 text-secondary"></i>'+T('btn.edit','Edit')+'</a></li>';
                 if(editable)acts+='<li><a class="dropdown-item" href="#" onclick="toggleVI(\''+r.uuid+'\');return false;"><i class="bi bi-toggle-'+(isActive?'on':'off')+' me-2 text-'+(isActive?'warning':'success')+'"></i>'+(isActive?T('general.deactivate','Deactivate'):T('general.activate','Activate'))+'</a></li>';
+                acts+='<li><a class="dropdown-item" href="#" onclick="showUsageVI(\''+r.uuid+'\',\''+H.esc(r.vehicle_internal_id||r.registration_plate_no||'')+'\');return false;"><i class="bi bi-clock-history me-2 text-info"></i>'+T('general.usage','Usage')+'</a></li>';
                 if(deletable){acts+='<li><hr class="dropdown-divider"/></li>';acts+='<li><a class="dropdown-item text-danger" href="#" onclick="delVI(\''+r.uuid+'\',\''+H.esc(r.vehicle_internal_id||'')+'\');return false;"><i class="bi bi-trash3 me-2"></i>'+T('btn.delete','Delete')+'</a></li>';}
             }
             acts+='</ul></div>';
@@ -170,9 +172,23 @@ function viewVI(uuid){
     var $b=$('#viewBody');
     $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
-    $.get(BASE_URL+'/vehicle-inventories/'+uuid+'/view-data',function(res){
+    // Fetch view-data and linked parts in parallel
+    $.get(BASE_URL+'/vehicle-inventories/'+uuid+'/view-data', function(res){
         if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">'+T('general.not_found','Not found.')+'</div>');return;}
         var vi=res.data||{};
+        // Now fetch linked parts using the resolved numeric id
+        $.post(BASE_URL+'/part-inventories/paginate', { page: 1, per_page: 500, vehicle_inventory_id: vi.id }, function(pRes){
+            var linkedParts = (pRes && pRes.status === 200 && pRes.data && Array.isArray(pRes.data.data)) ? pRes.data.data : [];
+            vi._linkedParts = linkedParts;
+            _renderVehiclePreview(vi, $b);
+        }).fail(function(){
+            vi._linkedParts = [];
+            _renderVehiclePreview(vi, $b);
+        });
+    }).fail(function(){$b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Error.')+'</div>');});
+}
+
+function _renderVehiclePreview(vi, $b){
 
         var images=vi.images||[]; var videos=vi.videos||[]; var docs=vi.documents||[];
 
@@ -194,7 +210,9 @@ function viewVI(uuid){
         h+='<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#vvTab3">Images ('+images.length+')</a></li>';
         h+='<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#vvTab4">Videos ('+videos.length+')</a></li>';
         h+='<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#vvTab5">Owner</a></li>';
-        h+='<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#vvTab6">Docs ('+docs.length+')</a></li></ul>';
+        h+='<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#vvTab6">Docs ('+docs.length+')</a></li>';
+        var lps = vi._linkedParts || [];
+        h+='<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#vvTab7"><i class="bi bi-boxes me-1"></i>Parts ('+lps.length+')</a></li></ul>';
 
         h+='<div class="tab-content">';
 
@@ -293,6 +311,34 @@ function viewVI(uuid){
         else h+='<div class="text-muted text-center py-3">No documents</div>';
         h+='</div>';
 
+        // Tab 7: Linked Part Inventories
+        h+='<div class="tab-pane fade" id="vvTab7">';
+        var PI_INV = {1:'In Stock',2:'Out of Stock',4:'Returned',5:'Scrapped'};
+        if (lps.length) {
+            h += '<div class="d-flex justify-content-end mb-2"><a href="'+BASE_URL+'/part-inventories/create?from_vehicle=1&vehicle_id='+H.esc(vi.uuid||'')+'" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Part</a></div>';
+            h += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0" style="font-size:12px;"><thead><tr><th>#</th><th>Internal ID</th><th>Part Code</th><th>Catalog</th><th>Brand</th><th>Qty</th><th>Status</th><th class="text-end">Actions</th></tr></thead><tbody>';
+            lps.forEach(function(p, i) {
+                h += '<tr>'
+                  + '<td>'+(i+1)+'</td>'
+                  + '<td>#'+H.esc(p.part_internal_id||'—')+'</td>'
+                  + '<td>'+H.esc(p.part_code||'—')+'</td>'
+                  + '<td>'+H.esc(p.part_catalog_name||'—')+'</td>'
+                  + '<td>'+H.esc(p.part_brand_name||'—')+'</td>'
+                  + '<td>'+(p.quantity||'—')+'</td>'
+                  + '<td>'+(PI_INV[p.inventory_status]||'—')+'</td>'
+                  + '<td class="text-end text-nowrap">'
+                  +   '<a href="'+BASE_URL+'/part-inventories/'+H.esc(p.uuid)+'/edit" class="btn btn-sm btn-ghost-primary" title="Edit"><i class="bi bi-pencil"></i></a> '
+                  +   '<button type="button" class="btn btn-sm btn-ghost-danger sms-vp-delete" data-uuid="'+H.esc(p.uuid)+'" data-name="'+H.esc(p.part_code||'')+'" title="Delete"><i class="bi bi-trash3"></i></button>'
+                  + '</td>'
+                  + '</tr>';
+            });
+            h += '</tbody></table></div>';
+        } else {
+            h += '<div class="text-muted text-center py-3">No parts linked to this vehicle yet.</div>';
+            h += '<div class="text-center"><a href="'+BASE_URL+'/part-inventories/create?from_vehicle=1&vehicle_id='+H.esc(vi.uuid||'')+'" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Part</a></div>';
+        }
+        h+='</div>';
+
         h+='</div>'; // end tab-content
 
         // Timestamps
@@ -303,7 +349,6 @@ function viewVI(uuid){
 
         h+='</div>';
         $b.html(h);
-    }).fail(function(){$b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Error.')+'</div>');});
 }
 
 /* Play video from detail view — open in a simple popup */
@@ -318,8 +363,176 @@ $(document).on('click', '.vv-play-btn', function(e) {
 
 /* Actions */
 function toggleVI(u){$.post(BASE_URL+'/vehicle-inventories/'+u+'/toggle-status',function(r){if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);});}
+function showUsageVI(uuid, name) {
+    var $b = $('#usageBody');
+    $('#usageModalName').text('Usage: ' + (name || ''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
+    $.get(BASE_URL + '/vehicle-inventories/' + uuid + '/usage', function(res) {
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">'+T('msg.failed','Failed.')+'</div>'); return; }
+        // Use the shared renderer (app.js) so each row gets Edit/Delete actions
+        smsRenderUsageBody(res.data, 'vehicle-inventories', uuid, name);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Network error.')+'</div>'); });
+}
 function delVI(u,n){smsConfirm({icon:'\uD83D\uDDD1\uFE0F',title:T('vehicle_inventories.delete','Delete'),msg:T('general.are_you_sure','Sure?')+' <strong>'+H.esc(n)+'</strong>',btnClass:'btn-danger',btnText:T('btn.delete','Delete'),onConfirm:function(){showLoading();$.post(BASE_URL+'/vehicle-inventories/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 function recoverVI(u,n){smsConfirm({icon:'\u267B\uFE0F',title:T('bulk.recover','Recover'),msg:T('bulk.recover','Recover')+' <strong>'+H.esc(n)+'</strong>?',btnClass:'btn-success',btnText:T('bulk.recover','Recover'),onConfirm:function(){showLoading();$.post(BASE_URL+'/vehicle-inventories/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
+
+/* Open a popup with all parts of a vehicle — full details (bulk-loaded) */
+function viewPartsForVehicle(vehicleUuid, vehicleLabel) {
+    var $b = $('#viewBody');
+    $('#viewModalTitle').html('<i class="bi bi-boxes me-2 text-info"></i>Parts of ' + H.esc(vehicleLabel||''));
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
+    $.get(BASE_URL + '/vehicle-inventories/' + vehicleUuid + '/parts-full', function(res) {
+        var parts = (res && res.status === 200 && Array.isArray(res.data)) ? res.data : [];
+        if (!parts.length) { $b.html('<div class="text-muted text-center py-4">No parts linked to this vehicle.</div>'); return; }
+
+        var INV={1:'In Stock',2:'Out of Stock',4:'Returned',5:'Scrapped'};
+        var COND={1:'OEM',2:'Aftermarket'};
+        var STATE={1:'New',2:'Used',3:'Remanufactured',4:'Not Working'};
+        var DTYPE={1:'Does Not Affect Function',2:'Affects Function'};
+        var DLOC ={1:'Internal',2:'External'};
+        var RTYPE={1:'Compatible',2:'Written on Label'};
+
+        function _r(l,v){if(v==null||v==='')v='—';return '<div class="col-sm-6 col-md-4 mb-1"><span class="text-muted small">'+l+':</span> <strong>'+H.esc(String(v))+'</strong></div>';}
+        function _table(headers, rows) {
+            var h = '<div class="table-responsive"><table class="table table-sm table-bordered mb-2" style="font-size:11px;"><thead><tr>';
+            headers.forEach(function(c){ h += '<th>'+c+'</th>'; });
+            h += '</tr></thead><tbody>';
+            rows.forEach(function(row){ h += '<tr>'; row.forEach(function(c){ h += '<td>'+c+'</td>'; }); h += '</tr>'; });
+            return h + '</tbody></table></div>';
+        }
+        function _dmgsForMedia(p, id, kind) {
+            var key = (kind==='image')?'image_ids':'video_ids';
+            return (p.damages||[]).filter(function(d){
+                var ids = (d[key]||[]).map(String);
+                return ids.indexOf(String(id)) !== -1;
+            });
+        }
+        function _dmgBadges(p, items) {
+            if (!items.length) return '';
+            return '<div class="mt-1 d-flex flex-wrap gap-1">' + items.map(function(d){
+                var label = (d.damage_description||'Damage')+' #'+((p.damages||[]).indexOf(d)+1);
+                return '<span class="badge bg-warning-lt" style="font-size:9px;" title="'+H.esc(label)+'"><i class="bi bi-exclamation-triangle me-1"></i>'+H.esc(label)+'</span>';
+            }).join('') + '</div>';
+        }
+
+        var h = '<div class="p-3"><div class="text-muted small mb-3">' + parts.length + ' part(s) linked to this vehicle.</div>';
+        h += '<div class="accordion" id="vpAcc">';
+        parts.forEach(function(p, i) {
+            var aid = 'vpItem'+i;
+            h += '<div class="accordion-item">';
+            h += '<h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#'+aid+'">';
+            h += '<strong>#'+H.esc(p.part_internal_id||'—')+'</strong> · '+H.esc(p.part_code||'')+' · '+H.esc(p.part_catalog_name||'—');
+            h += ' <span class="badge bg-azure-lt ms-2">'+(INV[p.inventory_status]||'—')+'</span>';
+            if (p.is_master_part) h += ' <span class="badge bg-primary-lt ms-1"><i class="bi bi-diagram-3 me-1"></i>Master</span>';
+            h += '</button></h2>';
+            h += '<div id="'+aid+'" class="accordion-collapse collapse" data-bs-parent="#vpAcc"><div class="accordion-body">';
+
+            // Part Info
+            h += '<h6 class="text-primary fw-semibold mb-2"><i class="bi bi-info-circle me-1"></i>Part Information</h6>';
+            h += '<div class="row g-0 mb-3">';
+            h += _r('Catalog',p.part_catalog_name)+_r('Brand',p.part_brand_name)+_r('Quantity',p.quantity);
+            h += _r('Price 1',p.price_1)+_r('Price 2',p.price_2)+_r('Cost',p.part_cost_price);
+            h += _r('Condition',COND[p.condition])+_r('State',STATE[p.part_state])+_r('Status',INV[p.inventory_status]);
+            h += _r('Motorization',p.motorization)+_r('CC',p.cc)+_r('CV',p.cv)+_r('KW',p.kw);
+            h += _r('Reg # Dismantler',p.reg_number_dismantler)+_r('Rating',p.rating);
+            h += '</div>';
+
+            // References
+            if (p.references && p.references.length) {
+                h += '<h6 class="text-primary fw-semibold mb-2 mt-2"><i class="bi bi-link-45deg me-1"></i>References ('+p.references.length+')</h6>';
+                h += _table(['Code','Condition','Type','Brand','Manufacturer'],
+                    p.references.map(function(rf){return [H.esc(rf.reference_code||'—'), COND[rf.condition]||'—', RTYPE[rf.reference_type]||'—', H.esc(rf.brand||'—'), H.esc(rf.manufacturer||'—')];}));
+            }
+
+            // Damages
+            if (p.damages && p.damages.length) {
+                h += '<h6 class="text-primary fw-semibold mb-2 mt-2"><i class="bi bi-exclamation-triangle me-1"></i>Damages ('+p.damages.length+')</h6>';
+                h += _table(['#','Description','Type','Location','Rating'],
+                    p.damages.map(function(d,j){return [j+1, H.esc(d.damage_description||'—'), DTYPE[d.damage_type]||'—', DLOC[d.damage_location]||'—', d.damage_rating!=null?d.damage_rating:'—'];}));
+            }
+
+            // Attributes
+            if (p.attributes && p.attributes.length) {
+                h += '<h6 class="text-primary fw-semibold mb-2 mt-2"><i class="bi bi-sliders me-1"></i>Attributes ('+p.attributes.length+')</h6>';
+                h += _table(['Attribute','Value'], p.attributes.map(function(a){
+                    var v=a.value; if (Array.isArray(v)) v=v.join(', ');
+                    return [H.esc(a.label_name||'—'), H.esc(v!=null?String(v):'—')];
+                }));
+            }
+
+            // Locations
+            if (p.locations && p.locations.length) {
+                h += '<h6 class="text-primary fw-semibold mb-2 mt-2"><i class="bi bi-geo-alt me-1"></i>Locations ('+p.locations.length+')</h6>';
+                h += _table(['Unit','Warehouse','Zone','Shelf','Rack','Bin','Code'],
+                    p.locations.map(function(l){return [l.unit_number||'—', H.esc(l.warehouse_name||'—'), H.esc(l.warehouse_zone_name||'—'), H.esc(l.warehouse_shelf_name||'—'), H.esc(l.warehouse_rack_name||'—'), H.esc(l.warehouse_bin_name||'—'), H.esc(l.location_code||'—')];}));
+            }
+
+            // Images (with linked damage badges)
+            if (p.images && p.images.length) {
+                h += '<h6 class="text-primary fw-semibold mb-2 mt-2"><i class="bi bi-images me-1"></i>Images ('+p.images.length+')</h6><div class="row g-2 mb-2">';
+                p.images.forEach(function(img){
+                    var u=img.display_url||img.image_url||'';
+                    var iid=img.id||img.image_id||'';
+                    h+='<div class="col-4 col-sm-3"><div class="border rounded p-1"><a href="'+H.esc(u)+'" target="_blank"><img src="'+H.esc(u)+'" class="rounded" style="width:100%;height:70px;object-fit:cover;" onerror="this.src=\'/images/no-image.svg\';"/></a>'+_dmgBadges(p, _dmgsForMedia(p,iid,'image'))+'</div></div>';
+                });
+                h += '</div>';
+            }
+
+            // Videos (with linked damage badges)
+            if (p.videos && p.videos.length) {
+                h += '<h6 class="text-primary fw-semibold mb-2 mt-2"><i class="bi bi-camera-video me-1"></i>Videos ('+p.videos.length+')</h6><div class="row g-2 mb-2">';
+                p.videos.forEach(function(v){
+                    var u=v.display_url||v.video_url||'';
+                    var vid=v.id||v.video_id||'';
+                    h+='<div class="col-6 col-sm-4"><div class="border rounded p-1"><video src="'+H.esc(u)+'#t=1" controls preload="metadata" style="width:100%;height:90px;object-fit:cover;border-radius:3px;"></video>'+_dmgBadges(p, _dmgsForMedia(p,vid,'video'))+'</div></div>';
+                });
+                h += '</div>';
+            }
+
+            // Notes
+            if (p.notes || p.extra_notes || p.internal_notes) {
+                h += '<h6 class="text-primary fw-semibold mb-2 mt-2"><i class="bi bi-journal-text me-1"></i>Notes</h6>';
+                if (p.notes)          h += '<div class="small mb-1"><strong>Notes:</strong> '+H.esc(p.notes)+'</div>';
+                if (p.extra_notes)    h += '<div class="small mb-1"><strong>Extra:</strong> '+H.esc(p.extra_notes)+'</div>';
+                if (p.internal_notes) h += '<div class="small mb-1"><strong>Internal:</strong> '+H.esc(p.internal_notes)+'</div>';
+            }
+
+            h += '<div class="d-flex gap-2 mt-3 border-top pt-2">';
+            h += '<a href="'+BASE_URL+'/part-inventories/'+H.esc(p.uuid)+'/edit" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>';
+            h += '<a href="'+BASE_URL+'/part-inventories/'+H.esc(p.uuid)+'/pdf" target="_blank" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>';
+            h += '</div></div></div></div>';
+        });
+        h += '</div></div>';
+        $b.html(h);
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">Failed to load parts.</div>'); });
+}
+
+/* Vehicle preview → linked parts → delete with confirm + dependency check */
+$(document).on('click', '.sms-vp-delete', function() {
+    var uuid = $(this).data('uuid');
+    var name = $(this).data('name');
+    var $row  = $(this).closest('tr');
+    smsConfirm({
+        icon: '🗑️', title: T('btn.delete','Delete'),
+        msg: T('general.are_you_sure','Are you sure?') + ' <strong>' + H.esc(name) + '</strong>',
+        btnClass: 'btn-danger', btnText: T('btn.delete','Delete'),
+        onConfirm: function() {
+            showLoading();
+            $.post(BASE_URL+'/part-inventories/'+uuid+'/delete', function(r) {
+                hideLoading();
+                if (r.status === 200) {
+                    toastr.success(r.message || 'Deleted.');
+                    $row.remove();
+                } else toastr.error(r.message || 'Failed.');
+            }).fail(function(xhr) {
+                hideLoading();
+                toastr.error(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Network error.');
+            });
+        }
+    });
+});
 /* PDF Download — direct download from server */
 function downloadPdfVI(uuid) {
     toastr.info('Generating PDF...');
@@ -556,7 +769,50 @@ function updateBulk(){_sel=[];$('.row-chk:checked').each(function(){_sel.push($(
 function bulkAction(a){if(!_sel.length)return;var icons={delete:'\uD83D\uDDD1\uFE0F',activate:'\u2705',deactivate:'\u26D4',recover:'\u267B\uFE0F'};smsConfirm({icon:icons[a]||'\u26A0\uFE0F',title:a.charAt(0).toUpperCase()+a.slice(1),msg:_sel.length+' '+T('vehicle_inventories.bulk_affected','items.'),btnClass:a==='delete'?'btn-danger':'btn-primary',btnText:a.charAt(0).toUpperCase()+a.slice(1),onConfirm:function(){showLoading();$.post(BASE_URL+'/vehicle-inventories/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 
 /* Export */
-function doExport(fmt){var p=_filters();p.format=fmt;delete p.page;delete p.per_page;if(fmt==='csv'||fmt==='excel'||fmt==='pdf'){window.location.href=BASE_URL+'/vehicle-inventories/export?'+$.param(p);return;}showLoading();$.post(BASE_URL+'/vehicle-inventories/export',p,function(res){hideLoading();if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error(T('general.no_data','No data.'));return;}var rows=res.data.rows,cols=Object.keys(rows[0]);var html='<html><head><title>Vehicle Inventories</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body><h2>Vehicle Inventories ('+rows.length+')</h2><table><thead><tr>';cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr></thead><tbody>';rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});html+='</tbody></table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();if(fmt==='print')setTimeout(function(){w.print();},400);}).fail(function(){hideLoading();toastr.error(T('msg.failed','Failed.'));});}
+function doExport(fmt){
+    var p=_filters();delete p.page;delete p.per_page;p.format=fmt;
+    if(fmt==='csv'||fmt==='excel'||fmt==='pdf'){
+        showLoading();
+        var checkP=$.extend({},p,{check:'1'});
+        $.post(BASE_URL+'/vehicle-inventories/export',checkP,function(res){
+            hideLoading();
+            if(!res||res.status!==200){toastr.error(res?res.message:'Failed.');return;}
+            if(res.data&&res.data.mode==='background'){
+                toastr.info(T('export.processing','Export is processing in background. You will receive a notification and email when ready.'));
+                if(typeof smsTrackJob==='function') smsTrackJob(res.data.jobId,{onComplete:function(job){if(typeof fetchUnreadCount==='function')fetchUnreadCount();if(job.status==='completed')toastr.success(T('export.ready','Export ready! Check notifications to download.'));else toastr.error(T('export.failed','Export failed.'));}});
+                return;
+            }
+            showLoading();
+            toastr.info(T('export.generating','Generating export...'));
+            fetch(BASE_URL+'/vehicle-inventories/export?'+$.param(p),{credentials:'same-origin'})
+                .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.blob();})
+                .then(function(blob){
+                    hideLoading();
+                    var url=URL.createObjectURL(blob);
+                    var a=document.createElement('a');a.href=url;
+                    a.download='vehicle-inventory-'+Date.now()+'.'+(fmt==='excel'?'xlsx':(fmt==='pdf'?'pdf':'csv'));
+                    document.body.appendChild(a);a.click();document.body.removeChild(a);
+                    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+                    toastr.success(T('export.ready','Export ready.'));
+                })
+                .catch(function(){hideLoading();toastr.error(T('msg.failed','Failed.'));});
+        }).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});
+        return;
+    }
+    showLoading();
+    $.post(BASE_URL+'/vehicle-inventories/export',p,function(res){
+        hideLoading();
+        if(!res||res.status!==200){toastr.error(res?res.message:'Failed.');return;}
+        if(res.data&&res.data.mode==='background'){toastr.info(T('export.processing','Export is processing in background. You will receive a notification and email when ready.'));return;}
+        if(!res.data||!res.data.rows||!res.data.rows.length){toastr.error(T('general.no_data','No data.'));return;}
+        var rows=res.data.rows,cols=Object.keys(rows[0]);
+        var html='<html><head><title>Vehicle Inventories</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body><h2>Vehicle Inventories ('+rows.length+')</h2><table><thead><tr>';
+        cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr></thead><tbody>';
+        rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});
+        html+='</tbody></table></body></html>';
+        var w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(function(){w.print();},400);
+    }).fail(function(){hideLoading();toastr.error(T('msg.failed','Failed.'));});
+}
 
 /* Advanced filters */
 function _initSelect2Filter(sel, url, ph, extraData) {

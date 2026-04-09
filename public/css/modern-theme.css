@@ -620,6 +620,72 @@ textarea.form-control {
   transition: var(--sms-transition);
 }
 .sms-pill-filter:hover { border-color: var(--sms-text-muted); }
+
+/* ================================================================
+   Toolbar outline buttons (Filter / Import / Export) — render as
+   SOLID buttons with white text, exactly like the Add button.
+   Text colour never changes on hover/focus/active.
+   ================================================================ */
+.btn.btn-outline-primary,
+.btn.btn-outline-primary:hover,
+.btn.btn-outline-primary:focus,
+.btn.btn-outline-primary:active,
+.btn.btn-outline-primary.active,
+.btn.btn-outline-primary:focus-visible {
+  --tblr-btn-color: #fff;
+  --tblr-btn-bg: var(--tblr-primary, #206bc4);
+  --tblr-btn-border-color: var(--tblr-primary, #206bc4);
+  --tblr-btn-hover-color: #fff;
+  --tblr-btn-hover-bg: var(--tblr-primary, #206bc4);
+  --tblr-btn-hover-border-color: var(--tblr-primary, #206bc4);
+  --tblr-btn-active-color: #fff;
+  --tblr-btn-active-bg: var(--tblr-primary, #206bc4);
+  --tblr-btn-active-border-color: var(--tblr-primary, #206bc4);
+  color: #fff !important;
+  background-color: var(--tblr-primary, #206bc4) !important;
+  border-color: var(--tblr-primary, #206bc4) !important;
+  box-shadow: none !important;
+}
+.btn.btn-outline-secondary,
+.btn.btn-outline-secondary:hover,
+.btn.btn-outline-secondary:focus,
+.btn.btn-outline-secondary:active,
+.btn.btn-outline-secondary.active,
+.btn.btn-outline-secondary:focus-visible {
+  --tblr-btn-color: #fff;
+  --tblr-btn-bg: var(--tblr-secondary, #6c757d);
+  --tblr-btn-border-color: var(--tblr-secondary, #6c757d);
+  --tblr-btn-hover-color: #fff;
+  --tblr-btn-hover-bg: var(--tblr-secondary, #6c757d);
+  --tblr-btn-hover-border-color: var(--tblr-secondary, #6c757d);
+  --tblr-btn-active-color: #fff;
+  --tblr-btn-active-bg: var(--tblr-secondary, #6c757d);
+  --tblr-btn-active-border-color: var(--tblr-secondary, #6c757d);
+  color: #fff !important;
+  background-color: var(--tblr-secondary, #6c757d) !important;
+  border-color: var(--tblr-secondary, #6c757d) !important;
+  box-shadow: none !important;
+}
+.btn.btn-outline-info,
+.btn.btn-outline-info:hover,
+.btn.btn-outline-info:focus,
+.btn.btn-outline-info:active,
+.btn.btn-outline-info.active,
+.btn.btn-outline-info:focus-visible {
+  --tblr-btn-color: #fff;
+  --tblr-btn-bg: var(--tblr-info, #4299e1);
+  --tblr-btn-border-color: var(--tblr-info, #4299e1);
+  --tblr-btn-hover-color: #fff;
+  --tblr-btn-hover-bg: var(--tblr-info, #4299e1);
+  --tblr-btn-hover-border-color: var(--tblr-info, #4299e1);
+  --tblr-btn-active-color: #fff;
+  --tblr-btn-active-bg: var(--tblr-info, #4299e1);
+  --tblr-btn-active-border-color: var(--tblr-info, #4299e1);
+  color: #fff !important;
+  background-color: var(--tblr-info, #4299e1) !important;
+  border-color: var(--tblr-info, #4299e1) !important;
+  box-shadow: none !important;
+}
 .sms-pill-filter.active {
   background: var(--sms-text);
   color: #fff;

@@ -24,7 +24,7 @@ function _updateFilterBadge(){
 
 function loadData(){
     var cols=9;
-    $('#tableBody').html('<tr><td colspan="'+cols+'" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr>');
+    $('#tableBody').html('<tr><td colspan="'+cols+'" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
     var isDeleted=$('#filterDeleted').val()==='only';
     if(isDeleted)$('#btnBulkRecover').removeClass('d-none');else $('#btnBulkRecover').addClass('d-none');
 
@@ -79,13 +79,13 @@ function togglePT(u){$.post(BASE_URL+'/warehouses/'+u+'/toggle-status',function(
 
 function delPT(u,n){
     smsConfirm({icon:'\uD83D\uDDD1\uFE0F',title:T('btn.delete','Delete'),msg:T('general.are_you_sure','Are you sure?')+' <strong>'+H.esc(n)+'</strong>',btnClass:'btn-danger',btnText:T('btn.delete','Delete'),
-        onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouses/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error('Network error.');});}
+        onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouses/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});}
     });
 }
 
 function recoverPT(u,n){
     smsConfirm({icon:'\u267B\uFE0F',title:T('bulk.recover','Recover'),msg:T('bulk.recover','Recover')+' <strong>'+H.esc(n)+'</strong>?',btnClass:'btn-success',btnText:T('bulk.recover','Recover'),
-        onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouses/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error('Network error.');});}
+        onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouses/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});}
     });
 }
 
@@ -95,7 +95,7 @@ function bulkAction(a){
     if(!_sel.length)return;
     var icons={delete:'\uD83D\uDDD1\uFE0F',activate:'\u2705',deactivate:'\u26D4',recover:'\u267B\uFE0F'};
     smsConfirm({icon:icons[a]||'\u26A0\uFE0F',title:a.charAt(0).toUpperCase()+a.slice(1),msg:_sel.length+' items will be affected.',btnClass:a==='delete'?'btn-danger':'btn-primary',btnText:a.charAt(0).toUpperCase()+a.slice(1),
-        onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouses/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error('Network error.');});}
+        onConfirm:function(){showLoading();$.post(BASE_URL+'/warehouses/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Network error.'));});}
     });
 }
 
@@ -117,7 +117,7 @@ function viewRecord(uuid){
     $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalView')[0]).show();
     $.get(BASE_URL+'/warehouses/'+uuid+'/view-data',function(res){
-        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">Not found.</div>');return;}
+        if(!res||res.status!==200){$b.html('<div class="alert alert-danger m-3">'+T('general.not_found','Not found.')+'</div>');return;}
         var w=(res.data&&res.data.warehouse)||res.data||{};
 
         function _r(label,val){if(!val&&val!==0)return '';var v=String(val);if(/^\d{4}-\d{2}-\d{2}/.test(v))v=typeof smsFormatDate==='function'?smsFormatDate(v):v;return '<div class="col-sm-6"><div class="sms-detail-row"><span class="sms-detail-label">'+H.esc(label)+'</span><span class="sms-detail-value">'+H.esc(v)+'</span></div></div>';}
@@ -147,7 +147,7 @@ function viewRecord(uuid){
 
         h+='</div>';
         $b.html(h);
-    }).fail(function(){$b.html('<div class="alert alert-danger m-3">Network error.</div>');});
+    }).fail(function(){$b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Network error.')+'</div>');});
 }
 
 /* QR Code modal */

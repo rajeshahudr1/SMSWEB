@@ -25,7 +25,7 @@ function showAllImages($el){
     $('#imgModalBody').html('<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalImage')[0]).show();
     $.get(BASE_URL+'/part-catalogs/'+uuid+'/view-data',function(res){
-        if(!res||res.status!==200){$('#imgModalBody').html('<div class="text-muted text-center py-3">Failed to load.</div>');return;}
+        if(!res||res.status!==200){$('#imgModalBody').html('<div class="text-muted text-center py-3">'+T('general.failed_load','Failed.')+'</div>');return;}
         var pc=res.data.part_catalog||res.data||{};
         var images=res.data.images||pc.images||[];var up=pc.uploaded_image_url||'';var ext=pc.image_full_url||'';
         if(!images.length&&!up&&!ext){$('#imgModalBody').html('<div class="text-muted text-center py-3">'+T('general.no_image','No images')+'</div>');return;}
@@ -74,7 +74,7 @@ function loadData(){
 
             var isActive=(r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1);
             var acts='<div class="dropdown">';
-            acts+='<button class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>';
+            acts+='<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>';
             acts+='<ul class="dropdown-menu dropdown-menu-end" style="min-width:160px;">';
             acts+='<li><a class="dropdown-item" href="#" onclick="viewPC(\''+r.uuid+'\');return false;"><i class="bi bi-eye me-2 text-primary"></i>'+T('general.preview','View')+'</a></li>';
             if(deleted){
@@ -165,6 +165,19 @@ function viewPC(uuid){var $b=$('#viewBody');$b.html('<div class="text-center py-
             h+='<div class="border-top pt-3 mb-3"><h6 class="fw-semibold mb-2" style="font-size:13px;"><i class="bi bi-diagram-2 me-1 text-primary"></i>'+T('part_catalogs.assigned_parts','Assigned Sub-Parts')+' ('+assignedParts.length+')</h6><div class="d-flex flex-wrap gap-2">';
             assignedParts.forEach(function(p){h+='<span class="badge bg-azure-lt px-2 py-2" style="font-size:12px;cursor:pointer;" onclick="viewPC(\''+H.esc(p.uuid||'')+'\')" title="Click to view details">'+H.esc(p.name||'')+'</span>';});
             h+='</div></div>';
+        }
+
+        /* Attributes */
+        var attrs=pc.attributes||[];
+        if(attrs.length){
+            var DT_NAMES={1:'Text',2:'Number',3:'Dropdown',4:'Checkbox',5:'Radio',6:'Upload'};
+            h+='<div class="border-top pt-3 mb-3"><h6 class="fw-semibold mb-2" style="font-size:13px;"><i class="bi bi-sliders me-1 text-primary"></i>'+T('part_catalogs.attributes','Attributes')+' ('+attrs.length+')</h6>';
+            h+='<div class="table-responsive"><table class="table table-sm table-bordered mb-0" style="font-size:12px;"><thead><tr><th>Label</th><th>Type</th><th>Required</th><th>Multiple</th><th>Options</th></tr></thead><tbody>';
+            attrs.forEach(function(a){
+                var opts=(a.options||[]).map(function(o){return H.esc(o.option_value||o.label||o.value||'');}).join(', ');
+                h+='<tr><td>'+H.esc(a.label_name||'—')+'</td><td>'+(DT_NAMES[a.data_type_id]||'—')+'</td><td>'+(a.is_required?'<span class="badge bg-warning-lt">Yes</span>':'<span class="text-muted">No</span>')+'</td><td>'+(a.is_multiple?'<span class="badge bg-info-lt">Yes</span>':'<span class="text-muted">No</span>')+'</td><td>'+(opts||'<span class="text-muted">—</span>')+'</td></tr>';
+            });
+            h+='</tbody></table></div></div>';
         }
 
         h+='<div class="border-top pt-3 mb-3">';
@@ -516,7 +529,7 @@ $(function(){
                 btnReset($btn);
                 if(r.status===200){toastr.success(r.message||'Updated.');bootstrap.Modal.getOrCreateInstance($('#modalBulkPct')[0]).hide();loadData();}
                 else toastr.error(r.message||'Failed.');
-            },error:function(){btnReset($btn);toastr.error('Error.');}
+            },error:function(){btnReset($btn);toastr.error(T('general.error','Error.'));}
         });
     });
 });

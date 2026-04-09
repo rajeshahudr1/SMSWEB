@@ -1,5 +1,6 @@
 /* vehicle-fuels-form.js */
 'use strict';
+var T=function(k,f){return (typeof SMS_T==='function')?SMS_T(k,f):(f||k);};
 
 $(function() {
     var FD = window._FORM_DATA || {};

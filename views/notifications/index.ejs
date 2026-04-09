@@ -108,10 +108,15 @@ document.addEventListener('DOMContentLoaded', function(){
         },error:function(){toastr.error('${t('general.network_error', 'Network error.')}');}});
     });
 
-    // View detail
+    // View detail (also marks as read)
     $(document).on('click','.btn-notif-view',function(){
         var uuid=$(this).data('uuid');
-        if(uuid&&typeof window.showNotifDetail==='function')window.showNotifDetail(uuid);
+        if(uuid&&typeof window.showNotifDetail==='function'){
+            window.showNotifDetail(uuid);
+            var $row=$(this).closest('tr');
+            $row.removeClass('bg-azure-lt');
+            setTimeout(function(){loadData();if(typeof fetchUnreadCount==='function')fetchUnreadCount();},500);
+        }
     });
 
     // Mark single read

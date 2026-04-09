@@ -8,8 +8,6 @@ var isSuperAdmin = user && user.is_super_admin;
     <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
       <h3 class="card-title mb-0 me-auto"><i class="bi bi-building me-2 text-primary"></i><%- t('vehicle_makes.title') || 'Vehicle Makes' %> <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
       <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
-      <!-- Advanced Filter button -->
-      <button class="btn btn-sm btn-outline-primary" id="btnAdvFilter" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline"><%- t('general.filters', 'Filters') %></span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button>
       <% if (can('export_vehicle_makes')) { %>
       <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline"><%- t('btn.export') %></span></button>
         <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i><%- t('export.csv', 'CSV') %></a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i><%- t('export.excel', 'Excel') %></a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i><%- t('export.print', 'Print') %></a></li></ul>
@@ -24,6 +22,7 @@ var isSuperAdmin = user && user.is_super_admin;
     <div class="d-flex align-items-center gap-2">
       <div class="flex-grow-1"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="<%- t('vehicle_makes.search_placeholder', 'Search makes by name...') %>"/></div>
       <div id="activeFiltersBar" class="d-flex gap-1 flex-wrap"></div>
+      <button class="btn btn-sm btn-outline-primary" id="btnAdvFilter" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline"><%- t('general.filters', 'Filters') %></span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button>
     </div>
   </div>
 

@@ -1,4 +1,5 @@
 <%- layout('../layouts/main') %>
+<% block('styles', '<link rel="stylesheet" href="/css/vehicle-inventories.css"/>') %>
 <%
 var rec = typeof record !== 'undefined' ? record : null;
 var isEdit = !!rec;
@@ -12,19 +13,6 @@ function fmtDate(v) {
 }
 %>
 
-<style>
-  .nav-tabs .nav-link.disabled {
-    pointer-events: none;
-    opacity: 0.5;
-    color: #6c757d !important;
-    cursor: not-allowed;
-  }
-  .section-card { margin-bottom: .75rem; }
-  .section-card .card-header { cursor: pointer; user-select: none; }
-  .section-card .card-header .card-title { font-size: 13px; font-weight: 600; }
-  .section-card .card-header .collapse-arrow { transition: transform .2s; font-size: 12px; opacity: .5; }
-  .section-card .card-header.collapsed .collapse-arrow { transform: rotate(-90deg); }
-</style>
 
 <div class="d-flex align-items-center gap-2 mb-2">
   <a href="/vehicle-inventories" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i><%- t('general.back', 'Back') %></a>
@@ -308,8 +296,7 @@ function fmtDate(v) {
           <div class="col-md-3 col-sm-6">
             <label class="form-label fw-medium"><%- t('vehicle_inventories.inventory_status', 'Inventory Status') %></label>
             <select name="inventory_status" id="selInventoryStatus" class="form-select">
-              <option value="">-- <%- t('general.select', 'Select') %> --</option>
-              <option value="1" <%- (isEdit && parseInt(rec.inventory_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.in_stock', 'In Stock') %></option>
+              <option value="1" <%- (!isEdit || parseInt(rec.inventory_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.in_stock', 'In Stock') %></option>
               <option value="2" <%- (isEdit && parseInt(rec.inventory_status) === 2) ? 'selected' : '' %>><%- t('vehicle_inventories.out_of_stock', 'Out of Stock') %></option>
               <option value="3" <%- (isEdit && parseInt(rec.inventory_status) === 3) ? 'selected' : '' %>><%- t('vehicle_inventories.sent_to_wastage', 'Sent to Wastage') %></option>
             </select>
@@ -317,8 +304,7 @@ function fmtDate(v) {
           <div class="col-md-3 col-sm-6">
             <label class="form-label fw-medium"><%- t('vehicle_inventories.depolution_status', 'Depolution Status') %></label>
             <select name="depolution_status" id="selDepolutionStatus" class="form-select">
-              <option value="">-- <%- t('general.select', 'Select') %> --</option>
-              <option value="1" <%- (isEdit && parseInt(rec.depolution_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.pending', 'Pending') %></option>
+              <option value="1" <%- (!isEdit || parseInt(rec.depolution_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.pending', 'Pending') %></option>
               <option value="2" <%- (isEdit && parseInt(rec.depolution_status) === 2) ? 'selected' : '' %>><%- t('vehicle_inventories.in_depollution', 'In Depollution') %></option>
               <option value="3" <%- (isEdit && parseInt(rec.depolution_status) === 3) ? 'selected' : '' %>><%- t('vehicle_inventories.depolluted', 'Depolluted') %></option>
             </select>
@@ -326,8 +312,7 @@ function fmtDate(v) {
           <div class="col-md-3 col-sm-6">
             <label class="form-label fw-medium"><%- t('vehicle_inventories.dismantle_status', 'Dismantle Status') %></label>
             <select name="dismantle_status" id="selDismantleStatus" class="form-select">
-              <option value="">-- <%- t('general.select', 'Select') %> --</option>
-              <option value="1" <%- (isEdit && parseInt(rec.dismantle_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.pending', 'Pending') %></option>
+              <option value="1" <%- (!isEdit || parseInt(rec.dismantle_status) === 1) ? 'selected' : '' %>><%- t('vehicle_inventories.pending', 'Pending') %></option>
               <option value="2" <%- (isEdit && parseInt(rec.dismantle_status) === 2) ? 'selected' : '' %>><%- t('vehicle_inventories.in_dismantling', 'In Dismantling') %></option>
               <option value="3" <%- (isEdit && parseInt(rec.dismantle_status) === 3) ? 'selected' : '' %>><%- t('vehicle_inventories.dismantled', 'Dismantled') %></option>
             </select>

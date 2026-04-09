@@ -180,7 +180,7 @@ function doExport(fmt) {
     showLoading();
     $.post(BASE_URL + '/master-languages/paginate', p, function(res) {
         hideLoading();
-        if (!res || res.status !== 200 || !res.data || !res.data.data || !res.data.data.length) { toastr.error('No data.'); return; }
+        if (!res || res.status !== 200 || !res.data || !res.data.data || !res.data.data.length) { toastr.error(T('general.no_data','No data.')); return; }
         var rows = res.data.data;
         var html = '<html><head><title>Master Languages</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
         html += '<h2>Master Languages (' + rows.length + ')</h2><table><thead><tr><th>#</th><th>Flag</th><th>Name</th><th>Code</th><th>Native Name</th><th>Default</th><th>Sort</th><th>Status</th></tr></thead><tbody>';
@@ -197,7 +197,7 @@ function doExport(fmt) {
         }
         var w = window.open('', '_blank'); w.document.write(html); w.document.close();
         if (fmt === 'print') setTimeout(function() { w.print(); }, 400);
-    }).fail(function() { hideLoading(); toastr.error('Failed.'); });
+    }).fail(function() { hideLoading(); toastr.error(T('general.failed','Failed.')); });
 }
 
 $(function() {

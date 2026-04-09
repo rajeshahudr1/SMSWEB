@@ -1,5 +1,6 @@
 /* warehouse-racks-form.js */
 'use strict';
+var T=function(k,f){return (typeof SMS_T==='function')?SMS_T(k,f):(f||k);};
 $(function(){
     var FD = window._FORM_DATA || {};
 
@@ -158,7 +159,7 @@ $(function(){
                     setTimeout(function() { window.location = '/warehouse-racks'; }, 800);
                 } else toastr.error(r.message || 'Error.');
             },
-            error: function() { btnReset($btn); toastr.error('Network error.'); }
+            error: function() { btnReset($btn); toastr.error(T('general.network_error','Network error.')); }
         });
     });
 });

@@ -1,5 +1,6 @@
 /* vehicle-inventories-form.js — 6-tab form */
 'use strict';
+var T=function(k,f){return (typeof SMS_T==='function')?SMS_T(k,f):(f||k);};
 
 $(function() {
     var FD = window._FORM_DATA || {};
@@ -242,7 +243,7 @@ $(function() {
                     }
                 } else toastr.error(r.message || 'Error.');
             },
-            error: function(xhr) { btnReset($btn); toastr.error(xhr.responseJSON ? xhr.responseJSON.message : 'Network error.'); }
+            error: function(xhr) { btnReset($btn); toastr.error(xhr.responseJSON ? xhr.responseJSON.message : T('general.network_error','Network error.')); }
         });
     }
 
@@ -361,7 +362,7 @@ $(function() {
             $.ajax({ url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/images/reorder', type: 'POST',
                 contentType: 'application/json', data: JSON.stringify({ order: orderedIds }),
                 success: function(r) { btnReset($btn); if (r.status === 200) { toastr.success(T('vehicle_inventories.order_saved','Order saved.')); _imgOrderChanged = false; $('#btnSaveImageOrder').addClass('d-none'); } else toastr.error(r.message); },
-                error: function() { btnReset($btn); toastr.error('Error.'); }
+                error: function() { btnReset($btn); toastr.error(T('general.error','Error.')); }
             });
         });
 
@@ -692,7 +693,7 @@ $(function() {
             $.ajax({ url: BASE_URL + '/vehicle-inventories/' + FD.uuid + '/videos/reorder', type: 'POST',
                 contentType: 'application/json', data: JSON.stringify({ order: orderedIds }),
                 success: function(r) { btnReset($btn); if (r.status === 200) { toastr.success(T('vehicle_inventories.order_saved','Order saved.')); _vidOrderChanged = false; $('#btnSaveVideoOrder').addClass('d-none'); } else toastr.error(r.message); },
-                error: function() { btnReset($btn); toastr.error('Error.'); }
+                error: function() { btnReset($btn); toastr.error(T('general.error','Error.')); }
             });
         });
 

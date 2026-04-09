@@ -1644,3 +1644,123 @@ body.sms-sb-collapsed .page-wrapper { margin-left: var(--sb-w-col) !important; }
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
 }
+/* ──────────────────────────────────────────────────────────
+   Global ghost-button hover fix — never let icons / text turn
+   white on a white surface. Ghost buttons inside cards, modals,
+   tables, list-groups all get a tinted background on hover so
+   the icon stays visible.
+   ────────────────────────────────────────────────────────── */
+.btn-ghost-primary:hover, .btn-ghost-primary:focus,
+.btn-ghost-secondary:hover, .btn-ghost-secondary:focus,
+.btn-ghost-success:hover, .btn-ghost-success:focus,
+.btn-ghost-info:hover, .btn-ghost-info:focus,
+.btn-ghost-warning:hover, .btn-ghost-warning:focus,
+.btn-ghost-danger:hover, .btn-ghost-danger:focus,
+.btn-ghost-dark:hover, .btn-ghost-dark:focus,
+.btn-ghost-light:hover, .btn-ghost-light:focus,
+.btn-ghost-azure:hover, .btn-ghost-azure:focus,
+.btn-ghost-purple:hover, .btn-ghost-purple:focus,
+.btn-ghost-cyan:hover, .btn-ghost-cyan:focus,
+.btn-ghost-green:hover, .btn-ghost-green:focus,
+.btn-ghost-orange:hover, .btn-ghost-orange:focus,
+.btn-ghost-red:hover, .btn-ghost-red:focus,
+.btn-ghost-yellow:hover, .btn-ghost-yellow:focus {
+  /* Use a tinted background of the button color (Tabler defines --tblr-btn-color) */
+  background-color: rgba(var(--tblr-btn-color-rgb, 110,117,124), 0.10) !important;
+  /* Keep the icon/text in the original button color (do NOT flip to white) */
+  color: var(--tblr-btn-color, currentColor) !important;
+  border-color: transparent !important;
+}
+
+/* btn-link variants on light backgrounds — never flip to white */
+.btn-link.text-primary:hover, .btn-link.text-primary:focus,
+.btn-link.text-success:hover, .btn-link.text-success:focus,
+.btn-link.text-info:hover, .btn-link.text-info:focus,
+.btn-link.text-warning:hover, .btn-link.text-warning:focus,
+.btn-link.text-danger:hover, .btn-link.text-danger:focus,
+.btn-link.text-secondary:hover, .btn-link.text-secondary:focus {
+  background: rgba(0,0,0,.04) !important;
+  text-decoration: none;
+}
+
+/* Outline buttons inside white surfaces (cards, modals, table rows):
+   default Bootstrap inverts text→white on hover. Override only when
+   they're sitting on a clearly-white surface so they stay readable. */
+.modal .btn-outline-primary:hover, .modal .btn-outline-primary:focus,
+.modal .btn-outline-secondary:hover, .modal .btn-outline-secondary:focus,
+.modal .btn-outline-info:hover, .modal .btn-outline-info:focus,
+.modal .btn-outline-success:hover, .modal .btn-outline-success:focus,
+.modal .btn-outline-warning:hover, .modal .btn-outline-warning:focus,
+.card .btn-outline-info:hover, .card .btn-outline-info:focus {
+  background-color: rgba(var(--tblr-btn-color-rgb, 110,117,124), 0.10) !important;
+  color: var(--tblr-btn-color, inherit) !important;
+}
+
+/* Plain icon-only links inside table rows / lists */
+.table a.text-primary:hover,   .table a.text-primary:focus,
+.table a.text-info:hover,      .table a.text-info:focus,
+.table a.text-success:hover,   .table a.text-success:focus,
+.table a.text-warning:hover,   .table a.text-warning:focus,
+.table a.text-danger:hover,    .table a.text-danger:focus,
+.table a.text-secondary:hover, .table a.text-secondary:focus,
+.list-group a.text-primary:hover,
+.list-group a.text-info:hover,
+.list-group a.text-success:hover,
+.list-group a.text-warning:hover,
+.list-group a.text-danger:hover,
+.list-group a.text-secondary:hover {
+  background: rgba(0,0,0,.04) !important;
+  text-decoration: none;
+}
+
+/* Dropdown items: keep colored icons, just darken the background slightly */
+.dropdown-item:hover .text-primary,
+.dropdown-item:hover .text-success,
+.dropdown-item:hover .text-info,
+.dropdown-item:hover .text-warning,
+.dropdown-item:hover .text-danger,
+.dropdown-item:hover .text-secondary,
+.dropdown-item:focus .text-primary,
+.dropdown-item:focus .text-success,
+.dropdown-item:focus .text-info,
+.dropdown-item:focus .text-warning,
+.dropdown-item:focus .text-danger,
+.dropdown-item:focus .text-secondary {
+  color: inherit !important; /* preserve original colored class */
+}
+.dropdown-item:hover, .dropdown-item:focus {
+  background-color: rgba(0,0,0,.05) !important;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Global Import / Export button hover fix
+   These are always rendered as `btn-outline-secondary` (Export)
+   and `btn-outline-info` (Import) on the list-page header bar.
+   Bootstrap default flips text→white on hover which disappears
+   against the white card. Force a tinted background and keep
+   the dark text.
+   ────────────────────────────────────────────────────────── */
+.card-header .btn-outline-secondary:hover,
+.card-header .btn-outline-secondary:focus,
+.card-header .btn-outline-secondary.show,
+.card-header .btn-outline-info:hover,
+.card-header .btn-outline-info:focus,
+.card-header .btn-outline-info.show,
+.card-header .btn-outline-primary:hover,
+.card-header .btn-outline-primary:focus,
+.card-header .btn-outline-primary.show {
+  background-color: rgba(var(--tblr-btn-color-rgb, 110,117,124), 0.10) !important;
+  color: var(--tblr-btn-color, #495057) !important;
+  border-color: var(--tblr-btn-color, #d1d5db) !important;
+}
+
+/* Same for any inline filter / pagination toolbar */
+.card-body > .row .btn-outline-secondary:hover,
+.card-body > .row .btn-outline-secondary:focus,
+.card-body > .row .btn-outline-info:hover,
+.card-body > .row .btn-outline-info:focus,
+.card-body > .row .btn-outline-primary:hover,
+.card-body > .row .btn-outline-primary:focus {
+  background-color: rgba(var(--tblr-btn-color-rgb, 110,117,124), 0.10) !important;
+  color: var(--tblr-btn-color, #495057) !important;
+}

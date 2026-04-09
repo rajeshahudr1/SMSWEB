@@ -5,6 +5,7 @@ const Ctrl    = require('../Controllers/VehicleInventoriesController');
 const { requireLogin, requirePermission } = require('../Middlewares/auth');
 router.use(requireLogin);
 
+router.get('/autocomplete',              requirePermission('view_vehicle_inventories'),   Ctrl.autocomplete);
 router.get('/',                          requirePermission('view_vehicle_inventories'),   Ctrl.index);
 router.post('/paginate',                 requirePermission('view_vehicle_inventories'),   Ctrl.paginate);
 router.get('/enums',                     Ctrl.enums);
@@ -17,6 +18,8 @@ router.post('/bulk-action',              requirePermission('edit_vehicle_invento
 router.get('/create',                    requirePermission('add_vehicle_inventories'),    Ctrl.create);
 router.post('/',                         requirePermission('add_vehicle_inventories'),    Ctrl.store);
 router.get('/:uuid/view-data',           requirePermission('view_vehicle_inventories'),   Ctrl.viewData);
+router.get('/:uuid/usage',               requirePermission('view_vehicle_inventories'),   Ctrl.usage);
+router.get('/:uuid/parts-full',          requirePermission('view_vehicle_inventories'),   Ctrl.partsFull);
 router.get('/:uuid/pdf',                requirePermission('view_vehicle_inventories'),   Ctrl.pdf);
 router.get('/:uuid/edit',                requirePermission('edit_vehicle_inventories'),   Ctrl.edit);
 router.post('/:uuid',                    requirePermission('edit_vehicle_inventories'),   Ctrl.update);

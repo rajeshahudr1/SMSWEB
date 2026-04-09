@@ -1,5 +1,6 @@
 /* dashboard.js */
 'use strict';
+var T=function(k,f){return (typeof SMS_T==='function')?SMS_T(k,f):(f||k);};
 var _chart = null;
 
 function hasPerm(p) {

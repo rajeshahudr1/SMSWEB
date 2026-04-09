@@ -15,6 +15,7 @@ exports.index = async (req, res) => {
 
 exports.paginate = async (req, res) => { res.json(await api.post('/vehicle-inventories/paginate', req.body, req.session.token)); };
 exports.enums = async (req, res) => { res.json(await api.get('/vehicle-inventories/enums', req.session.token)); };
+exports.autocomplete = async (req, res) => { res.json(await api.get('/vehicle-inventories/autocomplete?' + new URLSearchParams(req.query).toString(), req.session.token)); };
 
 exports.create = async (req, res) => {
     res.render('vehicle-inventories/form', {
@@ -43,60 +44,41 @@ exports.update = async (req, res) => {
 };
 
 exports.viewData = async (req, res) => { res.json(await api.get('/vehicle-inventories/' + req.params.uuid + '/view', req.session.token)); };
+exports.usage = async (req, res) => { res.json(await api.get('/vehicle-inventories/' + req.params.uuid + '/usage', req.session.token)); };
+exports.partsFull = async (req, res) => { res.json(await api.get('/vehicle-inventories/' + req.params.uuid + '/parts-full', req.session.token)); };
 
 exports.pdf = async (req, res) => {
     const r = await api.get('/vehicle-inventories/' + req.params.uuid + '/view', req.session.token);
     if (!r || r.status !== 200) return res.status(404).send('Not found');
 
+    // Fetch all parts of this vehicle WITH full details in a single bulk-loaded API call
+    let parts = [];
+    try {
+        const partsResp = await api.get('/vehicle-inventories/' + req.params.uuid + '/parts-full', req.session.token);
+        if (partsResp && partsResp.status === 200 && Array.isArray(partsResp.data)) {
+            parts = partsResp.data;
+        }
+    } catch (e) { /* parts are optional */ }
+
+    const record = Object.assign({}, r.data, { parts });
+
     // If ?preview=1, render the HTML template (for debugging)
     if (req.query.preview) {
-        return res.render('vehicle-inventories/pdf', { record: r.data, layout: false });
+        return res.render('vehicle-inventories/pdf', { record, layout: false });
     }
 
     // Render EJS to HTML string using fs.readFileSync + ejs.render (avoids callback issues)
     const ejs = require('ejs');
     const templatePath = path.join(__dirname, '..', 'views', 'vehicle-inventories', 'pdf.ejs');
     const template = fs.readFileSync(templatePath, 'utf8');
-    const html = ejs.render(template, { record: r.data, filename: templatePath });
+    const html = ejs.render(template, { record, filename: templatePath });
 
-    // Convert to PDF via Puppeteer
-    let browser;
+    // Convert to PDF via shared Puppeteer pool (singleton browser)
     try {
-        const puppeteer = require('puppeteer');
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security']
-        });
-        const page = await browser.newPage();
-
-        // Set content with a base URL so images from API can load
-        const apiBase = process.env.API_URL || 'http://localhost:3000';
-        await page.setContent(html, {
-            waitUntil: ['load', 'networkidle2'],
-            timeout: 30000
-        });
-
-        // Wait a bit for images to render
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        // Hide print bar
-        await page.evaluate(() => {
-            var bar = document.querySelector('.print-bar');
-            if (bar) bar.remove();
-            document.body.style.paddingTop = '0';
-            document.body.style.background = '#fff';
-        });
-
-        const pdfBuf = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            margin: { top: '8mm', right: '8mm', bottom: '8mm', left: '8mm' }
-        });
-
-        await browser.close();
-        browser = null;
-
-        console.log('PDF generated, size:', pdfBuf.length, 'bytes');
+        const { htmlToPdf } = require('../helpers/puppeteerPool');
+        const t0 = Date.now();
+        const pdfBuf = await htmlToPdf(html);
+        console.log('Vehicle PDF generated in', Date.now() - t0, 'ms, size:', pdfBuf.length, 'bytes');
 
         if (!pdfBuf || pdfBuf.length < 100) {
             return res.status(500).send('PDF generation produced empty file');
@@ -110,7 +92,6 @@ exports.pdf = async (req, res) => {
         });
         return res.end(pdfBuf);
     } catch (e) {
-        if (browser) try { await browser.close(); } catch(_) {}
         console.error('PDF generation error:', e);
         return res.status(500).send('PDF generation failed: ' + e.message);
     }
@@ -121,16 +102,23 @@ exports.recover = async (req, res) => { res.json(await api.post('/vehicle-invent
 exports.bulkAction = async (req, res) => { res.json(await api.post('/vehicle-inventories/bulk-action', req.body, req.session.token)); };
 exports.exportData = async (req, res) => {
     const params = Object.assign({}, req.query, req.body);
-    const result = await api.post('/vehicle-inventories/export/data', params, req.session.token);
-    if (!result || result.status !== 200) return res.json({ status: 500, message: 'Failed.' });
-    const rows = result.data.rows || [];
     const format = params.format || 'csv';
-    if (format === 'csv') {
-        if (!rows.length) return res.json({ status: 200, data: { rows: [] } });
-        const hd = Object.keys(rows[0]); const csv = [hd.join(','), ...rows.map(r => hd.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
-        res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-inventory-${Date.now()}.csv"`); return res.send(csv);
-    }
+    const isCheck = params.check === '1' || params.check === 1;
+
+    const result = await api.post('/vehicle-inventories/export/data', params, req.session.token);
+    if (!result || result.status !== 200) return res.json({ status: result ? result.status : 500, message: result ? result.message : 'Failed.', data: result ? result.data : null });
+
+    // Background mode — pass JSON through to frontend
+    if (result.data && result.data.mode === 'background') return res.json(result);
+
+    // Check mode — pass through API response (inline or background)
+    if (isCheck) return res.json(result);
+
+    const rows = result.data.rows || [];
+    if (!rows.length) return res.json({ status: 200, message: 'No data.', data: { rows: [] } });
+    if (format === 'csv') { const hd = Object.keys(rows[0]); const csv = [hd.join(','), ...rows.map(r => hd.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n'); res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-inventory-${Date.now()}.csv"`); return res.send(csv); }
     if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Inventory'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="vehicle-inventory-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    if (format === 'pdf') { const pdfExport = require('../helpers/pdfExport'); return pdfExport.generate(res, 'Vehicle Inventory', rows); }
     return res.json({ status: 200, data: result.data });
 };
 

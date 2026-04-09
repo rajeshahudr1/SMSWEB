@@ -113,7 +113,7 @@ $(function() {
         $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
         bootstrap.Modal.getOrCreateInstance($('#modalViewPart')[0]).show();
         $.get(BASE_URL + '/part-catalogs/' + uuid + '/view-data', function(res) {
-            if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">Not found.</div>'); return; }
+            if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">'+T('general.not_found','Not found.')+'</div>'); return; }
             var pc = res.data.part_catalog || res.data || {};
             var langs = res.data.languages || [];
             var trans = pc.translations || [];
@@ -217,7 +217,7 @@ $(function() {
             per_page: _assignPerPage,
             exclude_master_uuid: FD.uuid || ''
         }, function(res) {
-            if (!res || res.status !== 200) { $('#assignPartDropdown').html('<div class="text-muted small text-center py-2">Failed to load.</div>'); return; }
+            if (!res || res.status !== 200) { $('#assignPartDropdown').html('<div class="text-muted small text-center py-2">'+T('general.failed_load','Failed.')+'</div>'); return; }
             var data = (res.data && res.data.data) || [];
             var pg = (res.data && res.data.pagination) || {};
             if (!data.length) { $('#assignPartDropdown').html('<div class="text-muted small text-center py-2">No parts found.</div>'); $('#assignPartPagination').hide(); return; }
@@ -822,7 +822,7 @@ $(function() {
                     bootstrap.Modal.getOrCreateInstance($('#modalAttrPerms')[0]).hide();
                 } else toastr.error(r.message || 'Failed.');
             },
-            error: function() { btnReset($btn); toastr.error('Failed.'); }
+            error: function() { btnReset($btn); toastr.error(T('general.failed','Failed.')); }
         });
     });
 

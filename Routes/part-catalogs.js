@@ -24,6 +24,7 @@ router.post('/attributes/:attrId/permissions', requirePermission('edit_part_cata
 router.get('/create',                     requirePermission('add_part_catalogs'),    Ctrl.create);
 router.post('/',                          requirePermission('add_part_catalogs'),    Ctrl.store);
 router.get('/:uuid/view-data',            requirePermission('view_part_catalogs'),   Ctrl.viewData);
+router.get('/:id/sub-catalogs',           requirePermission('view_part_catalogs'),   Ctrl.subCatalogs);
 router.get('/:uuid/assigned-parts',       requirePermission('view_part_catalogs'),   Ctrl.assignedParts);
 router.post('/:uuid/assigned-parts',      requirePermission('edit_part_catalogs'),   Ctrl.saveAssignedParts);
 router.post('/:uuid/images',              requirePermission('edit_part_catalogs'),   Ctrl.uploadImages);

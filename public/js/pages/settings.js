@@ -452,7 +452,7 @@ window.saveViColumns = function() {
         url: BASE_URL + '/vehicle-inventories/list-columns', type: 'POST',
         contentType: 'application/json', data: JSON.stringify({ columns: cols }),
         success: function(r) { btnReset($btn); if (r.status === 200) toastr.success('Column config saved.'); else toastr.error(r.message || 'Failed.'); },
-        error: function() { btnReset($btn); toastr.error('Error.'); }
+        error: function() { btnReset($btn); toastr.error(T('general.error','Error.')); }
     });
 };
 
@@ -468,7 +468,86 @@ window.saveViSettings = function() {
             max_video_count: parseInt($('#fViMaxVideoCount').val()) || 10,
         }),
         success: function(r) { btnReset($btn); if (r.status === 200) toastr.success('Vehicle inventory settings saved.'); else toastr.error(r.message || 'Failed.'); },
-        error: function() { btnReset($btn); toastr.error('Error.'); }
+        error: function() { btnReset($btn); toastr.error(T('general.error','Error.')); }
+    });
+};
+
+/* ══════════════════════════════════════════════════════
+   PART INVENTORY SETTINGS — file upload limits + list columns
+   ══════════════════════════════════════════════════════ */
+(function(){
+    $.get(BASE_URL + '/part-inventories/settings', function(res) {
+        if (res && res.status === 200 && res.data) {
+            $('#fPiMaxImageSize').val(res.data.max_image_size || 5);
+            $('#fPiMaxVideoSize').val(res.data.max_video_size || 50);
+            $('#fPiMaxImageCount').val(res.data.max_image_count || 20);
+            $('#fPiMaxVideoCount').val(res.data.max_video_count || 10);
+        }
+    });
+})();
+
+var _piAllCols = {}, _piConfiguredCols = null;
+(function(){
+    $.get(BASE_URL + '/part-inventories/enums', function(res) {
+        if (!res || res.status !== 200 || !res.data) return;
+        _piAllCols = res.data.list_columns || {};
+        _piConfiguredCols = res.data.configured_columns || null;
+        _renderPiColumns();
+    });
+})();
+
+function _renderPiColumns() {
+    var $box = $('#piColumnCheckboxes');
+    if (!Object.keys(_piAllCols).length) { $box.html('<div class="text-muted small">No columns available.</div>'); return; }
+    var checked = {};
+    if (_piConfiguredCols && _piConfiguredCols.length) {
+        _piConfiguredCols.forEach(function(c) { checked[c] = true; });
+    } else {
+        for (var k in _piAllCols) { if (_piAllCols[k].default) checked[k] = true; }
+    }
+    var h = '';
+    for (var key in _piAllCols) {
+        var col = _piAllCols[key];
+        h += '<div class="col-md-4 col-sm-6 col-6"><label class="form-check mb-0" style="font-size:12px;">' +
+            '<input type="checkbox" class="form-check-input pi-col-chk" data-col="' + key + '" ' + (checked[key] ? 'checked' : '') + '/>' +
+            '<span class="form-check-label">' + (col.label || key) + '</span></label></div>';
+    }
+    $box.html(h);
+}
+
+$(document).on('click', '#btnPiColSelectAll', function() { $('.pi-col-chk').prop('checked', true); });
+$(document).on('click', '#btnPiColReset', function() {
+    $('.pi-col-chk').each(function() {
+        var key = $(this).data('col');
+        $(this).prop('checked', _piAllCols[key] && _piAllCols[key].default);
+    });
+});
+
+window.savePiColumns = function() {
+    var cols = [];
+    $('.pi-col-chk:checked').each(function() { cols.push($(this).data('col')); });
+    var $btn = $('#btnSavePiColumns'); btnLoading($btn);
+    $.ajax({
+        url: BASE_URL + '/part-inventories/list-columns', type: 'POST',
+        contentType: 'application/json', data: JSON.stringify({ columns: cols }),
+        success: function(r) { btnReset($btn); if (r.status === 200) toastr.success('Part inventory column config saved.'); else toastr.error(r.message || 'Failed.'); },
+        error: function() { btnReset($btn); toastr.error(T('general.error','Error.')); }
+    });
+};
+
+window.savePiSettings = function() {
+    var $btn = $('#btnSavePiSettings'); btnLoading($btn);
+    $.ajax({
+        url: BASE_URL + '/part-inventories/settings', type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            max_image_size: parseInt($('#fPiMaxImageSize').val()) || 5,
+            max_video_size: parseInt($('#fPiMaxVideoSize').val()) || 50,
+            max_image_count: parseInt($('#fPiMaxImageCount').val()) || 20,
+            max_video_count: parseInt($('#fPiMaxVideoCount').val()) || 10,
+        }),
+        success: function(r) { btnReset($btn); if (r.status === 200) toastr.success('Part inventory settings saved.'); else toastr.error(r.message || 'Failed.'); },
+        error: function() { btnReset($btn); toastr.error(T('general.error','Error.')); }
     });
 };
 
@@ -493,7 +572,7 @@ function taxRowHtml(t) {
 function loadTaxConfig() {
     if (!$('#taxConfigCard').length) return;
     $.get(BASE_URL + '/settings/tax-config', function(res) {
-        if (!res || res.status !== 200) { $('#taxRows').html('<div class="text-danger small">Failed to load.</div>'); return; }
+        if (!res || res.status !== 200) { $('#taxRows').html('<div class="text-danger small">'+T('general.failed_load','Failed.')+'</div>'); return; }
         var d = res.data || {};
         _taxTemplates = d.templates || {};
         _taxCountryCode = d.country_code || null;
@@ -524,7 +603,7 @@ function saveTaxConfig() {
         $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i>Save Tax Configuration');
         if (r.status === 200) toastr.success(r.message);
         else toastr.error(r.message);
-    }, error: function() { $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i>Save Tax Configuration'); toastr.error('Network error.'); } });
+    }, error: function() { $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i>Save Tax Configuration'); toastr.error(T('general.network_error','Network error.')); } });
 }
 
 $(function() {

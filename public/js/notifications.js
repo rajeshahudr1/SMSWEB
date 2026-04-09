@@ -96,10 +96,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (n.message) h += '<p>' + H.esc(n.message) + '</p>';
 
             if (n.file_path && n.file_url) {
-                h += '<div class="border rounded p-3 mb-3 bg-light d-flex align-items-center gap-3">';
+                var retDays = (n.meta && n.meta.retentionDays) ? n.meta.retentionDays : 7;
+                h += '<div class="border rounded p-3 mb-3 bg-light">';
+                h += '<div class="d-flex align-items-center gap-3">';
                 h += '<i class="bi bi-file-earmark-arrow-down text-success" style="font-size:28px;"></i>';
                 h += '<div class="flex-fill"><strong>' + H.esc(n.file_name || 'Export File') + '</strong></div>';
                 h += '<a href="' + H.esc(n.file_url) + '" class="btn btn-primary" download><i class="bi bi-download me-1"></i>Download</a>';
+                h += '</div>';
+                if (n.meta && n.meta.durationMs) {
+                    var dur = n.meta.durationMs, durStr;
+                    if (dur < 1000) durStr = dur + 'ms';
+                    else if (dur < 60000) durStr = (dur / 1000).toFixed(1) + 's';
+                    else { var m = Math.floor(dur / 60000), s = Math.round((dur % 60000) / 1000); durStr = m + 'm ' + s + 's'; }
+                    h += '<div class="text-muted small mt-2"><i class="bi bi-stopwatch me-1"></i>Export completed in <strong>' + durStr + '</strong></div>';
+                }
+                h += '<div class="text-muted small mt-1"><i class="bi bi-clock me-1"></i>This file will be available for ' + retDays + ' days and will be automatically deleted after that.</div>';
                 h += '</div>';
             }
 
@@ -202,7 +213,11 @@ document.addEventListener('DOMContentLoaded', function() {
     $(document).on('click', '.notif-dd-item', function(e) {
         e.preventDefault();
         var uuid = $(this).data('uuid');
-        if (uuid) showNotifDetail(uuid);
+        if (uuid) {
+            $(this).removeClass('bg-azure-lt fw-semibold');
+            showNotifDetail(uuid);
+            setTimeout(function() { fetchUnreadCount(); }, 500);
+        }
     });
     $(document).on('click', '#btnMarkAllRead', function(e) {
         e.preventDefault();

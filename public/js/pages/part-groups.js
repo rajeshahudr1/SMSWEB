@@ -93,9 +93,9 @@ function showUsage(uuid, name) {
     $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
     bootstrap.Modal.getOrCreateInstance($('#modalUsage')[0]).show();
     $.get(BASE_URL + '/part-groups/' + uuid + '/usage', function(res) {
-        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">Failed.</div>'); return; }
+        if (!res || res.status !== 200) { $b.html('<div class="alert alert-danger m-3">'+T('general.failed','Failed.')+'</div>'); return; }
         smsRenderUsageBody(res.data, 'part-groups', uuid, name);
-    }).fail(function() { $b.html('<div class="alert alert-danger m-3">Network error.</div>'); });
+    }).fail(function() { $b.html('<div class="alert alert-danger m-3">'+T('general.network_error','Network error.')+'</div>'); });
 }
 function delPT(u,n){smsConfirm({icon:'🗑️',title:T('part_groups.delete','Delete'),msg:T('general.are_you_sure','Sure?')+' <strong>'+H.esc(n)+'</strong>',btnClass:'btn-danger',btnText:T('btn.delete','Delete'),onConfirm:function(){showLoading();$.post(BASE_URL+'/part-groups/'+u+'/delete',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}
 function recoverPT(u,n){smsConfirm({icon:'♻️',title:T('bulk.recover','Recover'),msg:T('bulk.recover','Recover')+' <strong>'+H.esc(n)+'</strong> and its translations?',btnClass:'btn-success',btnText:T('bulk.recover','Recover'),onConfirm:function(){showLoading();$.post(BASE_URL+'/part-groups/'+u+'/recover',function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error(T('general.network_error','Error.'));});}});}

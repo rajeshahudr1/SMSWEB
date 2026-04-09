@@ -87,7 +87,7 @@ function showBothImages($el){
 
 /* ── Load Data — 12 columns ── */
 function loadData(){
-    $('#tableBody').html('<tr><td colspan="13" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr>');
+    $('#tableBody').html('<tr><td colspan="13" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>'+T('general.loading','Loading...')+'</td></tr>');
     var isDeleted=$('#filterDeleted').val()==='only';
     if(isDeleted)$('#btnBulkRecover').removeClass('d-none');else $('#btnBulkRecover').addClass('d-none');
 
