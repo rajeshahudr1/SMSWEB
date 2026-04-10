@@ -1,0 +1,568 @@
+<%- layout('../layouts/main') %>
+<%
+var dp     = typeof depollution !== 'undefined' ? depollution : null;
+var isEdit = !!dp;
+var formAction = isEdit ? '/depollutions/' + dp.uuid : '/depollutions';
+var isSuperAdmin = user && user.is_super_admin;
+var orgs   = typeof organizations !== 'undefined' ? organizations : [];
+%>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/depollutions" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-droplet-half me-2 text-primary"></i><%- isEdit ? 'Edit Depollution' : 'Add Depollution' %></h3>
+</div>
+
+<form id="frmDepollution" method="POST" action="<%- formAction %>" novalidate>
+<div class="row g-3">
+
+  <div class="col-12">
+
+    <!-- Company selector (super admin only) -->
+    <% if (isSuperAdmin) { %>
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div>
+      </div>
+      <div class="card-body">
+        <select name="company_id" id="selCompany" class="form-select">
+          <% orgs.forEach(function(o) { %>
+          <option value="<%- o.id %>" <%- (isEdit && dp.organization_id && String(dp.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
+          <% }) %>
+        </select>
+        <div class="form-hint mt-1">Select the company for this depollution record.</div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Type Selection -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-tag me-1 text-primary"></i>Depollution Type <span class="text-danger">*</span></div>
+      </div>
+      <div class="card-body">
+        <% if (isEdit) { %>
+        <div class="d-flex gap-4">
+          <span class="badge bg-<%= parseInt(dp.type) === 1 ? 'blue' : (parseInt(dp.type) === 2 ? 'orange' : 'green') %>-lt px-3 py-2" style="font-size:13px;">
+            <i class="bi <%= parseInt(dp.type) === 1 ? 'bi-truck' : (parseInt(dp.type) === 2 ? 'bi-box-seam' : 'bi-recycle') %> me-1"></i>
+            <%= parseInt(dp.type) === 1 ? 'Vehicle Waste' : (parseInt(dp.type) === 2 ? 'Part Waste' : 'Other Waste') %>
+          </span>
+          <input type="hidden" name="type" value="<%= dp.type %>"/>
+        </div>
+        <div class="form-hint mt-1">Type cannot be changed after creation. Only LER codes can be edited.</div>
+        <% } else { %>
+        <div class="d-flex gap-4">
+          <label class="form-check">
+            <input type="radio" name="type" value="1" class="form-check-input" id="typeVehicle" checked/>
+            <span class="form-check-label fw-medium"><i class="bi bi-truck me-1 text-primary"></i>Vehicle Waste</span>
+          </label>
+          <label class="form-check">
+            <input type="radio" name="type" value="2" class="form-check-input" id="typePart"/>
+            <span class="form-check-label fw-medium"><i class="bi bi-box-seam me-1 text-warning"></i>Part Waste</span>
+          </label>
+          <label class="form-check">
+            <input type="radio" name="type" value="3" class="form-check-input" id="typeOther"/>
+            <span class="form-check-label fw-medium"><i class="bi bi-recycle me-1 text-success"></i>Other Waste</span>
+          </label>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Vehicle Selection (type=1) — hidden in edit mode -->
+    <div class="card shadow-sm mb-3" id="vehicleCard" style="display:none;"<% if (isEdit) { %> data-locked="1"<% } %>>
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-truck me-1 text-primary"></i>Vehicle Selection</div>
+      </div>
+      <div class="card-body">
+        <select name="vehicle_inventory_id" id="selVehicle" class="form-select" style="width:100%;">
+          <option value="">-- Select Vehicle --</option>
+          <% if (isEdit && dp && dp.vehicle_inventory_id) { %>
+          <option value="<%- dp.vehicle_inventory_id %>" selected><%- (dp.vehicle_internal_id || '') + (dp.vehicle_make_name ? ' - ' + dp.vehicle_make_name : '') + (dp.vehicle_model_name ? ' ' + dp.vehicle_model_name : '') + (dp.vehicle_year_name ? ' (' + dp.vehicle_year_name + ')' : '') + (dp.vehicle_type_name ? ' [' + dp.vehicle_type_name + ']' : '') %></option>
+          <% } %>
+        </select>
+        <div class="form-hint mt-1">Search and select a vehicle. Only vehicles available for depollution are shown.</div>
+      </div>
+    </div>
+
+    <!-- Part Selection (type=2) — Two-panel like LER -->
+    <div id="partCard" style="display:none;">
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header py-2" style="background:#e67e22;color:#fff;">
+              <div class="card-title mb-0 text-white" style="font-size:13px;"><i class="bi bi-list-ul me-1"></i>Available Parts</div>
+            </div>
+            <div class="card-body p-2">
+              <input type="text" class="form-control form-control-sm mb-2" id="partSearch" placeholder="Search parts..."/>
+              <div id="partAvailableList" style="max-height:300px;overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0" style="font-size:12px;">
+                  <thead style="position:sticky;top:0;background:#e67e22;color:#fff;">
+                    <tr><th>Internal ID</th><th>Part Name</th><th style="width:50px;">Action</th></tr>
+                  </thead>
+                  <tbody id="partAvailableBody">
+                    <tr><td colspan="3" class="text-center text-muted py-3">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header py-2" style="background:#e67e22;color:#fff;">
+              <div class="card-title mb-0 text-white" style="font-size:13px;"><i class="bi bi-check-circle me-1"></i>Selected Parts <span class="badge bg-light text-dark ms-1" id="partSelectedCount">0</span></div>
+            </div>
+            <div class="card-body p-2">
+              <div id="partSelectedList" style="max-height:300px;overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0" style="font-size:12px;">
+                  <thead style="position:sticky;top:0;background:#e67e22;color:#fff;">
+                    <tr><th>Internal ID</th><th>Part Name</th><th style="width:50px;">Action</th></tr>
+                  </thead>
+                  <tbody id="partSelectedBody">
+                    <tr id="partSelectedEmpty"><td colspan="3" class="text-center text-muted py-3">No parts selected</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-card-text me-1 text-primary"></i>Description</div>
+      </div>
+      <div class="card-body">
+        <textarea name="description" id="fDescription" class="form-control" rows="3" placeholder="Optional description of this depollution record"><%= isEdit ? (dp.description||'') : '' %></textarea>
+      </div>
+    </div>
+
+    <!-- LER Codes — Two-panel: Available (left) + Selected (right) -->
+    <div class="row g-3 mb-3">
+      <!-- Available LERs -->
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header py-2" style="background:#6b8e23;color:#fff;">
+            <div class="card-title mb-0 text-white" style="font-size:13px;"><i class="bi bi-list-ul me-1"></i>Available LER Codes</div>
+          </div>
+          <div class="card-body p-2">
+            <input type="text" class="form-control form-control-sm mb-2" id="lerSearch" placeholder="Search LER..."/>
+            <div id="lerAvailableList" style="max-height:350px;overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0" style="font-size:12px;">
+                <thead style="position:sticky;top:0;background:#6b8e23;color:#fff;">
+                  <tr><th>LER Name</th><th>LER Code</th><th>Unit</th><th style="width:100px;">Value</th><th style="width:50px;">Action</th></tr>
+                </thead>
+                <tbody id="lerAvailableBody">
+                  <tr><td colspan="5" class="text-center text-muted py-3">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Selected LERs -->
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header py-2" style="background:#6b8e23;color:#fff;">
+            <div class="card-title mb-0 text-white" style="font-size:13px;"><i class="bi bi-check-circle me-1"></i>Selected LER Codes</div>
+          </div>
+          <div class="card-body p-2">
+            <div id="lerSelectedList" style="max-height:350px;overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0" style="font-size:12px;">
+                <thead style="position:sticky;top:0;background:#6b8e23;color:#fff;">
+                  <tr><th>LER Name</th><th>LER Code</th><th>Unit</th><th style="width:100px;">Value</th><th style="width:50px;">Action</th></tr>
+                </thead>
+                <tbody id="lerSelectedBody">
+                  <tr id="lerSelectedEmpty"><td colspan="5" class="text-center text-muted py-3">No LER codes selected</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+              <span class="fw-semibold" style="font-size:13px;">Total Wastage:</span>
+              <input type="number" class="form-control form-control-sm fw-bold text-primary" id="totalWastage" step="0.0001" min="0" value="0.0000" style="width:120px;font-size:14px;text-align:right;"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  </div>
+
+  <!-- Buttons full width -->
+  <div class="col-12">
+    <div class="d-flex justify-content-end gap-2 mt-2 mb-3">
+      <a href="/depollutions" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+      <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update' : 'Create' %> Depollution</button>
+    </div>
+  </div>
+
+</div>
+</form>
+
+
+<script>
+window._FORM_DATA = <%- JSON.stringify(dp ? {
+    uuid: dp.uuid,
+    type: dp.type,
+    vehicle_inventory_id: dp.vehicle_inventory_id || null,
+    vehicle_internal_id: dp.vehicle_internal_id || null,
+    registration_plate_no: dp.registration_plate_no || null,
+    vehicle_make: dp.vehicle_make || null,
+    vehicle_model: dp.vehicle_model || null,
+    description: dp.description || '',
+    status: dp.status,
+    organization_id: dp.organization_id || null,
+    parts: dp.parts || [],
+    lers: dp.lers || [],
+    total_wastage_value: dp.total_wastage_value || 0
+} : null) %>;
+</script>
+
+<%
+block('scripts', `
+<script>
+$(function(){
+    var isEdit = !!window._FORM_DATA;
+    var _allLers = [];      // current page of available LERs
+    var _selectedLers = {}; // ler_id → { ler_id, name, code, unit_id, unit_name, wastage_value }
+    var _lerPage = 1; var _lerHasMore = true; var _lerSearch = '';
+    var _allParts = [];
+    var _selectedParts = {}; // part_id → { id, part_internal_id, part_catalog_name }
+    var _partPage = 1; var _partHasMore = true; var _partSearch = '';
+
+    // ── Type switching ──
+    function updateTypeVisibility() {
+        var t = parseInt($('input[name="type"]:checked').val() || $('input[name="type"]').val());
+        if (isEdit) {
+            // Edit mode: show vehicle/part as readonly info, no selection
+            if (t === 1) { $('#vehicleCard').show(); $('#partCard').hide(); }
+            else if (t === 2) { $('#vehicleCard').hide(); $('#partCard').show(); }
+            else { $('#vehicleCard').hide(); $('#partCard').hide(); }
+        } else {
+            if (t === 1) { $('#vehicleCard').show(); $('#partCard').hide(); }
+            else if (t === 2) { $('#vehicleCard').hide(); $('#partCard').show(); loadAvailableParts('', false); }
+            else { $('#vehicleCard').hide(); $('#partCard').hide(); }
+        }
+    }
+    if (!isEdit) $('input[name="type"]').on('change', updateTypeVisibility);
+    updateTypeVisibility();
+
+    // ── Vehicle Select2 ──
+    if ($.fn.select2) {
+        $('#selVehicle').select2({
+            theme: 'bootstrap-5', placeholder: '-- Select Vehicle --', allowClear: true, minimumInputLength: 0,
+            ajax: { url: BASE_URL + '/vehicle-inventories/autocomplete', dataType: 'json', delay: 300,
+                data: function(p) { return { search: p.term || '' }; },
+                processResults: function(res) {
+                    var items = (res && res.data) ? res.data : [];
+                    return { results: items.map(function(v) {
+                        var t = v.vehicle_internal_id || '';
+                        if (v.vehicle_make_name) t += ' - ' + v.vehicle_make_name;
+                        if (v.vehicle_model_name) t += ' ' + v.vehicle_model_name;
+                        if (v.vehicle_year_name) t += ' (' + v.vehicle_year_name + ')';
+                        if (v.vehicle_type_name) t += ' [' + v.vehicle_type_name + ']';
+                        return { id: v.id, text: t };
+                    }) };
+                }, cache: true }
+        });
+    }
+
+    // ── LER Two-Panel System (paginated, 10 per load) ──
+    function loadAvailableLers(search, append) {
+        if (!append) { _lerPage = 1; _lerHasMore = true; _allLers = []; }
+        _lerSearch = search || '';
+        $.get(BASE_URL + '/lers/autocomplete', { search: _lerSearch, limit: 10, offset: (_lerPage - 1) * 10 }, function(res) {
+            var items = (res && res.data) ? res.data : [];
+            if (items.length < 10) _lerHasMore = false;
+            _allLers = append ? _allLers.concat(items) : items;
+            renderAvailableList(append);
+        });
+    }
+
+    // Master cache: never loses data across search resets
+    var _lerCache = {}; // id → ler object
+
+    function renderAvailableList(append) {
+        var $body = $('#lerAvailableBody');
+        if (!append) $body.empty();
+        $body.find('.ler-empty-msg').remove();
+        _allLers.forEach(function(l) {
+            _lerCache[String(l.id)] = l; // cache every loaded item
+            if ($body.find('tr[data-ler-id="' + l.id + '"]').length) return;
+            var isSelected = !!_selectedLers[String(l.id)];
+            var h = '<tr data-ler-id="' + l.id + '" data-name="' + H.esc(l.name||'') + '" data-code="' + H.esc(l.code||'') + '" data-unit-id="' + (l.unit_id||'') + '" data-unit-name="' + H.esc(l.unit_name||'') + '" data-unit-symbol="' + H.esc(l.unit_symbol||'') + '" data-default="' + (l.default_unit_value||0) + '"' + (isSelected ? ' style="display:none"' : '') + '>';
+            h += '<td>' + H.esc(l.name || '') + '</td>';
+            h += '<td><code>' + H.esc(l.code || '') + '</code></td>';
+            h += '<td class="text-muted small">' + H.esc(l.unit_symbol || l.unit_name || '-') + '</td>';
+            h += '<td><input type="number" class="form-control form-control-sm ler-avail-value" step="0.0001" value="' + (l.default_unit_value != null ? parseFloat(l.default_unit_value).toFixed(4) : '0') + '" style="width:90px;"/></td>';
+            h += '<td class="text-center"><button type="button" class="btn btn-sm btn-add-ler" style="background:#6b8e23;color:#fff;" title="Add"><i class="bi bi-plus"></i></button></td>';
+            h += '</tr>';
+            $body.append(h);
+        });
+        if (!$body.find('tr[data-ler-id]:visible').length && !_allLers.length) {
+            $body.html('<tr class="ler-empty-msg"><td colspan="5" class="text-center text-muted py-3">No LER codes available</td></tr>');
+        }
+    }
+
+    // Scroll to load more LERs
+    $('#lerAvailableList').on('scroll', function() {
+        if (!_lerHasMore) return;
+        if (this.scrollTop + this.clientHeight >= this.scrollHeight - 30) {
+            _lerPage++;
+            loadAvailableLers(_lerSearch, true);
+        }
+    });
+
+    // ── Part Two-Panel System (paginated, 10 per load) ──
+    function loadAvailableParts(search, append) {
+        if (!append) { _partPage = 1; _partHasMore = true; _allParts = []; }
+        _partSearch = search || '';
+        $.get(BASE_URL + '/part-inventories/autocomplete', { search: _partSearch, limit: 10, offset: (_partPage - 1) * 10 }, function(res) {
+            var items = (res && res.data) ? res.data : [];
+            if (items.length < 10) _partHasMore = false;
+            _allParts = append ? _allParts.concat(items) : items;
+            renderAvailablePartList(append);
+        });
+    }
+
+    function renderAvailablePartList(append) {
+        var $body = $('#partAvailableBody');
+        if (!append) $body.empty();
+        $body.find('.part-empty-msg').remove();
+        _allParts.forEach(function(p) {
+            if ($body.find('tr[data-part-id="' + p.id + '"]').length) return;
+            var isSelected = !!_selectedParts[String(p.id)];
+            var h = '<tr data-part-id="' + p.id + '" data-internal-id="' + H.esc(p.part_internal_id || p.part_code || '') + '" data-catalog="' + H.esc(p.part_catalog_name || '') + '" data-code="' + H.esc(p.part_code || '') + '"' + (isSelected ? ' style="display:none"' : '') + '>';
+            h += '<td>' + H.esc(p.part_internal_id || p.part_code || '') + '</td>';
+            h += '<td>' + H.esc(p.part_catalog_name || '') + '</td>';
+            h += '<td class="text-center"><button type="button" class="btn btn-sm btn-add-part" style="background:#e67e22;color:#fff;" title="Add"><i class="bi bi-plus"></i></button></td>';
+            h += '</tr>';
+            $body.append(h);
+        });
+        if (!$body.find('tr[data-part-id]:visible').length && !_allParts.length) {
+            $body.html('<tr class="part-empty-msg"><td colspan="3" class="text-center text-muted py-3">No parts available</td></tr>');
+        }
+    }
+
+    function addToSelectedPartDOM(id) {
+        var p = _selectedParts[id]; if (!p) return;
+        var $body = $('#partSelectedBody');
+        $body.find('#partSelectedEmpty').remove();
+        if ($body.find('tr[data-part-id="' + id + '"]').length) return;
+        var h = '<tr data-part-id="' + id + '">';
+        h += '<td>' + H.esc(p.part_internal_id || p.part_code || '') + '</td>';
+        h += '<td>' + H.esc(p.part_catalog_name || '') + '</td>';
+        h += '<td class="text-center"><button type="button" class="btn btn-sm btn-ghost-danger btn-remove-part" data-part-id="' + id + '" title="Remove"><i class="bi bi-trash3"></i></button></td>';
+        h += '</tr>';
+        $body.append(h);
+        $('#partSelectedCount').text(Object.keys(_selectedParts).length);
+    }
+
+    $(document).on('click', '.btn-add-part', function() {
+        var $tr = $(this).closest('tr');
+        var partId = String($tr.data('part-id'));
+        if (_selectedParts[partId]) return;
+        _selectedParts[partId] = {
+            id: partId,
+            part_internal_id: $tr.data('internal-id') || '',
+            part_catalog_name: $tr.data('catalog') || '',
+            part_code: $tr.data('code') || ''
+        };
+        $tr.hide();
+        addToSelectedPartDOM(partId);
+    });
+
+    $(document).on('click', '.btn-remove-part', function() {
+        var id = String($(this).data('part-id'));
+        delete _selectedParts[id];
+        $(this).closest('tr').remove();
+        $('#partAvailableBody tr[data-part-id="' + id + '"]').show();
+        $('#partSelectedCount').text(Object.keys(_selectedParts).length);
+        if (!Object.keys(_selectedParts).length) {
+            $('#partSelectedBody').html('<tr id="partSelectedEmpty"><td colspan="3" class="text-center text-muted py-3">No parts selected</td></tr>');
+        }
+    });
+
+    var _partSearchTimer;
+    $('#partSearch').on('keyup', function() {
+        clearTimeout(_partSearchTimer);
+        var q = $(this).val();
+        _partSearchTimer = setTimeout(function() { loadAvailableParts(q, false); }, 300);
+    });
+
+    $('#partAvailableList').on('scroll', function() {
+        if (!_partHasMore) return;
+        if (this.scrollTop + this.clientHeight >= this.scrollHeight - 30) {
+            _partPage++;
+            loadAvailableParts(_partSearch, true);
+        }
+    });
+
+    // Only used for initial edit-mode population
+    function renderSelectedList() {
+        var keys = Object.keys(_selectedLers);
+        if (!keys.length) return;
+        keys.forEach(function(id) { addToSelectedLerDOM(id); });
+        recalcTotal();
+        // Hide selected items in available list
+        $('#lerAvailableBody tr[data-ler-id]').each(function() {
+            if (_selectedLers[String($(this).data('ler-id'))]) $(this).hide();
+        });
+    }
+
+    function recalcTotal() {
+        var total = 0;
+        Object.keys(_selectedLers).forEach(function(id) { total += parseFloat(_selectedLers[id].wastage_value) || 0; });
+        $('#totalWastage').val(total.toFixed(4));
+    }
+
+    // Add LER from available list — reads data from DOM attributes (not _allLers which may be stale)
+    $(document).on('click', '.btn-add-ler', function() {
+        var $tr = $(this).closest('tr');
+        var lerId = String($tr.data('ler-id'));
+        if (_selectedLers[lerId]) { toastr.error('Already added.'); return; }
+        var wastageVal = $tr.find('.ler-avail-value').val() || $tr.data('default') || 0;
+        _selectedLers[lerId] = {
+            ler_id: lerId,
+            name: $tr.data('name') || '',
+            code: $tr.data('code') || '',
+            unit_id: $tr.data('unit-id') || '',
+            unit_name: $tr.data('unit-name') || '',
+            unit_symbol: $tr.data('unit-symbol') || '',
+            wastage_value: wastageVal
+        };
+        $tr.hide();
+        addToSelectedLerDOM(lerId);
+        recalcTotal();
+    });
+
+    function addToSelectedLerDOM(id) {
+        var l = _selectedLers[id]; if (!l) return;
+        var $body = $('#lerSelectedBody');
+        $body.find('#lerSelectedEmpty').remove();
+        if ($body.find('tr[data-ler-id="' + id + '"]').length) return;
+        var unitTxt = l.unit_symbol ? H.esc(l.unit_symbol) : (l.unit_name ? H.esc(l.unit_name) : '-');
+        var h = '<tr data-ler-id="' + id + '">';
+        h += '<td>' + H.esc(l.name || '') + '</td>';
+        h += '<td><code>' + H.esc(l.code || '') + '</code></td>';
+        h += '<td class="text-muted small">' + unitTxt + '</td>';
+        h += '<td><input type="number" class="form-control form-control-sm ler-sel-value" step="0.0001" value="' + parseFloat(l.wastage_value || 0).toFixed(4) + '" style="width:90px;" data-ler-id="' + id + '"/></td>';
+        h += '<td class="text-center"><button type="button" class="btn btn-sm btn-ghost-danger btn-remove-ler" data-ler-id="' + id + '" title="Remove"><i class="bi bi-trash3"></i></button></td>';
+        h += '</tr>';
+        $body.append(h);
+    }
+
+    // Remove LER from selected list
+    $(document).on('click', '.btn-remove-ler', function() {
+        var id = String($(this).data('ler-id'));
+        delete _selectedLers[id];
+        $(this).closest('tr').remove();
+        $('#lerAvailableBody tr[data-ler-id="' + id + '"]').show();
+        if (!Object.keys(_selectedLers).length) {
+            $('#lerSelectedBody').html('<tr id="lerSelectedEmpty"><td colspan="5" class="text-center text-muted py-3">No LER codes selected</td></tr>');
+        }
+        recalcTotal();
+    });
+
+    // Update wastage value when changed in selected list
+    $(document).on('input change', '.ler-sel-value', function() {
+        var id = String($(this).data('ler-id'));
+        if (_selectedLers[id]) _selectedLers[id].wastage_value = $(this).val();
+        recalcTotal();
+    });
+
+    // Search available LERs
+    var _searchTimer;
+    $('#lerSearch').on('keyup', function() {
+        clearTimeout(_searchTimer);
+        var q = $(this).val();
+        _searchTimer = setTimeout(function() { loadAvailableLers(q); }, 300);
+    });
+
+    // Initial load
+    loadAvailableLers('');
+
+    // ── Populate edit data ──
+    if (isEdit && window._FORM_DATA) {
+        var fd = window._FORM_DATA;
+        if (fd.lers && fd.lers.length) {
+            fd.lers.forEach(function(l) {
+                _selectedLers[String(l.ler_id)] = {
+                    ler_id: String(l.ler_id), name: l.ler_name || '', code: l.ler_code || '',
+                    unit_id: l.unit_id || '', unit_name: l.unit_name || '', unit_symbol: l.unit_symbol || '',
+                    wastage_value: l.wastage_value || 0
+                };
+            });
+            renderSelectedList();
+        }
+        if (fd.parts && fd.parts.length) {
+            fd.parts.forEach(function(p) {
+                var pid = String(p.part_inventory_id);
+                _selectedParts[pid] = {
+                    id: pid,
+                    part_internal_id: p.part_internal_id || p.part_code || '',
+                    part_catalog_name: p.part_catalog_name || p.catalog_name || '',
+                    part_code: p.part_code || ''
+                };
+                addToSelectedPartDOM(pid);
+            });
+            $('#partSelectedCount').text(Object.keys(_selectedParts).length);
+        }
+    }
+
+    // Edit mode: lock vehicle/part selection, disable description
+    if (isEdit) {
+        $('#selVehicle').prop('disabled', true);
+        // Hide available parts panel, show only selected (readonly)
+        $('#partCard .col-md-6:first-child').hide();
+        $('#partCard .col-md-6:last-child').find('.btn-remove-part').remove();
+        $('#fDescription').prop('disabled', true);
+    }
+
+    // ── Form submit ──
+    $('#frmDepollution').on('submit', function(e) {
+        e.preventDefault();
+        var $btn = $('#btnSubmit');
+        var typeVal = parseInt($('input[name="type"]:checked').val() || $('input[name="type"]').val());
+        if (!typeVal) { toastr.error('Please select a type.'); return; }
+
+        // Sync wastage values from DOM inputs
+        $('#lerSelectedBody tr[data-ler-id]').each(function() {
+            var id = String($(this).data('ler-id'));
+            if (_selectedLers[id]) _selectedLers[id].wastage_value = $(this).find('.ler-sel-value').val() || '0';
+        });
+        var lers = Object.values(_selectedLers).map(function(l) {
+            return { ler_id: l.ler_id, unit_id: l.unit_id, wastage_value: l.wastage_value || '0', notes: '' };
+        });
+        if (!lers.length) { toastr.error('Please add at least one LER code.'); return; }
+
+        var payload = { type: typeVal, description: $('#fDescription').val().trim(), lers: lers, total_wastage_value: $('#totalWastage').val() || '0' };
+        if (typeVal === 1) {
+            payload.vehicle_inventory_id = $('#selVehicle').val() || '';
+            if (!payload.vehicle_inventory_id) { toastr.error('Please select a vehicle.'); return; }
+        }
+        if (typeVal === 2) {
+            payload.part_inventory_ids = Object.keys(_selectedParts);
+            if (!payload.part_inventory_ids.length) { toastr.error('Please select at least one part.'); return; }
+        }
+        if ($('#selCompany').length) payload.company_id = $('#selCompany').val();
+
+        btnLoading($btn);
+        $.ajax({
+            url: $(this).attr('action'), type: 'POST', contentType: 'application/json', data: JSON.stringify(payload),
+            success: function(r) {
+                btnReset($btn);
+                if (r.status === 200 || r.status === 201) { toastr.success(r.message || 'Saved.'); window.location.href = '/depollutions'; }
+                else toastr.error(r.message || 'Failed.');
+            },
+            error: function() { btnReset($btn); toastr.error('Network error.'); }
+        });
+    });
+});
+</script>
+`);
+%>

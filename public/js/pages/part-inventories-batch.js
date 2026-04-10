@@ -411,9 +411,9 @@ $(function() {
                 +     '<select class="form-select form-select-sm b-fld" data-k="inventory_status">'
                 +       _opts([['1','In Stock'],['2','Out of Stock'],['4','Returned'],['5','Scrapped']], d.inventory_status||'1')
                 +     '</select></div>'
-                +   _fld('Price 1', 'number', 'price_1', d.price_1!==''?d.price_1:'0', 'col-md-2', 'min="0" step="0.01"')
-                +   _fld('Price 2', 'number', 'price_2', d.price_2!==''?d.price_2:'0', 'col-md-2', 'min="0" step="0.01"')
-                +   _fld('Cost Price', 'number', 'cost_price', d.cost_price!==''?d.cost_price:'0', 'col-md-3', 'min="0" step="0.01"')
+                +   _fld('Price 1 ('+SMS_CURRENCY+')', 'number', 'price_1', d.price_1!==''?d.price_1:'0', 'col-md-2', 'min="0" step="0.01"')
+                +   _fld('Price 2 ('+SMS_CURRENCY+')', 'number', 'price_2', d.price_2!==''?d.price_2:'0', 'col-md-2', 'min="0" step="0.01"')
+                +   _fld('Cost Price ('+SMS_CURRENCY+')', 'number', 'cost_price', d.cost_price!==''?d.cost_price:'0', 'col-md-3', 'min="0" step="0.01"')
                 + '</div>'
 
                 /* Row 2: Fuel / Brand / Condition / State */

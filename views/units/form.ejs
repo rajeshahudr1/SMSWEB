@@ -1,0 +1,105 @@
+<%- layout('../layouts/main') %>
+<%
+var u     = typeof unit !== 'undefined' ? unit : null;
+var isEdit = !!u;
+var orgs   = typeof organizations !== 'undefined' ? organizations : [];
+var formAction = isEdit ? '/units/' + u.uuid : '/units';
+var isSuperAdmin = user && user.is_super_admin;
+%>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/units" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i><%- t('general.back') %></a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-rulers me-2 text-primary"></i><%- isEdit ? (t('units.edit') || 'Edit Unit') : (t('units.add') || 'Add Unit') %></h3>
+</div>
+
+<form id="frmUnit" method="POST" action="<%- formAction %>" novalidate>
+<div class="row g-3">
+
+  <div class="col-lg-8">
+
+    <!-- Company selector (super admin only) -->
+    <% if (isSuperAdmin) { %>
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i><%- t('general.company') %></div>
+      </div>
+      <div class="card-body">
+        <select name="company_id" id="selCompany" class="form-select">
+          <option value="global" <%- (!isEdit || !u.organization_id) ? 'selected' : '' %>><%- t('general.global_super_admin') %></option>
+          <% orgs.forEach(function(o) { %>
+          <option value="<%- o.id %>" <%- (isEdit && u.organization_id && String(u.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
+          <% }) %>
+        </select>
+        <div class="form-hint mt-1"><%- t('general.company_hint') %></div>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-info-circle me-1 text-primary"></i><%- t('units.information') || 'Unit Information' %></div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('units.name') || 'Name' %> <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="fName" class="form-control" required autofocus value="<%= isEdit ? (u.name||'') : '' %>" placeholder="<%- t('units.name_ph') || 'e.g. Kilogram' %>"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%- t('units.symbol') || 'Symbol' %></label>
+            <input type="text" name="symbol" id="fSymbol" class="form-control" value="<%= isEdit ? (u.symbol||'') : '' %>" placeholder="<%- t('units.symbol_ph') || 'e.g. kg' %>"/>
+            <div class="form-hint"><%- t('units.symbol_hint') || 'Short abbreviation for the unit' %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% var langs = typeof languages !== 'undefined' ? languages : []; %>
+    <% if (langs.length) { %>
+    <div class="card shadow-sm mt-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-translate me-1 text-primary"></i><%- t('general.translations', 'Translations') %></div>
+      </div>
+      <div class="card-body">
+        <div class="form-hint mb-3"><%- t('units.translations_hint', 'Enter the unit name in each language. If left blank, the default name will be used.') %></div>
+        <div class="row g-3">
+          <% langs.forEach(function(lng) {
+            var transVal = '';
+            if (isEdit && u && u.translations) { var tr = u.translations.find(function(t){ return String(t.language_id) === String(lng.id); }); if (tr) transVal = tr.name; }
+          %>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%= lng.flag || '' %> <%= lng.name %> (<%= lng.code %>)</label>
+            <input type="text" class="form-control trans-input" data-lang-id="<%= lng.id %>" value="<%= transVal %>" placeholder="<%- t('units.name') || 'Name' %> in <%= lng.name %>"/>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+  </div>
+
+  <div class="col-lg-4">
+
+    <div class="card shadow-sm">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-toggle-on me-1 text-primary"></i><%- t('general.status') %></div></div>
+      <div class="card-body"><select name="status" class="form-select"><option value="1" <%- (!isEdit || parseInt(u.status)) ? 'selected' : '' %>><%- t('general.active') %></option><option value="0" <%- (isEdit && !parseInt(u.status)) ? 'selected' : '' %>><%- t('general.inactive') %></option></select></div>
+    </div>
+
+    <div class="card mt-3 shadow-sm">
+      <div class="card-body py-3">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? t('general.update') : t('general.create') %> <%- t('units.title') || 'Unit' %></button>
+          <a href="/units" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i><%- t('btn.cancel') %></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+
+<script>
+window._FORM_DATA = { isEdit: <%= isEdit ? 'true' : 'false' %> };
+</script>
+<% block('scripts', '<script src="/js/pages/units-form.js"></script>') %>

@@ -1,0 +1,7 @@
+Name,Code,Unit,Default Value,Is Body LER,Description,URL
+Ferrous Metals,17 04 01,Kilogram,1.0000,No,Iron and steel scrap,
+Non-Ferrous Metals,17 04 02,Kilogram,1.0000,No,Aluminium copper lead zinc scrap,
+Mixed Metals,17 04 07,Kilogram,1.0000,No,Mixed metals,
+End-of-life Vehicles,16 01 04,Ton,1.0000,Yes,End-of-life vehicles,
+Batteries,16 06 01,Kilogram,0.5000,No,Lead batteries,
+Tyres,16 01 03,Piece,4.0000,No,End-of-life tyres,

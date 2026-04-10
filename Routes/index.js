@@ -29,6 +29,9 @@ router.use('/part-groups',      authGuard, require('./part-groups'));
 router.use('/part-sides',       authGuard, require('./part-sides'));
 router.use('/part-brands',      authGuard, require('./part-brands'));
 router.use('/part-catalogs',    authGuard, require('./part-catalogs'));
+router.use('/units',            authGuard, require('./units'));
+router.use('/lers',             authGuard, require('./lers'));
+router.use('/depollutions',     authGuard, require('./depollutions'));
 
 // Vehicle Catalog
 router.use('/vehicle-categories', authGuard, require('./vehicle-categories'));

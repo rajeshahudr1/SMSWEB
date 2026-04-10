@@ -291,6 +291,35 @@ var curIconColor = s.icon_color || 'theme';
             </select>
           </div>
 
+          <!-- Currency Symbol -->
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-semibold"><%- t('settings.currency_symbol', 'Currency Symbol') %></label>
+            <select class="form-select" id="fCurrencySymbol" name="currency_symbol">
+              <option value="€"  <%- s.currency_symbol==='€'  ? 'selected':'' %>>€ &nbsp; Euro</option>
+              <option value="$"  <%- s.currency_symbol==='$'  ? 'selected':'' %>>$ &nbsp; US Dollar</option>
+              <option value="£"  <%- s.currency_symbol==='£'  ? 'selected':'' %>>£ &nbsp; British Pound</option>
+              <option value="₹"  <%- s.currency_symbol==='₹'  ? 'selected':'' %>>₹ &nbsp; Indian Rupee</option>
+              <option value="R$" <%- s.currency_symbol==='R$' ? 'selected':'' %>>R$ &nbsp; Brazilian Real</option>
+              <option value="¥"  <%- s.currency_symbol==='¥'  ? 'selected':'' %>>¥ &nbsp; Yen / Yuan</option>
+              <option value="CHF" <%- s.currency_symbol==='CHF' ? 'selected':'' %>>CHF &nbsp; Swiss Franc</option>
+              <option value="kr" <%- s.currency_symbol==='kr' ? 'selected':'' %>>kr &nbsp; Krone</option>
+              <option value="zł" <%- s.currency_symbol==='zł' ? 'selected':'' %>>zł &nbsp; Polish Zloty</option>
+              <option value="₺"  <%- s.currency_symbol==='₺'  ? 'selected':'' %>>₺ &nbsp; Turkish Lira</option>
+            </select>
+            <div class="form-hint"><%- t('settings.currency_hint', 'Displayed before all price values across the system.') %></div>
+          </div>
+
+          <!-- Autocomplete Suggestions Limit -->
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label fw-semibold"><%- t('settings.autocomplete_limit', 'Autocomplete Suggestions') %></label>
+            <select class="form-select" id="fAutocompleteLimit" name="autocomplete_limit">
+              <% [5,10,15,20,25,30,50].forEach(function(n){ %>
+              <option value="<%- n %>" <%- (parseInt(s.autocomplete_limit) === n || (!s.autocomplete_limit && n === 10)) ? 'selected' : '' %>><%- n %> items</option>
+              <% }) %>
+            </select>
+            <div class="form-hint"><%- t('settings.autocomplete_hint', 'Number of suggestions shown in all dropdown searches across the system.') %></div>
+          </div>
+
           <!-- Items per page (populated dynamically from SMS_PER_PAGE_OPTIONS in app.js) -->
           <div class="col-md-4 col-sm-6">
             <label class="form-label fw-semibold"><%- t('settings.per_page') %></label>

@@ -118,7 +118,7 @@ function _getCellValue(r,key){
         return parts.length?H.esc(parts.join(' · ')):'—';
     }
     if(key==='warehouse_location')return H.esc(r.warehouse_name||'—');
-    if(key==='part_cost_price')return r.cost_price?parseFloat(r.cost_price).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+    if(key==='part_cost_price')return r.cost_price?H.currency(r.cost_price):'—';
     // Notes columns — truncate long text
     if(key==='notes'||key==='extra_notes'||key==='internal_notes'){
         var t=r[key]||'';if(!t)return '—';
@@ -136,7 +136,7 @@ function _getCellValue(r,key){
     // Date fields
     if(key.indexOf('date')!==-1&&r[key])return smsFormatDate(r[key]);
     // Numeric
-    if((key==='price_1'||key==='price_2'||key==='cost_price')&&r[key])return parseFloat(r[key]).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+    if((key==='price_1'||key==='price_2'||key==='cost_price')&&r[key])return H.currency(r[key]);
     if(key==='quantity'&&r[key])return parseInt(r[key]).toLocaleString();
     // Default: text
     return H.esc(String(r[key]||'—'));
@@ -360,7 +360,7 @@ function viewPT(uuid){
         h+=_section(T('part_inventories.part_catalog_selection','Part Catalog'),'bi-book',
             _r(T('part_inventories.part_catalog','Catalog'),pi.part_catalog_name)+_r(T('part_inventories.part_code','Code'),pi.part_code)+_r(T('part_inventories.quantity','Qty'),pi.quantity));
         h+=_section(T('part_inventories.pricing','Pricing'),'bi-currency-euro',
-            _r(T('part_inventories.price_1','Price 1'),pi.price_1)+_r(T('part_inventories.price_2','Price 2'),pi.price_2)+_r(T('part_inventories.cost_price','Cost'),pi.cost_price));
+            _r(T('part_inventories.price_1','Price 1'),H.currency(pi.price_1))+_r(T('part_inventories.price_2','Price 2'),H.currency(pi.price_2))+_r(T('part_inventories.cost_price','Cost'),H.currency(pi.cost_price)));
         h+=_section(T('part_inventories.part_classification','Classification'),'bi-tags',
             _r(T('part_inventories.part_brand','Brand'),pi.part_brand_name)+
             _rb(T('part_inventories.inventory_status','Inventory'),INV_STATUS[pi.inventory_status]?'<span class="badge bg-'+(INV_STATUS_COLOR[pi.inventory_status]||'secondary')+'-lt">'+INV_STATUS[pi.inventory_status]+'</span>':'')+

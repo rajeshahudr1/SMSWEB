@@ -4,6 +4,8 @@ var images = r.images || [];
 var videos = r.videos || [];
 var docs = r.documents || [];
 
+var _cur = (typeof settings !== 'undefined' && settings.currency_symbol) ? settings.currency_symbol : '€';
+function fmtPrice(v) { if (v == null || v === '') return '—'; return _cur + ' ' + parseFloat(v).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function fmt(v) { if (!v && v !== 0) return ''; return String(v); }
 function fmtDate(v) {
     if (!v) return '';
@@ -147,12 +149,12 @@ body { font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; font-size: 10.5px; 
         <div class="c"><table class="dtbl">
             <% if (r.first_registration_date) { %><tr><td class="lbl">First Reg.</td><td class="val"><%= fmtDate(r.first_registration_date) %></td></tr><% } %>
             <% if (r.cancellation_date) { %><tr><td class="lbl">Cancellation</td><td class="val"><%= fmtDate(r.cancellation_date) %></td></tr><% } %>
-            <% if (r.purchase_price) { %><tr><td class="lbl">Purchase Price</td><td class="val"><strong><%= fmt(r.purchase_price) %></strong></td></tr><% } %>
+            <% if (r.purchase_price) { %><tr><td class="lbl">Purchase Price</td><td class="val"><strong><%= fmtPrice(r.purchase_price) %></strong></td></tr><% } %>
         </table></div>
         <div class="c"><table class="dtbl">
             <% if (r.entry_date) { %><tr><td class="lbl">Entry Date</td><td class="val"><%= fmtDate(r.entry_date) %></td></tr><% } %>
             <% if (r.sales_date) { %><tr><td class="lbl">Sales Date</td><td class="val"><%= fmtDate(r.sales_date) %></td></tr><% } %>
-            <% if (r.selling_price) { %><tr><td class="lbl">Selling Price</td><td class="val"><strong><%= fmt(r.selling_price) %></strong></td></tr><% } %>
+            <% if (r.selling_price) { %><tr><td class="lbl">Selling Price</td><td class="val"><strong><%= fmtPrice(r.selling_price) %></strong></td></tr><% } %>
         </table></div>
     </div>
     <% } %>
@@ -330,9 +332,9 @@ body { font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; font-size: 10.5px; 
             <td style="padding:1px 4px; width:25%;"><span style="color:#6b7280;">State:</span> <strong><%= PI_STATE[p.part_state] || '—' %></strong></td>
           </tr>
           <tr>
-            <td style="padding:1px 4px;"><span style="color:#6b7280;">Price 1:</span> <strong><%= p.price_1 != null ? parseFloat(p.price_1).toFixed(2) : '—' %></strong></td>
-            <td style="padding:1px 4px;"><span style="color:#6b7280;">Price 2:</span> <strong><%= p.price_2 != null ? parseFloat(p.price_2).toFixed(2) : '—' %></strong></td>
-            <td style="padding:1px 4px;"><span style="color:#6b7280;">Cost:</span> <strong><%= p.part_cost_price != null ? parseFloat(p.part_cost_price).toFixed(2) : '—' %></strong></td>
+            <td style="padding:1px 4px;"><span style="color:#6b7280;">Price 1:</span> <strong><%= fmtPrice(p.price_1) %></strong></td>
+            <td style="padding:1px 4px;"><span style="color:#6b7280;">Price 2:</span> <strong><%= fmtPrice(p.price_2) %></strong></td>
+            <td style="padding:1px 4px;"><span style="color:#6b7280;">Cost:</span> <strong><%= fmtPrice(p.part_cost_price) %></strong></td>
             <td style="padding:1px 4px;"><span style="color:#6b7280;">Rating:</span> <strong><%= pp(p.rating) %></strong></td>
           </tr>
           <tr>

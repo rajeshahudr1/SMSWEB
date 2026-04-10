@@ -1,0 +1,4 @@
+type,vehicle_internal_id,description,ler_codes,wastage_values
+Vehicle Waste,VH-00012,Engine oil and coolant drain,13 02 05|16 01 07,5.0000|2.5000
+Part Waste,,Battery disposal from parts,16 06 01,3.2000
+Other Waste,,General workshop waste,20 01 39,1.5000

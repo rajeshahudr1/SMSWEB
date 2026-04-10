@@ -131,6 +131,16 @@ H.trunc = function(s, max, cls) {
     return '<span'+(cls?' class="'+cls+'"':'')+' title="'+e+'" data-bs-toggle="tooltip" data-bs-placement="top">'+short+'</span>';
 };
 
+// Global currency symbol from settings
+var SMS_CURRENCY = SMS_SETTINGS.currency_symbol || '€';
+var SMS_AUTOCOMPLETE_LIMIT = parseInt(SMS_SETTINGS.autocomplete_limit) || 10;
+H.currency = function(v) {
+    if (v == null || v === '') return '';
+    var n = parseFloat(v);
+    if (isNaN(n)) return '';
+    return SMS_CURRENCY + ' ' + n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+};
+
 var SMS_PENDING_THEME = {
   theme_color:   SMS_SETTINGS.theme_color   || '#0054a6',
   text_color:    SMS_SETTINGS.text_color    || '#1a2332',

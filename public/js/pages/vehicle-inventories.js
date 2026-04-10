@@ -433,7 +433,7 @@ function viewPartsForVehicle(vehicleUuid, vehicleLabel) {
             h += '<h6 class="text-primary fw-semibold mb-2"><i class="bi bi-info-circle me-1"></i>Part Information</h6>';
             h += '<div class="row g-0 mb-3">';
             h += _r('Catalog',p.part_catalog_name)+_r('Brand',p.part_brand_name)+_r('Quantity',p.quantity);
-            h += _r('Price 1',p.price_1)+_r('Price 2',p.price_2)+_r('Cost',p.part_cost_price);
+            h += _r('Price 1',H.currency(p.price_1))+_r('Price 2',H.currency(p.price_2))+_r('Cost',H.currency(p.part_cost_price));
             h += _r('Condition',COND[p.condition])+_r('State',STATE[p.part_state])+_r('Status',INV[p.inventory_status]);
             h += _r('Motorization',p.motorization)+_r('CC',p.cc)+_r('CV',p.cv)+_r('KW',p.kw);
             h += _r('Reg # Dismantler',p.reg_number_dismantler)+_r('Rating',p.rating);

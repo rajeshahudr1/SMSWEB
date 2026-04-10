@@ -11,7 +11,8 @@ var isMaster = (r.is_master_part === true || r.is_master_part === 1);
 
 function fmt(v) { if (v == null || v === '') return '—'; return String(v); }
 function fmtDate(v) { if (!v) return '—'; var s = String(v); if (s.length >= 10) { var d = new Date(s); if (!isNaN(d)) return d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}); } return s.substring(0, 10); }
-function fmtNum(v) { if (v == null || v === '') return '—'; return parseFloat(v).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+var _cur = (typeof settings !== 'undefined' && settings.currency_symbol) ? settings.currency_symbol : '€';
+function fmtNum(v) { if (v == null || v === '') return '—'; return _cur + ' ' + parseFloat(v).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
 var INV_STATUS = {1:'In Stock', 2:'Out of Stock', 4:'Returned', 5:'Scrapped'};
 var INV_COLOR  = {1:'#059669', 2:'#d97706', 4:'#3b82f6', 5:'#dc2626'};

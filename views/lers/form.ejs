@@ -1,0 +1,192 @@
+<%- layout('../layouts/main') %>
+<%
+var lr     = typeof ler !== 'undefined' ? ler : null;
+var isEdit = !!lr;
+var orgs   = typeof organizations !== 'undefined' ? organizations : [];
+var formAction = isEdit ? '/lers/' + lr.uuid : '/lers';
+var isSuperAdmin = user && user.is_super_admin;
+%>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/lers" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-recycle me-2 text-primary"></i><%- isEdit ? 'Edit LER' : 'Add LER' %></h3>
+</div>
+
+<form id="frmLer" method="POST" action="<%- formAction %>" novalidate>
+<div class="row g-3">
+
+  <div class="col-lg-8">
+
+    <!-- Company selector (super admin only) -->
+    <% if (isSuperAdmin) { %>
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-building me-1 text-primary"></i>Company</div>
+      </div>
+      <div class="card-body">
+        <select name="company_id" id="selCompany" class="form-select">
+          <option value="global" <%- (!isEdit || !lr.organization_id) ? 'selected' : '' %>>Global (Super Admin)</option>
+          <% orgs.forEach(function(o) { %>
+          <option value="<%- o.id %>" <%- (isEdit && lr.organization_id && String(lr.organization_id) === String(o.id)) ? 'selected' : '' %>><%- o.company_name %></option>
+          <% }) %>
+        </select>
+        <div class="form-hint mt-1">Leave as Global for all companies, or select a specific company.</div>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-info-circle me-1 text-primary"></i>LER Information</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="fName" class="form-control" required autofocus value="<%= isEdit ? (lr.name||'') : '' %>" placeholder="LER Name"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Code</label>
+            <input type="text" name="code" id="fCode" class="form-control" value="<%= isEdit ? (lr.code||'') : '' %>" placeholder="e.g. 17 04 01"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Unit</label>
+            <select name="unit_id" id="fUnitId" class="form-select">
+              <option value="">-- Select Unit --</option>
+              <% if (isEdit && lr.unit_id) { %>
+              <option value="<%- lr.unit_id %>" selected><%- lr.unit_name || ('Unit #' + lr.unit_id) %><% if (lr.unit_symbol) { %> (<%- lr.unit_symbol %>)<% } %></option>
+              <% } %>
+            </select>
+            <div class="form-hint mt-1">Search and select a unit of measurement.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium">Default Unit Value</label>
+            <input type="number" name="default_unit_value" id="fDefaultValue" class="form-control" step="0.0001" value="<%= isEdit && lr.default_unit_value != null ? lr.default_unit_value : '' %>" placeholder="0.0000"/>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-medium">Description</label>
+            <textarea name="description" id="fDescription" class="form-control" rows="3" placeholder="Optional description"><%= isEdit ? (lr.description||'') : '' %></textarea>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-medium">URL</label>
+            <input type="url" name="url" id="fUrl" class="form-control" value="<%= isEdit ? (lr.url||'') : '' %>" placeholder="https://example.com/reference"/>
+            <div class="form-hint">Optional reference URL for this LER code.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-check form-switch mt-2">
+              <input type="checkbox" class="form-check-input" name="is_body_ler" id="fIsBodyLer" value="1" <%- (isEdit && lr.is_body_ler) ? 'checked' : '' %>/>
+              <span class="form-check-label fw-medium">Is Body LER</span>
+            </label>
+            <div class="form-hint">Mark if this is a body-related LER code.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% var langs = typeof languages !== 'undefined' ? languages : []; %>
+    <% if (langs.length) { %>
+    <div class="card shadow-sm mt-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-translate me-1 text-primary"></i>Translations</div>
+      </div>
+      <div class="card-body">
+        <div class="form-hint mb-3">Enter the LER name in each language. If left blank, the default name will be used.</div>
+        <div class="row g-3">
+          <% langs.forEach(function(lng) {
+            var transVal = '';
+            if (isEdit && lr && lr.translations) { var tr = lr.translations.find(function(t){ return String(t.language_id) === String(lng.id); }); if (tr) transVal = tr.name; }
+          %>
+          <div class="col-md-6">
+            <label class="form-label fw-medium"><%= lng.flag || '' %> <%= lng.name %> (<%= lng.code %>)</label>
+            <input type="text" class="form-control trans-input" data-lang-id="<%= lng.id %>" value="<%= transVal %>" placeholder="Name in <%= lng.name %>"/>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header py-2"><div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-toggle-on me-1 text-primary"></i>Status</div></div>
+      <div class="card-body"><select name="status" class="form-select"><option value="1" <%- (!isEdit || parseInt(lr.status)) ? 'selected' : '' %>>Active</option><option value="0" <%- (isEdit && !parseInt(lr.status)) ? 'selected' : '' %>>Inactive</option></select></div>
+    </div>
+
+    <div class="card mt-3 shadow-sm">
+      <div class="card-body py-3">
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update' : 'Create' %> LER</button>
+          <a href="/lers" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+
+<%
+block('scripts', `
+<script>
+$(function(){
+    if ($.fn.select2) {
+        $('#fUnitId').select2({
+            theme: 'bootstrap-5',
+            placeholder: '-- Select Unit --',
+            allowClear: true,
+            minimumInputLength: 0,
+            ajax: {
+                url: BASE_URL + '/units/autocomplete',
+                dataType: 'json',
+                delay: 300,
+                data: function(params) { return { search: params.term || '' }; },
+                processResults: function(res) {
+                    var items = (res && res.data) ? res.data : [];
+                    return { results: items.map(function(u) { return { id: u.id, text: u.name + (u.symbol ? ' (' + u.symbol + ')' : '') }; }) };
+                },
+                cache: true
+            }
+        });
+    }
+    $('#frmLer').on('submit', function(e) {
+        e.preventDefault();
+        var $btn = $('#btnSubmit');
+        var nm = $('#fName').val().trim();
+        if (!nm) { toastr.error('Name is required.'); $('#fName').focus(); return; }
+        var payload = {
+            name: nm,
+            code: $('#fCode').val().trim(),
+            unit_id: $('#fUnitId').val() || '',
+            default_unit_value: $('#fDefaultValue').val() || '',
+            is_body_ler: $('#fIsBodyLer').is(':checked') ? '1' : '0',
+            description: $('#fDescription').val().trim(),
+            url: $('#fUrl').val().trim(),
+        };
+        // Collect translations
+        var trans = {};
+        $('.trans-input').each(function() { var lid = $(this).data('lang-id'); var v = $(this).val().trim(); if (lid) trans[lid] = v; });
+        payload.translations = trans;
+        if ($('#selCompany').length) payload.company_id = $('#selCompany').val();
+        if ($('select[name="status"]').length) payload.status = $('select[name="status"]').val();
+        btnLoading($btn);
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function(r) {
+                btnReset($btn);
+                if (r.status === 200 || r.status === 201) {
+                    toastr.success(r.message || 'Saved.');
+                    window.location.href = '/lers';
+                } else toastr.error(r.message || 'Failed.');
+            },
+            error: function() { btnReset($btn); toastr.error('Network error.'); }
+        });
+    });
+});
+</script>
+`);
+%>

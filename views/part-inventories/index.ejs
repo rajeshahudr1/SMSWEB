@@ -179,12 +179,12 @@ var isSuperAdmin = user && user.is_super_admin;
         <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Qty Max</label><input type="number" min="0" step="1" class="form-control form-control-sm" id="filterQtyMax"/></div>
       </div>
       <div class="row g-2 mb-3">
-        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Price Min</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterPriceMin"/></div>
-        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Price Max</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterPriceMax"/></div>
+        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Price Min (<%= (settings && settings.currency_symbol) || '€' %>)</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterPriceMin"/></div>
+        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Price Max (<%= (settings && settings.currency_symbol) || '€' %>)</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterPriceMax"/></div>
       </div>
       <div class="row g-2 mb-3">
-        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Cost Min</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterCostMin"/></div>
-        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Cost Max</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterCostMax"/></div>
+        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Cost Min (<%= (settings && settings.currency_symbol) || '€' %>)</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterCostMin"/></div>
+        <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Cost Max (<%= (settings && settings.currency_symbol) || '€' %>)</label><input type="number" step="0.01" class="form-control form-control-sm" id="filterCostMax"/></div>
       </div>
       <div class="row g-2 mb-3">
         <div class="col-6"><label class="form-label small fw-semibold text-muted text-uppercase">Rating Min</label><input type="number" step="0.5" min="0" max="5" class="form-control form-control-sm" id="filterRatingMin"/></div>
