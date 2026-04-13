@@ -39,12 +39,12 @@ var isSuperAdmin = user && user.is_super_admin;
 
   <!-- View Tabs -->
   <ul class="nav nav-tabs px-3 pt-2" role="tablist">
-    <li class="nav-item"><a class="nav-link active" href="#" id="tabAllRecords" data-view="all"><i class="bi bi-list-ul me-1"></i>All Records</a></li>
-    <li class="nav-item"><a class="nav-link" href="#" id="tabGroupLer" data-view="ler"><i class="bi bi-collection me-1"></i>Group by LER</a></li>
+    <li class="nav-item"><a class="nav-link active" href="#" id="tabGroupLer" data-view="ler"><i class="bi bi-collection me-1"></i>Group by LER</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" id="tabAllRecords" data-view="all"><i class="bi bi-list-ul me-1"></i>All Records</a></li>
   </ul>
 
   <!-- All Records View -->
-  <div id="viewAll">
+  <div id="viewAll" style="display:none;">
     <div class="table-responsive">
       <table class="table table-hover table-vcenter mb-0">
         <thead><tr>
@@ -65,7 +65,7 @@ var isSuperAdmin = user && user.is_super_admin;
   </div>
 
   <!-- Group by LER View -->
-  <div id="viewLer" style="display:none;">
+  <div id="viewLer">
     <div class="table-responsive">
       <table class="table table-hover table-vcenter mb-0">
         <thead><tr>
@@ -73,7 +73,7 @@ var isSuperAdmin = user && user.is_super_admin;
           <th>LER Name</th>
           <th>LER Code</th>
           <th>Unit</th>
-          <th class="text-end">Default Value (Sum)</th>
+          <th class="text-end">Default Value</th>
           <th class="text-end">Actual Value (Sum)</th>
           <th class="text-end">Records</th>
         </tr></thead>

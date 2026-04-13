@@ -1,6 +1,6 @@
 /* depollutions.js — Depollutions list page */
 'use strict';
-var _page=1,_pp=15,_sel=[],_sort={field:'created_at',dir:'desc'};
+var _page=1,_pp=15,_sel=[],_sort={field:'created_at',dir:'desc'},_currentView='ler';
 var TYPE_LABELS = {1:'Vehicle Waste',2:'Part Waste',3:'Other Waste'};
 var TYPE_COLORS = {1:'blue',2:'orange',3:'green'};
 
@@ -176,7 +176,39 @@ function updateBulk(){_sel=[];$('.row-chk:checked').each(function(){_sel.push($(
 function bulkAction(a){if(!_sel.length)return;smsConfirm({title:a.charAt(0).toUpperCase()+a.slice(1),msg:_sel.length+' items will be '+a+'d.',btnClass:a==='delete'?'btn-danger':'btn-primary',btnText:a.charAt(0).toUpperCase()+a.slice(1),onConfirm:function(){showLoading();$.post(BASE_URL+'/depollutions/bulk-action',{action:a,uuids:JSON.stringify(_sel)},function(r){hideLoading();if(r.status===200){toastr.success(r.message);loadData();}else toastr.error(r.message);}).fail(function(){hideLoading();toastr.error('Network error.');});}});}
 
 /* Export */
-function doExport(fmt){var p=_filters();p.format=fmt;delete p.page;delete p.per_page;if(fmt==='csv'||fmt==='excel'||fmt==='pdf'){window.location.href=BASE_URL+'/depollutions/export?'+$.param(p);return;}showLoading();$.post(BASE_URL+'/depollutions/export',p,function(res){hideLoading();if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error('No data.');return;}var rows=res.data.rows,cols=Object.keys(rows[0]);var html='<html><head><title>Depollutions</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}tr:nth-child(even){background:#fafafa;}</style></head><body><h2>Depollutions ('+rows.length+')</h2><table><thead><tr>';cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr></thead><tbody>';rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});html+='</tbody></table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();if(fmt==='print')setTimeout(function(){w.print();},400);}).fail(function(){hideLoading();toastr.error('Failed.');});}
+function doExport(fmt){
+    // Check which tab is active
+    var exportUrl = (_currentView === 'ler') ? '/depollutions/export-group-ler' : '/depollutions/export';
+    var p = _filters(); p.format = fmt; delete p.page; delete p.per_page;
+    if (fmt==='csv'||fmt==='excel') {
+        showLoading();
+        toastr.info('Generating export...');
+        fetch(BASE_URL + exportUrl + '?' + $.param(p), {credentials:'same-origin'})
+            .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+            .then(function(blob){
+                hideLoading();
+                var url=URL.createObjectURL(blob);
+                var a=document.createElement('a'); a.href=url;
+                a.download='depollutions-'+(_currentView==='ler'?'group-ler-':'')+ Date.now()+'.'+(fmt==='excel'?'xlsx':'csv');
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(function(){URL.revokeObjectURL(url);},1000);
+                toastr.success('Export ready.');
+            })
+            .catch(function(){hideLoading();toastr.error('Failed.');});
+        return;
+    }
+    // Print
+    showLoading();
+    $.post(BASE_URL + exportUrl, p, function(res){
+        hideLoading();
+        if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error('No data.');return;}
+        var rows=res.data.rows,cols=Object.keys(rows[0]);
+        var html='<html><head><title>Depollutions</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}</style></head><body><h2>Depollutions ('+rows.length+')</h2><table><tr>';
+        cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr>';
+        rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});
+        html+='</table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(function(){w.print();},400);
+    }).fail(function(){hideLoading();toastr.error('Failed.');});
+}
 
 /* ── Import ── */
 var _pollTimer = null;
@@ -234,8 +266,8 @@ $(function(){
     $('#frmImport').on('submit',function(e){e.preventDefault();var fd=new FormData(this);$('#importStep1').addClass('d-none');$('#importProcessing').removeClass('d-none');$.ajax({url:BASE_URL+'/depollutions/import',type:'POST',data:fd,processData:false,contentType:false,success:function(r){$('#importProcessing').addClass('d-none');if(r.status===200&&r.data){if(r.data.mode==='background'){showImportProgress(r.data.jobId,r.data.total);}else if(r.data.results){$('#importStep2').removeClass('d-none');renderImportResults(r.data.results);}else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}}else{$('#importStep1').removeClass('d-none');toastr.error(r.message||'Failed.');}},error:function(){$('#importProcessing').addClass('d-none');$('#importStep1').removeClass('d-none');toastr.error('Network error.');}});});
     $('#btnRetryAllErrors').on('click',function(){retryAllErrors();});
 
-    // ── Tab switching: All Records vs Group by LER ──
-    var _currentView = 'all';
+    // ── Tab switching: Group by LER (default) vs All Records ──
+    loadGroupByLer(); // load on page init
     $(document).on('click', '#tabAllRecords, #tabGroupLer', function(e) {
         e.preventDefault();
         var view = $(this).data('view');
@@ -245,6 +277,7 @@ $(function(){
         $(this).addClass('active');
         if (view === 'all') {
             $('#viewAll').show(); $('#viewLer').hide();
+            loadData();
         } else {
             $('#viewAll').hide(); $('#viewLer').show();
             loadGroupByLer();
@@ -269,7 +302,7 @@ $(function(){
                 h += '<td class="fw-medium"><i class="bi bi-chevron-right me-1 text-muted ler-chevron"></i>' + H.esc(r.ler_name || '') + '</td>';
                 h += '<td><code>' + H.esc(r.ler_code || '') + '</code></td>';
                 h += '<td>' + unitTxt + '</td>';
-                h += '<td class="text-end">' + parseFloat(r.default_value_sum || 0).toFixed(4) + '</td>';
+                h += '<td class="text-end">' + parseFloat(r.default_unit_value || 0).toFixed(4) + '</td>';
                 h += '<td class="text-end fw-bold text-primary">' + parseFloat(r.actual_value_sum || 0).toFixed(4) + '</td>';
                 h += '<td class="text-end"><span class="badge bg-secondary-lt">' + (r.record_count || 0) + ' records</span></td>';
                 h += '</tr>';
@@ -311,22 +344,17 @@ $(function(){
         var params = { ler_id: _lerModalLerId, page: _lerModalPage, per_page: _lerModalPP };
         if ($('#filterCompany').length && $('#filterCompany').val() && $('#filterCompany').val() !== 'all') params.company_id = $('#filterCompany').val();
         $.get(BASE_URL + '/depollutions/group-by-ler-detail', params, function(res) {
-            if (!res || res.status !== 200 || !res.data || !res.data.rows || !res.data.rows.length) {
-                // Try old format (flat array)
-                var rows = (res && res.data && Array.isArray(res.data)) ? res.data : (res && res.data && res.data.rows) ? res.data.rows : [];
-                if (!rows.length) { $body.html('<div class="text-center py-5 text-muted">No records found</div>'); return; }
-                renderLerDetailRows(rows, 0);
-                $('#lerDetailInfo').text(rows.length + ' records');
-                $('#lerDetailPagination').empty();
-                return;
-            }
+            if (!res || res.status !== 200 || !res.data) { $body.html('<div class="text-center py-5 text-muted">No records found</div>'); return; }
             var pg = res.data;
-            renderLerDetailRows(pg.rows || pg.data || [], ((pg.current_page||1)-1) * _lerModalPP);
-            $('#lerDetailInfo').text('Showing ' + (pg.from||1) + '-' + (pg.to||pg.rows.length) + ' of ' + (pg.total||pg.rows.length));
-            if (pg.last_page > 1) {
+            var rows = pg.data || pg.rows || (Array.isArray(pg) ? pg : []);
+            if (!rows.length) { $body.html('<div class="text-center py-5 text-muted">No records found</div>'); return; }
+            renderLerDetailRows(rows, ((pg.current_page||1)-1) * _lerModalPP);
+            var total = pg.total || rows.length;
+            $('#lerDetailInfo').text('Showing ' + (pg.from||1) + '-' + (pg.to||rows.length) + ' of ' + total);
+            if (pg.last_page && pg.last_page > 1) {
                 var ph = '';
                 for (var p = 1; p <= pg.last_page; p++) {
-                    ph += '<button class="btn btn-sm ' + (p === pg.current_page ? 'btn-primary' : 'btn-outline-secondary') + ' ler-detail-pg" data-p="' + p + '">' + p + '</button> ';
+                    ph += '<button class="btn btn-sm ' + (p === (pg.current_page||1) ? 'btn-primary' : 'btn-outline-secondary') + ' ler-detail-pg" data-p="' + p + '">' + p + '</button> ';
                 }
                 $('#lerDetailPagination').html(ph);
             } else { $('#lerDetailPagination').empty(); }

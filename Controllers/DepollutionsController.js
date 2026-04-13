@@ -16,6 +16,16 @@ exports.paginate = async (req, res) => { res.json(await api.post('/depollutions/
 exports.groupByLer = async (req, res) => { res.json(await api.get('/depollutions/group-by-ler', req.session.token, req.query)); };
 exports.groupByLerDetail = async (req, res) => { res.json(await api.get('/depollutions/group-by-ler-detail', req.session.token, req.query)); };
 exports.bulkUpdateWastage = async (req, res) => { res.json(await api.post('/depollutions/bulk-update-wastage', req.body, req.session.token)); };
+exports.exportGroupByLer = async (req, res) => {
+    const params = Object.assign({}, req.query, req.body); const format = params.format || 'csv';
+    const result = await api.post('/depollutions/export-group-ler', params, req.session.token);
+    if (!result || result.status !== 200) return res.json({ status: 500, message: 'Failed.' });
+    const rows = result.data.rows || [];
+    if (!rows.length) return res.json({ status: 200, message: 'No data.', data: { rows: [] } });
+    if (format === 'csv') { const hd = Object.keys(rows[0]); const csv = [hd.join(','), ...rows.map(r => hd.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n'); res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="depollutions-group-ler-${Date.now()}.csv"`); return res.send(csv); }
+    if (format === 'excel') { try { const X = require('xlsx'); const ws = X.utils.json_to_sheet(rows); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Group by LER'); const buf = X.write(wb, { type: 'buffer', bookType: 'xlsx' }); res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', `attachment; filename="depollutions-group-ler-${Date.now()}.xlsx"`); return res.send(buf); } catch(e) { return res.json({ status: 200, data: result.data }); } }
+    return res.json({ status: 200, data: result.data });
+};
 
 exports.create = async (req, res) => {
     const orgs = req.session.user && req.session.user.is_super_admin ? await getOrgs(req.session.token) : [];

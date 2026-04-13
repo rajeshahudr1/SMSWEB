@@ -10,6 +10,8 @@ router.post('/paginate',               requirePermission('view_depollutions'),  
 router.get('/group-by-ler',            requirePermission('view_depollutions'),   Ctrl.groupByLer);
 router.get('/group-by-ler-detail',     requirePermission('view_depollutions'),   Ctrl.groupByLerDetail);
 router.post('/bulk-update-wastage',    requirePermission('edit_depollutions'),   Ctrl.bulkUpdateWastage);
+router.get('/export-group-ler',        requirePermission('export_depollutions'), Ctrl.exportGroupByLer);
+router.post('/export-group-ler',       requirePermission('export_depollutions'), Ctrl.exportGroupByLer);
 router.get('/export',                  requirePermission('export_depollutions'), Ctrl.exportData);
 router.post('/export',                 requirePermission('export_depollutions'), Ctrl.exportData);
 router.post('/import',                 requirePermission('import_depollutions'), Ctrl.importData);
