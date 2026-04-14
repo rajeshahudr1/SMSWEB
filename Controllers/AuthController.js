@@ -27,13 +27,12 @@ function cleanTemp(file) {
 
 /* ── Shared session builder ── */
 async function buildSession(req, d) {
-    req.session.token       = d.token;
-    req.session.user        = d.user;
-    req.session.permissions = d.permissions || [];
-    req.session.menus       = d.menus       || [];
-    req.session.settings    = d.settings    || {};
-
-    console.log("menus",d.menus )
+    req.session.token               = d.token;
+    req.session.user                = d.user;
+    req.session.permissions         = d.permissions || [];
+    req.session.menus               = d.menus       || [];
+    req.session.settings            = d.settings    || {};
+    req.session.subscription_status = d.subscription_status || 'none';
     return new Promise(r => req.session.save(r));
 }
 
@@ -63,10 +62,11 @@ exports.signupPage = (req, res) => res.render('auth/signup', { page_title: 'Crea
 exports.loginPost = async (req, res) => {
     const { email, password, panel } = req.body;
     const result = await api.post('/auth/login', { email, password, panel: panel || 'b2b' });
-    console.log('result',result)
     if (result.status === 200 && result.data) {
         await buildSession(req, result.data);
-        return res.json({ status: 200, message: 'Login successful.' });
+        const subStatus = result.data.subscription_status || 'none';
+        const needsSubscription = (subStatus === 'none' || subStatus === 'expired') && !result.data.user.is_super_admin;
+        return res.json({ status: 200, message: 'Login successful.', redirect: needsSubscription ? '/choose-plan' : null });
     }
     return res.json({ status: result.status || 401, message: result.message || 'Invalid email or password.' });
 };
@@ -109,7 +109,12 @@ exports.verifyEmailPage = (req, res) =>
 
 exports.verifyEmailPost = async (req, res) => {
     const result = await api.post('/auth/verify-email', req.body);
-    if (result.status === 200 && result.data) await buildSession(req, result.data);
+    if (result.status === 200 && result.data) {
+        await buildSession(req, result.data);
+        const subStatus = result.data.subscription_status || 'none';
+        const needsSubscription = (subStatus === 'none' || subStatus === 'expired') && !result.data.user.is_super_admin;
+        return res.json({ status: result.status, message: result.message, redirect: needsSubscription ? '/choose-plan' : null });
+    }
     return res.json({ status: result.status, message: result.message });
 };
 

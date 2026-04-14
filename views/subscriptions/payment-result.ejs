@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title><%- page_title %> | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f4f6fb;min-height:100vh;display:flex;flex-direction:column;}
+.top-bar{display:flex;align-items:center;padding:12px 24px;background:#fff;border-bottom:1px solid #e2e8f0;}
+.top-bar .logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:#1e293b;}
+.top-bar .logo img{height:26px;}
+.result-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 16px;}
+.result-card{background:#fff;border:2px solid #e8ecf1;border-radius:16px;padding:48px 40px;text-align:center;max-width:480px;width:100%;}
+.result-icon{width:80px;height:80px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:20px;}
+.result-icon.success{background:#dcfce7;color:#16a34a;}
+.result-icon.error{background:#fef2f2;color:#ef4444;}
+.result-icon.pending{background:#fef3c7;color:#f59e0b;}
+.result-card h2{font-size:24px;font-weight:800;color:#1e293b;margin-bottom:8px;}
+.result-card p{font-size:14px;color:#64748b;margin-bottom:24px;line-height:1.6;}
+.result-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;margin:0 6px;}
+.result-btn.primary{background:#3b82f6;color:#fff;}.result-btn.primary:hover{background:#2563eb;color:#fff;}
+.result-btn.secondary{background:#f1f5f9;color:#475569;}.result-btn.secondary:hover{background:#e2e8f0;}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="logo"><img src="/images/favicon.svg" alt=""/><%- APP_NAME %></div>
+</div>
+<div class="result-wrap">
+  <div class="result-card">
+    <%
+    var iconClass = status === 'error' ? 'error' : (status === 'pending' ? 'pending' : 'success');
+    var iconName = status === 'error' ? 'bi-x-circle-fill' : (status === 'pending' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
+    %>
+    <div class="result-icon <%- iconClass %>"><i class="bi <%- iconName %>"></i></div>
+    <h2><%- heading %></h2>
+    <p><%- message %></p>
+    <div>
+      <% if (typeof showRetry !== 'undefined' && showRetry) { %>
+      <a href="/choose-plan" class="result-btn primary"><i class="bi bi-arrow-repeat"></i> Try Again</a>
+      <% } %>
+      <a href="/dashboard" class="result-btn secondary"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

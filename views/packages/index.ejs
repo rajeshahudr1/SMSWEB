@@ -1,0 +1,99 @@
+<%- layout('../layouts/main') %>
+<%
+var isSuperAdmin = user && user.is_super_admin;
+%>
+<div class="card shadow-sm">
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-box-seam me-2 text-primary"></i>Packages <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">-</span></h3>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
+      <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Export</span></button>
+        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
+      </div>
+      <a href="/packages/sort" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrows-move me-1"></i><span class="d-none d-sm-inline">Sort</span></a>
+      <a href="/packages/create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Add Package</span></a>
+    </div>
+  </div>
+
+  <!-- Inline Filters -->
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="d-flex align-items-center gap-2">
+      <div class="flex-grow-1"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search packages..."/></div>
+      <button class="btn btn-sm btn-outline-primary" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar"><i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline">Filters</span> <span class="badge bg-primary-lt ms-1 d-none" id="filterCount">0</span></button>
+      <button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+
+  <!-- Bulk bar -->
+  <div id="bulkBar" class="d-none">
+    <div class="sms-bulk-bar rounded-0 border-bottom px-3 py-2">
+      <span class="fw-semibold"><span id="bulkCount">0</span> selected</span>
+      <div class="ms-auto d-flex gap-2">
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('deactivate')"><i class="bi bi-toggle-off me-1"></i>Deactivate</button>
+        <button class="btn btn-sm btn-outline-light" onclick="bulkAction('activate')"><i class="bi bi-toggle-on me-1"></i>Activate</button>
+        <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')"><i class="bi bi-trash3 me-1"></i>Delete</button>
+        <button class="btn btn-sm btn-outline-light d-none" id="btnBulkRecover" onclick="bulkAction('recover')"><i class="bi bi-arrow-counterclockwise me-1"></i>Recover</button>
+        <button class="btn btn-sm btn-outline-light" id="btnClearBulk"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover table-vcenter mb-0">
+      <thead><tr>
+        <th style="width:42px;"><input type="checkbox" class="form-check-input" id="selectAll"/></th>
+        <th style="width:36px;" class="text-muted">#</th>
+        <th class="sortable" data-field="name">Name <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th>Badge</th>
+        <th>Role</th>
+        <th class="text-end sortable" data-field="price">Monthly <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="text-end">Yearly</th>
+        <th>Type</th>
+        <th>Orgs</th>
+        <th class="sortable" data-field="status">Status <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="d-none d-md-table-cell sortable" data-field="created_at">Created <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="text-end" style="width:140px;">Actions</th>
+      </tr></thead>
+      <tbody id="tableBody"><tr><td colspan="10" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
+</div>
+
+<!-- Advanced Filter Sidebar -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterSidebar" style="width:340px;">
+  <div class="offcanvas-header border-bottom py-3">
+    <h5 class="offcanvas-title fw-semibold mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Filters</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="mb-3">
+      <label class="form-label small fw-semibold text-muted text-uppercase">Status</label>
+      <select class="form-select form-select-sm" id="filterStatus"><option value="">All Status</option><option value="1">Active</option><option value="0">Inactive</option></select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold text-muted text-uppercase">Trial</label>
+      <select class="form-select form-select-sm" id="filterTrial"><option value="">All</option><option value="1">Trial Only</option><option value="0">Non-Trial Only</option></select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold text-muted text-uppercase">Deleted</label>
+      <select class="form-select form-select-sm" id="filterDeleted"><option value="">Active Records</option><option value="only">Deleted Only</option><option value="all">All Records</option></select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold text-muted text-uppercase">Created Date Range</label>
+      <div class="row g-2">
+        <div class="col-6"><input type="date" class="form-control form-control-sm" id="filterDateFrom"/></div>
+        <div class="col-6"><input type="date" class="form-control form-control-sm" id="filterDateTo"/></div>
+      </div>
+    </div>
+  </div>
+  <div class="offcanvas-footer border-top p-3 d-flex gap-2">
+    <button class="btn btn-sm btn-outline-secondary flex-fill" id="btnClearAdvFilters"><i class="bi bi-x-lg me-1"></i>Clear All</button>
+    <button class="btn btn-sm btn-primary flex-fill" data-bs-dismiss="offcanvas"><i class="bi bi-check-lg me-1"></i>Apply</button>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal fade" id="modalView" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:640px;"><div class="modal-content"><div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-box-seam me-2 text-primary"></i>Package Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="viewBody"></div><div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button></div></div></div></div>
+
+<% block('scripts', '<script src="/js/pages/packages.js"></script>') %>

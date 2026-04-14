@@ -8,6 +8,7 @@ var assignedB2BIds = isEdit && r.b2b_permission_ids ? r.b2b_permission_ids.map(f
 var assignedB2CIds = isEdit && r.b2c_permission_ids ? r.b2c_permission_ids.map(function(id){ return parseInt(id); }) : [];
 var formAction  = isEdit ? '/roles/' + r.uuid : '/roles';
 var pageTitle   = isEdit ? t('roles.edit', 'Edit Role') : t('roles.add', 'Add Role');
+var pkgAllowed  = typeof packageAllowedGroups !== 'undefined' ? packageAllowedGroups : null;
 
 /* Section mapping — groups permissions by menu section */
 var SECTIONS = [
@@ -21,6 +22,7 @@ var SECTIONS = [
     { key: 'inventory',  label: 'Inventory',          icon: 'bi-boxes',         groups: ['Part Inventories', 'Vehicle Inventories'] },
     { key: 'location',   label: 'Location',           icon: 'bi-geo-alt',       groups: ['Countries', 'States', 'Cities'] },
     { key: 'reports',    label: 'Reports',             icon: 'bi-bar-chart',     groups: ['Activity Logs'] },
+    { key: 'admin',     label: 'Administration',      icon: 'bi-shield',        groups: ['Packages'] },
 ];
 
 /* Split permissions by panel for B2B/B2C tabs, organized by section */
@@ -184,15 +186,18 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
                   <% sec.groups[groupName].forEach(function(p){
                        var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
                        var color  = aColor[p.action] || 'secondary';
+                       var pkgDisabled = pkgAllowed && pkgAllowed.indexOf(groupName) === -1;
                   %>
                   <div class="col-12 col-sm-6 col-lg-4 mb-2">
-                    <label class="form-check d-flex align-items-center gap-2 mb-0">
+                    <label class="form-check d-flex align-items-center gap-2 mb-0<%= pkgDisabled ? ' opacity-50' : '' %>">
                       <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
                              name="b2b_permission_ids[]" value="<%- p.id %>" data-group="b2b_<%- groupName %>" data-section="b2b_sec_<%- sec.key %>"
-                              <%- assignedB2BIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                              <%- assignedB2BIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>
+                              <%- pkgDisabled ? 'disabled' : '' %>/>
                       <span class="form-check-label" style="font-size:12.5px;">
                         <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
                         <%- p.display_name %>
+                        <% if (pkgDisabled) { %><span class="badge bg-muted-lt text-muted ms-1" style="font-size:9px;">Not in package</span><% } %>
                       </span>
                     </label>
                   </div>
@@ -232,15 +237,18 @@ if (typeof permissions !== 'undefined' && permissions && Object.keys(permissions
                   <% sec.groups[groupName].forEach(function(p){
                        var aColor = {view:'azure',add:'green',edit:'orange',delete:'red',export:'purple',import:'teal'};
                        var color  = aColor[p.action] || 'secondary';
+                       var pkgDisabled = pkgAllowed && pkgAllowed.indexOf(groupName) === -1;
                   %>
                   <div class="col-12 col-sm-6 col-lg-4 mb-2">
-                    <label class="form-check d-flex align-items-center gap-2 mb-0">
+                    <label class="form-check d-flex align-items-center gap-2 mb-0<%= pkgDisabled ? ' opacity-50' : '' %>">
                       <input type="checkbox" class="form-check-input flex-shrink-0 perm-check"
                              name="b2c_permission_ids[]" value="<%- p.id %>" data-group="b2c_<%- groupName %>" data-section="b2c_sec_<%- sec.key %>"
-                              <%- assignedB2CIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>/>
+                              <%- assignedB2CIds.indexOf(parseInt(p.id)) !== -1 ? 'checked' : '' %>
+                              <%- pkgDisabled ? 'disabled' : '' %>/>
                       <span class="form-check-label" style="font-size:12.5px;">
                         <span class="badge badge-sm me-1 bg-<%- color %>-lt" style="font-size:9.5px;"><%- p.action %></span>
                         <%- p.display_name %>
+                        <% if (pkgDisabled) { %><span class="badge bg-muted-lt text-muted ms-1" style="font-size:9px;">Not in package</span><% } %>
                       </span>
                     </label>
                   </div>

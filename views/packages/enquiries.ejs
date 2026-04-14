@@ -1,0 +1,258 @@
+<%- layout('../layouts/main') %>
+<div class="card shadow-sm">
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-envelope-paper me-2 text-primary"></i>Package Enquiries <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">–</span></h3>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
+      <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Export</span></button>
+        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('excel');return false;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inline Filters -->
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="d-flex align-items-center gap-2">
+      <div class="flex-grow-1"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search name, email, company..."/></div>
+      <select class="form-select form-select-sm" id="filterStatus" style="width:140px;">
+        <option value="">All Status</option><option value="new">New</option><option value="contacted">Contacted</option><option value="closed">Closed</option>
+      </select>
+      <button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover table-vcenter mb-0">
+      <thead><tr>
+        <th style="width:36px;" class="text-muted">#</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Company</th>
+        <th>Package</th>
+        <th class="sortable" data-field="status">Status <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="sortable" data-field="created_at">Date <i class="bi bi-arrow-down-up text-muted small"></i></th>
+        <th class="text-end" style="width:120px;">Actions</th>
+      </tr></thead>
+      <tbody id="tableBody"><tr><td colspan="9" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:680px;"><div class="modal-content">
+  <div class="modal-header py-3"><h5 class="modal-title fw-semibold"><i class="bi bi-envelope-paper me-2 text-primary"></i>Enquiry Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body p-0" id="detailBody"></div>
+  <div class="modal-footer py-2"><button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button></div>
+</div></div></div>
+
+<%
+block('scripts', `
+<script>
+var _page=1,_pp=15,_sort={field:'created_at',dir:'desc'};
+
+/* Per-page selector */
+(function(){var sel=$('#perPageSel'),opts=[10,15,25,50,100];opts.forEach(function(v){sel.append('<option value="'+v+'"'+(v===_pp?' selected':'')+'>'+v+'</option>');});sel.on('change',function(){_pp=parseInt($(this).val());_page=1;loadData();});})();
+
+function _filters(){return{page:_page,per_page:_pp,search:$('#searchInput').val().trim(),status:$('#filterStatus').val(),sort_field:_sort.field,sort_dir:_sort.dir};}
+
+/* Export */
+function doExport(fmt){
+    var p=_filters();p.format=fmt;delete p.page;delete p.per_page;
+    showLoading();
+    $.post(BASE_URL+'/packages/enquiries/export',p,function(res){
+        hideLoading();
+        if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error('No data to export.');return;}
+        var rows=res.data.rows,cols=Object.keys(rows[0]);
+        if(fmt==='csv'||fmt==='excel'){
+            var csv=cols.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',')+String.fromCharCode(10);
+            rows.forEach(function(r){csv+=cols.map(function(c){return '"'+String(r[c]==null?'':r[c]).replace(/"/g,'""')+'"';}).join(',')+String.fromCharCode(10);});
+            var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+            var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='package-enquiries-'+Date.now()+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+            toastr.success('Export ready.');return;
+        }
+        var html='<html><head><title>Package Enquiries</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;font-weight:600;}</style></head><body><h2>Package Enquiries ('+rows.length+')</h2><table><tr>';
+        cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr>';
+        rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});
+        html+='</table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(function(){w.print();},400);
+    }).fail(function(){hideLoading();toastr.error('Export failed.');});
+}
+
+/* Pagination builder */
+function buildPagination(pg){
+    if(!pg||pg.last_page<=1){$('#tablePagination').html('');return;}
+    var h='<ul class="pagination pagination-sm mb-0">';
+    h+='<li class="page-item'+(pg.current_page<=1?' disabled':'')+'"><a class="page-link" href="#" data-page="'+(pg.current_page-1)+'"><i class="bi bi-chevron-left"></i></a></li>';
+    var start=Math.max(1,pg.current_page-2),end=Math.min(pg.last_page,pg.current_page+2);
+    if(start>1){h+='<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>';if(start>2)h+='<li class="page-item disabled"><span class="page-link">…</span></li>';}
+    for(var i=start;i<=end;i++)h+='<li class="page-item'+(i===pg.current_page?' active':'')+'"><a class="page-link" href="#" data-page="'+i+'">'+i+'</a></li>';
+    if(end<pg.last_page){if(end<pg.last_page-1)h+='<li class="page-item disabled"><span class="page-link">…</span></li>';h+='<li class="page-item"><a class="page-link" href="#" data-page="'+pg.last_page+'">'+pg.last_page+'</a></li>';}
+    h+='<li class="page-item'+(pg.current_page>=pg.last_page?' disabled':'')+'"><a class="page-link" href="#" data-page="'+(pg.current_page+1)+'"><i class="bi bi-chevron-right"></i></a></li></ul>';
+    $('#tablePagination').html(h);
+}
+
+/* Status map */
+var _stMap={new:{cls:'bg-info-lt',icon:'bi-envelope-fill',label:'New'},contacted:{cls:'bg-warning-lt',icon:'bi-telephone-fill',label:'Contacted'},closed:{cls:'bg-secondary-lt',icon:'bi-check-circle-fill',label:'Closed'}};
+
+/* Load data */
+function loadData(){
+    $('#tableBody').html('<tr><td colspan="9" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr>');
+    $.post(BASE_URL+'/packages/enquiries/paginate',_filters(),function(res){
+        if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="9" class="text-center py-4 text-danger">Failed to load data.</td></tr>');return;}
+        var data=res.data&&res.data.data?res.data.data:(res.data&&Array.isArray(res.data)?res.data:[]);
+        var pg=res.data&&res.data.pagination?res.data.pagination:(res.data||{});
+        var total=pg.total||res.data.total||0;
+        var from=pg.from||res.data.from||1;
+        var to=pg.to||res.data.to||data.length;
+        var lastPage=pg.last_page||res.data.last_page||1;
+        var currentPage=pg.current_page||res.data.current_page||_page;
+        $('#badgeTotal').text(total.toLocaleString());
+        if(!data.length){$('#tableBody').html('<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-envelope-paper d-block mb-2" style="font-size:36px;opacity:.3;"></i>No enquiries found</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+        var rows='';
+        data.forEach(function(e,i){
+            var st=_stMap[e.status]||_stMap.new;
+            var initials=(e.name||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+            rows+='<tr>';
+            rows+='<td class="text-muted">'+(from+i)+'</td>';
+            rows+='<td><div class="d-flex align-items-center gap-2"><span class="avatar avatar-sm rounded-circle bg-primary-lt" style="font-size:11px;width:32px;height:32px;">'+initials+'</span><div><div class="fw-medium">'+H.esc(e.name)+'</div>'+(e.company_name?'<div class="text-muted small">'+H.esc(e.company_name)+'</div>':'')+'</div></div></td>';
+            rows+='<td><a href="mailto:'+H.esc(e.email)+'" class="text-reset">'+H.esc(e.email)+'</a></td>';
+            rows+='<td>'+(e.phone?H.esc(e.phone):'<span class="text-muted">–</span>')+'</td>';
+            rows+='<td>'+(e.company_name?H.esc(e.company_name):'<span class="text-muted">–</span>')+'</td>';
+            rows+='<td>'+(e.package_name?'<span class="badge bg-azure-lt">'+H.esc(e.package_name)+'</span>':'<span class="text-muted">–</span>')+'</td>';
+            rows+='<td><span class="badge '+st.cls+'"><i class="bi '+st.icon+' me-1"></i>'+st.label+'</span></td>';
+            rows+='<td class="text-muted small">'+smsFormatDateTime(e.created_at)+'</td>';
+            rows+='<td class="text-end"><button class="btn btn-sm btn-ghost-primary" title="View" onclick="viewEnquiry(\\''+e.uuid+'\\')"><i class="bi bi-eye"></i></button>';
+            rows+='<button class="btn btn-sm btn-ghost-danger" title="Delete" onclick="delEnquiry(\\''+e.uuid+'\\')"><i class="bi bi-trash3"></i></button></td>';
+            rows+='</tr>';
+        });
+        $('#tableBody').html(rows);
+        $('#tableInfo').text('Showing '+from+'–'+to+' of '+total);
+        buildPagination({current_page:currentPage,last_page:lastPage});
+    }).fail(function(){$('#tableBody').html('<tr><td colspan="9" class="text-center py-4 text-danger">Failed to load data.</td></tr>');});
+}
+
+/* Current enquiry uuid for modal actions */
+var _curUuid='';
+
+/* View enquiry modal */
+function viewEnquiry(uuid){
+    _curUuid=uuid;
+    var $b=$('#detailBody');
+    $b.html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+    bootstrap.Modal.getOrCreateInstance($('#detailModal')[0]).show();
+    $.get(BASE_URL+'/packages/enquiries/'+uuid,function(res){
+        if(!res||res.status!==200||!res.data){$b.html('<div class="alert alert-danger m-3">Not found.</div>');return;}
+        var e=res.data;
+        var initials=(e.name||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+        var st=_stMap[e.status]||_stMap.new;
+        var h='';
+        /* Header with avatar */
+        h+='<div class="p-3 border-bottom" style="background:var(--tblr-bg-surface-secondary);">';
+        h+='<div class="d-flex align-items-center gap-3">';
+        h+='<span class="avatar avatar-lg rounded-circle bg-primary-lt" style="font-size:18px;width:52px;height:52px;">'+initials+'</span>';
+        h+='<div class="flex-fill"><h5 class="mb-0 fw-semibold">'+H.esc(e.name)+'</h5>';
+        h+='<div class="text-muted small mt-1">'+smsFormatDateTime(e.created_at)+'</div></div>';
+        h+='<div><select class="form-select form-select-sm" id="eqStatus" style="width:130px;"><option value="new"'+(e.status==='new'?' selected':'')+'>New</option><option value="contacted"'+(e.status==='contacted'?' selected':'')+'>Contacted</option><option value="closed"'+(e.status==='closed'?' selected':'')+'>Closed</option></select></div>';
+        h+='</div></div>';
+        /* Info grid */
+        h+='<div class="px-4 pt-3 pb-2">';
+        h+='<div class="row g-2 mb-2">';
+        h+='<div class="col-sm-6"><div class="d-flex align-items-center gap-2"><i class="bi bi-envelope text-muted"></i><div><div class="text-muted" style="font-size:11px;">Email</div><a href="mailto:'+H.esc(e.email)+'" style="font-size:13px;">'+H.esc(e.email)+'</a></div></div></div>';
+        h+='<div class="col-sm-6"><div class="d-flex align-items-center gap-2"><i class="bi bi-telephone text-muted"></i><div><div class="text-muted" style="font-size:11px;">Phone</div><div style="font-size:13px;">'+(e.phone?H.esc(e.phone):'–')+'</div></div></div></div>';
+        h+='<div class="col-sm-6"><div class="d-flex align-items-center gap-2"><i class="bi bi-building text-muted"></i><div><div class="text-muted" style="font-size:11px;">Company</div><div style="font-size:13px;">'+(e.company_name?H.esc(e.company_name):'–')+'</div></div></div></div>';
+        h+='<div class="col-sm-6"><div class="d-flex align-items-center gap-2"><i class="bi bi-box-seam text-muted"></i><div><div class="text-muted" style="font-size:11px;">Package</div><div style="font-size:13px;">'+(e.package_name?'<span class="badge bg-azure-lt">'+H.esc(e.package_name)+'</span>':'–')+'</div></div></div></div>';
+        h+='</div>';
+        /* Customer message */
+        if(e.message){
+            h+='<div class="border rounded p-3 mb-2" style="background:#f8f9fa;font-size:13px;line-height:1.7;">';
+            h+='<div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;">Customer Message</div>';
+            h+=H.esc(e.message).replace(/\\n/g,'<br>')+'</div>';
+        }
+        h+='</div>';
+        /* Activity / Timeline section */
+        h+='<div class="border-top">';
+        h+='<div class="px-4 pt-3 pb-2 d-flex align-items-center"><span class="fw-semibold" style="font-size:13px;"><i class="bi bi-clock-history me-1 text-primary"></i>Activity</span><span class="badge bg-secondary-lt rounded-pill ms-2" id="noteCount">'+(e.notes?e.notes.length:0)+'</span></div>';
+        /* Add note form */
+        h+='<div class="px-4 pb-3">';
+        h+='<div class="d-flex gap-2">';
+        h+='<textarea class="form-control form-control-sm flex-fill" id="eqNewNote" rows="2" placeholder="Add a note or feedback..." style="font-size:13px;"></textarea>';
+        h+='<button class="btn btn-sm btn-primary align-self-end" id="btnAddNote" style="min-width:80px;"><i class="bi bi-plus-lg me-1"></i>Add</button>';
+        h+='</div></div>';
+        /* Timeline */
+        h+='<div id="timelineBox" style="max-height:280px;overflow-y:auto;padding:0 16px 16px;">';
+        h+=buildTimeline(e.notes||[]);
+        h+='</div></div>';
+        $b.html(h);
+    }).fail(function(){$b.html('<div class="alert alert-danger m-3">Failed to load.</div>');});
+}
+
+/* Build timeline HTML */
+function buildTimeline(notes){
+    if(!notes||!notes.length) return '<div class="text-center text-muted py-3" style="font-size:13px;"><i class="bi bi-chat-left-dots d-block mb-1" style="font-size:24px;opacity:.3;"></i>No activity yet</div>';
+    var h='';
+    notes.forEach(function(n){
+        var isStatus=(n.type==='status_change');
+        var icon=isStatus?'bi-arrow-repeat':'bi-chat-left-text';
+        var color=isStatus?'warning':'primary';
+        var initials=(n.user_name||'A').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+        h+='<div class="d-flex gap-2 mb-3">';
+        h+='<div class="flex-shrink-0"><span class="avatar avatar-sm rounded-circle bg-'+color+'-lt" style="font-size:10px;width:30px;height:30px;">'+(isStatus?'<i class="bi '+icon+' text-'+color+'"></i>':initials)+'</span></div>';
+        h+='<div class="flex-fill border rounded p-2" style="background:'+(isStatus?'#fff8e1':'#fff')+';font-size:13px;">';
+        h+='<div class="d-flex align-items-center gap-2 mb-1">';
+        h+='<span class="fw-semibold" style="font-size:12px;">'+H.esc(n.user_name||'Admin')+'</span>';
+        if(isStatus) h+='<span class="badge bg-warning-lt" style="font-size:10px;">Status Change</span>';
+        h+='<span class="text-muted ms-auto" style="font-size:10px;">'+smsFormatDateTime(n.created_at)+'</span>';
+        h+='</div>';
+        h+='<div style="line-height:1.6;">'+H.esc(n.content).replace(/\\n/g,'<br>')+'</div>';
+        h+='</div></div>';
+    });
+    return h;
+}
+
+/* Change status */
+$(document).on('change','#eqStatus',function(){
+    if(!_curUuid) return;
+    var newSt=$(this).val();
+    $.ajax({url:BASE_URL+'/packages/enquiries/'+_curUuid,type:'POST',contentType:'application/json',data:JSON.stringify({status:newSt}),success:function(r){
+        if(r.status===200){toastr.success('Status updated.');viewEnquiry(_curUuid);loadData();}else toastr.error(r.message||'Failed.');
+    },error:function(){toastr.error('Failed.');}});
+});
+
+/* Add note */
+$(document).on('click','#btnAddNote',function(){
+    var txt=$('#eqNewNote').val().trim();
+    if(!txt){toastr.warning('Please enter a note.');return;}
+    if(!_curUuid) return;
+    var $btn=$(this);$btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm"></span>');
+    $.ajax({url:BASE_URL+'/packages/enquiries/'+_curUuid+'/note',type:'POST',contentType:'application/json',data:JSON.stringify({content:txt}),success:function(r){
+        $btn.prop('disabled',false).html('<i class="bi bi-plus-lg me-1"></i>Add');
+        if(r.status===200){toastr.success('Note added.');viewEnquiry(_curUuid);}else toastr.error(r.message||'Failed.');
+    },error:function(){$btn.prop('disabled',false).html('<i class="bi bi-plus-lg me-1"></i>Add');toastr.error('Failed.');}});
+});
+
+/* Delete enquiry */
+function delEnquiry(uuid){smsConfirm({title:'Delete Enquiry',msg:'Are you sure you want to delete this enquiry? This action cannot be undone.',btnClass:'btn-danger',btnText:'Delete',onConfirm:function(){
+    $.post(BASE_URL+'/packages/enquiries/'+uuid+'/delete',function(r){if(r.status===200){toastr.success('Enquiry deleted.');loadData();}else toastr.error(r.message||'Failed.');}).fail(function(){toastr.error('Failed.');});
+}});}
+
+/* Sortable columns */
+$('.sortable').on('click',function(){
+    var f=$(this).data('field');
+    if(_sort.field===f)_sort.dir=_sort.dir==='asc'?'desc':'asc';else{_sort.field=f;_sort.dir='asc';}
+    $('.sortable i').attr('class','bi bi-arrow-down-up text-muted small');
+    $(this).find('i').attr('class','bi bi-arrow-'+ (_sort.dir==='asc'?'up':'down')+' text-primary small');
+    _page=1;loadData();
+});
+
+/* Init */
+$(function(){
+    loadData();
+    var st;$('#searchInput').on('input',function(){clearTimeout(st);st=setTimeout(function(){_page=1;loadData();},300);});
+    $('#filterStatus').on('change',function(){_page=1;loadData();});
+    $('#btnClearFilters').on('click',function(){$('#searchInput').val('');$('#filterStatus').val('');_page=1;loadData();});
+    $(document).on('click','#tablePagination .page-link',function(e){e.preventDefault();var p=parseInt($(this).data('page'));if(p&&p>=1){_page=p;loadData();}});
+});
+</script>
+`);
+%>

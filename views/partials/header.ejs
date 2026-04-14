@@ -83,7 +83,7 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
         </div>
         <div class="dropdown-divider"></div>
         <a href="/profile"  class="dropdown-item"><i class="bi bi-person me-2"></i><%- t?t('nav.profile'):'Profile' %></a>
-        <a href="/settings" class="dropdown-item"><i class="bi bi-gear me-2"></i><%- t?t('nav.settings'):'Settings' %></a>
+        <% if (canAnySettings()) { %><a href="/settings" class="dropdown-item"><i class="bi bi-gear me-2"></i><%- t?t('nav.settings'):'Settings' %></a><% } %>
         <div class="dropdown-divider"></div>
         <a href="/logout" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i><%- t?t('nav.logout'):'Logout' %></a>
       </div>
@@ -130,7 +130,7 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
       </div>
       <div class="dropdown-divider"></div>
       <a href="/profile"  class="dropdown-item"><i class="bi bi-person me-2"></i>Profile</a>
-      <a href="/settings" class="dropdown-item"><i class="bi bi-gear me-2"></i>Settings</a>
+      <% if (canAnySettings()) { %><a href="/settings" class="dropdown-item"><i class="bi bi-gear me-2"></i>Settings</a><% } %>
       <div class="dropdown-divider"></div>
       <a href="/logout" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
     </div>

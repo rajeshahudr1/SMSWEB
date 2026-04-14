@@ -19,9 +19,13 @@ app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 
 // ── Cross-Origin headers (required for FFmpeg WASM / SharedArrayBuffer) ──
+// Skip COEP on payment pages (Razorpay/Stripe load external scripts)
 app.use((req, res, next) => {
-    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    const isPaymentPage = req.path.startsWith('/subscriptions/payment') || req.path === '/choose-plan';
+    if (!isPaymentPage) {
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    }
     next();
 });
 

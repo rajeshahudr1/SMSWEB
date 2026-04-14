@@ -44,6 +44,18 @@ exports.create = async (req, res) => {
         api.get('/permissions', req.session.token, { grouped: 1 }),
         isSA ? api.get('/roles/organizations', req.session.token) : Promise.resolve({ data: [] }),
     ]);
+
+    // Package enforcement: fetch allowed modules for non-super-admin orgs
+    let packageAllowedGroups = null;
+    if (req.session.user && !req.session.user.is_super_admin && req.session.user.organization_id) {
+        try {
+            const pkgRes = await api.get('/packages/org-package/' + req.session.user.organization_id, req.session.token);
+            if (pkgRes.status === 200 && pkgRes.data && pkgRes.data.modules) {
+                packageAllowedGroups = pkgRes.data.modules.map(m => m.permission_group);
+            }
+        } catch (e) { /* ignore — show all if package fetch fails */ }
+    }
+
     res.render('roles/form', {
         page_title:   'Add Role',
         activeLink:   'roles',
@@ -51,6 +63,7 @@ exports.create = async (req, res) => {
         role:        null,
         permissions: (perms.status === 200) ? perms.data : [],
         is_super_admin: isSA, organizations: orgsResult.data || [],
+        packageAllowedGroups: packageAllowedGroups,
     });
 };
 
@@ -58,12 +71,25 @@ exports.edit = async (req, res) => {
     const isSA = !!(req.session.user && req.session.user.is_super_admin);
     const roleResult = await api.get('/roles/' + req.params.uuid, req.session.token);
     if (roleResult.status !== 200) {
-        return res.send('<div class="alert alert-danger m-3">Role not found.</div>');
+        console.error('Role edit failed:', roleResult.status, roleResult.message);
+        return res.send('<div class="alert alert-danger m-3">Role not found. (' + (roleResult.message || roleResult.status) + ')</div>');
     }
     const [perms, orgsResult] = await Promise.all([
         api.get('/permissions', req.session.token, { grouped: 1 }),
         isSA ? api.get('/roles/organizations', req.session.token) : Promise.resolve({ data: [] }),
     ]);
+
+    // Package enforcement: fetch allowed modules for non-super-admin orgs
+    let packageAllowedGroups = null;
+    if (req.session.user && !req.session.user.is_super_admin && req.session.user.organization_id) {
+        try {
+            const pkgRes = await api.get('/packages/org-package/' + req.session.user.organization_id, req.session.token);
+            if (pkgRes.status === 200 && pkgRes.data && pkgRes.data.modules) {
+                packageAllowedGroups = pkgRes.data.modules.map(m => m.permission_group);
+            }
+        } catch (e) { /* ignore — show all if package fetch fails */ }
+    }
+
     res.render('roles/form', {
         page_title:  'Edit Role',
         activeLink:  'roles',
@@ -71,6 +97,7 @@ exports.edit = async (req, res) => {
         role:        roleResult.data,
         permissions: (perms.status === 200) ? perms.data : [],
         is_super_admin: isSA, organizations: orgsResult.data || [],
+        packageAllowedGroups: packageAllowedGroups,
     });
 };
 

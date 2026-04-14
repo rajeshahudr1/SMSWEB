@@ -64,6 +64,13 @@ router.use('/countries', authGuard, require('./countries'));
 router.use('/states',    authGuard, require('./states'));
 router.use('/cities',    authGuard, require('./cities'));
 
+// Packages
+router.use('/packages', authGuard, require('./packages'));
+
+// Subscriptions & Payments
+router.use('/subscriptions', authGuard, require('./subscriptions'));
+router.get('/choose-plan', authGuard, require('../Controllers/SubscriptionsController').choosePlan);
+
 // Activity Logs
 router.use('/activity-logs', authGuard, require('./activity-logs'));
 

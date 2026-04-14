@@ -4,7 +4,7 @@ const i18n = require('../helpers/i18n');
 const api  = require('../helpers/api');
 
 // ── How often to re-validate token with API (ms) ──
-const TOKEN_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const TOKEN_CHECK_INTERVAL = 30 * 1000; // 30 seconds — permissions refresh quickly on change
 
 /**
  * requireLogin
@@ -51,9 +51,9 @@ async function tokenGuard(req, res, next) {
         // Also refresh user data from API (in case role/status changed)
         if (result.status === 200 && result.data) {
             req.session.user = result.data.user || req.session.user;
-            if (result.data.permissions) {
-                req.session.permissions = result.data.permissions;
-            }
+            if (result.data.permissions) req.session.permissions = result.data.permissions;
+            if (result.data.menus) req.session.menus = result.data.menus;
+            if (result.data.settings) req.session.settings = result.data.settings;
         }
         req.session._tokenCheckedAt = now;
         await new Promise(r => req.session.save(r));
@@ -96,6 +96,7 @@ async function authGuard(req, res, next) {
             if (result.status === 200 && result.data) {
                 req.session.user = result.data.user || req.session.user;
                 if (result.data.permissions) req.session.permissions = result.data.permissions;
+                if (result.data.subscription_status) req.session.subscription_status = result.data.subscription_status;
             }
             req.session._tokenCheckedAt = now;
             await new Promise(r => req.session.save(r));
@@ -103,6 +104,22 @@ async function authGuard(req, res, next) {
         } catch (err) {
             console.error('authGuard check failed:', err.message);
             // Network error — continue with cached session
+        }
+    }
+
+    // Step 3: Subscription guard — redirect unpaid non-super-admin users
+    const subStatus = req.session.subscription_status || 'none';
+    const isSuperAdmin = req.session.user && (req.session.user.is_super_admin === 1 || req.session.user.is_super_admin === true);
+    const needsSubscription = !isSuperAdmin && ['none', 'expired', 'suspended'].includes(subStatus);
+    if (needsSubscription) {
+        const fullPath = req.originalUrl || req.path;
+        const allowedPrefixes = ['/choose-plan', '/payment', '/profile', '/logout', '/auth', '/subscriptions'];
+        const isAllowed = allowedPrefixes.some(p => fullPath === p || fullPath.startsWith(p + '/') || fullPath.startsWith(p + '?'));
+        if (!isAllowed) {
+            if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+                return res.status(403).json({ status: 403, message: 'Please choose a plan to continue.', redirect: '/choose-plan' });
+            }
+            return res.redirect('/choose-plan');
         }
     }
 
@@ -149,11 +166,15 @@ function guestOnly(req, res, next) {
 
 function requirePermission(permissionName) {
     return function (req, res, next) {
-        const perms   = req.session.permissions || [];
-        const isAdmin = req.session.user && (req.session.user.is_super_admin || req.session.user.is_org_admin);
-        if (isAdmin || perms.includes(permissionName)) return next();
+        const user = req.session.user;
+        if (!user) return res.redirect('/login');
+        // Super admin bypasses all
+        if (user.is_super_admin) return next();
+        // Everyone else (including org admin) must have the permission in their role
+        const perms = req.session.permissions || [];
+        if (perms.includes(permissionName)) return next();
         if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
-            return res.status(403).json({ status: 403, success: false, message: 'Access denied.' });
+            return res.status(403).json({ status: 403, success: false, message: 'Access denied. You do not have permission.' });
         }
         req.flash('error', 'You do not have permission to access this page.');
         res.redirect('/dashboard');
@@ -198,8 +219,23 @@ async function injectLocals(req, res, next) {
 
         res.locals.can = function (perm) {
             if (!user) return false;
-            if (user.is_super_admin || user.is_org_admin) return true;
+            if (user.is_super_admin) return true;
+            // Everyone (including org admin) checks actual role permissions
             return permissions.includes(perm);
+        };
+
+        // Helper: can access settings page? Must have view_settings FIRST
+        res.locals.canAnySettings = function() {
+            if (!user) return false;
+            if (user.is_super_admin) return true;
+            return permissions.includes('view_settings');
+        };
+
+        // Helper: can edit settings? view_settings + edit_settings both needed
+        res.locals.canEditSettings = function() {
+            if (!user) return false;
+            if (user.is_super_admin) return true;
+            return permissions.includes('view_settings') && permissions.includes('edit_settings');
         };
 
         res.locals.flash_success = req.flash('success')[0] || null;

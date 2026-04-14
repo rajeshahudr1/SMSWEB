@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Complete Payment | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/libs/css/toastr.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f4f6fb;min-height:100vh;}
+.top-bar{display:flex;align-items:center;padding:12px 24px;background:#fff;border-bottom:1px solid #e2e8f0;}
+.top-bar .logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:#1e293b;}
+.top-bar .logo img{height:26px;}
+.top-bar .right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+.top-bar .user{font-size:12px;color:#64748b;}
+.top-bar .logout{font-size:12px;color:#64748b;text-decoration:none;padding:5px 12px;border:1px solid #e2e8f0;border-radius:6px;}.top-bar .logout:hover{background:#f1f5f9;}
+.pay-wrap{max-width:560px;margin:40px auto;padding:0 16px;}
+.pay-card{background:#fff;border:2px solid #e8ecf1;border-radius:16px;overflow:hidden;}
+.pay-hd{text-align:center;padding:28px 24px 20px;border-bottom:1px solid #f1f5f9;}
+.pay-hd h2{font-size:20px;font-weight:800;color:#1e293b;}
+.pay-hd p{font-size:12px;color:#64748b;margin-top:4px;}
+.pay-summary{padding:20px 24px;border-bottom:1px solid #f1f5f9;}
+.pay-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#475569;}
+.pay-row.total{font-size:16px;font-weight:800;color:#1e293b;border-top:2px solid #e8ecf1;padding-top:12px;margin-top:6px;}
+.pay-row .label{color:#64748b;}
+.pay-gateways{padding:20px 24px;}
+.pay-gateways h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.gw-btn{display:flex;align-items:center;gap:14px;width:100%;padding:14px 18px;border:2px solid #e8ecf1;border-radius:10px;background:#fff;cursor:pointer;margin-bottom:10px;transition:.2s;}
+.gw-btn:hover{border-color:#3b82f6;background:#f8faff;}
+.gw-btn:disabled{opacity:.5;cursor:not-allowed;}
+.gw-btn i{font-size:26px;color:#3b82f6;}
+.gw-btn .gw-info{text-align:left;}.gw-btn .gw-name{font-size:14px;font-weight:700;color:#1e293b;}.gw-btn .gw-desc{font-size:11px;color:#94a3b8;}
+.pay-back{text-align:center;padding:0 24px 24px;}
+.pay-back a{font-size:12px;color:#64748b;text-decoration:none;}.pay-back a:hover{color:#3b82f6;}
+.pay-loading{text-align:center;padding:60px 24px;}
+.pay-spin{width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:pspin .6s linear infinite;display:inline-block;}
+@keyframes pspin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="logo"><img src="/images/favicon.svg" alt=""/><%- APP_NAME %></div>
+  <div class="right">
+    <% if (typeof user !== 'undefined' && user) { %><span class="user"><i class="bi bi-person"></i> <%- user.name %></span><% } %>
+    <a href="/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+  </div>
+</div>
+
+<div class="pay-wrap">
+  <div class="pay-card">
+    <div id="payContent">
+      <div class="pay-loading"><div class="pay-spin"></div><p style="color:#94a3b8;margin-top:12px;font-size:13px;">Loading payment details...</p></div>
+    </div>
+  </div>
+</div>
+
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/toastr.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:5000};
+var BASE_URL='<%- (typeof BASE_URL !== "undefined" && BASE_URL) || "" %>';
+var SUB_UUID='<%- subscriptionUuid %>';
+var STRIPE_KEY='<%- stripePublishableKey %>';
+var RP_KEY='<%- razorpayKeyId %>';
+var APP_NAME='<%- APP_NAME %>';
+
+function E(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function F(v){return parseFloat(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+$.get(BASE_URL+'/subscriptions/pending/'+SUB_UUID,function(res){
+    if(!res||res.status!==200||!res.data||!res.data.subscription){
+        $('#payContent').html('<div class="pay-loading"><p style="color:#ef4444;">'+E(res&&res.message||'Subscription not found.')+'</p><div style="margin-top:12px;"><a href="/choose-plan" style="color:#3b82f6;font-size:13px;">← Back to plans</a></div></div>');
+        return;
+    }
+    var s=res.data.subscription, gws=res.data.gateways||[];
+    var isTrial=s.is_trial;
+    var h='';
+    // Header
+    h+='<div class="pay-hd">';
+    h+='<h2><i class="bi bi-credit-card" style="color:#3b82f6;margin-right:8px;"></i>'+(isTrial?'Trial Verification Payment':'Complete Payment')+'</h2>';
+    h+='<p>'+E(s.package_name)+(isTrial?' — '+s.trial_days+' Day Free Trial':' — '+E(s.billing_cycle)+' plan')+'</p>';
+    h+='</div>';
+    // Summary
+    h+='<div class="pay-summary">';
+    if(isTrial){
+        h+='<div class="pay-row"><span class="label">Trial Verification Amount</span><span>'+E(s.currency)+F(s.base_price)+'</span></div>';
+        h+='<div class="pay-row" style="font-size:11px;color:#64748b;padding:0 0 6px;"><span>This small amount verifies your payment method. Full access for '+s.trial_days+' days.</span></div>';
+    } else {
+        var baseLabel=s.billing_cycle==='yearly'?'Yearly Price':'Monthly Price';
+        h+='<div class="pay-row"><span class="label">'+baseLabel+'</span><span>'+E(s.currency)+F(s.base_price)+'</span></div>';
+        if(parseFloat(s.discount_pct)>0){
+            var discAmt=parseFloat(s.base_price)*parseFloat(s.discount_pct)/100;
+            h+='<div class="pay-row"><span class="label">Discount ('+s.discount_pct+'%)</span><span style="color:#16a34a;">-'+E(s.currency)+F(discAmt)+'</span></div>';
+        }
+    }
+    var taxes=s.tax_breakdown||[];
+    if(taxes.length){
+        taxes.forEach(function(t){
+            h+='<div class="pay-row"><span class="label">'+E(t.tax_name)+' ('+t.percentage+'%)</span><span>'+E(s.currency)+F(t.amount)+'</span></div>';
+        });
+    }
+    if(parseFloat(s.proration_credit)>0){
+        h+='<div class="pay-row"><span class="label" style="color:#16a34a;">Previous plan credit</span><span style="color:#16a34a;">-'+E(s.currency)+F(s.proration_credit)+'</span></div>';
+    }
+    h+='<div class="pay-row total"><span>Total Due</span><span>'+E(s.currency)+F(s.total_amount)+'</span></div>';
+    h+='</div>';
+    // Gateways
+    h+='<div class="pay-gateways">';
+    h+='<h4>Choose Payment Method</h4>';
+    if(STRIPE_KEY){
+        h+='<button class="gw-btn" onclick="payStripe()" id="btnStripe"><i class="bi bi-credit-card-2-front"></i><div class="gw-info"><div class="gw-name">Stripe</div><div class="gw-desc">Credit / Debit Card</div></div><i class="bi bi-chevron-right" style="margin-left:auto;color:#cbd5e1;"></i></button>';
+    }
+    if(RP_KEY){
+        h+='<button class="gw-btn" onclick="payRazorpay()" id="btnRp"><i class="bi bi-wallet2"></i><div class="gw-info"><div class="gw-name">Razorpay</div><div class="gw-desc">Card, UPI, Netbanking, Wallet</div></div><i class="bi bi-chevron-right" style="margin-left:auto;color:#cbd5e1;"></i></button>';
+    }
+    h+='</div>';
+    h+='<div class="pay-back"><a href="/choose-plan"><i class="bi bi-arrow-left"></i> Back to plans</a></div>';
+    $('#payContent').html(h);
+}).fail(function(){
+    $('#payContent').html('<div class="pay-loading"><p style="color:#ef4444;">Failed to load.</p></div>');
+});
+
+function disableBtns(){$('.gw-btn').prop('disabled',true);}
+function enableBtns(){$('.gw-btn').prop('disabled',false);}
+
+function payStripe(){
+    disableBtns();$('#btnStripe .gw-name').text('Redirecting...');
+    $.ajax({url:BASE_URL+'/subscriptions/payment/stripe/create',type:'POST',contentType:'application/json',data:JSON.stringify({subscription_uuid:SUB_UUID,return_url:window.location.origin,success_path:'/subscriptions/payment/stripe/callback',cancel_path:'/subscriptions/payment/'+SUB_UUID}),success:function(res){
+        if(res.status===200&&res.data&&res.data.session_url){window.location.href=res.data.session_url;}
+        else{enableBtns();$('#btnStripe .gw-name').text('Stripe');toastr.error(res.message||'Failed.');}
+    },error:function(){enableBtns();$('#btnStripe .gw-name').text('Stripe');toastr.error('Failed.');}});
+}
+
+function payRazorpay(){
+    disableBtns();$('#btnRp .gw-name').text('Loading...');
+    $.ajax({url:BASE_URL+'/subscriptions/payment/razorpay/create',type:'POST',contentType:'application/json',data:JSON.stringify({subscription_uuid:SUB_UUID}),success:function(res){
+        enableBtns();$('#btnRp .gw-name').text('Razorpay');
+        if(res.status!==200||!res.data){toastr.error(res.message||'Failed.');return;}
+        var d=res.data;
+        var rzp=new Razorpay({
+            key:d.key_id,amount:d.amount,currency:d.currency,
+            name:APP_NAME,description:'Subscription Payment',order_id:d.order_id,
+            prefill:d.prefill||{},
+            handler:function(response){
+                disableBtns();
+                $.ajax({url:BASE_URL+'/subscriptions/payment/razorpay/verify',type:'POST',contentType:'application/json',data:JSON.stringify({
+                    razorpay_order_id:response.razorpay_order_id,razorpay_payment_id:response.razorpay_payment_id,
+                    razorpay_signature:response.razorpay_signature,payment_uuid:d.payment_uuid
+                }),success:function(vr){
+                    if(vr.status===200){toastr.success('Payment successful!');setTimeout(function(){window.location.href='/subscriptions/success';},600);}
+                    else{enableBtns();toastr.error(vr.message||'Verification failed.');}
+                },error:function(){enableBtns();toastr.error('Verification failed.');}});
+            },
+            theme:{color:'#3b82f6'}
+        });
+        rzp.on('payment.failed',function(r){toastr.error('Payment failed: '+(r.error&&r.error.description||''));});
+        rzp.open();
+    },error:function(){enableBtns();$('#btnRp .gw-name').text('Razorpay');toastr.error('Failed.');}});
+}
+</script>
+</body>
+</html>

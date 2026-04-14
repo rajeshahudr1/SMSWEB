@@ -131,8 +131,8 @@ function loadData(){
         data.forEach(function(r,i){
             var deleted=!!r.deleted_at;
             var isActive=(r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1);
-            var editable=!deleted;
-            var deletable=!deleted;
+            var editable=!deleted && r.is_editable !== false;
+            var deletable=!deleted && r.is_deletable !== false;
 
             // Build action dropdown
             var acts='<div class="dropdown">';

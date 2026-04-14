@@ -52,10 +52,26 @@ var curIconColor = s.icon_color || 'theme';
 
 <div class="row g-4">
 
+  <%
+  var _hasAnySection = user.is_super_admin || can('settings_custom_design') || can('settings_localization') || can('settings_ai_config') || can('settings_tax_config') || can('settings_vehicle_columns') || can('settings_part_columns');
+  %>
+  <% if (!_hasAnySection) { %>
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-sliders d-block mb-3" style="font-size:48px;opacity:.3;"></i>
+        <h4 class="text-muted mb-2">No Settings Assigned</h4>
+        <p class="text-muted mb-0">You don't have permission to access any settings sections. Contact your administrator to get access.</p>
+      </div>
+    </div>
+  </div>
+  <% } else { %>
+
   <!-- ═══ LEFT: Settings forms ═══════════════════════════════════ -->
-  <div class="col-xl-8 col-lg-7">
+  <div class="<%= (user.is_super_admin || can('settings_custom_design')) ? 'col-xl-8 col-lg-7' : 'col-12' %>">
 
     <!-- ── Appearance ───────────────────────────────────────────── -->
+    <% if (user.is_super_admin || can('settings_custom_design')) { %>
     <div class="card mb-4">
       <div class="card-header">
         <div class="card-title">
@@ -219,7 +235,10 @@ var curIconColor = s.icon_color || 'theme';
       </div>
     </div>
 
+    <% } %>
+
     <!-- ── Localisation ─────────────────────────────────────────── -->
+    <% if (user.is_super_admin || can('settings_localization')) { %>
     <div class="card mb-4">
       <div class="card-header">
         <div class="card-title">
@@ -330,8 +349,10 @@ var curIconColor = s.icon_color || 'theme';
       </div>
     </div>
 
-    <% if (user && (user.is_super_admin || user.is_org_admin)) { %>
-    <!-- ── AI Configuration (Admin Only) ───────────────────────── -->
+    <% } %>
+
+    <% if (user.is_super_admin || can('settings_ai_config')) { %>
+    <!-- ── AI Configuration ───────────────────────────────────── -->
     <div class="card mb-4" id="aiConfigCard">
       <div class="card-header">
         <div class="card-title">
@@ -446,8 +467,8 @@ var curIconColor = s.icon_color || 'theme';
     </div>
     <% } %>
 
-    <% if (user && (user.is_super_admin || user.is_org_admin)) { %>
-    <!-- ── Tax Configuration (Org Admin Only) ──────────────────── -->
+    <% if (user.is_super_admin || can('settings_tax_config')) { %>
+    <!-- ── Tax Configuration ──────────────────────────────────── -->
     <div class="card mb-4" id="taxConfigCard">
       <div class="card-header">
         <div class="card-title">
@@ -483,8 +504,8 @@ var curIconColor = s.icon_color || 'theme';
     </div>
     <% } %>
 
-    <% if (user && (user.is_super_admin || user.is_org_admin)) { %>
-    <!-- ── Vehicle Inventory Settings (Admin Only) ────────────── -->
+    <% if (user.is_super_admin || can('settings_vehicle_columns')) { %>
+    <!-- ── Vehicle Inventory Settings ─────────────────────────── -->
     <div class="card mb-4" id="viSettingsCard">
       <div class="card-header collapsed" data-bs-toggle="collapse" data-bs-target="#viSettingsBody">
         <div class="card-title">
@@ -494,6 +515,7 @@ var curIconColor = s.icon_color || 'theme';
         </div>
       </div>
       <div class="card-body collapse" id="viSettingsBody">
+        <% if (user.is_super_admin) { %>
         <p class="text-muted small mb-3">Configure file upload limits for your company's vehicle inventory.</p>
         <div class="row g-3">
           <div class="col-md-3 col-sm-6">
@@ -522,8 +544,8 @@ var curIconColor = s.icon_color || 'theme';
             <i class="bi bi-floppy me-1"></i>Save Upload Settings
           </button>
         </div>
-
         <hr class="my-4"/>
+        <% } %>
 
         <!-- List Column Configuration -->
         <h6 class="fw-semibold mb-2"><i class="bi bi-table me-1"></i> List View Columns</h6>
@@ -543,7 +565,10 @@ var curIconColor = s.icon_color || 'theme';
       </div>
     </div>
 
-    <!-- ── Part Inventory Settings (Admin Only) ────────────── -->
+    <% } %>
+
+    <% if (user.is_super_admin || can('settings_part_columns')) { %>
+    <!-- ── Part Inventory Settings ────────────────────────────── -->
     <div class="card mb-4" id="piSettingsCard">
       <div class="card-header collapsed" data-bs-toggle="collapse" data-bs-target="#piSettingsBody">
         <div class="card-title">
@@ -553,6 +578,7 @@ var curIconColor = s.icon_color || 'theme';
         </div>
       </div>
       <div class="card-body collapse" id="piSettingsBody">
+        <% if (user.is_super_admin) { %>
         <p class="text-muted small mb-3">Configure file upload limits for your company's part inventory.</p>
         <div class="row g-3">
           <div class="col-md-3 col-sm-6">
@@ -581,8 +607,9 @@ var curIconColor = s.icon_color || 'theme';
             <i class="bi bi-floppy me-1"></i>Save Upload Settings
           </button>
         </div>
-
         <hr class="my-4"/>
+        <% } %>
+
 
         <h6 class="fw-semibold mb-2"><i class="bi bi-table me-1"></i> List View Columns</h6>
         <p class="text-muted small mb-2">Select which columns to show on the Part Inventory list page.</p>
@@ -605,6 +632,7 @@ var curIconColor = s.icon_color || 'theme';
   </div><!-- /col -->
 
   <!-- ═══ RIGHT: Live Preview ════════════════════════════════════ -->
+  <% if (user.is_super_admin || can('settings_custom_design')) { %>
   <div class="col-xl-4 col-lg-5">
     <div class="sms-preview-sticky">
       <div class="card">
@@ -675,9 +703,12 @@ var curIconColor = s.icon_color || 'theme';
       </div>
     </div>
   </div>
+  <% } %>
 
 </div><!-- /row -->
+<% } %><!-- /hasAnySection -->
 
+<% if (_hasAnySection && canEditSettings()) { %>
 <!-- Save / Reset bar -->
 <div class="sms-settings-footer">
   <button type="button" id="btnSettingsReset" class="btn btn-outline-secondary">
@@ -687,5 +718,6 @@ var curIconColor = s.icon_color || 'theme';
     <i class="bi bi-floppy me-1"></i><%- t('settings.save') %>
   </button>
 </div>
+<% } %>
 
-<% block('scripts', '<script src="/js/pages/settings.js"></script><script>$(function(){ smsInitPerPage("#fItemsPerPage"); $(".select2").select2({theme:"bootstrap-5",width:"100%"}); });</script>') %>
+<% block('scripts', '<script src="/js/pages/settings.js"></script><script>$(function(){ smsInitPerPage("#fItemsPerPage"); $(".select2").select2({theme:"bootstrap-5",width:"100%"}); ' + (!canEditSettings() ? ' $(".card-body input, .card-body select, .card-body textarea, .card-body .form-check-input, .card-body button:not([data-bs-toggle])").prop("disabled", true).css("pointer-events","none"); $(".sms-cp-swatch").css("pointer-events","none"); ' : '') + ' });</script>') %>

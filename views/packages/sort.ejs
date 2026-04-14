@@ -1,0 +1,94 @@
+<%- layout('../layouts/main') %>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/packages" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-arrows-move me-2 text-primary"></i>Sort Packages</h3>
+  <div class="ms-auto">
+    <button class="btn btn-sm btn-primary" id="btnSaveSort"><i class="bi bi-floppy me-1"></i>Save Order</button>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="list-group list-group-flush" id="sortableList">
+      <div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</div>
+    </div>
+  </div>
+</div>
+
+<%
+block('scripts', `
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+$(function(){
+    var _items = [];
+
+    // Load packages
+    $.post(BASE_URL + '/packages/paginate', { page: 1, per_page: 999, sort_field: 'sort_order', sort_dir: 'asc' }, function(res) {
+        if (!res || res.status !== 200 || !res.data || !res.data.data) return;
+        _items = res.data.data;
+        renderList();
+    });
+
+    function renderList() {
+        var $list = $('#sortableList');
+        if (!_items.length) { $list.html('<div class="text-center py-5 text-muted">No packages found</div>'); return; }
+        var h = '';
+        _items.forEach(function(p, i) {
+            h += '<div class="list-group-item d-flex align-items-center gap-3 sort-item" data-uuid="' + p.uuid + '" style="cursor:grab;">';
+            h += '<i class="bi bi-grip-vertical text-muted" style="font-size:18px;"></i>';
+            h += '<span class="badge bg-secondary-lt rounded-pill" style="min-width:30px;">' + (i + 1) + '</span>';
+            h += '<div class="flex-fill">';
+            h += '<div class="fw-semibold">' + H.esc(p.name) + '</div>';
+            h += '<div class="text-muted small">';
+            if (p.role_name) h += 'Role: ' + H.esc(p.role_name);
+            if (p.price > 0) h += ' &middot; ' + H.currency(p.price);
+            else h += ' &middot; Free';
+            h += '</div>';
+            h += '</div>';
+            if (p.is_trial) h += '<span class="badge bg-warning-lt">' + p.trial_days + ' day trial</span>';
+            if (p.is_default) h += '<span class="badge bg-primary-lt">Default</span>';
+            h += '<span class="badge bg-' + (parseInt(p.status) ? 'success' : 'danger') + '-lt">' + (parseInt(p.status) ? 'Active' : 'Inactive') + '</span>';
+            h += '<span class="badge bg-secondary-lt">' + (p.org_count || 0) + ' orgs</span>';
+            h += '</div>';
+        });
+        $list.html(h);
+
+        // Init Sortable.js
+        new Sortable($list[0], {
+            animation: 150,
+            handle: '.sort-item',
+            ghostClass: 'bg-azure-lt',
+            onEnd: function() {
+                // Update numbering
+                $list.find('.sort-item').each(function(i) {
+                    $(this).find('.badge.bg-secondary-lt.rounded-pill').text(i + 1);
+                });
+            }
+        });
+    }
+
+    // Save order
+    $('#btnSaveSort').on('click', function() {
+        var $btn = $(this);
+        var items = [];
+        $('#sortableList .sort-item').each(function(i) {
+            items.push({ uuid: $(this).data('uuid'), sort_order: i + 1 });
+        });
+        if (!items.length) return;
+        btnLoading($btn);
+        $.ajax({
+            url: BASE_URL + '/packages/reorder', type: 'POST', contentType: 'application/json',
+            data: JSON.stringify({ items: items }),
+            success: function(r) {
+                btnReset($btn);
+                if (r.status === 200) toastr.success('Sort order saved.');
+                else toastr.error(r.message || 'Failed.');
+            },
+            error: function() { btnReset($btn); toastr.error('Network error.'); }
+        });
+    });
+});
+</script>
+`);
+%>

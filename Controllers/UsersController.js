@@ -4,10 +4,11 @@ const api  = require('../helpers/api');
 
 // ── helpers ──────────────────────────────────────────────
 // Load roles for DDL — always exclude is_super_role (nobody assigns super admin via UI)
-const getRoles = (token) => api.get('/roles?per_page=200', token).then(r => {
+const getRoles = async (token) => {
+    const r = await api.get('/roles?per_page=200', token);
     const roles = r.status === 200 ? (r.data.data || r.data) : [];
     return Array.isArray(roles) ? roles.filter(role => !role.is_super_role) : [];
-});
+};
 
 // ── List page ─────────────────────────────────────────────
 exports.index = async (req, res) => {

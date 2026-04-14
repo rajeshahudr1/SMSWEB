@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var cls = n.is_read ? '' : 'bg-azure-lt';
                 var icon = n.icon || 'bi-bell';
                 var color = n.color || 'primary';
-                h += '<a href="#" class="dropdown-item d-flex gap-2 py-2 px-3 notif-dd-item ' + cls + '" data-uuid="' + n.uuid + '" style="white-space:normal;">';
+                h += '<a href="#" class="dropdown-item d-flex gap-2 py-2 px-3 notif-dd-item ' + cls + '" data-uuid="' + n.uuid + '"' + (n.link_url ? ' data-link="' + H.esc(n.link_url) + '"' : '') + ' style="white-space:normal;">';
                 h += '<div><i class="bi ' + icon + ' text-' + color + '" style="font-size:16px;"></i></div>';
                 h += '<div class="flex-fill" style="min-width:0;">';
                 h += '<div class="fw-medium" style="font-size:12px;">' + H.esc(n.title) + '</div>';
@@ -94,6 +94,10 @@ document.addEventListener('DOMContentLoaded', function() {
             h += '<div class="d-flex align-items-center gap-2 mb-3"><i class="bi ' + (n.icon||'bi-bell') + ' text-' + (n.color||'primary') + '" style="font-size:24px;"></i>';
             h += '<div><h5 class="mb-0">' + H.esc(n.title) + '</h5><div class="text-muted small">' + smsFormatDateTime(n.created_at) + '</div></div></div>';
             if (n.message) h += '<p>' + H.esc(n.message) + '</p>';
+
+            if (n.link_url) {
+                h += '<div class="mb-3"><a href="' + H.esc(n.link_url) + '" class="btn btn-sm btn-primary"><i class="bi bi-arrow-right me-1"></i>' + H.esc(n.link_label || 'View Details') + '</a></div>';
+            }
 
             if (n.file_path && n.file_url) {
                 var retDays = (n.meta && n.meta.retentionDays) ? n.meta.retentionDays : 7;
@@ -213,10 +217,18 @@ document.addEventListener('DOMContentLoaded', function() {
     $(document).on('click', '.notif-dd-item', function(e) {
         e.preventDefault();
         var uuid = $(this).data('uuid');
+        var link = $(this).data('link');
         if (uuid) {
             $(this).removeClass('bg-azure-lt fw-semibold');
-            showNotifDetail(uuid);
-            setTimeout(function() { fetchUnreadCount(); }, 500);
+            // Mark as read
+            $.ajax({ url: BASE_URL + '/notifications/' + uuid + '/read', type: 'PATCH' });
+            if (link) {
+                // Navigate to link page
+                window.location.href = link;
+            } else {
+                showNotifDetail(uuid);
+                setTimeout(function() { fetchUnreadCount(); }, 500);
+            }
         }
     });
     $(document).on('click', '#btnMarkAllRead', function(e) {

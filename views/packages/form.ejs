@@ -1,0 +1,440 @@
+<%- layout('../layouts/main') %>
+<%
+var pkg    = (typeof packageData !== 'undefined' && packageData !== null) ? packageData : null;
+var isEdit = !!pkg;
+var formAction = isEdit ? '/packages/' + pkg.uuid : '/packages';
+%>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="/packages" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <h3 class="mb-0" style="font-size:16px;"><i class="bi bi-box-seam me-2 text-primary"></i><%- isEdit ? 'Edit Package' : 'Add Package' %></h3>
+</div>
+
+<form id="frmPackage" method="POST" action="<%- formAction %>" novalidate>
+<div class="row g-3">
+  <div class="col-12">
+
+    <!-- Basic Details -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-info-circle me-1 text-primary"></i>Package Details</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-medium">Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="fName" class="form-control" required autofocus value="<%- isEdit ? (pkg.name||'') : '' %>" placeholder="e.g. Basic, Standard, Premium"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-medium">Assign Role <span class="text-danger">*</span></label>
+            <select name="role_id" id="fRoleId" class="form-select">
+              <option value="">-- Select Role --</option>
+            </select>
+            <div class="form-hint">Select a role. Its modules & permissions will appear below.</div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-medium">Sort Order</label>
+            <input type="number" name="sort_order" id="fSortOrder" class="form-control" min="0" value="<%- isEdit ? (pkg.sort_order||0) : 0 %>"/>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-medium">Status</label>
+            <select name="status" id="fStatus" class="form-select">
+              <option value="1" <%- (!isEdit || parseInt(pkg.status)) ? 'selected' : '' %>>Active</option>
+              <option value="0" <%- (isEdit && !parseInt(pkg.status)) ? 'selected' : '' %>>Inactive</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium">Monthly Price (<%= (settings && settings.currency_symbol) || '€' %>) <span class="text-danger">*</span></label>
+            <input type="number" name="price" id="fPrice" class="form-control" min="0" step="0.01" value="<%- isEdit ? (pkg.price||0) : 0 %>" placeholder="0.00" required/>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-medium">Yearly Disc. (%) <span class="text-danger">*</span></label>
+            <input type="number" name="yearly_discount_pct" id="fYearlyDiscount" class="form-control" min="0" max="100" value="<%- isEdit ? (pkg.yearly_discount_pct||0) : 0 %>" placeholder="0"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium">Yearly Price (auto)</label>
+            <input type="text" id="fYearlyPriceCalc" class="form-control" readonly style="background:#f1f5f9;font-weight:700;" value=""/>
+            <div class="form-hint" style="font-size:10px;">Auto-calculated from monthly × 12 − discount</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-medium">Short Description <span class="text-danger">*</span></label>
+            <input type="text" name="description" id="fDescription" class="form-control" value="<%- isEdit ? (pkg.description||'') : '' %>" placeholder="e.g. Perfect for small teams" required/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium">Badge</label>
+            <select name="badge" id="fBadge" class="form-select">
+              <option value="" <%- (!isEdit || !pkg.badge) ? 'selected' : '' %>>None</option>
+              <option value="most_popular" <%- (isEdit && pkg.badge==='most_popular') ? 'selected' : '' %>>Most Popular</option>
+              <option value="recommended" <%- (isEdit && pkg.badge==='recommended') ? 'selected' : '' %>>Recommended</option>
+              <option value="best_value" <%- (isEdit && pkg.badge==='best_value') ? 'selected' : '' %>>Best Value</option>
+              <option value="new" <%- (isEdit && pkg.badge==='new') ? 'selected' : '' %>>New</option>
+              <option value="enterprise" <%- (isEdit && pkg.badge==='enterprise') ? 'selected' : '' %>>Enterprise</option>
+              <option value="trial" <%- (isEdit && pkg.badge==='trial') ? 'selected' : '' %>>Trial</option>
+              <option value="custom" <%- (isEdit && pkg.badge==='custom') ? 'selected' : '' %>>Custom</option>
+            </select>
+            <div class="form-hint" style="font-size:10px;">Only one package can have each badge</div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-check d-flex align-items-center gap-2 mb-0 mt-3">
+              <input type="checkbox" name="is_custom" id="fIsCustom" class="form-check-input" value="1" <%- isEdit && pkg.is_custom ? 'checked' : '' %>/>
+              <span class="form-check-label fw-medium">Custom Plan</span>
+            </label>
+            <div class="form-hint ms-4" style="font-size:9px;">Hides price, shows "Contact Us"</div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-check d-flex align-items-center gap-2 mb-0 mt-3">
+              <input type="checkbox" name="is_default" id="fIsDefault" class="form-check-input" value="1" <%- isEdit && pkg.is_default ? 'checked' : '' %>/>
+              <span class="form-check-label fw-medium">Default</span>
+            </label>
+          </div>
+          <div class="col-md-2">
+            <label class="form-check d-flex align-items-center gap-2 mb-0 mt-3">
+              <input type="checkbox" name="is_trial" id="fIsTrial" class="form-check-input" value="1" <%- isEdit && pkg.is_trial ? 'checked' : '' %>/>
+              <span class="form-check-label fw-medium">Trial</span>
+            </label>
+          </div>
+          <div class="col-md-2" id="trialDaysWrap" style="<%- (isEdit && pkg.is_trial) ? '' : 'display:none;' %>">
+            <label class="form-label fw-medium">Trial Days <span class="text-danger">*</span></label>
+            <input type="number" name="trial_days" id="fTrialDays" class="form-control" min="1" max="365" value="<%- isEdit ? (pkg.trial_days||14) : 14 %>" placeholder="14"/>
+          </div>
+          <div class="col-md-3" id="trialAmountWrap" style="<%- (isEdit && pkg.is_trial) ? '' : 'display:none;' %>">
+            <label class="form-label fw-medium">Verification Amount (<%= (settings && settings.currency_symbol) || '€' %>)</label>
+            <input type="number" name="trial_verification_amount" id="fTrialAmount" class="form-control" min="0" step="0.01" value="<%- isEdit ? (pkg.trial_verification_amount||1) : 1 %>" placeholder="1.00"/>
+            <div class="form-hint" style="font-size:10px;">Charged once to verify account (e.g. €1)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Plan Features (only visible when is_custom checked) -->
+    <div class="card shadow-sm mb-3" id="customFeaturesCard" style="<%- (isEdit && pkg.is_custom) ? '' : 'display:none;' %>">
+      <div class="card-header py-2 d-flex align-items-center">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-list-check me-1 text-primary"></i>Custom Plan Features</div>
+        <button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="btnAddCustomFeature"><i class="bi bi-plus-lg me-1"></i>Add</button>
+      </div>
+      <div class="card-body p-2">
+        <div class="form-hint mb-2" style="font-size:11px;">Add bullet points that will show on the pricing page for this custom plan.</div>
+        <div id="customFeaturesList">
+          <% if (isEdit && pkg.features && Array.isArray(pkg.features) && pkg.is_custom) { pkg.features.forEach(function(f) { %>
+          <div class="d-flex align-items-center gap-2 mb-1 custom-feature-row">
+            <i class="bi bi-grip-vertical text-muted"></i>
+            <input type="text" class="form-control form-control-sm custom-feature-input" value="<%- f %>" placeholder="Feature point"/>
+            <button type="button" class="btn btn-sm btn-ghost-danger btn-remove-cf"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <% }); } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modules from Role + Limits (hidden when custom) -->
+    <div class="card shadow-sm mb-3" id="modulesCard" style="display:none;">
+      <div class="card-header py-2 d-flex align-items-center">
+        <div class="card-title mb-0" style="font-size:14px;"><i class="bi bi-grid me-1 text-primary"></i>Role Modules & Limits</div>
+        <span class="badge bg-warning-lt ms-auto" style="font-size:10px;"><i class="bi bi-info-circle me-1"></i>0 = unlimited</span>
+      </div>
+      <div class="card-body p-3" id="modulesBody">
+        <div class="text-center text-muted py-3">Select a role to see modules</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="col-12">
+    <div class="d-flex justify-content-end gap-2 mb-3">
+      <a href="/packages" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+      <button type="submit" class="btn btn-primary" id="btnSubmit"><i class="bi bi-floppy me-1"></i><%- isEdit ? 'Update' : 'Create' %> Package</button>
+    </div>
+  </div>
+</div>
+</form>
+
+<script>
+window._FORM_DATA = <%- JSON.stringify(pkg ? {
+    uuid: pkg.uuid, name: pkg.name, role_id: pkg.role_id, role_name: pkg.role_name,
+    price: pkg.price, yearly_discount_pct: pkg.yearly_discount_pct || 0,
+    description: pkg.description, badge: pkg.badge || '',
+    features: pkg.features || [], feature_headers: pkg.feature_headers || {},
+    sort_order: pkg.sort_order, is_default: pkg.is_default,
+    is_trial: pkg.is_trial, trial_days: pkg.trial_days, trial_verification_amount: pkg.trial_verification_amount || 0, is_custom: pkg.is_custom,
+    status: pkg.status, modules: pkg.modules || [], limits: pkg.limits || []
+} : null) %>;
+</script>
+
+<%
+block('scripts', `
+<script>
+$(function(){
+    var isEdit = !!window._FORM_DATA;
+
+    // Custom plan toggle
+    function toggleCustom() {
+        var isCustom = $('#fIsCustom').is(':checked');
+        if (isCustom) {
+            // Disable other checkboxes
+            $('#fIsDefault, #fIsTrial').prop('checked', false).prop('disabled', true);
+            // Hide price, role, trial fields, modules
+            $('#fPrice, #fYearlyDiscount, #fRoleId').prop('disabled', true).closest('.col-md-3, .col-md-2, .col-md-4').css('opacity', 0.4);
+            $('#trialDaysWrap, #trialAmountWrap').hide();
+            $('#modulesCard').hide();
+            $('#customFeaturesCard').show();
+        } else {
+            $('#fIsDefault, #fIsTrial').prop('disabled', false);
+            $('#fPrice, #fYearlyDiscount, #fRoleId').prop('disabled', false).closest('.col-md-3, .col-md-2, .col-md-4').css('opacity', 1);
+            $('#customFeaturesCard').hide();
+            if ($('#fRoleId').val()) $('#modulesCard').show();
+        }
+    }
+    $('#fIsCustom').on('change', toggleCustom);
+    if (isEdit && window._FORM_DATA && window._FORM_DATA.is_custom) toggleCustom();
+
+    // Custom features add/remove
+    function addCustomFeature(val) {
+        var h = '<div class="d-flex align-items-center gap-2 mb-1 custom-feature-row">';
+        h += '<i class="bi bi-grip-vertical text-muted"></i>';
+        h += '<input type="text" class="form-control form-control-sm custom-feature-input" value="' + H.esc(val || '') + '" placeholder="Feature point"/>';
+        h += '<button type="button" class="btn btn-sm btn-ghost-danger btn-remove-cf"><i class="bi bi-x-lg"></i></button>';
+        h += '</div>';
+        $('#customFeaturesList').append(h);
+    }
+    $('#btnAddCustomFeature').on('click', function() { addCustomFeature(''); $('#customFeaturesList .custom-feature-input:last').focus(); });
+    $(document).on('click', '.btn-remove-cf', function() { $(this).closest('.custom-feature-row').remove(); });
+    if (!$('#customFeaturesList .custom-feature-row').length && $('#fIsCustom').is(':checked')) addCustomFeature('');
+
+    // Auto-calculate yearly price
+    function calcYearly() {
+        var monthly = parseFloat($('#fPrice').val()) || 0;
+        var disc = parseInt($('#fYearlyDiscount').val()) || 0;
+        var yearly = (monthly * 12) * (1 - disc / 100);
+        $('#fYearlyPriceCalc').val(yearly > 0 ? SMS_CURRENCY + ' ' + yearly.toFixed(2) + '/year' : 'Free');
+    }
+    $('#fPrice, #fYearlyDiscount').on('input change', calcYearly);
+    calcYearly();
+
+    // Trial toggle
+    $('#fIsTrial').on('change', function() {
+        if ($(this).is(':checked')) { $('#trialDaysWrap').show(); $('#trialAmountWrap').show(); }
+        else { $('#trialDaysWrap').hide(); $('#trialAmountWrap').hide(); }
+    });
+
+    var _limitData = {}; // permission_group → limit_value
+    var _featureHeaders = (isEdit && window._FORM_DATA.feature_headers) ? window._FORM_DATA.feature_headers : {};
+
+    // ── Load roles dropdown ──
+    $.get(BASE_URL + '/packages/roles', function(res) {
+        if (!res || res.status !== 200 || !res.data) return;
+        var $sel = $('#fRoleId');
+        res.data.forEach(function(r) {
+            $sel.append('<option value="' + r.id + '">' + H.esc(r.name) + '</option>');
+        });
+        // Pre-select for edit
+        if (isEdit && window._FORM_DATA.role_id) {
+            $sel.val(String(window._FORM_DATA.role_id));
+            loadRoleModules(window._FORM_DATA.role_id);
+        }
+    });
+
+    // Section mapping (same as roles form)
+    var SECTIONS = [
+        { label: 'System',          icon: 'bi-gear',          groups: ['Dashboard', 'Settings', 'Profile'] },
+        { label: 'User Management', icon: 'bi-people',        groups: ['Users', 'Roles', 'Permissions', 'Menus'] },
+        { label: 'Languages',       icon: 'bi-translate',     groups: ['Languages', 'Master Languages'] },
+        { label: 'Parts Master',    icon: 'bi-cpu',           groups: ['Part Catalogs', 'Part Types', 'Part Locations', 'Part Groups', 'Part Sides', 'Part Brands'] },
+        { label: 'Vehicle Master',  icon: 'bi-truck',         groups: ['Vehicle Categories', 'Vehicle Fuels', 'Vehicle Years', 'Vehicle Types', 'Vehicle Makes', 'Vehicle Models', 'Vehicle Variants', 'Vehicle Engines'] },
+        { label: 'Waste',           icon: 'bi-recycle',       groups: ['Units', 'LER Codes', 'Depollutions'] },
+        { label: 'Warehouse',       icon: 'bi-building-fill', groups: ['Warehouses', 'Warehouse Zones', 'Warehouse Shelves', 'Warehouse Racks', 'Warehouse Bins'] },
+        { label: 'Inventory',       icon: 'bi-boxes',         groups: ['Part Inventories', 'Vehicle Inventories'] },
+        { label: 'Location',        icon: 'bi-geo-alt',       groups: ['Countries', 'States', 'Cities'] },
+        { label: 'Reports',         icon: 'bi-bar-chart',     groups: ['Activity Logs'] },
+    ];
+
+    function loadRoleModules(roleId) {
+        if (!roleId) { $('#modulesCard').hide(); return; }
+        $('#modulesCard').show();
+        $('#modulesBody').html('<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>');
+        $.get(BASE_URL + '/packages/role-modules', { role_id: roleId }, function(res) {
+            var data = (res && res.status === 200 && res.data) ? res.data : {};
+            var groups = data.groups || (Array.isArray(data) ? data : []);
+            var addGroups = data.addGroups || [];
+            if (!groups.length) { $('#modulesBody').html('<div class="text-center text-muted py-3">No modules in this role</div>'); return; }
+
+            var addSet = {};
+            addGroups.forEach(function(g) { addSet[g] = true; });
+
+            // Build grouped display
+            var groupSet = {};
+            groups.forEach(function(g) { groupSet[g] = true; });
+
+            var h = '';
+            SECTIONS.forEach(function(sec) {
+                var matched = sec.groups.filter(function(g) { return groupSet[g]; });
+                if (!matched.length) return;
+                var headerVal = _featureHeaders[sec.label] || sec.label;
+                var secId = 'sec_' + sec.label.replace(/\s+/g, '_');
+                h += '<div class="mb-3 border rounded overflow-hidden">';
+                h += '<div class="d-flex align-items-center gap-2 px-3 py-2 sec-hdr" data-sec="' + secId + '" style="background:var(--tblr-bg-surface-secondary);">';
+                h += '';
+                h += '<i class="bi ' + sec.icon + ' sec-icon-click" style="font-size:16px;color:#1e293b;cursor:pointer;"></i>';
+                h += '<input type="text" class="form-control form-control-sm fw-semibold section-header-input border-0" value="' + H.esc(headerVal) + '" data-section="' + H.esc(sec.label) + '" style="font-size:13px;background:transparent;flex:1;" placeholder="' + H.esc(sec.label) + '"/>';
+                h += '<span class="badge bg-primary-lt sec-badge-click" style="font-size:10px;cursor:pointer;">' + matched.length + '</span>';
+                h += '</div>';
+                h += '<div id="' + secId + '" class="section-body">';
+                matched.forEach(function(g) {
+                    var lim = _limitData[g] !== undefined ? _limitData[g] : 0;
+                    var moduleLabel = _featureHeaders['_mod_' + g] || g;
+                    h += '<div class="d-flex align-items-center gap-2 px-3 py-1 border-bottom" style="font-size:12px;" data-group="' + H.esc(g) + '">';
+                    h += '<i class="bi bi-check-circle-fill" style="font-size:10px;color:#16a34a;"></i>';
+                    h += '<input type="text" class="form-control form-control-sm module-label-input border-0" value="' + H.esc(moduleLabel) + '" data-module="' + H.esc(g) + '" style="font-size:12px;background:transparent;flex:1;" placeholder="' + H.esc(g) + '"/>';
+                    if (addSet[g]) h += '<input type="number" class="form-control form-control-sm module-limit text-center border" min="0" value="' + lim + '" data-group="' + H.esc(g) + '" placeholder="0" style="width:70px;font-size:12px;background:#f8f9fa;"/>';
+                    h += '</div>';
+                });
+                h += '</div>'; // close section-body
+                h += '</div>'; // close card
+            });
+
+            // Ungrouped modules (if any)
+            var mapped = {};
+            SECTIONS.forEach(function(s) { s.groups.forEach(function(g) { mapped[g] = true; }); });
+            var unmapped = groups.filter(function(g) { return !mapped[g]; });
+            if (unmapped.length) {
+                h += '<div class="mb-3"><div class="d-flex align-items-center gap-2 mb-2 px-1"><i class="bi bi-three-dots text-muted"></i><span class="fw-semibold" style="font-size:13px;">Other</span></div>';
+                unmapped.forEach(function(g) {
+                    var lim = _limitData[g] !== undefined ? _limitData[g] : 0;
+                    h += '<div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom" style="font-size:12px;" data-group="' + H.esc(g) + '">';
+                    h += '<i class="bi bi-check-circle-fill text-success me-1" style="font-size:10px;"></i>';
+                    h += '<span class="flex-fill">' + H.esc(g) + '</span>';
+                    if (addSet[g]) h += '<input type="number" class="form-control form-control-sm module-limit text-center border" min="0" value="' + lim + '" data-group="' + H.esc(g) + '" placeholder="0" style="width:70px;font-size:12px;background:#f8f9fa;"/>';
+                    h += '</div>';
+                });
+                h += '</div>';
+            }
+
+            // Settings section
+            var settingsPerms = data.settingsPerms || [];
+            if (settingsPerms.length) {
+                var icMap = {settings_custom_design:'bi-palette',settings_ai_config:'bi-robot',settings_localization:'bi-globe',settings_tax_config:'bi-receipt',settings_vehicle_columns:'bi-truck',settings_part_columns:'bi-boxes'};
+                h += '<div class="mb-3 border rounded overflow-hidden">';
+                h += '<div class="d-flex align-items-center gap-2 px-3 py-2 sec-hdr" data-sec="sec_Settings" style="background:var(--tblr-bg-surface-secondary);">';
+                h += '';
+                h += '<i class="bi bi-gear sec-icon-click" style="font-size:16px;color:#1e293b;cursor:pointer;"></i>';
+                h += '<input type="text" class="form-control form-control-sm fw-semibold section-header-input border-0" value="' + H.esc(_featureHeaders['Settings'] || 'Settings') + '" data-section="Settings" style="font-size:13px;background:transparent;flex:1;" placeholder="Settings"/>';
+                h += '<span class="badge bg-primary-lt sec-badge-click" style="font-size:10px;cursor:pointer;">' + settingsPerms.length + '</span>';
+                h += '</div>';
+                h += '<div id="sec_Settings" class="section-body">';
+                settingsPerms.forEach(function(s) {
+                    var label = _featureHeaders['_mod_' + s.name] || s.display_name;
+                    h += '<div class="d-flex align-items-center gap-2 px-3 py-1 border-bottom" style="font-size:12px;" data-group="' + H.esc(s.name) + '">';
+                    h += '<i class="bi ' + (icMap[s.name] || 'bi-gear') + ' text-primary" style="font-size:10px;"></i>';
+                    h += '<input type="text" class="form-control form-control-sm module-label-input border-0" value="' + H.esc(label) + '" data-module="' + H.esc(s.name) + '" style="font-size:12px;background:transparent;flex:1;" placeholder="' + H.esc(s.display_name) + '"/>';
+                    h += '</div>';
+                });
+                h += '</div>'; // close section-body
+                h += '</div>'; // close card
+            }
+
+            $('#modulesBody').html(h);
+
+        });
+    }
+
+    // Role change → reload modules
+    $('#fRoleId').on('change', function() { loadRoleModules($(this).val()); });
+
+    // Pre-populate limits for edit
+    if (isEdit && window._FORM_DATA.limits) {
+        window._FORM_DATA.limits.forEach(function(l) {
+            _limitData[l.permission_group] = parseInt(l.limit_value) || 0;
+        });
+    }
+
+    // ── Form submit ──
+    $('#frmPackage').on('submit', function(e) {
+        e.preventDefault();
+        var $btn = $('#btnSubmit');
+        var name = $('#fName').val().trim();
+        if (!name) { toastr.error('Name is required.'); return; }
+        var isCustomPlan = $('#fIsCustom').is(':checked');
+        var roleId = $('#fRoleId').val();
+        if (!isCustomPlan && !roleId) { toastr.error('Please select a role.'); return; }
+
+        // Collect limits
+        var limits = [];
+        $('.module-limit').each(function() {
+            limits.push({ permission_group: $(this).data('group'), limit_value: parseInt($(this).val()) || 0 });
+        });
+
+        // Collect features
+        var features = [];
+        var featureHeaders = {};
+
+        if (isCustomPlan) {
+            // Custom plan: collect from custom features list
+            $('.custom-feature-input').each(function() { var v = $(this).val().trim(); if (v) features.push(v); });
+        } else {
+        // Save module custom labels
+        $('.module-label-input').each(function() {
+            var mod = $(this).data('module');
+            var val = $(this).val().trim();
+            if (val && val !== mod) featureHeaders['_mod_' + mod] = val;
+        });
+        // Build features from section headers + module labels + limits
+        $('.section-header-input').each(function() {
+            var sec = $(this).data('section');
+            var val = $(this).val().trim();
+            featureHeaders[sec] = val;
+            var sectionDiv = $(this).closest('.mb-3');
+            var parts = [];
+            var seen = {};
+            sectionDiv.find('.module-limit').each(function() {
+                var g = $(this).data('group');
+                if (seen[g]) return; seen[g] = true;
+                var label = sectionDiv.find('.module-label-input[data-module="' + g + '"]').val() || g;
+                var lim = parseInt($(this).val()) || 0;
+                if (lim === 0) parts.push(label + ': Unlimited');
+                else parts.push(label + ': ' + lim);
+            });
+            sectionDiv.find('.module-label-input').each(function() {
+                var g = $(this).data('module');
+                if (!seen[g]) { seen[g] = true; parts.push($(this).val().trim() || g); }
+            });
+            if (val && parts.length) features.push(val + ' — ' + parts.join(', '));
+            else if (val) features.push(val);
+        });
+        } // end else (not custom)
+
+        var desc = $('#fDescription').val().trim();
+        if (!desc) { toastr.error('Description is required.'); return; }
+
+        var payload = {
+            name: name,
+            role_id: roleId,
+            price: parseFloat($('#fPrice').val()) || 0,
+            yearly_discount_pct: Math.min(100, Math.max(0, parseInt($('#fYearlyDiscount').val()) || 0)),
+            description: desc,
+            badge: $('#fBadge').val() || '',
+            features: features,
+            feature_headers: featureHeaders,
+            sort_order: parseInt($('#fSortOrder').val()) || 0,
+            status: parseInt($('#fStatus').val()),
+            is_default: $('#fIsDefault').is(':checked') ? 1 : 0,
+            is_trial: $('#fIsTrial').is(':checked') ? 1 : 0,
+            is_custom: $('#fIsCustom').is(':checked') ? 1 : 0,
+            trial_days: $('#fIsTrial').is(':checked') ? (parseInt($('#fTrialDays').val()) || 14) : 0,
+            trial_verification_amount: $('#fIsTrial').is(':checked') ? (parseFloat($('#fTrialAmount').val()) || 1) : 0,
+            limits: limits
+        };
+
+        btnLoading($btn);
+        $.ajax({
+            url: $(this).attr('action'), type: 'POST', contentType: 'application/json', data: JSON.stringify(payload),
+            success: function(r) {
+                btnReset($btn);
+                if (r.status === 200 || r.status === 201) { toastr.success(r.message || 'Saved.'); window.location.href = '/packages'; }
+                else toastr.error(r.message || 'Failed.');
+            },
+            error: function() { btnReset($btn); toastr.error('Network error.'); }
+        });
+    });
+});
+</script>
+`);
+%>

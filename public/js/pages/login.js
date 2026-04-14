@@ -68,7 +68,7 @@ $(function () {
                     if (res.status === 200) {
                         toastr.success(T('auth.login_success','Login successful! Redirecting...'));
                         setTimeout(function () {
-                            window.location.href = '/dashboard';
+                            window.location.href = res.redirect || '/dashboard';
                         }, 700);
                     } else if (res.status === 403) {
                         // Email not verified
@@ -119,7 +119,7 @@ function googleSignIn(idToken, mode) {
                     window.location.href = BASE_URL + '/google-complete' + qs;
                 } else {
                     toastr.success(T('auth.google_login_success','Google login successful!'));
-                    setTimeout(function () { window.location.href = '/dashboard'; }, 700);
+                    setTimeout(function () { window.location.href = res.redirect || '/dashboard'; }, 700);
                 }
             } else {
                 toastr.error(res.message || T('auth.google_signin_failed','Google sign-in failed.'));

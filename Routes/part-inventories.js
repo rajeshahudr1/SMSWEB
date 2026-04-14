@@ -13,8 +13,8 @@ router.get('/',                          requirePermission('view_part_inventorie
 router.post('/paginate',                 requirePermission('view_part_inventories'),   Ctrl.paginate);
 router.get('/enums',                     Ctrl.enums);
 router.get('/settings',                  Ctrl.getSettings);
-router.post('/settings',                 requirePermission('edit_part_inventories'),   Ctrl.saveSettings);
-router.post('/list-columns',             requirePermission('edit_part_inventories'),   Ctrl.saveListColumns);
+router.post('/settings',                 requirePermission('settings_part_columns'),   Ctrl.saveSettings);
+router.post('/list-columns',             requirePermission('settings_part_columns'),   Ctrl.saveListColumns);
 router.get('/export',                    requirePermission('export_part_inventories'), Ctrl.exportData);
 router.post('/export',                   requirePermission('export_part_inventories'), Ctrl.exportData);
 router.post('/bulk-action',              requirePermission('edit_part_inventories'),   Ctrl.bulkAction);

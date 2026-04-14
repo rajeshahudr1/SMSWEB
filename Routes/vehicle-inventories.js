@@ -10,8 +10,8 @@ router.get('/',                          requirePermission('view_vehicle_invento
 router.post('/paginate',                 requirePermission('view_vehicle_inventories'),   Ctrl.paginate);
 router.get('/enums',                     Ctrl.enums);
 router.get('/settings',                  Ctrl.getSettings);
-router.post('/settings',                 requirePermission('edit_vehicle_inventories'),   Ctrl.saveSettings);
-router.post('/list-columns',             requirePermission('edit_vehicle_inventories'),   Ctrl.saveListColumns);
+router.post('/settings',                 requirePermission('settings_vehicle_columns'),   Ctrl.saveSettings);
+router.post('/list-columns',             requirePermission('settings_vehicle_columns'),   Ctrl.saveListColumns);
 router.get('/export',                    requirePermission('export_vehicle_inventories'), Ctrl.exportData);
 router.post('/export',                   requirePermission('export_vehicle_inventories'), Ctrl.exportData);
 router.post('/bulk-action',              requirePermission('edit_vehicle_inventories'),   Ctrl.bulkAction);

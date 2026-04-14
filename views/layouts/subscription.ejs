@@ -1,0 +1,83 @@
+<%
+var s         = (typeof settings !== 'undefined' && settings) || {};
+var isDark    = s.dark_mode === '1';
+var themeColor= s.theme_color  || '#0054a6';
+var fontSize  = s.font_size    || '14px';
+var curLang   = (typeof lang !== 'undefined' && lang) || 'en';
+var bodyClass = 'antialiased' + (isDark ? ' theme-dark' : '');
+%>
+<!DOCTYPE html>
+<html lang="<%- curLang %>">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title><%- page_title %> | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/libs/css/tabler.min.css"/>
+<link rel="stylesheet" href="/libs/css/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/libs/css/toastr.min.css"/>
+<link rel="stylesheet" href="/css/app.css"/>
+<link rel="stylesheet" href="/css/modern-theme.css"/>
+<style>
+:root{
+  --tblr-primary: <%- themeColor %>;
+  --tblr-font-size: <%- fontSize %>;
+}
+body { background: #f4f6fa; }
+</style>
+<%- block('styles') %>
+</head>
+<body class="<%- bodyClass %>">
+
+<!-- Page loader -->
+<div id="sms-loader"><div class="sms-loader-spin"></div></div>
+
+<!-- Minimal top bar -->
+<div class="py-3 px-4 border-bottom bg-white d-flex align-items-center">
+  <div class="d-flex align-items-center gap-2">
+    <img src="/images/favicon.svg" alt="Logo" style="height:28px;"/>
+    <span class="fw-bold" style="font-size:16px;"><%- APP_NAME %></span>
+  </div>
+  <div class="ms-auto d-flex align-items-center gap-3">
+    <% if (typeof user !== 'undefined' && user) { %>
+    <span class="text-muted small"><i class="bi bi-person me-1"></i><%- user.name %></span>
+    <% } %>
+    <a href="/logout" class="btn btn-sm btn-ghost-secondary"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+  </div>
+</div>
+
+<%- body %>
+
+<div class="modal fade" id="smsModal" tabindex="-1" aria-hidden="true"></div>
+
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/tabler.min.js"></script>
+<script src="/libs/js/toastr.min.js"></script>
+<script src="/js/app.js"></script>
+
+<script>
+var BASE_URL     = '<%- (typeof BASE_URL !== "undefined" && BASE_URL) || "" %>';
+var SMS_LANG     = '<%- curLang %>';
+var SMS_SETTINGS = <%- JSON.stringify(s) %>;
+var SMS_T_DICT   = <%- (typeof langDict_json !== 'undefined' && langDict_json) || '{}' %>;
+function SMS_T(k,f){ return SMS_T_DICT[k]||f||k; }
+
+window.H = window.H||{};
+H.esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+
+toastr.options = { closeButton:true, progressBar:true, positionClass:'toast-top-right', timeOut:5000 };
+
+function smsFormatDate(d){ if(!d) return '-'; try{return new Date(d).toLocaleDateString();}catch(e){return d;} }
+function smsFormatDateTime(d){ if(!d) return '-'; try{return new Date(d).toLocaleString();}catch(e){return d;} }
+
+/* Hide page loader */
+$(function(){
+    $('#sms-loader').addClass('hide');
+    setTimeout(function(){ $('#sms-loader').hide(); }, 300);
+});
+</script>
+
+<%- block('scripts') %>
+</body>
+</html>

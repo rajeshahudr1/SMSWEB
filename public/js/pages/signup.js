@@ -253,7 +253,7 @@ $(function () {
             $btn.prop('disabled', false).html('Verify &amp; Login');
             if (res.status === 200) {
                 toastr.success(T('auth.email_verified','Email verified! Logging you in…'));
-                setTimeout(function () { window.location.href = BASE_URL + '/dashboard'; }, 800);
+                setTimeout(function () { window.location.href = res.redirect || (BASE_URL + '/dashboard'); }, 800);
             } else {
                 $('#err-otp').text(res.message || T('auth.invalid_otp','Invalid OTP.'));
             }
@@ -308,7 +308,7 @@ function googleSignIn(idToken) {
                     window.location.href = BASE_URL + '/google-complete' + qs;
                 } else {
                     toastr.success(T('auth.google_signin_success','Google sign-in successful!'));
-                    setTimeout(function () { window.location.href = BASE_URL + '/dashboard'; }, 700);
+                    setTimeout(function () { window.location.href = res.redirect || (BASE_URL + '/dashboard'); }, 700);
                 }
             } else {
                 toastr.error(res.message || T('auth.google_signin_failed','Google sign-in failed.'));
