@@ -71,6 +71,9 @@ router.use('/packages', authGuard, require('./packages'));
 router.use('/subscriptions', authGuard, require('./subscriptions'));
 router.get('/choose-plan', authGuard, require('../Controllers/SubscriptionsController').choosePlan);
 
+// Reviews
+router.use('/reviews', authGuard, require('./reviews'));
+
 // Activity Logs
 router.use('/activity-logs', authGuard, require('./activity-logs'));
 

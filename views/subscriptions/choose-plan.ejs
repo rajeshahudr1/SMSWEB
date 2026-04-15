@@ -67,6 +67,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f4f6f
     <% if (typeof user !== 'undefined' && user) { %>
     <span class="user"><i class="bi bi-person"></i> <%- user.name %></span>
     <% } %>
+    <% var subActive = typeof subscription_status !== 'undefined' && (subscription_status === 'active' || subscription_status === 'trialing'); %>
+    <% if (subActive) { %><a href="/dashboard" class="logout" style="border-color:#0054a6;color:#0054a6;"><i class="bi bi-speedometer2"></i> Dashboard</a><% } %>
     <a href="/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
   </div>
 </div>

@@ -23,11 +23,15 @@ router.get('/current',                  Ctrl.current);
 router.post('/cancel',                  Ctrl.cancel);
 router.patch('/toggle-auto-renew',      Ctrl.toggleAutoRenew);
 router.get('/invoices',                 Ctrl.invoices);
+router.get('/invoices/:uuid/pdf',       Ctrl.downloadInvoice);
 router.get('/payment-history',          Ctrl.paymentHistory);
 router.get('/history',                  Ctrl.history);
 
 // ── Super admin routes ──
 router.get('/admin',                        requireSuperAdmin, Ctrl.adminIndex);
+router.get('/admin/payment-reports',        requireSuperAdmin, Ctrl.adminPaymentReports);
+router.post('/admin/payment-reports/data',  requireSuperAdmin, Ctrl.adminPaymentReportsData);
+router.post('/admin/payment-reports/export', requireSuperAdmin, Ctrl.adminPaymentExport);
 router.post('/admin/paginate',              requireSuperAdmin, Ctrl.adminPaginate);
 router.post('/admin/export',                requireSuperAdmin, Ctrl.adminExport);
 router.get('/admin/alert-settings',         requireSuperAdmin, Ctrl.adminAlertSettings);

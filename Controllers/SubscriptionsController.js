@@ -7,9 +7,10 @@ exports.choosePlan = async (req, res) => {
         page_title: 'Choose Your Plan',
         activeLink: 'choose-plan',
         breadcrumbs: [{ name: 'Choose Plan', url: '' }],
-        hideLayout: true, // minimal layout
+        hideLayout: true,
         stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
         razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+        subscription_status: req.session.subscription_status || 'none',
     });
 };
 
@@ -126,6 +127,21 @@ exports.toggleAutoRenew = async (req, res) => {
     res.json(await api.patch('/subscriptions/toggle-auto-renew', {}, req.session.token));
 };
 
+// ── Invoice PDF download ────────────────────────────────
+exports.downloadInvoice = async (req, res) => {
+    try {
+        const axios = require('axios');
+        const API_URL = process.env.API_URL || 'http://localhost:3000/api';
+        const response = await axios.get(API_URL + '/subscriptions/invoices/' + req.params.uuid + '/pdf', {
+            headers: { Authorization: 'Bearer ' + req.session.token },
+            responseType: 'arraybuffer',
+        });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', response.headers['content-disposition'] || 'attachment; filename="invoice.pdf"');
+        res.send(Buffer.from(response.data));
+    } catch (err) { res.status(500).json({ status: 500, message: 'Failed to download.' }); }
+};
+
 // ── Invoices (proxy) ────────────────────────────────────
 exports.invoices = async (req, res) => {
     res.json(await api.get('/subscriptions/invoices', req.session.token, req.query));
@@ -182,6 +198,19 @@ exports.adminSuspend = async (req, res) => {
 
 exports.adminExport = async (req, res) => {
     res.json(await api.post('/subscriptions/admin/export', req.body, req.session.token));
+};
+
+exports.adminPaymentReports = async (req, res) => {
+    res.render('subscriptions/payment-reports', {
+        page_title: 'Payment Reports', activeLink: 'subscriptions/admin',
+        breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Payment Reports', url: '' }],
+    });
+};
+exports.adminPaymentReportsData = async (req, res) => {
+    res.json(await api.post('/subscriptions/admin/payment-reports', req.body, req.session.token));
+};
+exports.adminPaymentExport = async (req, res) => {
+    res.json(await api.post('/subscriptions/admin/payment-export', req.body, req.session.token));
 };
 
 exports.adminAlertSettings = async (req, res) => {

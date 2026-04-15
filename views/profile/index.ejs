@@ -131,7 +131,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
             <span class="sms-profile-tab__icon"><i class="bi bi-shield-lock-fill"></i></span>
             <span class="sms-profile-tab__label"><%- isGoogleOnly ? 'Set Password' : 'Change Password' %></span>
           </a>
-          <% if (isOrgAdmin) { %>
+          <% if (isOrgAdmin || isSuperAdmin) { %>
           <a href="#tab-subscription" class="sms-profile-tab" data-sms-tab="tab-subscription">
             <span class="sms-profile-tab__icon"><i class="bi bi-credit-card-fill"></i></span>
             <span class="sms-profile-tab__label">Subscription</span>
@@ -442,7 +442,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
         </div>
 
         <!-- ── Subscription Tab ─────────────────────── -->
-        <% if (isOrgAdmin) { %>
+        <% if (isOrgAdmin || isSuperAdmin) { %>
         <div class="tab-pane" id="tab-subscription">
           <div id="subTabContent"><div class="text-center py-4"><div class="spinner-border text-primary"></div></div></div>
         </div>
@@ -456,6 +456,7 @@ var showCompanyTab  = isSuperAdmin || isOrgAdmin;
 
 <!-- Profile data for JS — used by company form to pass required personal fields -->
 <script>
+  window._SMS_IS_SUPER_ADMIN = <%= isSuperAdmin ? 'true' : 'false' %>;
   window.SMS_PROFILE = <%- JSON.stringify({
     name:           p.name           || '',
     phone:          p.phone          || '',

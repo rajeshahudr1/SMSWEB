@@ -1,0 +1,137 @@
+<%- layout('../layouts/main') %>
+<!-- Stats Cards -->
+<div class="row mb-3" id="statsRow" style="display:none;">
+  <div class="col-sm-6 col-lg-3 mb-2"><div class="card shadow-sm"><div class="card-body py-3 text-center"><div class="text-muted small text-uppercase fw-semibold">Total Revenue</div><div class="fw-bold fs-3 text-primary" id="statRevenue">-</div></div></div></div>
+  <div class="col-sm-6 col-lg-3 mb-2"><div class="card shadow-sm"><div class="card-body py-3 text-center"><div class="text-muted small text-uppercase fw-semibold">Total Tax</div><div class="fw-bold fs-3 text-warning" id="statTax">-</div></div></div></div>
+  <div class="col-sm-6 col-lg-3 mb-2"><div class="card shadow-sm"><div class="card-body py-3 text-center"><div class="text-muted small text-uppercase fw-semibold">Transactions</div><div class="fw-bold fs-3 text-success" id="statCount">-</div></div></div></div>
+  <div class="col-sm-6 col-lg-3 mb-2"><div class="card shadow-sm"><div class="card-body py-3 text-center"><div class="text-muted small text-uppercase fw-semibold">Net Revenue</div><div class="fw-bold fs-3 text-info" id="statNet">-</div></div></div></div>
+</div>
+
+<!-- Breakdown Cards -->
+<div class="row mb-3" id="breakdownRow" style="display:none;">
+  <div class="col-lg-6 mb-2"><div class="card shadow-sm"><div class="card-header py-2"><h5 class="card-title mb-0"><i class="bi bi-credit-card me-2 text-primary"></i>By Gateway</h5></div><div class="card-body p-0" id="gwBreakdown"></div></div></div>
+  <div class="col-lg-6 mb-2"><div class="card shadow-sm"><div class="card-header py-2"><h5 class="card-title mb-0"><i class="bi bi-globe me-2 text-primary"></i>By Country</h5></div><div class="card-body p-0" id="countryBreakdown"></div></div></div>
+</div>
+
+<!-- Main Table -->
+<div class="card shadow-sm">
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-receipt me-2 text-primary"></i>Payment Reports <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">-</span></h3>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
+      <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i>Export</button>
+        <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
+      </div>
+    </div>
+  </div>
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="row g-2 align-items-center">
+      <div class="col"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search company, email, transaction..."/></div>
+      <div class="col-auto"><select class="form-select form-select-sm" id="filterGateway" style="width:120px;"><option value="">All Gateways</option><option value="stripe">Stripe</option><option value="razorpay">Razorpay</option><option value="manual">Manual</option></select></div>
+      <div class="col-auto"><select class="form-select form-select-sm" id="filterStatus" style="width:120px;"><option value="">All Status</option><option value="completed">Completed</option><option value="pending">Pending</option><option value="failed">Failed</option><option value="processing">Processing</option></select></div>
+      <div class="col-auto"><input type="date" class="form-control form-control-sm" id="filterFrom" style="width:130px;"/></div>
+      <div class="col-auto"><input type="date" class="form-control form-control-sm" id="filterTo" style="width:130px;"/></div>
+      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" id="btnClearFilters"><i class="bi bi-x-lg"></i></button></div>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-vcenter mb-0">
+      <thead><tr>
+        <th style="width:36px;">#</th>
+        <th>Company</th>
+        <th>Country</th>
+        <th>Package</th>
+        <th>Gateway</th>
+        <th>Method</th>
+        <th>Status</th>
+        <th class="text-end">Amount</th>
+        <th class="text-end">Tax</th>
+        <th class="text-end">Total</th>
+        <th>Date</th>
+        <th style="width:50px;">Inv</th>
+      </tr></thead>
+      <tbody id="tableBody"><tr><td colspan="12" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
+</div>
+
+<%
+block('scripts', `
+<script>
+var _page=1,_pp=25;
+_pp=smsInitPerPage('#perPageSel');$('#perPageSel').on('change',function(){_pp=parseInt($(this).val())||25;_page=1;loadData();});
+
+var stMap={completed:{cls:'bg-success-lt',label:'Completed'},failed:{cls:'bg-danger-lt',label:'Failed'},pending:{cls:'bg-warning-lt',label:'Pending'},processing:{cls:'bg-info-lt',label:'Processing'},refunded:{cls:'bg-secondary-lt',label:'Refunded'}};
+
+function buildPagination(pg){if(!pg||pg.last_page<=1){$('#tablePagination').html('');return;}var h='<ul class="pagination pagination-sm mb-0">';h+='<li class="page-item'+(pg.current_page<=1?' disabled':'')+'"><a class="page-link" href="#" data-page="'+(pg.current_page-1)+'"><i class="bi bi-chevron-left"></i></a></li>';var s=Math.max(1,pg.current_page-2),e=Math.min(pg.last_page,pg.current_page+2);if(s>1){h+='<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>';if(s>2)h+='<li class="page-item disabled"><span class="page-link">…</span></li>';}for(var i=s;i<=e;i++)h+='<li class="page-item'+(i===pg.current_page?' active':'')+'"><a class="page-link" href="#" data-page="'+i+'">'+i+'</a></li>';if(e<pg.last_page){if(e<pg.last_page-1)h+='<li class="page-item disabled"><span class="page-link">…</span></li>';h+='<li class="page-item"><a class="page-link" href="#" data-page="'+pg.last_page+'">'+pg.last_page+'</a></li>';}h+='<li class="page-item'+(pg.current_page>=pg.last_page?' disabled':'')+'"><a class="page-link" href="#" data-page="'+(pg.current_page+1)+'"><i class="bi bi-chevron-right"></i></a></li></ul>';$('#tablePagination').html(h);}
+function F(v){return parseFloat(v||0).toFixed(2);}
+
+function loadData(){
+    $('#tableBody').html('<tr><td colspan="12" class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>');
+    $.post(BASE_URL+'/subscriptions/admin/payment-reports/data',{page:_page,per_page:_pp,search:$('#searchInput').val().trim(),gateway:$('#filterGateway').val(),status:$('#filterStatus').val(),date_from:$('#filterFrom').val(),date_to:$('#filterTo').val()},function(res){
+        if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="12" class="text-center text-danger py-4">Failed.</td></tr>');return;}
+        var data=res.data&&res.data.data?res.data.data:[],pg=res.data&&res.data.pagination?res.data.pagination:{},stats=res.data.stats||{};
+        $('#badgeTotal').text((pg.total||0).toLocaleString());
+
+        // Stats
+        $('#statRevenue').text(H.currency(stats.total_revenue));$('#statTax').text(H.currency(stats.total_tax));
+        $('#statCount').text((stats.total_count||0).toLocaleString());$('#statNet').text(H.currency((stats.total_revenue||0)-(stats.total_tax||0)));
+        $('#statsRow').show();
+
+        // Gateway breakdown
+        var gws=stats.by_gateway||[];
+        if(gws.length){var gh='<table class="table table-sm mb-0"><tbody>';gws.forEach(function(g){gh+='<tr><td class="ps-3" style="text-transform:capitalize;">'+H.esc(g.gateway)+'</td><td class="text-end pe-3"><strong>'+H.currency(g.total)+'</strong> <span class="text-muted small">('+g.count+' txns)</span></td></tr>';});gh+='</tbody></table>';$('#gwBreakdown').html(gh);}
+
+        // Country breakdown
+        var ctrs=stats.by_country||[];
+        if(ctrs.length){var ch='<table class="table table-sm mb-0"><tbody>';ctrs.forEach(function(c){ch+='<tr><td class="ps-3">'+H.esc(c.country_name||'Unknown')+'</td><td class="text-end">'+H.currency(c.total)+'</td><td class="text-end pe-3"><span class="text-muted small">Tax: '+H.currency(c.tax)+'</span></td></tr>';});ch+='</tbody></table>';$('#countryBreakdown').html(ch);}
+        $('#breakdownRow').show();
+
+        if(!data.length){$('#tableBody').html('<tr><td colspan="12" class="text-center py-5 text-muted"><i class="bi bi-receipt d-block mb-2" style="font-size:36px;opacity:.3;"></i>No payments found</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+        var rows='';
+        data.forEach(function(p,i){
+            var st=stMap[p.status]||stMap.pending;
+            rows+='<tr>';
+            rows+='<td class="text-muted">'+((pg.from||1)+i)+'</td>';
+            rows+='<td><div class="fw-medium">'+H.esc(p.company_name||'-')+'</div><div class="text-muted small">'+H.esc(p.org_email||'')+'</div></td>';
+            rows+='<td>'+H.esc(p.country_name||'-')+'</td>';
+            rows+='<td><span class="badge bg-azure-lt">'+H.esc(p.package_name||'-')+'</span></td>';
+            rows+='<td style="text-transform:capitalize;">'+H.esc(p.gateway||'-')+'</td>';
+            rows+='<td style="text-transform:capitalize;">'+H.esc(p.payment_method||'-')+'</td>';
+            rows+='<td><span class="badge '+st.cls+'">'+st.label+'</span></td>';
+            rows+='<td class="text-end">'+H.currency(p.amount)+'</td>';
+            rows+='<td class="text-end">'+(parseFloat(p.tax_amount)>0?H.currency(p.tax_amount):'<span class="text-muted">-</span>')+'</td>';
+            rows+='<td class="text-end fw-medium">'+H.currency(p.total_amount)+'</td>';
+            rows+='<td class="text-muted small">'+smsFormatDateTime(p.paid_at||p.created_at)+'</td>';
+            rows+='<td>'+(p.invoice_uuid?'<a href="'+BASE_URL+'/subscriptions/invoices/'+p.invoice_uuid+'/pdf" class="btn btn-sm btn-ghost-primary py-0" title="Invoice"><i class="bi bi-file-earmark-pdf"></i></a>':'-')+'</td>';
+            rows+='</tr>';
+        });
+        $('#tableBody').html(rows);
+        $('#tableInfo').text('Showing '+(pg.from||1)+'\\u2013'+(pg.to||data.length)+' of '+(pg.total||0));
+        buildPagination(pg);
+    });
+}
+
+function doExport(fmt){
+    showLoading();
+    $.post(BASE_URL+'/subscriptions/admin/payment-reports/export',{search:$('#searchInput').val().trim(),gateway:$('#filterGateway').val(),status:$('#filterStatus').val(),date_from:$('#filterFrom').val(),date_to:$('#filterTo').val()},function(res){
+        hideLoading();
+        if(!res||res.status!==200||!res.data||!res.data.rows||!res.data.rows.length){toastr.error('No data.');return;}
+        var rows=res.data.rows,cols=Object.keys(rows[0]);
+        if(fmt==='csv'){var csv=cols.map(function(c){return '\"'+c+'\"';}).join(',')+String.fromCharCode(10);rows.forEach(function(r){csv+=cols.map(function(c){return '\"'+String(r[c]==null?'':r[c]).replace(/\"/g,'\"\"')+'\"';}).join(',')+String.fromCharCode(10);});var blob=new Blob([csv],{type:'text/csv'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='payment-report-'+Date.now()+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);toastr.success('Exported.');}
+        else{var html='<html><head><title>Payment Report</title><style>body{font-family:Arial;font-size:12px;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 8px;}th{background:#f0f4f8;}</style></head><body><h2>Payment Report ('+rows.length+')</h2><table><tr>';cols.forEach(function(c){html+='<th>'+H.esc(c)+'</th>';});html+='</tr>';rows.forEach(function(r){html+='<tr>';cols.forEach(function(c){html+='<td>'+H.esc(String(r[c]||''))+'</td>';});html+='</tr>';});html+='</table></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(function(){w.print();},400);}
+    }).fail(function(){hideLoading();toastr.error('Failed.');});
+}
+
+$(function(){
+    loadData();
+    var st;$('#searchInput').on('input',function(){clearTimeout(st);st=setTimeout(function(){_page=1;loadData();},300);});
+    $('#filterGateway,#filterStatus').on('change',function(){_page=1;loadData();});
+    $('#filterFrom,#filterTo').on('change',function(){_page=1;loadData();});
+    $('#btnClearFilters').on('click',function(){$('#searchInput').val('');$('#filterGateway').val('');$('#filterStatus').val('');$('#filterFrom').val('');$('#filterTo').val('');_page=1;loadData();});
+    $(document).on('click','#tablePagination .page-link',function(e){e.preventDefault();var p=parseInt($(this).data('page'));if(p&&p>=1){_page=p;loadData();}});
+});
+</script>
+`);
+%>

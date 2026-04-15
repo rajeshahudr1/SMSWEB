@@ -264,3 +264,41 @@ SMSWEB/
     images/            # Static images
   index.js             # Express app entry point
 ```
+
+---
+
+## New Modules (Added)
+
+### Subscription Management (`/subscriptions/admin`)
+- All org subscriptions list (one row per org, latest sub)
+- Detail modal: 4 tabs (Details, Subscriptions, Payments, History)
+- Actions: extend, change plan, cancel, activate, suspend
+- Alert settings: configurable expiry warning days, email/notification toggle, grace period
+- Payment Reports page: stats cards, gateway/country breakdown, filters, export
+
+### Package Enquiries (`/packages/enquiries`)
+- Enquiry list with search, filters, pagination, export
+- Detail modal with admin notes timeline
+- Status management (new/contacted/closed)
+
+### Reviews (`/reviews`)
+- Review list with search, rating filter, status filter
+- View modal with star display + approve/reject buttons
+- Approve/reject/delete actions
+
+### Profile — Subscription Tab
+- Current plan card with expiry banner (X days remaining / expired / expiring soon)
+- 3 inner tabs: Details (with subscription history table), Payments (with invoice PDF download), History (vertical timeline)
+- Renew, Upgrade, Cancel, Undo Cancel buttons
+- Auto-renew toggle with description
+
+### Choose Plan (`/choose-plan`)
+- Standalone page (no sidebar) matching pricing.html design
+- Monthly/yearly toggle, all packages from API
+- Current plan: "Renew" button. Lower plans: disabled. Higher plans: "Upgrade"
+- Trial, custom plan (enquiry form), tax note
+
+### Payment Pages
+- Payment page: price breakdown + Stripe redirect / Razorpay modal
+- Success page: green confirmation with subscription summary
+- Payment result page: success/pending/error states

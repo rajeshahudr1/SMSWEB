@@ -411,8 +411,13 @@ $(function () {
             var sub = res.data;
             var h = '';
             if (!sub) {
-                h += '<div class="text-center py-4"><i class="bi bi-box-seam d-block mb-2" style="font-size:36px;opacity:.3;"></i><p class="text-muted">No active subscription.</p>';
-                h += '<a href="/choose-plan" class="btn btn-primary btn-sm"><i class="bi bi-credit-card me-1"></i>Choose a Plan</a></div>';
+                var isSA = (typeof SMS_SETTINGS !== 'undefined' && window._SMS_IS_SUPER_ADMIN);
+                if (isSA) {
+                    h += '<div class="text-center py-4"><i class="bi bi-shield-check d-block mb-2 text-success" style="font-size:36px;"></i><p class="fw-semibold">Super Admin</p><p class="text-muted small">No subscription required. You have full platform access.</p></div>';
+                } else {
+                    h += '<div class="text-center py-4"><i class="bi bi-box-seam d-block mb-2" style="font-size:36px;opacity:.3;"></i><p class="text-muted">No active subscription.</p>';
+                    h += '<a href="/choose-plan" class="btn btn-primary btn-sm"><i class="bi bi-credit-card me-1"></i>Choose a Plan</a></div>';
+                }
                 $c.html(h); return;
             }
 
@@ -476,6 +481,17 @@ $(function () {
         if (sub.is_trial) h += '<div class="col-12 mt-2"><span class="badge bg-info-lt"><i class="bi bi-gift me-1"></i>Trial Period</span></div>';
         h += '</div></div>';
 
+        // Expiry banner
+        var now = new Date(), end = new Date(sub.end_date);
+        var daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+        if (sub.status === 'expired' || daysLeft <= 0) {
+            h += '<div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" style="font-size:13px;"><i class="bi bi-exclamation-octagon-fill"></i><div><strong>Your plan has expired.</strong> Renew now to restore access.</div><a href="/choose-plan" class="btn btn-sm btn-danger ms-auto">Renew Now</a></div>';
+        } else if (daysLeft <= 7) {
+            h += '<div class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="font-size:13px;"><i class="bi bi-clock-fill"></i><div><strong>Your plan expires in ' + daysLeft + ' day' + (daysLeft > 1 ? 's' : '') + '.</strong> Renew before ' + smsFormatDate(sub.end_date) + ' to avoid interruption.</div></div>';
+        } else {
+            h += '<div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" style="font-size:13px;"><i class="bi bi-calendar-check"></i><strong>' + daysLeft + ' days</strong> remaining — valid until ' + smsFormatDate(sub.end_date) + '</div>';
+        }
+
         // Actions
         h += '<div class="d-flex gap-2 mb-3 flex-wrap">';
         if (isActive && !isCancelled) {
@@ -516,7 +532,7 @@ $(function () {
     function buildPaymentsPane(sub) {
         var payments = sub.payments || [];
         if (!payments.length) return '<div class="text-center py-4 text-muted"><i class="bi bi-wallet2 d-block mb-2" style="font-size:32px;opacity:.3;"></i>No payments yet.</div>';
-        var h = '<div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead><tr><th>Date & Time</th><th>Package</th><th>Gateway</th><th>Method</th><th>Status</th><th class="text-end">Amount</th></tr></thead><tbody>';
+        var h = '<div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead><tr><th>Date & Time</th><th>Package</th><th>Gateway</th><th>Method</th><th>Status</th><th class="text-end">Amount</th><th style="width:70px;">Invoice</th></tr></thead><tbody>';
         payments.forEach(function (p) {
             var pst = p.status === 'completed' ? 'bg-success-lt' : p.status === 'failed' ? 'bg-danger-lt' : 'bg-warning-lt';
             h += '<tr><td class="small">' + smsFormatDateTime(p.paid_at || p.created_at) + '</td>';
@@ -524,7 +540,8 @@ $(function () {
             h += '<td style="text-transform:capitalize;">' + H.esc(p.gateway || '-') + '</td>';
             h += '<td style="text-transform:capitalize;">' + H.esc(p.payment_method || '-') + '</td>';
             h += '<td><span class="badge ' + pst + '">' + H.esc(p.status) + '</span></td>';
-            h += '<td class="text-end fw-medium">' + H.esc(p.currency || '') + parseFloat(p.total_amount || 0).toFixed(2) + '</td></tr>';
+            h += '<td class="text-end fw-medium">' + H.esc(p.currency || '') + parseFloat(p.total_amount || 0).toFixed(2) + '</td>';
+            h += '<td>' + (p.invoice_uuid ? '<a href="' + BASE_URL + '/subscriptions/invoices/' + p.invoice_uuid + '/pdf" class="btn btn-sm btn-ghost-primary" title="Download Invoice"><i class="bi bi-file-earmark-pdf"></i></a>' : '-') + '</td></tr>';
         });
         h += '</tbody></table></div>';
         return h;
