@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>POS | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+<link rel="stylesheet" href="/libs/css/tabler.min.css"/>
+<link rel="stylesheet" href="/libs/css/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/libs/css/toastr.min.css"/>
+<link rel="stylesheet" href="/css/pos.css?v=<%= Date.now() %>"/>
+</head>
+<body class="pos-mode">
+
+<div class="pos-layout">
+
+  <!-- ═══ LEFT SIDEBAR ═══ -->
+  <div class="pos-sidebar">
+    <a href="/dashboard" class="ps-logo">S</a>
+    <button class="ps-btn" onclick="toggleSidebar()" data-tip="Collapse sidebar" data-tip-pos="right" style="margin-bottom:8px;"><i class="bi bi-layout-sidebar-inset"></i></button>
+    <div class="ps-nav">
+      <button class="ps-btn active" data-tip="Point of Sale" data-tip-pos="right"><i class="bi bi-grid-1x2-fill"></i></button>
+      <a href="/sales/orders" class="ps-btn" data-tip="Sales Orders" data-tip-pos="right"><i class="bi bi-bag-check"></i></a>
+      <a href="/sales/customers" class="ps-btn" data-tip="Customers" data-tip-pos="right"><i class="bi bi-people"></i></a>
+      <a href="/sales/returns" class="ps-btn" data-tip="Returns & Refunds" data-tip-pos="right"><i class="bi bi-arrow-counterclockwise"></i></a>
+      <a href="/sales/settings" class="ps-btn" data-tip="POS Settings" data-tip-pos="right"><i class="bi bi-gear"></i></a>
+    </div>
+    <div class="ps-bottom">
+      <button class="ps-btn" id="fsToggle" data-tip="Fullscreen" data-tip-pos="right" onclick="toggleFS()"><i class="bi bi-arrows-fullscreen"></i></button>
+      <a href="/logout" class="ps-btn ps-logout-btn" data-tip="Logout" data-tip-pos="right" data-tip-color="red"><i class="bi bi-box-arrow-left"></i></a>
+      <div class="ps-avatar" data-tip="<%- user ? user.name : 'User' %>" data-tip-pos="right"><i class="bi bi-person-fill"></i></div>
+    </div>
+  </div>
+
+  <!-- ═══ CENTER ═══ -->
+  <div class="pos-center">
+    <button class="ps-toggle" onclick="toggleSidebar()" data-tip="Show sidebar" data-tip-pos="right"><i class="bi bi-layout-sidebar-inset"></i></button>
+
+    <!-- Mobile top bar (hidden on desktop) -->
+    <div class="mob-topbar" style="display:none;align-items:center;gap:6px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);">
+      <a href="/dashboard" style="font-size:16px;font-weight:800;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:5px;"><i class="bi bi-grid-1x2-fill"></i> SMS</a>
+      <div style="flex:1;"></div>
+      <a href="/sales/orders" class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;"><i class="bi bi-bag-check"></i></a>
+      <a href="/sales/customers" class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;"><i class="bi bi-people"></i></a>
+      <button class="ps-btn" onclick="toggleFS()" style="width:32px;height:32px;background:var(--bg);font-size:14px;"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button class="ps-btn" onclick="showCart();$('#posRight').toggleClass('open');" style="width:32px;height:32px;background:var(--primary);color:#fff;position:relative;font-size:14px;"><i class="bi bi-cart3"></i><span id="mobCartCnt" style="position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;">0</span></button>
+      <a href="/logout" class="ps-btn" style="width:32px;height:32px;background:rgba(239,68,68,.1);color:var(--red);font-size:14px;"><i class="bi bi-box-arrow-left"></i></a>
+    </div>
+
+    <!-- Header -->
+    <div class="pos-header" id="posHeader">
+      <h2 class="ph-title">POS</h2>
+      <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Search products..." autocomplete="off"/></div>
+      <div class="ph-filters">
+        <select class="ph-sel" id="fWarehouse" data-tip="Filter by warehouse" data-tip-pos="bottom"><option value="">All Warehouses</option></select>
+        <select class="ph-sel" id="fPerPage" data-tip="Items per page" data-tip-pos="bottom"><option value="20">20</option><option value="40">40</option><option value="60">60</option></select>
+        <div class="ph-pg">
+          <button id="pgPrev" disabled onclick="if(_page>1){_page--;loadProducts();}" data-tip="Previous page"><i class="bi bi-chevron-left"></i></button>
+          <span id="pgInfo" data-tip="Current page / Total pages" data-tip-pos="bottom">1 / 1</span>
+          <button id="pgNext" disabled onclick="_page++;loadProducts();" data-tip="Next page"><i class="bi bi-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category tabs -->
+    <div class="pos-cats">
+      <button class="pcat active" data-tab="parts" onclick="switchTab(this)"><i class="bi bi-gear-wide-connected"></i> Parts</button>
+      <button class="pcat" data-tab="vehicles" onclick="switchTab(this)"><i class="bi bi-truck-front"></i> Vehicles</button>
+    </div>
+
+    <!-- Vehicle back bar -->
+    <div class="pos-vback" id="vBackBar">
+      <button class="pvb-btn" onclick="closeVehicleParts()" data-tip="Back to vehicles list"><i class="bi bi-arrow-left"></i> Back</button>
+      <span class="pvb-title" id="vTitle"></span>
+      <button class="pvb-all" onclick="addAllVehicleParts()" data-tip="Add all available parts of this vehicle to cart" data-tip-color="orange"><i class="bi bi-cart-plus"></i> Add All</button>
+    </div>
+
+    <!-- Products -->
+    <div class="pos-grid g-parts" id="prodGrid"></div>
+  </div>
+
+  <!-- ═══ RIGHT PANEL ═══ -->
+  <div class="pos-right" id="posRight">
+    <div class="mob-close-bar" onclick="$('#posRight').removeClass('open');"><div class="mob-handle"></div></div>
+
+    <!-- Cart -->
+    <div class="cart-view" id="cartView">
+      <div class="cv-hdr"><h3><i class="bi bi-receipt" style="color:var(--primary);"></i> Order <span class="cnt" id="cCnt">0</span></h3><button class="clr" onclick="_cart=[];renderCart();" data-tip="Clear all items" data-tip-color="red"><i class="bi bi-trash3"></i> Clear</button></div>
+      <div class="cv-items" id="cItems"><div class="ci-empty"><i class="bi bi-receipt"></i><p>No items yet</p></div></div>
+      <div class="cv-foot">
+        <div class="cf-row"><span>Subtotal</span><span id="cSub">0.00</span></div>
+        <div class="cf-row"><span>Tax</span><span id="cTax">0.00</span></div>
+        <div class="cf-row tot"><span>Total</span><span id="cTotal">0.00</span></div>
+        <button class="cf-pay" id="payBtn" disabled onclick="openCheckout()" data-tip="Proceed to payment" data-tip-pos="top" data-tip-color="blue"><i class="bi bi-credit-card-2-front"></i> Charge <span id="cPayAmt">0.00</span></button>
+      </div>
+    </div>
+
+    <!-- Detail -->
+    <div class="detail-view" id="detailView">
+      <div class="dv-top">
+        <button class="dv-back" onclick="showCart();closePanel();" data-tip="Back to cart"><i class="bi bi-arrow-left"></i></button>
+        <span class="dv-title" id="dvTitle"></span>
+        <span class="dv-badge" id="dvBadge">Part</span>
+      </div>
+      <div class="dv-hero">
+        <div class="dv-img" id="dvImg"><i class="bi bi-gear no-img"></i></div>
+        <div class="dv-meta">
+          <div class="dv-meta-name" id="dvName"></div>
+          <div class="dv-meta-code" id="dvCode"></div>
+          <div class="dv-meta-row">
+            <span class="dv-meta-price" id="dvPrice"></span>
+            <span class="dv-meta-stock" id="dvStock"></span>
+          </div>
+        </div>
+      </div>
+      <div class="dv-body" id="dvBody"></div>
+      <div class="dv-foot">
+        <button class="dv-add-btn" id="dvAddBtn" onclick="dvAddClick()" data-tip="Add selected units to cart" data-tip-color="blue"><i class="bi bi-cart-plus"></i> Add Selected</button>
+        <button class="dv-info-btn" id="dvInfoBtn" onclick="showFullInfo()" data-tip="View full part details — specs, references, damages, images, locations"><i class="bi bi-info-circle"></i> More</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Info Fullscreen Page -->
+<div class="info-page" id="infoPage">
+  <div class="ip-hdr">
+    <button class="ip-back" onclick="$('#infoPage').removeClass('open');" data-tip="Back to POS"><i class="bi bi-arrow-left"></i></button>
+    <span class="ip-title" id="infoTitle">Part Details</span>
+    <span class="ip-badge" id="infoBadge">Part</span>
+  </div>
+  <div class="ip-hero" id="infoHero"></div>
+  <div class="ip-tabs" id="infoTabs"></div>
+  <div class="ip-body" id="infoBody"></div>
+  <div class="ip-foot">
+    <button class="dv-add-btn" style="flex:1;" onclick="$('#infoPage').removeClass('open');"><i class="bi bi-arrow-left"></i> Back to POS</button>
+  </div>
+</div>
+
+<!-- Checkout -->
+<div class="co-overlay" id="coOverlay" onclick="if(event.target===this)$(this).hide();">
+  <div class="co-box">
+    <div class="co-head"><h3><i class="bi bi-credit-card-2-front" style="color:var(--primary);"></i> Checkout</h3></div>
+    <div class="co-body">
+      <div style="margin-bottom:12px;"><label class="co-label">Customer</label><div style="display:flex;gap:6px;"><input type="text" id="custSearch" class="co-input" placeholder="Search name/phone..." style="flex:1;"/><button onclick="" style="padding:8px 12px;border:1.5px solid var(--primary);border-radius:var(--rs);background:none;color:var(--primary);font-size:11px;font-weight:600;">+ New</button></div><div id="custResult" style="font-size:11px;margin-top:3px;color:var(--muted);"></div><input type="hidden" id="custId" value=""/></div>
+      <div style="margin-bottom:12px;display:flex;gap:6px;"><div style="flex:1;"><label class="co-label">Discount</label><div style="display:flex;gap:4px;"><select id="dType" class="co-input" style="width:75px;"><option value="">None</option><option value="percent">%</option><option value="fixed">Fixed</option></select><input type="number" id="dVal" class="co-input" placeholder="0" min="0" style="flex:1;"/></div></div></div>
+      <div style="margin-bottom:12px;"><label class="co-label">Payment Method</label><div style="display:flex;gap:6px;"><button class="pay-method active" data-method="cash" onclick="selPay(this)" data-tip="Cash payment"><i class="bi bi-cash-stack"></i>Cash</button><button class="pay-method" data-method="card" onclick="selPay(this)" data-tip="Card payment"><i class="bi bi-credit-card"></i>Card</button><button class="pay-method" data-method="upi" onclick="selPay(this)" data-tip="UPI / QR payment"><i class="bi bi-phone"></i>UPI</button></div></div>
+      <div style="margin-bottom:12px;"><label class="co-label">Amount Received</label><input type="number" id="amtRcv" class="co-input" style="font-size:20px;font-weight:800;text-align:center;padding:12px;" min="0" step="0.01" oninput="calcChange()"/><div id="changeDisp" style="text-align:center;margin-top:4px;font-size:13px;font-weight:700;display:none;"></div></div>
+      <div style="margin-bottom:12px;display:none;" id="refBox"><label class="co-label">Reference / Txn ID</label><input type="text" id="payRef" class="co-input"/></div>
+      <div><label class="co-label">Notes</label><textarea id="oNotes" rows="2" class="co-input" style="resize:none;" placeholder="Optional..."></textarea></div>
+    </div>
+    <div class="co-foot"><button class="pm-btn cancel" onclick="$('#coOverlay').hide();">Cancel</button><button class="pm-btn confirm" id="coComplete" onclick="doCheckout()"><i class="bi bi-check-circle"></i> Complete</button></div>
+  </div>
+</div>
+
+<!-- Success -->
+<div class="co-overlay" id="successOv" onclick="if(event.target===this)$(this).hide();">
+  <div class="co-box" style="text-align:center;padding:36px 24px;">
+    <div style="font-size:56px;color:var(--green);"><i class="bi bi-check-circle-fill"></i></div>
+    <h3 style="font-weight:800;font-size:20px;margin:8px 0 4px;">Sale Complete!</h3>
+    <p style="color:var(--muted);font-size:13px;" id="successInfo"></p>
+    <div style="margin-top:18px;display:flex;gap:8px;justify-content:center;">
+      <button class="pm-btn confirm" onclick="$('#successOv').hide();loadProducts();" style="flex:0;padding:10px 24px;background:var(--primary);"><i class="bi bi-plus-circle"></i> New Sale</button>
+      <button class="pm-btn cancel" onclick="window.open('/sales/orders','_blank');$('#successOv').hide();" style="flex:0;padding:10px 24px;"><i class="bi bi-receipt"></i> Orders</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="posLightbox" onclick="if(event.target===this){$(this).hide();$(this).find('video')[0]&&$(this).find('video')[0].pause();}">
+  <div id="posLbTop" style="position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:2;"></div>
+  <div id="posLbContent" style="max-width:90vw;max-height:80vh;display:flex;align-items:center;justify-content:center;"></div>
+  <div id="posLbNav" style="position:absolute;bottom:16px;display:flex;align-items:center;gap:8px;z-index:2;"></div>
+</div>
+
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/toastr.min.js"></script>
+<script>var BASE_URL='';toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2000};</script>
+<script src="/js/pages/pos.js?v=<%= Date.now() %>"></script>
+</body>
+</html>

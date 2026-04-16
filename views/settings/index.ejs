@@ -53,7 +53,7 @@ var curIconColor = s.icon_color || 'theme';
 <div class="row g-4">
 
   <%
-  var _hasAnySection = user.is_super_admin || can('settings_custom_design') || can('settings_localization') || can('settings_ai_config') || can('settings_tax_config') || can('settings_vehicle_columns') || can('settings_part_columns');
+  var _hasAnySection = user.is_super_admin || can('view_settings') || can('settings_custom_design') || can('settings_localization') || can('settings_ai_config') || can('settings_tax_config') || can('settings_vehicle_columns') || can('settings_part_columns');
   %>
   <% if (!_hasAnySection) { %>
   <div class="col-12">

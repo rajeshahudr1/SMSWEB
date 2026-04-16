@@ -1,0 +1,122 @@
+<%- layout('../layouts/pos-layout') %>
+<div class="card shadow-sm">
+  <div class="card-header py-2 border-bottom">
+    <h3 class="card-title mb-0"><i class="bi bi-gear me-2 text-primary"></i>POS Settings</h3>
+  </div>
+  <div class="card-body">
+    <form id="settingsForm">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Default Warehouse</label>
+            <select class="form-select" id="pos_default_warehouse" name="pos_default_warehouse">
+              <option value="">-- All Warehouses --</option>
+            </select>
+            <small class="form-hint">Default warehouse for POS product listing</small>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Low Stock Alert Threshold</label>
+            <input type="number" class="form-control" id="pos_low_stock_alert" name="pos_low_stock_alert" value="5" min="0"/>
+            <small class="form-hint">Alert when stock falls below this quantity</small>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="pos_enable_discount" name="pos_enable_discount" checked/>
+              <label class="form-check-label" for="pos_enable_discount">Enable Discounts</label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="pos_enable_tax" name="pos_enable_tax" checked/>
+              <label class="form-check-label" for="pos_enable_tax">Enable Tax Calculation</label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="pos_show_vehicle_tab" name="pos_show_vehicle_tab" checked/>
+              <label class="form-check-label" for="pos_show_vehicle_tab">Show Vehicle Tab</label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="pos_allow_multi_warehouse" name="pos_allow_multi_warehouse" checked/>
+              <label class="form-check-label" for="pos_allow_multi_warehouse">Allow Multi-Warehouse</label>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="mb-3">
+            <label class="form-label">Receipt Header</label>
+            <textarea class="form-control" id="pos_receipt_header" name="pos_receipt_header" rows="2" placeholder="Company name, address, etc."></textarea>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="mb-3">
+            <label class="form-label">Receipt Footer</label>
+            <textarea class="form-control" id="pos_receipt_footer" name="pos_receipt_footer" rows="2" placeholder="Thank you message, return policy, etc."></textarea>
+          </div>
+        </div>
+      </div>
+      <% if (can('edit_pos_settings')) { %>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg me-1"></i>Save Settings</button>
+      </div>
+      <% } %>
+    </form>
+  </div>
+</div>
+
+<% block('scripts', `
+<script>
+$(function(){
+  // Load settings
+  $.get('/sales/settings/data', function(res){
+    if(res.status===200 && res.data){
+      var d = res.data;
+      Object.keys(d).forEach(function(k){
+        var el = $('#'+k);
+        if(!el.length) return;
+        if(el.is(':checkbox')) el.prop('checked', d[k]==='1'||d[k]===true||d[k]==='true');
+        else el.val(d[k]||'');
+      });
+      // Load warehouses for dropdown
+      if(d._warehouses){
+        d._warehouses.forEach(function(w){
+          $('#pos_default_warehouse').append('<option value="'+w.id+'" '+(String(d.pos_default_warehouse)===String(w.id)?'selected':'')+'>'+w.warehouse_name+'</option>');
+        });
+      }
+    }
+  });
+
+  // Save
+  $('#settingsForm').on('submit', function(e){
+    e.preventDefault();
+    var data = {};
+    $(this).find('input,select,textarea').each(function(){
+      var el=$(this), k=el.attr('name');
+      if(!k) return;
+      if(el.is(':checkbox')) data[k] = el.is(':checked') ? '1' : '0';
+      else data[k] = el.val();
+    });
+    $.ajax({
+      url:'/sales/settings', type:'PUT', contentType:'application/json',
+      data: JSON.stringify(data),
+      success:function(res){
+        if(res.status===200) smsToast('Settings saved successfully','success');
+        else smsToast(res.message||'Failed','error');
+      },
+      error:function(){ smsToast('Failed to save settings','error'); }
+    });
+  });
+});
+</` + 'script>') %>

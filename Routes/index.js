@@ -71,6 +71,10 @@ router.use('/packages', authGuard, require('./packages'));
 router.use('/subscriptions', authGuard, require('./subscriptions'));
 router.get('/choose-plan', authGuard, require('../Controllers/SubscriptionsController').choosePlan);
 
+// Sales / POS
+router.use('/sales', authGuard, require('./pos'));
+router.use('/pos', authGuard, require('./pos')); // alias
+
 // Reviews
 router.use('/reviews', authGuard, require('./reviews'));
 

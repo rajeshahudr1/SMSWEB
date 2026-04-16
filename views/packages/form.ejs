@@ -244,6 +244,7 @@ $(function(){
         { label: 'Warehouse',       icon: 'bi-building-fill', groups: ['Warehouses', 'Warehouse Zones', 'Warehouse Shelves', 'Warehouse Racks', 'Warehouse Bins'] },
         { label: 'Inventory',       icon: 'bi-boxes',         groups: ['Part Inventories', 'Vehicle Inventories'] },
         { label: 'Location',        icon: 'bi-geo-alt',       groups: ['Countries', 'States', 'Cities'] },
+        { label: 'Sales',           icon: 'bi-cart3',         groups: ['POS', 'POS Orders', 'POS Customers', 'POS Returns', 'POS Settings'] },
         { label: 'Reports',         icon: 'bi-bar-chart',     groups: ['Activity Logs'] },
     ];
 
@@ -296,22 +297,31 @@ $(function(){
             SECTIONS.forEach(function(s) { s.groups.forEach(function(g) { mapped[g] = true; }); });
             var unmapped = groups.filter(function(g) { return !mapped[g]; });
             if (unmapped.length) {
-                h += '<div class="mb-3"><div class="d-flex align-items-center gap-2 mb-2 px-1"><i class="bi bi-three-dots text-muted"></i><span class="fw-semibold" style="font-size:13px;">Other</span></div>';
+                var headerVal = _featureHeaders['Other'] || 'Other';
+                h += '<div class="mb-3 border rounded overflow-hidden">';
+                h += '<div class="d-flex align-items-center gap-2 px-3 py-2 sec-hdr" data-sec="sec_Other" style="background:var(--tblr-bg-surface-secondary);">';
+                h += '<i class="bi bi-three-dots sec-icon-click" style="font-size:16px;color:#1e293b;cursor:pointer;"></i>';
+                h += '<input type="text" class="form-control form-control-sm fw-semibold section-header-input border-0" value="' + H.esc(headerVal) + '" data-section="Other" style="font-size:13px;background:transparent;flex:1;" placeholder="Other"/>';
+                h += '<span class="badge bg-primary-lt sec-badge-click" style="font-size:10px;cursor:pointer;">' + unmapped.length + '</span>';
+                h += '</div>';
+                h += '<div id="sec_Other" class="section-body">';
                 unmapped.forEach(function(g) {
                     var lim = _limitData[g] !== undefined ? _limitData[g] : 0;
-                    h += '<div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom" style="font-size:12px;" data-group="' + H.esc(g) + '">';
-                    h += '<i class="bi bi-check-circle-fill text-success me-1" style="font-size:10px;"></i>';
-                    h += '<span class="flex-fill">' + H.esc(g) + '</span>';
+                    var moduleLabel = _featureHeaders['_mod_' + g] || g;
+                    h += '<div class="d-flex align-items-center gap-2 px-3 py-1 border-bottom" style="font-size:12px;" data-group="' + H.esc(g) + '">';
+                    h += '<i class="bi bi-check-circle-fill" style="font-size:10px;color:#16a34a;"></i>';
+                    h += '<input type="text" class="form-control form-control-sm module-label-input border-0" value="' + H.esc(moduleLabel) + '" data-module="' + H.esc(g) + '" style="font-size:12px;background:transparent;flex:1;" placeholder="' + H.esc(g) + '"/>';
                     if (addSet[g]) h += '<input type="number" class="form-control form-control-sm module-limit text-center border" min="0" value="' + lim + '" data-group="' + H.esc(g) + '" placeholder="0" style="width:70px;font-size:12px;background:#f8f9fa;"/>';
                     h += '</div>';
                 });
+                h += '</div>';
                 h += '</div>';
             }
 
             // Settings section
             var settingsPerms = data.settingsPerms || [];
             if (settingsPerms.length) {
-                var icMap = {settings_custom_design:'bi-palette',settings_ai_config:'bi-robot',settings_localization:'bi-globe',settings_tax_config:'bi-receipt',settings_vehicle_columns:'bi-truck',settings_part_columns:'bi-boxes'};
+                var icMap = {view_settings:'bi-eye',edit_settings:'bi-pencil',settings_custom_design:'bi-palette',settings_ai_config:'bi-robot',settings_localization:'bi-globe',settings_tax_config:'bi-receipt',settings_vehicle_columns:'bi-truck',settings_part_columns:'bi-boxes'};
                 h += '<div class="mb-3 border rounded overflow-hidden">';
                 h += '<div class="d-flex align-items-center gap-2 px-3 py-2 sec-hdr" data-sec="sec_Settings" style="background:var(--tblr-bg-surface-secondary);">';
                 h += '';

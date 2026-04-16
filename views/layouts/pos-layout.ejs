@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title><%- typeof page_title !== 'undefined' ? page_title : 'POS' %> | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+<link rel="stylesheet" href="/libs/css/tabler.min.css"/>
+<link rel="stylesheet" href="/libs/css/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/libs/css/toastr.min.css"/>
+<link rel="stylesheet" href="/css/pos.css?v=<%= Date.now() %>"/>
+<%- block('styles') %>
+</head>
+<body class="pos-mode">
+
+<div class="pos-layout">
+  <!-- Sidebar -->
+  <div class="pos-sidebar" id="posSidebar">
+    <a href="/dashboard" class="ps-logo">S</a>
+    <button class="ps-btn" onclick="document.getElementById('posSidebar').classList.toggle('collapsed');" data-tip="Toggle sidebar" data-tip-pos="right" style="margin-bottom:8px;"><i class="bi bi-layout-sidebar-inset"></i></button>
+    <div class="ps-nav">
+      <a href="/sales" class="ps-btn" data-tip="POS" data-tip-pos="right"><i class="bi bi-grid-1x2-fill"></i></a>
+      <a href="/sales/orders" class="ps-btn <%- activeLink==='pos-orders'?'active':'' %>" data-tip="Sales Orders" data-tip-pos="right"><i class="bi bi-bag-check"></i></a>
+      <a href="/sales/customers" class="ps-btn <%- activeLink==='pos-customers'?'active':'' %>" data-tip="Customers" data-tip-pos="right"><i class="bi bi-people"></i></a>
+      <a href="/sales/returns" class="ps-btn <%- activeLink==='pos-returns'?'active':'' %>" data-tip="Returns" data-tip-pos="right"><i class="bi bi-arrow-counterclockwise"></i></a>
+      <a href="/sales/settings" class="ps-btn <%- activeLink==='pos-settings'?'active':'' %>" data-tip="Settings" data-tip-pos="right"><i class="bi bi-gear"></i></a>
+    </div>
+    <div class="ps-bottom">
+      <button class="ps-btn" id="fsToggle" onclick="toggleFS()" data-tip="Toggle Fullscreen" data-tip-pos="right"><i class="bi bi-arrows-fullscreen"></i></button>
+      <a href="/logout" class="ps-btn" data-tip="Logout" data-tip-pos="right" data-tip-color="red"><i class="bi bi-box-arrow-left"></i></a>
+      <div class="ps-avatar" data-tip="<%- user ? user.name : '' %>" data-tip-pos="right"><i class="bi bi-person-fill"></i></div>
+    </div>
+  </div>
+
+  <!-- Center -->
+  <div class="pos-center">
+    <!-- Mobile top bar -->
+    <div class="mob-topbar-page">
+      <a href="/sales" style="font-size:16px;font-weight:800;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:6px;"><i class="bi bi-arrow-left"></i> POS</a>
+      <span style="font-size:14px;font-weight:700;flex:1;"><%- typeof page_title !== 'undefined' ? page_title : '' %></span>
+    </div>
+
+    <!-- Page header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;flex-shrink:0;">
+      <a href="/sales" style="width:34px;height:34px;border-radius:var(--rs);border:1.5px solid var(--border);background:none;display:flex;align-items:center;justify-content:center;color:var(--text2);text-decoration:none;font-size:15px;" data-tip="Back to POS"><i class="bi bi-arrow-left"></i></a>
+      <h2 style="font-size:20px;font-weight:800;margin:0;flex:1;"><%- typeof page_title !== 'undefined' ? page_title : 'POS' %></h2>
+      <%- block('headerActions') %>
+    </div>
+
+    <!-- Page content -->
+    <div class="pos-page-content">
+      <%- body %>
+    </div>
+  </div>
+</div>
+
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/tabler.min.js"></script>
+<script src="/libs/js/toastr.min.js"></script>
+<script>
+var BASE_URL='';
+toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2500};
+var H={esc:function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');},currency:function(v){return parseFloat(v||0).toFixed(2);}};
+function smsFormatDateTime(d){if(!d)return '\u2014';var dt=new Date(d);return dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function smsFormatDate(d){if(!d)return '\u2014';return new Date(d).toLocaleDateString();}
+function smsInitPerPage(sel){var v=localStorage.getItem('pp')||15;$(sel).val(v);return parseInt(v);}
+function smsConfirm(o){if(confirm(o.msg||'Are you sure?'))o.onConfirm();}
+function showLoading(){$('body').append('<div id="posLoading" style="position:fixed;inset:0;z-index:99999;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;"><div class="spinner-border text-primary"></div></div>');}
+function hideLoading(){$('#posLoading').remove();}
+function smsToast(m,t){if(t==='success')toastr.success(m);else if(t==='error')toastr.error(m);else toastr.info(m);}
+// Sidebar state
+if(localStorage.getItem('pos_sidebar')==='0')document.getElementById('posSidebar').classList.add('collapsed');
+// Fullscreen persist
+var _isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&'ontouchend' in document);
+function toggleFS(){
+    if(_isIOS){toastr.info('iPad: Use Share > Add to Home Screen');return;}
+    try{var d=document,el=d.documentElement;if(d.fullscreenElement||d.webkitFullscreenElement){if(d.exitFullscreen)d.exitFullscreen();else if(d.webkitExitFullscreen)d.webkitExitFullscreen();localStorage.setItem('pos_fs','0');}else{if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();localStorage.setItem('pos_fs','1');}}catch(e){}
+}
+if(localStorage.getItem('pos_fs')==='1'&&!_isIOS){
+    $(document).one('click',function(){var d=document,el=d.documentElement;if(!d.fullscreenElement&&!d.webkitFullscreenElement){try{if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();}catch(e){}}});
+}
+$(document).on('fullscreenchange webkitfullscreenchange',function(){var fs=document.fullscreenElement||document.webkitFullscreenElement;$('#fsToggle i').attr('class',fs?'bi bi-fullscreen-exit':'bi bi-arrows-fullscreen');});
+</script>
+<%- block('scripts') %>
+</body>
+</html>

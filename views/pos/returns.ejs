@@ -1,0 +1,53 @@
+<%- layout('../layouts/pos-layout') %>
+<div class="card shadow-sm">
+  <div class="card-header py-2 border-bottom">
+    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-arrow-counterclockwise me-2 text-primary"></i>Returns <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">-</span></h3>
+      <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"></select>
+    </div>
+  </div>
+  <div class="px-3 py-2 border-bottom" style="background:var(--tblr-bg-surface-secondary);">
+    <div class="d-flex align-items-center gap-2">
+      <div class="flex-grow-1"><input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search return/order number..."/></div>
+      <button class="btn btn-sm btn-outline-secondary" id="btnClear"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-vcenter mb-0">
+      <thead><tr><th style="width:36px;">#</th><th>Return #</th><th>Order #</th><th>Customer</th><th>Type</th><th class="text-end">Amount</th><th>Refund</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody id="tableBody"><tr><td colspan="9" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
+</div>
+
+<% block('scripts', `
+<script>
+var _page=1,_pp=15;
+_pp=smsInitPerPage('#perPageSel');$('#perPageSel').on('change',function(){_pp=parseInt($(this).val())||15;_page=1;loadData();});
+
+function buildPagination(pg){if(!pg||pg.last_page<=1){$('#tablePagination').html('');return;}var h='<ul class="pagination pagination-sm mb-0">';h+='<li class="page-item'+(pg.current_page<=1?' disabled':'')+'"><a class="page-link" href="#" data-page="'+(pg.current_page-1)+'"><i class="bi bi-chevron-left"></i></a></li>';var s=Math.max(1,pg.current_page-2),e=Math.min(pg.last_page,pg.current_page+2);for(var i=s;i<=e;i++)h+='<li class="page-item'+(i===pg.current_page?' active':'')+'"><a class="page-link" href="#" data-page="'+i+'">'+i+'</a></li>';h+='<li class="page-item'+(pg.current_page>=pg.last_page?' disabled':'')+'"><a class="page-link" href="#" data-page="'+(pg.current_page+1)+'"><i class="bi bi-chevron-right"></i></a></li></ul>';$('#tablePagination').html(h);}
+
+function loadData(){
+    $('#tableBody').html('<tr><td colspan="9" class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>');
+    $.post(BASE_URL+'/pos/returns/paginate',{page:_page,per_page:_pp,search:$('#searchInput').val().trim()},function(res){
+        if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="9" class="text-center text-danger py-4">Failed.</td></tr>');return;}
+        var data=res.data&&res.data.data?res.data.data:[],pg=res.data&&res.data.pagination?res.data.pagination:{};
+        $('#badgeTotal').text((pg.total||0).toLocaleString());
+        if(!data.length){$('#tableBody').html('<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-arrow-counterclockwise d-block mb-2" style="font-size:36px;opacity:.3;"></i>No returns</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+        var rows='';
+        data.forEach(function(r,i){
+            var stCls=r.refund_status==='completed'?'bg-success-lt':'bg-warning-lt';
+            rows+='<tr><td class="text-muted">'+((pg.from||1)+i)+'</td><td class="fw-medium">'+H.esc(r.return_number)+'</td><td>'+H.esc(r.order_number||'-')+'</td><td>'+(r.customer_name?H.esc(r.customer_name):'<span class="text-muted">-</span>')+'</td><td><span class="badge bg-azure-lt" style="text-transform:capitalize;">'+H.esc(r.return_type)+'</span></td><td class="text-end fw-medium">'+H.currency(r.total_amount)+'</td><td style="text-transform:capitalize;">'+H.esc(r.refund_method)+'</td><td><span class="badge '+stCls+'" style="text-transform:capitalize;">'+H.esc(r.refund_status)+'</span></td><td class="text-muted small">'+smsFormatDateTime(r.created_at)+'</td></tr>';
+        });
+        $('#tableBody').html(rows);$('#tableInfo').text('Showing '+(pg.from||1)+'\u2013'+(pg.to||data.length)+' of '+(pg.total||0));buildPagination(pg);
+    });
+}
+
+$(function(){loadData();
+    var st;$('#searchInput').on('input',function(){clearTimeout(st);st=setTimeout(function(){_page=1;loadData();},300);});
+    $('#btnClear').on('click',function(){$('#searchInput').val('');_page=1;loadData();});
+    $(document).on('click','#tablePagination .page-link',function(e){e.preventDefault();var p=parseInt($(this).data('page'));if(p&&p>=1){_page=p;loadData();}});
+});
+</script>
+`); %>
