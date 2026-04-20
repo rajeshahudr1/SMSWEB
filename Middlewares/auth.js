@@ -200,7 +200,7 @@ async function injectLocals(req, res, next) {
         const supportedLanguages = await i18n.fetchSupportedLanguages();
 
         res.locals.APP_NAME            = process.env.APP_NAME || 'SMS';
-        res.locals.BASE_URL            = process.env.APP_URL  || '';
+        res.locals.BASE_URL            = '';
         res.locals.user                = user;
         res.locals.settings            = settings;
         res.locals.permissions         = permissions;

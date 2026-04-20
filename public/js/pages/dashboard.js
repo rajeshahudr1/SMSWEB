@@ -56,7 +56,7 @@ function loadDashboard() {
         dataType: 'json',
         success: function(res) {
             if (!res || res.status !== 200) {
-                $('#blockParts,#blockVehicles,#blockLocations').html('<div class="text-center py-3 text-danger small">Failed to load</div>');
+                $('#blockParts,#blockVehicles,#blockLocations').html('<div class="text-center py-3 text-danger small">Failed: '+(res?res.message:'no response')+'</div>');
                 return;
             }
             var d = res.data || {};
@@ -140,8 +140,9 @@ function loadDashboard() {
                 });
             }
         },
-        error: function() {
-            $('#blockParts,#blockVehicles,#blockLocations').html('<div class="text-center py-3 text-danger small">Network error</div>');
+        error: function(xhr) {
+            var msg='HTTP '+xhr.status;try{var r=JSON.parse(xhr.responseText);if(r.message)msg+=': '+r.message;}catch(e){}
+            $('#blockParts,#blockVehicles,#blockLocations').html('<div class="text-center py-3 text-danger small">Error: '+msg+'</div>');
         }
     });
 }

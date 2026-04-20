@@ -1,4 +1,4 @@
-<%- layout('../layouts/pos-layout') %>
+<% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
 <div class="card shadow-sm">
   <div class="card-header py-2 border-bottom">
     <h3 class="card-title mb-0"><i class="bi bi-gear me-2 text-primary"></i>POS Settings</h3>
@@ -76,7 +76,6 @@
   </div>
 </div>
 
-<% block('scripts', `
 <script>
 $(function(){
   // Load settings
@@ -119,4 +118,4 @@ $(function(){
     });
   });
 });
-</` + 'script>') %>
+</script>

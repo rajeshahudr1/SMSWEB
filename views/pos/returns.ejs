@@ -1,4 +1,4 @@
-<%- layout('../layouts/pos-layout') %>
+<% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
 <div class="card shadow-sm">
   <div class="card-header py-2 border-bottom">
     <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
@@ -21,7 +21,6 @@
   <div class="card-footer d-flex align-items-center flex-wrap gap-2"><div class="text-muted small" id="tableInfo"></div><div class="ms-auto" id="tablePagination"></div></div>
 </div>
 
-<% block('scripts', `
 <script>
 var _page=1,_pp=15;
 _pp=smsInitPerPage('#perPageSel');$('#perPageSel').on('change',function(){_pp=parseInt($(this).val())||15;_page=1;loadData();});
@@ -50,4 +49,3 @@ $(function(){loadData();
     $(document).on('click','#tablePagination .page-link',function(e){e.preventDefault();var p=parseInt($(this).data('page'));if(p&&p>=1){_page=p;loadData();}});
 });
 </script>
-`); %>

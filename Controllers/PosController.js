@@ -8,14 +8,18 @@ exports.index = (req, res) => {
 
 // Proxies
 exports.products = async (req, res) => { res.json(await api.get('/pos/products', req.session.token, req.query)); };
-exports.vehicleParts = async (req, res) => { res.json(await api.get('/pos/vehicle/' + req.params.uuid + '/parts', req.session.token)); };
+exports.vehicleParts = async (req, res) => { res.json(await api.get('/pos/vehicle/' + req.params.uuid + '/parts', req.session.token, req.query)); };
 exports.validateStock = async (req, res) => { res.json(await api.post('/pos/validate-stock', req.body, req.session.token)); };
 exports.checkout = async (req, res) => { res.json(await api.post('/pos/checkout', req.body, req.session.token)); };
 exports.dashboard = async (req, res) => { res.json(await api.get('/pos/dashboard', req.session.token)); };
 exports.warehouses = async (req, res) => { res.json(await api.get('/pos/warehouses', req.session.token)); };
 
 // Orders
-exports.ordersPage = (req, res) => { res.render('pos/orders', { page_title: 'Sales Orders', activeLink: 'pos-orders', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Orders', url: '' }] }); };
+exports.ordersPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    if (isSpa) res.render('pos/orders', { page_title: 'Sales Orders', activeLink: 'pos-orders', breadcrumbs: [], layout: false, _spa: true });
+    else res.render('pos/orders', { page_title: 'Sales Orders', activeLink: 'pos-orders', breadcrumbs: [] });
+};
 exports.ordersPaginate = async (req, res) => { res.json(await api.post('/pos/orders/paginate', req.body, req.session.token)); };
 exports.orderShow = async (req, res) => { res.json(await api.get('/pos/orders/' + req.params.uuid, req.session.token)); };
 exports.orderCancel = async (req, res) => { res.json(await api.post('/pos/orders/' + req.params.uuid + '/cancel', {}, req.session.token)); };
@@ -33,7 +37,11 @@ exports.orderPayment = async (req, res) => { res.json(await api.post('/pos/order
 exports.ordersExport = async (req, res) => { res.json(await api.post('/pos/orders/export', req.body, req.session.token)); };
 
 // Customers
-exports.customersPage = (req, res) => { res.render('pos/customers', { page_title: 'Customers', activeLink: 'pos-customers', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Customers', url: '' }] }); };
+exports.customersPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    if (isSpa) res.render('pos/customers', { page_title: 'Customers', activeLink: 'pos-customers', breadcrumbs: [], layout: false, _spa: true });
+    else res.render('pos/customers', { page_title: 'Customers', activeLink: 'pos-customers', breadcrumbs: [] });
+};
 exports.customersPaginate = async (req, res) => { res.json(await api.post('/pos/customers/paginate', req.body, req.session.token)); };
 exports.customerSearch = async (req, res) => { res.json(await api.get('/pos/customers/search', req.session.token, req.query)); };
 exports.customerShow = async (req, res) => { res.json(await api.get('/pos/customers/' + req.params.uuid, req.session.token)); };
@@ -42,7 +50,11 @@ exports.customerUpdate = async (req, res) => { res.json(await api.put('/pos/cust
 exports.customerDestroy = async (req, res) => { res.json(await api.del('/pos/customers/' + req.params.uuid, req.session.token)); };
 
 // Settings
-exports.settingsPage = (req, res) => { res.render('pos/settings', { page_title: 'POS Settings', activeLink: 'pos-settings', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'POS Settings', url: '' }] }); };
+exports.settingsPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    if (isSpa) res.render('pos/settings', { page_title: 'POS Settings', activeLink: 'pos-settings', breadcrumbs: [], layout: false, _spa: true });
+    else res.render('pos/settings', { page_title: 'POS Settings', activeLink: 'pos-settings', breadcrumbs: [] });
+};
 exports.settingsGet = async (req, res) => { res.json(await api.get('/pos/settings', req.session.token)); };
 exports.settingsUpdate = async (req, res) => { res.json(await api.put('/pos/settings', req.body, req.session.token)); };
 
@@ -56,7 +68,11 @@ exports.partDetail = async (req, res) => {
 exports.vehicleDetail = async (req, res) => { res.json(await api.get('/vehicle-inventories/' + req.params.uuid, req.session.token)); };
 
 // Returns
-exports.returnsPage = (req, res) => { res.render('pos/returns', { page_title: 'Returns', activeLink: 'pos-returns', breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Returns', url: '' }] }); };
+exports.returnsPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    if (isSpa) res.render('pos/returns', { page_title: 'Returns', activeLink: 'pos-returns', breadcrumbs: [], layout: false, _spa: true });
+    else res.render('pos/returns', { page_title: 'Returns', activeLink: 'pos-returns', breadcrumbs: [] });
+};
 exports.returnCreate = async (req, res) => { res.json(await api.post('/pos/returns', req.body, req.session.token)); };
 exports.returnsPaginate = async (req, res) => { res.json(await api.post('/pos/returns/paginate', req.body, req.session.token)); };
 exports.returnShow = async (req, res) => { res.json(await api.get('/pos/returns/' + req.params.uuid, req.session.token)); };
