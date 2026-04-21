@@ -238,7 +238,8 @@ function loadData(){
             var deleted=!!r.deleted_at;
             var isActive=(r.status===true||r.status===1||r.status==='1'||parseInt(r.status)===1);
             var editable=!deleted && r.is_editable !== false;
-            var deletable=!deleted && r.is_deletable !== false;
+            var isSoldOrReserved=(parseInt(r.inventory_status)===3||parseInt(r.inventory_status)===4);
+            var deletable=!deleted && r.is_deletable !== false && !isSoldOrReserved;
 
             // ── Action column: Shortcut button + main dropdown side-by-side ──
             var acts='<div class="d-inline-flex gap-1">';
@@ -270,6 +271,7 @@ function loadData(){
                 acts+='<li><a class="dropdown-item" href="#" onclick="viewVehiclePopup(\''+r.vehicle_inventory_uuid+'\',\''+H.esc(r.vehicle_inventory_code||'')+'\');return false;"><i class="bi bi-truck me-2 text-info"></i>Vehicle Details</a></li>';
             }
             acts+='<li><a class="dropdown-item" href="#" onclick="downloadPdfPI(\''+r.uuid+'\');return false;"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Download PDF</a></li>';
+            acts+='<li><a class="dropdown-item" href="#" onclick="showQrCode(\''+H.esc(r.part_internal_id||r.part_code||'')+'\',\''+H.esc(r.part_code||'')+'\',\''+r.uuid+'\');return false;"><i class="bi bi-qr-code me-2 text-purple"></i>Show QR Code</a></li>';
             if(deleted){
                 acts+='<li><a class="dropdown-item" href="#" onclick="recoverPT(\''+r.uuid+'\',\''+H.esc(r.part_code||'')+'\');return false;"><i class="bi bi-arrow-counterclockwise me-2 text-success"></i>'+T('bulk.recover','Recover')+'</a></li>';
             }else{

@@ -104,6 +104,19 @@ var pcAttributes = (pc && pc.attributes) ? pc.attributes : [];
             <input type="number" name="number_of_car_doors" id="fCarDoors" class="form-control" min="0" max="10" value="<%= isEdit ? (pc.number_of_car_doors||'') : '' %>" placeholder="0"/>
           </div>
           <div class="col-md-3">
+            <label class="form-label fw-medium">HSN/SAC Code</label>
+            <input type="text" name="hsn_code" id="fHsnCode" class="form-control" maxlength="20" value="<%= isEdit ? (pc.hsn_code||'') : '' %>" placeholder="e.g., 8708"/>
+            <small class="form-hint">For GST invoices.</small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-medium">Default GST %</label>
+            <div class="input-group">
+              <input type="number" name="default_tax_rate" id="fDefaultTaxRate" class="form-control" step="0.01" min="0" max="100" value="<%= isEdit ? (pc.default_tax_rate||'') : '' %>" placeholder="e.g., 18"/>
+              <span class="input-group-text">%</span>
+            </div>
+            <small class="form-hint">Optional — overrides org tax.</small>
+          </div>
+          <div class="col-md-3">
             <label class="form-label fw-medium"><%- t('part_catalogs.height', 'Height') %></label>
             <input type="number" name="height" id="fHeight" class="form-control" step="0.01" min="0" value="<%= isEdit ? (pc.height||'') : '' %>" placeholder="0.00"/>
           </div>

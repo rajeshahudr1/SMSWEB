@@ -285,5 +285,27 @@ var isSuperAdmin = user && user.is_super_admin;
 <!-- Usage Modal -->
 <% include ../partials/usage-modal %>
 
-<script>window._IS_SUPER = <%= isSuperAdmin ? 'true' : 'false' %>;</script>
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered" style="max-width:400px;"><div class="modal-content">
+  <div class="modal-header py-2"><h6 class="modal-title fw-semibold mb-0"><i class="bi bi-qr-code me-2 text-purple"></i>QR Code</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body text-center p-4">
+    <div id="qrCanvas" style="display:inline-block;padding:16px;background:#fff;border-radius:12px;border:2px solid #e2e8f0;"></div>
+    <div id="qrInfo" style="margin-top:12px;"></div>
+  </div>
+  <div class="modal-footer py-2 justify-content-center gap-2">
+    <button type="button" class="btn btn-sm btn-primary" onclick="printQr()"><i class="bi bi-printer me-1"></i>Print</button>
+    <button type="button" class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+  </div>
+</div></div></div>
+
+<script src="/libs/js/qrcode-generator.js"></script>
+<script src="/libs/js/jsbarcode.min.js"></script>
+<script src="/libs/js/web-label-printer.js"></script>
+<script src="/libs/js/qr-helper.js"></script>
+<script>window._IS_SUPER = <%= isSuperAdmin ? 'true' : 'false' %>;
+
+function showQrCode(internalId,partCode,uuid){
+    showCodePopup(internalId||partCode||uuid, internalId, partCode, 'Part Internal ID');
+}
+</script>
 <% block('scripts', '<script src="/js/pages/part-inventories.js"></script>') %>

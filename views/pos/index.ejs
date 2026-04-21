@@ -99,7 +99,7 @@
       <div class="cv-items" id="cItems"><div class="ci-empty"><i class="bi bi-receipt"></i><p>No items yet</p></div></div>
       <div class="cv-foot">
         <div class="cf-row"><span>Subtotal</span><span id="cSub">0.00</span></div>
-        <div class="cf-row"><span>Tax</span><span id="cTax">0.00</span></div>
+        <div id="cTaxArea"></div>
         <div class="cf-row tot"><span>Total</span><span id="cTotal">0.00</span></div>
         <button class="cf-pay" id="payBtn" disabled onclick="openCheckout()" data-tip="Proceed to payment" data-tip-pos="left" data-tip-color="blue"><i class="bi bi-credit-card-2-front"></i> Pay <span id="cPayAmt">0.00</span></button>
       </div>
@@ -173,19 +173,146 @@
   </div>
 </div>
 
-<!-- Checkout -->
-<div class="co-overlay" id="coOverlay" onclick="if(event.target===this)$(this).hide();">
-  <div class="co-box">
-    <div class="co-head"><h3><i class="bi bi-credit-card-2-front" style="color:var(--primary);"></i> Checkout</h3></div>
-    <div class="co-body">
-      <div style="margin-bottom:12px;"><label class="co-label">Customer</label><div style="display:flex;gap:6px;"><input type="text" id="custSearch" class="co-input" placeholder="Search name/phone..." style="flex:1;"/><button onclick="" style="padding:8px 12px;border:1.5px solid var(--primary);border-radius:var(--rs);background:none;color:var(--primary);font-size:11px;font-weight:600;">+ New</button></div><div id="custResult" style="font-size:11px;margin-top:3px;color:var(--muted);"></div><input type="hidden" id="custId" value=""/></div>
-      <div style="margin-bottom:12px;display:flex;gap:6px;"><div style="flex:1;"><label class="co-label">Discount</label><div style="display:flex;gap:4px;"><select id="dType" class="co-input" style="width:75px;"><option value="">None</option><option value="percent">%</option><option value="fixed">Fixed</option></select><input type="number" id="dVal" class="co-input" placeholder="0" min="0" style="flex:1;"/></div></div></div>
-      <div style="margin-bottom:12px;"><label class="co-label">Payment Method</label><div style="display:flex;gap:6px;"><button class="pay-method active" data-method="cash" onclick="selPay(this)" data-tip="Cash payment"><i class="bi bi-cash-stack"></i>Cash</button><button class="pay-method" data-method="card" onclick="selPay(this)" data-tip="Card payment"><i class="bi bi-credit-card"></i>Card</button><button class="pay-method" data-method="upi" onclick="selPay(this)" data-tip="UPI / QR payment"><i class="bi bi-phone"></i>UPI</button></div></div>
-      <div style="margin-bottom:12px;"><label class="co-label">Amount Received</label><input type="number" id="amtRcv" class="co-input" style="font-size:20px;font-weight:800;text-align:center;padding:12px;" min="0" step="0.01" oninput="calcChange()"/><div id="changeDisp" style="text-align:center;margin-top:4px;font-size:13px;font-weight:700;display:none;"></div></div>
-      <div style="margin-bottom:12px;display:none;" id="refBox"><label class="co-label">Reference / Txn ID</label><input type="text" id="payRef" class="co-input"/></div>
-      <div><label class="co-label">Notes</label><textarea id="oNotes" rows="2" class="co-input" style="resize:none;" placeholder="Optional..."></textarea></div>
+<!-- Checkout Fullscreen -->
+<div class="info-page" id="coPage">
+  <div class="ip-hdr">
+    <button class="ip-back" onclick="$('#coPage').removeClass('open');"><i class="bi bi-arrow-left"></i></button>
+    <span class="ip-title">Checkout</span>
+    <span id="coItemCount" style="font-size:12px;color:var(--muted);font-weight:600;"></span>
+  </div>
+  <div class="ip-body" style="padding:0;display:flex;flex-direction:row;overflow:hidden;">
+    <!-- Left Panel: Summary + Customer + Discount -->
+    <div class="co-left">
+      <!-- Order Summary -->
+      <div class="co-section">
+        <div class="co-sec-title"><i class="bi bi-receipt"></i> Order Summary</div>
+        <div id="coSummary"></div>
+      </div>
+      <!-- Totals -->
+      <div class="co-section" id="coTotals"></div>
+      <!-- Customer -->
+      <div class="co-section">
+        <div class="co-sec-title"><i class="bi bi-person"></i> Customer</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input type="text" id="custSearch" class="pos-input" placeholder="Search name/phone..." style="flex:1;font-size:12px;padding:8px 10px;"/>
+          <button onclick="openNewCust()" class="pos-btn-primary" style="padding:8px 12px;font-size:11px;white-space:nowrap;"><i class="bi bi-plus"></i> New</button>
+        </div>
+        <div id="custResult" style="font-size:11px;margin-top:4px;color:var(--muted);">Walk-in customer</div>
+        <input type="hidden" id="custId" value=""/>
+      </div>
+      <!-- Discount -->
+      <div class="co-section">
+        <div class="co-sec-title"><i class="bi bi-tag"></i> Discount</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <select id="dType" class="pos-input" style="width:80px;font-size:12px;padding:8px;" onchange="calcCheckout()"><option value="">None</option><option value="percent">%</option><option value="fixed">Fixed</option></select>
+          <input type="number" id="dVal" class="pos-input" placeholder="0" min="0" style="flex:1;font-size:12px;padding:8px;" oninput="calcCheckout()"/>
+        </div>
+      </div>
+      <!-- Notes -->
+      <div class="co-section">
+        <div class="co-sec-title"><i class="bi bi-journal-text"></i> Notes</div>
+        <textarea id="oNotes" rows="2" class="pos-input" style="resize:none;margin-top:8px;font-size:12px;" placeholder="Optional..."></textarea>
+      </div>
     </div>
-    <div class="co-foot"><button class="pm-btn cancel" onclick="$('#coOverlay').hide();">Cancel</button><button class="pm-btn confirm" id="coComplete" onclick="doCheckout()"><i class="bi bi-check-circle"></i> Complete</button></div>
+
+    <!-- Right Panel: Payment -->
+    <div class="co-right">
+      <!-- Total Display -->
+      <div class="co-total-box">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Total Amount</div>
+        <div id="coGrandTotal" style="font-size:36px;font-weight:900;color:var(--primary);line-height:1;margin:6px 0;">0.00</div>
+      </div>
+
+      <!-- Payment Method -->
+      <div class="co-sec-title" style="margin-bottom:10px;"><i class="bi bi-wallet2"></i> Payment Method</div>
+      <div class="co-pay-methods" style="flex-wrap:wrap;">
+        <button class="co-pay-btn active" data-method="cash" onclick="selPay(this)">
+          <i class="bi bi-cash-stack"></i><span>Cash</span>
+        </button>
+        <button class="co-pay-btn" data-method="card" onclick="selPay(this)">
+          <i class="bi bi-credit-card-2-front"></i><span>Card</span>
+        </button>
+        <button class="co-pay-btn" data-method="upi" onclick="selPay(this)">
+          <i class="bi bi-phone"></i><span>UPI</span>
+        </button>
+        <button class="co-pay-btn" data-method="online" onclick="selPay(this)" title="Online payment via Razorpay / Stripe">
+          <i class="bi bi-globe"></i><span>Online</span>
+        </button>
+        <button class="co-pay-btn" data-method="link" onclick="selPay(this)" title="Send payment link via SMS / email">
+          <i class="bi bi-link-45deg"></i><span>Pay Link</span>
+        </button>
+      </div>
+
+      <!-- Online payment hint -->
+      <div id="onlineHint" style="display:none;margin-top:8px;padding:10px 12px;border-radius:8px;background:rgba(59,130,246,.06);color:var(--primary);font-size:12px;">
+        <i class="bi bi-info-circle me-1"></i>Clicking "Complete Payment" will open the gateway checkout. Stock is held for 5 minutes while the customer pays.
+      </div>
+      <!-- Pay-by-link options -->
+      <div id="linkBox" style="display:none;margin-top:10px;">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Send payment link to</div>
+        <div class="d-flex gap-3 flex-wrap" style="font-size:12px;">
+          <label class="d-flex align-items-center gap-1"><input type="checkbox" id="linkNotifySms" checked/> SMS (uses customer phone)</label>
+          <label class="d-flex align-items-center gap-1"><input type="checkbox" id="linkNotifyEmail" checked/> Email (uses customer email)</label>
+        </div>
+        <small class="form-hint d-block mt-1">Requires a selected customer with phone/email. You'll also get the link to copy.</small>
+      </div>
+
+      <!-- Card Type (visible only when Card selected) -->
+      <div id="cardTypeBox" style="display:none;margin-top:10px;">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Card Type</div>
+        <div class="co-card-types">
+          <button class="co-card-btn active" data-card="visa" onclick="selCard(this)">Visa</button>
+          <button class="co-card-btn" data-card="mastercard" onclick="selCard(this)">MasterCard</button>
+          <button class="co-card-btn" data-card="rupay" onclick="selCard(this)">Rupay</button>
+          <button class="co-card-btn" data-card="amex" onclick="selCard(this)">Amex</button>
+          <button class="co-card-btn" data-card="other" onclick="selCard(this)">Other</button>
+        </div>
+      </div>
+
+      <!-- Reference (Card/UPI) -->
+      <div id="refBox" style="display:none;margin-top:10px;">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Transaction Reference</div>
+        <input type="text" id="payRef" class="pos-input" placeholder="Transaction ID / Approval Code" style="font-size:13px;"/>
+      </div>
+
+      <!-- Amount Received -->
+      <div style="margin-top:14px;">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Amount Received</div>
+        <input type="number" id="amtRcv" class="pos-input co-amt-input" min="0" step="0.01" oninput="calcChange()"/>
+        <!-- Quick amount buttons -->
+        <div class="co-quick-amounts" id="quickAmounts"></div>
+        <!-- Change display -->
+        <div id="changeDisp" class="co-change-box" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Footer -->
+  <div class="ip-foot" style="gap:10px;">
+    <button class="pos-btn-outline" onclick="$('#coPage').removeClass('open');" style="flex:1;padding:14px;font-size:14px;"><i class="bi bi-x-lg me-1"></i>Cancel</button>
+    <button class="pos-btn-primary" id="coComplete" onclick="doCheckout()" style="flex:2;padding:14px;font-size:16px;font-weight:800;"><i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;"></span></button>
+  </div>
+</div>
+
+<!-- New Customer Popup -->
+<div class="co-overlay" id="newCustOv" onclick="if(event.target===this)$(this).hide();">
+  <div class="co-box" style="max-width:440px;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <h3 style="font-size:15px;font-weight:800;margin:0;flex:1;"><i class="bi bi-person-plus" style="color:var(--primary);margin-right:6px;"></i>New Customer</h3>
+      <button onclick="$('#newCustOv').hide();" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div><label class="co-label">Name *</label><input class="pos-input" id="ncName" required/></div>
+      <div><label class="co-label">Phone *</label><input class="pos-input" id="ncPhone" type="tel"/></div>
+      <div><label class="co-label">Email</label><input class="pos-input" id="ncEmail" type="email"/></div>
+      <div><label class="co-label">Type</label><select class="pos-input" id="ncType"><option value="regular">Regular</option><option value="wholesale">Wholesale</option></select></div>
+      <div style="grid-column:1/-1;"><label class="co-label">Address</label><textarea class="pos-input" id="ncAddr" rows="2" style="resize:none;"></textarea></div>
+      <div><label class="co-label">GST</label><input class="pos-input" id="ncGst"/></div>
+      <div><label class="co-label">PAN</label><input class="pos-input" id="ncPan"/></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;">
+      <button class="pos-btn-outline" onclick="$('#newCustOv').hide();" style="flex:1;">Cancel</button>
+      <button class="pos-btn-primary" onclick="saveNewCust()" style="flex:2;"><i class="bi bi-check-lg"></i> Save & Select</button>
+    </div>
   </div>
 </div>
 
@@ -212,6 +339,10 @@
 <script src="/libs/js/jquery.min.js"></script>
 <script src="/libs/js/toastr.min.js"></script>
 <script src="/libs/js/select2.min.js"></script>
+<!-- Razorpay checkout (only loads if online gateway is configured) -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- Stripe JS -->
+<script src="https://js.stripe.com/v3/"></script>
 <script>var BASE_URL='';toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2000};</script>
 <script src="/js/pages/pos.js?v=<%= Date.now() %>"></script>
 </body>

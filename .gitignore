@@ -144,3 +144,4 @@ vite.config.ts.timestamp-*
 /.idea/SMSWEB.iml
 /SMSWEB.zip
 /.idea/vcs.xml
+package-lock.json

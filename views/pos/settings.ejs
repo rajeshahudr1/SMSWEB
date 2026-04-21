@@ -1,4 +1,206 @@
 <% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
+
+<!-- Business / Invoice Details (GST) -->
+<div class="card shadow-sm mb-3">
+  <div class="card-header py-2 border-bottom">
+    <h3 class="card-title mb-0"><i class="bi bi-building me-2 text-primary"></i>Business &amp; Invoice Details</h3>
+    <small class="text-muted ms-2">Used on invoices printed/emailed to customers. GST &amp; PAN for compliance.</small>
+  </div>
+  <div class="card-body">
+    <ul class="nav nav-tabs mb-3" id="bizTabs">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#bizIdentity"><i class="bi bi-card-heading me-1"></i>Identity &amp; GST</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizBank"><i class="bi bi-bank me-1"></i>Bank Details</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizInvoice"><i class="bi bi-receipt me-1"></i>Invoice Defaults</a></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="bizIdentity">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Legal Business Name</label>
+            <input type="text" class="form-control" id="biz_legal_name" placeholder="e.g., ABC Auto Spares Pvt. Ltd."/>
+            <small class="form-hint">Registered legal name. If blank, uses company name.</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">GSTIN</label>
+            <input type="text" class="form-control" id="biz_gst_number" placeholder="15-digit GSTIN" maxlength="15"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">State Code</label>
+            <input type="text" class="form-control" id="biz_state_code" placeholder="e.g., 27" maxlength="2"/>
+            <small class="form-hint">First 2 digits of GSTIN.</small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">PAN</label>
+            <input type="text" class="form-control" id="biz_pan_number" placeholder="ABCDE1234F" maxlength="10"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CIN (optional)</label>
+            <input type="text" class="form-control" id="biz_cin_number" placeholder="Corporate Identification Number"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Billing / Registered Address</label>
+            <textarea class="form-control" id="biz_billing_address" rows="2" placeholder="Full registered address shown on invoice"></textarea>
+            <small class="form-hint">Leave blank to use main company address.</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CGST/SGST or IGST</label>
+            <select class="form-select" id="biz_include_cgst_sgst">
+              <option value="1">CGST + SGST (intra-state)</option>
+              <option value="0">IGST only (inter-state)</option>
+            </select>
+            <small class="form-hint">Most small businesses: CGST+SGST. Change per-order if selling to other states.</small>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="bizBank">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Bank Name</label>
+            <input type="text" class="form-control" id="biz_bank_name" placeholder="e.g., HDFC Bank"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Account Number</label>
+            <input type="text" class="form-control" id="biz_bank_account_number" placeholder="Account number"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">IFSC Code</label>
+            <input type="text" class="form-control" id="biz_bank_ifsc_code" placeholder="e.g., HDFC0001234"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Branch</label>
+            <input type="text" class="form-control" id="biz_bank_branch" placeholder="Branch name/city"/>
+          </div>
+        </div>
+        <small class="form-hint d-block mt-2">These appear on the invoice footer so customers can pay via bank transfer.</small>
+      </div>
+      <div class="tab-pane fade" id="bizInvoice">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Invoice Prefix</label>
+            <input type="text" class="form-control" id="biz_invoice_prefix" value="INV" maxlength="10"/>
+            <small class="form-hint">Used in numbers like <code>INV-202604-0001</code>.</small>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">Signature Image URL (optional)</label>
+            <input type="text" class="form-control" id="biz_signature_url" placeholder="https://... or upload later"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Default Terms &amp; Conditions</label>
+            <textarea class="form-control" id="biz_invoice_terms" rows="3" placeholder="e.g., Goods once sold will not be taken back..."></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Default Notes (Thank-you line)</label>
+            <textarea class="form-control" id="biz_invoice_notes" rows="2" placeholder="e.g., Thank you for your business!"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% if (can('edit_pos_settings')) { %>
+    <div class="mt-3">
+      <button type="button" class="btn btn-primary" id="btnSaveBiz"><i class="bi bi-check-lg me-1"></i>Save Business Details</button>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Payment Gateway -->
+<div class="card shadow-sm mb-3">
+  <div class="card-header py-2 border-bottom">
+    <h3 class="card-title mb-0"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Online Payment Gateway</h3>
+    <small class="text-muted ms-2">For online card / UPI / pay-by-link. Secrets never leave the server.</small>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Active Gateway</label>
+        <select class="form-select" id="pg_active">
+          <option value="">Disabled (offline only)</option>
+          <option value="razorpay">Razorpay (India)</option>
+          <option value="stripe">Stripe (International)</option>
+        </select>
+        <small class="form-hint">Applied to all "Pay Online" and pay-by-link requests.</small>
+      </div>
+    </div>
+    <hr/>
+    <h5 class="fw-semibold"><i class="bi bi-bank me-1"></i>Razorpay Keys</h5>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Razorpay Key ID</label>
+        <input type="text" class="form-control" id="pg_razorpay_key_id" placeholder="rzp_live_...  /  rzp_test_..."/>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Razorpay Key Secret</label>
+        <input type="password" class="form-control" id="pg_razorpay_key_secret" placeholder="••••••••"/>
+        <small class="form-hint">Leave blank to keep the existing secret.</small>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Razorpay Webhook Secret</label>
+        <input type="password" class="form-control" id="pg_razorpay_webhook_secret" placeholder="••••••••"/>
+        <small class="form-hint">Set this to the same value in Razorpay dashboard → Webhooks. URL: <code>/api/pos/payment/webhook/razorpay</code></small>
+      </div>
+    </div>
+    <hr/>
+    <h5 class="fw-semibold"><i class="bi bi-globe me-1"></i>Stripe Keys</h5>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Stripe Publishable Key</label>
+        <input type="text" class="form-control" id="pg_stripe_publishable_key" placeholder="pk_live_... / pk_test_..."/>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Stripe Secret Key</label>
+        <input type="password" class="form-control" id="pg_stripe_secret_key" placeholder="••••••••"/>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Stripe Webhook Secret</label>
+        <input type="password" class="form-control" id="pg_stripe_webhook_secret" placeholder="whsec_...  (••••••••)"/>
+        <small class="form-hint">Stripe dashboard → Developers → Webhooks. URL: <code>/api/pos/payment/webhook/stripe</code></small>
+      </div>
+    </div>
+    <% if (can('edit_pos_settings')) { %>
+    <div class="mt-3">
+      <button type="button" class="btn btn-primary" id="btnSavePg"><i class="bi bi-check-lg me-1"></i>Save Gateway Settings</button>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Label Printer Configuration -->
+<div class="card shadow-sm mb-3">
+  <div class="card-header py-2 border-bottom d-flex align-items-center">
+    <h3 class="card-title mb-0"><i class="bi bi-printer me-2 text-primary"></i>Label Printer</h3>
+    <span id="lpStatusBadge" class="badge bg-secondary-lt ms-2" style="font-size:11px;">checking...</span>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Printer Type</label>
+        <select class="form-select" id="lpType">
+          <option value="network">Network (Ethernet / WiFi)</option>
+          <option value="usb">USB (via Print Agent on this PC)</option>
+        </select>
+        <small class="form-hint">Network recommended for multi-device setups (mobile, tablet, laptop).</small>
+      </div>
+      <div class="col-md-5 lp-network-only">
+        <label class="form-label">Printer IP Address</label>
+        <input type="text" class="form-control" id="lpIp" placeholder="e.g., 192.168.4.50"/>
+        <small class="form-hint">Static IP assigned to the printer. Find it in the printer's network settings.</small>
+      </div>
+      <div class="col-md-3 lp-network-only">
+        <label class="form-label">Port</label>
+        <input type="number" class="form-control" id="lpPort" value="9100" min="1" max="65535"/>
+        <small class="form-hint">Default: 9100 (raw ZPL).</small>
+      </div>
+    </div>
+    <div class="mt-3 d-flex gap-2 flex-wrap">
+      <% if (can('edit_pos_settings')) { %>
+      <button type="button" class="btn btn-primary" id="btnSaveLp"><i class="bi bi-check-lg me-1"></i>Save Printer Config</button>
+      <% } %>
+      <button type="button" class="btn btn-outline-primary" id="btnTestLp"><i class="bi bi-printer me-1"></i>Test Print</button>
+      <span class="text-muted small ms-auto align-self-center" id="lpHelp"></span>
+    </div>
+  </div>
+</div>
+
 <div class="card shadow-sm">
   <div class="card-header py-2 border-bottom">
     <h3 class="card-title mb-0"><i class="bi bi-gear me-2 text-primary"></i>POS Settings</h3>
@@ -97,6 +299,112 @@ $(function(){
     }
   });
 
+  /* ───── Business / Invoice Details ───── */
+  var bizFields = ['legal_name','gst_number','state_code','pan_number','cin_number','billing_address',
+                   'bank_name','bank_account_number','bank_ifsc_code','bank_branch',
+                   'invoice_prefix','invoice_terms','invoice_notes','signature_url'];
+  $.get('/sales/invoice-settings', function(res){
+    if(res.status!==200 || !res.data) return;
+    bizFields.forEach(function(k){
+      var el = $('#biz_'+k);
+      if(el.length) el.val(res.data[k]||'');
+    });
+    $('#biz_include_cgst_sgst').val(res.data.include_cgst_sgst===false||res.data.include_cgst_sgst==='0' ? '0' : '1');
+  });
+  $('#btnSaveBiz').on('click', function(){
+    var body = { include_cgst_sgst: $('#biz_include_cgst_sgst').val()==='1' };
+    bizFields.forEach(function(k){ body[k] = $('#biz_'+k).val(); });
+    $.ajax({ url:'/sales/invoice-settings', type:'PUT', contentType:'application/json',
+      data: JSON.stringify(body),
+      success:function(r){
+        if(r.status===200) toastr.success('Business details saved');
+        else toastr.error(r.message||'Failed');
+      },
+      error:function(){ toastr.error('Failed to save business details'); }
+    });
+  });
+
+  /* ───── Payment Gateway ───── */
+  $.get('/sales/payment/config', function(res){
+    if(res.status!==200||!res.data)return;
+    var d = res.data;
+    $('#pg_active').val(d.payment_gateway||'');
+    $('#pg_razorpay_key_id').val(d.razorpay_key_id||'');
+    $('#pg_razorpay_key_secret').attr('placeholder', d.razorpay_key_secret_set?'••••••••':'Secret (paste to set)');
+    $('#pg_razorpay_webhook_secret').attr('placeholder', d.razorpay_webhook_secret_set?'••••••••':'Webhook secret');
+    $('#pg_stripe_publishable_key').val(d.stripe_publishable_key||'');
+    $('#pg_stripe_secret_key').attr('placeholder', d.stripe_secret_key_set?'••••••••':'Secret (paste to set)');
+    $('#pg_stripe_webhook_secret').attr('placeholder', d.stripe_webhook_secret_set?'••••••••':'Webhook secret');
+  });
+  $('#btnSavePg').on('click', function(){
+    var body = {
+      payment_gateway: $('#pg_active').val(),
+      razorpay_key_id: $('#pg_razorpay_key_id').val().trim(),
+      razorpay_key_secret: $('#pg_razorpay_key_secret').val().trim(),
+      razorpay_webhook_secret: $('#pg_razorpay_webhook_secret').val().trim(),
+      stripe_publishable_key: $('#pg_stripe_publishable_key').val().trim(),
+      stripe_secret_key: $('#pg_stripe_secret_key').val().trim(),
+      stripe_webhook_secret: $('#pg_stripe_webhook_secret').val().trim(),
+    };
+    $.ajax({ url:'/sales/payment/config', type:'PUT', contentType:'application/json',
+      data: JSON.stringify(body),
+      success:function(r){
+        if(r.status===200){ toastr.success('Gateway settings saved'); $('#pg_razorpay_key_secret,#pg_razorpay_webhook_secret,#pg_stripe_secret_key,#pg_stripe_webhook_secret').val(''); }
+        else toastr.error(r.message||'Failed');
+      },
+      error:function(){ toastr.error('Failed to save gateway settings'); }
+    });
+  });
+
+  /* ───── Label Printer config ───── */
+  function lpToggleNetworkFields(){
+    var isNet = $('#lpType').val()==='network';
+    $('.lp-network-only').toggle(isNet);
+    $('#lpHelp').text(isNet ? 'Works from any device on the same network.' : 'Requires SMS-Print-Agent.exe on this PC.');
+  }
+  function lpRenderStatus(s){
+    var $b = $('#lpStatusBadge');
+    if (!s) { $b.removeClass().addClass('badge bg-secondary-lt').text('unknown'); return; }
+    if (s.connected) $b.removeClass().addClass('badge bg-success-lt').text(s.type==='network' ? 'Network: online' : 'USB: connected');
+    else $b.removeClass().addClass('badge bg-danger-lt').text(s.type==='network' ? 'Network: offline' : 'USB: not found');
+  }
+  // Load config
+  $.get('/sales/label-printer/config', function(res){
+    if(res.status===200 && res.data){
+      $('#lpType').val(res.data.type||'usb');
+      $('#lpIp').val(res.data.ip||'');
+      $('#lpPort').val(res.data.port||9100);
+    }
+    lpToggleNetworkFields();
+  });
+  // Load status
+  $.get('/sales/label-printer/status', function(res){
+    if(res.status===200) lpRenderStatus(res.data);
+  });
+  $('#lpType').on('change', lpToggleNetworkFields);
+  $('#btnSaveLp').on('click', function(){
+    var body = { type: $('#lpType').val(), ip: $('#lpIp').val().trim(), port: parseInt($('#lpPort').val())||9100 };
+    if (body.type === 'network' && !body.ip){ toastr.error('Enter printer IP.'); return; }
+    $.ajax({ url:'/sales/label-printer/config', type:'POST', contentType:'application/json',
+      data: JSON.stringify(body),
+      success:function(r){
+        if(r.status===200){ toastr.success('Printer config saved.'); $.get('/sales/label-printer/status', function(s){ if(s.status===200) lpRenderStatus(s.data); }); }
+        else toastr.error(r.message||'Failed');
+      },
+      error:function(){ toastr.error('Failed to save printer config'); }
+    });
+  });
+  $('#btnTestLp').on('click', function(){
+    var $btn = $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Printing...');
+    $.post('/sales/label-printer/test', function(r){
+      if(r.status===200) toastr.success('Test label printed.');
+      else toastr.error(r.message||'Test print failed');
+    }).fail(function(xhr){
+      var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Test print failed';
+      toastr.error(msg);
+    }).always(function(){ $btn.prop('disabled', false).html('<i class="bi bi-printer me-1"></i>Test Print'); });
+  });
+
   // Save
   $('#settingsForm').on('submit', function(e){
     e.preventDefault();
@@ -111,10 +419,10 @@ $(function(){
       url:'/sales/settings', type:'PUT', contentType:'application/json',
       data: JSON.stringify(data),
       success:function(res){
-        if(res.status===200) smsToast('Settings saved successfully','success');
-        else smsToast(res.message||'Failed','error');
+        if(res.status===200) toastr.success('Settings saved successfully');
+        else toastr.error(res.message||'Failed');
       },
-      error:function(){ smsToast('Failed to save settings','error'); }
+      error:function(){ toastr.error('Failed to save settings'); }
     });
   });
 });

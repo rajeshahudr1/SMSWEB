@@ -63,7 +63,7 @@ function buildPg(pg){
 
 function loadData(){
     $('#tableBody').html('<tr><td colspan="8" class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>');
-    $.post(BASE_URL+'/pos/customers/paginate',{page:_page,per_page:_pp,search:$('#searchInput').val().trim(),customer_type:$('#filterType').val()},function(res){
+    $.post(BASE_URL+'/sales/customers/paginate',{page:_page,per_page:_pp,search:$('#searchInput').val().trim(),customer_type:$('#filterType').val()},function(res){
         if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="8" class="text-center text-danger py-4">Failed</td></tr>');return;}
         var data=res.data&&res.data.data?res.data.data:[],pg=res.data&&res.data.pagination?res.data.pagination:{};
         $('#badgeTotal').text((pg.total||0).toLocaleString());
@@ -82,7 +82,7 @@ function openForm(){$('#custUuid').val('');$('#custName,#custPhone,#custEmail,#c
 function closeForm(){$('#formOverlay').hide();}
 
 function editCust(uuid){
-    $.get(BASE_URL+'/pos/customers/'+uuid,function(r){
+    $.get(BASE_URL+'/sales/customers/'+uuid,function(r){
         if(!r||r.status!==200||!r.data)return;var c=r.data;
         $('#custUuid').val(c.uuid);$('#custName').val(c.name);$('#custPhone').val(c.phone);$('#custEmail').val(c.email);$('#custType').val(c.customer_type);$('#custAddr').val(c.address);$('#custGst').val(c.gst_number);$('#custPan').val(c.pan_number);
         $('#formTitle').html('<i class="bi bi-pencil text-primary" style="margin-right:6px;"></i>Edit Customer');
@@ -93,14 +93,14 @@ function editCust(uuid){
 function saveCust(){
     var uuid=$('#custUuid').val(),data={name:$('#custName').val(),phone:$('#custPhone').val(),email:$('#custEmail').val(),customer_type:$('#custType').val(),address:$('#custAddr').val(),gst_number:$('#custGst').val(),pan_number:$('#custPan').val()};
     if(!data.name){toastr.warning('Name required.');return;}
-    $.ajax({url:BASE_URL+'/pos/customers'+(uuid?'/'+uuid:''),type:uuid?'PUT':'POST',contentType:'application/json',data:JSON.stringify(data),success:function(r){
+    $.ajax({url:BASE_URL+'/sales/customers'+(uuid?'/'+uuid:''),type:uuid?'PUT':'POST',contentType:'application/json',data:JSON.stringify(data),success:function(r){
         if(r.status===200||r.status===201){toastr.success(uuid?'Updated.':'Created.');closeForm();loadData();}else toastr.error(r.message||'Failed.');
     }});
 }
 
 function delCust(uuid){
     posConfirm('Delete this customer?',function(){
-        $.ajax({url:BASE_URL+'/pos/customers/'+uuid,type:'DELETE',success:function(r){if(r.status===200){toastr.success('Deleted.');loadData();}else toastr.error(r.message||'Failed.');}});
+        $.ajax({url:BASE_URL+'/sales/customers/'+uuid,type:'DELETE',success:function(r){if(r.status===200){toastr.success('Deleted.');loadData();}else toastr.error(r.message||'Failed.');}});
     });
 }
 

@@ -5,6 +5,7 @@
 var _tab='parts',_page=1,_pp=20,_search='',_wh='',_cart=[],_lastUuid='';
 var _vMode=false,_vUuid='',_vName='',_vParts=[];
 var _selPart=null;
+var _taxes=[];//org tax configs loaded on init
 var _isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&'ontouchend' in document);
 
 function F(v){return parseFloat(v||0).toFixed(2);}
@@ -443,7 +444,7 @@ function loadProducts(){
     var $g=$('#prodGrid');
     $g.html('<div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--muted);"><div class="spinner-border spinner-border-sm" style="color:var(--primary);"></div></div>');
     var params=$.extend({type:_tab==='parts'?'part':'vehicle',search:_search,warehouse_id:_wh,per_page:_pp,page:_page},_advFilters||{});
-    $.get(BASE_URL+'/pos/products',params,function(r){
+    $.get(BASE_URL+'/sales/products',params,function(r){
         if(!r||r.status!==200){$g.html('<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--red);">Failed to load</div>');return;}
         var d=r.data,items=[],total=0;
         if(_tab==='parts'){items=d.parts||[];total=d.parts_total||items.length;$g.attr('class','pos-grid g-parts');}
@@ -520,7 +521,8 @@ function dvAddClick(){
     if(!$ch.length){toastr.warning('Select units first.');return;}
     $ch.each(function(){
         var $u=$(this).closest('.dv-unit'),un=parseInt($(this).data('unit')),wh=parseInt($(this).data('wh'))||0;
-        addToCart('part',_selPart.id,_selPart.name,_selPart.price,1,_selPart.code,wh,un);
+        var vatInc=_selPart._full&&_selPart._full.vat_included;
+        addToCart('part',_selPart.id,_selPart.name,_selPart.price,1,_selPart.code,wh,un,vatInc);
         $(this).prop('disabled',true);$u.addClass('in-cart');$u.find('.dv-unit-badge').remove();
         $u.append('<span class="dv-unit-badge"><i class="bi bi-check-circle"></i> Added</span>');
     });
@@ -634,7 +636,7 @@ function openVehicleParts(uuid,name){
     $('#vTitle').text(name);$('#vBackBar').addClass('show');$('#posHeader').hide();$('.pos-cats').hide();
     var $g=$('#prodGrid');$g.attr('class','pos-grid g-parts');
     $g.html('<div style="grid-column:1/-1;text-align:center;padding:48px;"><div class="spinner-border spinner-border-sm" style="color:var(--primary);"></div></div>');
-    $.get(BASE_URL+'/pos/vehicle/'+uuid+'/parts',function(r){
+    $.get(BASE_URL+'/sales/vehicle/'+uuid+'/parts',function(r){
         var parts=(r&&r.status===200&&r.data)?r.data.parts||r.data:[];if(!Array.isArray(parts))parts=[];_vParts=parts;
         if(!parts.length){$g.html('<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-size:12px;">No parts for this vehicle</div>');return;}
         var h='';parts.forEach(function(p){h+=partCard(p);});$g.html(h);
@@ -645,7 +647,7 @@ function loadVehiclePartsFiltered(){
     var $g=$('#prodGrid');
     $g.html('<div style="grid-column:1/-1;text-align:center;padding:48px;"><div class="spinner-border spinner-border-sm" style="color:var(--primary);"></div></div>');
     var params=$.extend({search:$('#vPartSearch').val()||''},_advFilters||{});
-    $.get(BASE_URL+'/pos/vehicle/'+_vUuid+'/parts',params,function(r){
+    $.get(BASE_URL+'/sales/vehicle/'+_vUuid+'/parts',params,function(r){
         var parts=(r&&r.status===200&&r.data)?r.data.parts||r.data:[];if(!Array.isArray(parts))parts=[];
         _vParts=parts;
         if(!parts.length){$g.html('<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-size:12px;">No matching parts</div>');return;}
@@ -679,7 +681,7 @@ function addAllVehicleParts(){
                 locs.forEach(function(l){
                     var already=_cart.some(function(c){return c.item_type==='part'&&String(c.id)===String(p.id)&&c.unit_number===l.unit_number;});
                     if(!already){
-                        addToCart('part',p.id,p.display_name,p.display_price,1,p.part_code||'',l.warehouse_id||0,l.unit_number);
+                        addToCart('part',p.id,p.display_name,p.display_price,1,p.part_code||'',l.warehouse_id||0,l.unit_number,res.data.vat_included);
                         totalAdded++;
                     }
                 });
@@ -701,9 +703,9 @@ function updatePg(total){
 /* ══════════════════════════════════════════
    CART
    ══════════════════════════════════════════ */
-function addToCart(type,id,name,price,mq,code,wh,unit){
+function addToCart(type,id,name,price,mq,code,wh,unit,vatIncluded){
     if(_cart.some(function(c){return c.item_type===type&&String(c.id)===String(id)&&c.unit_number===unit;}))return;
-    _cart.push({item_type:type,id:id,item_name:name,item_code:code,unit_price:parseFloat(price),quantity:1,max_qty:1,total_price:parseFloat(price),discount_amount:0,warehouse_id:wh||null,part_inventory_id:type==='part'?id:null,vehicle_inventory_id:type==='vehicle'?id:null,unit_number:unit||null});
+    _cart.push({item_type:type,id:id,item_name:name,item_code:code,unit_price:parseFloat(price),quantity:1,max_qty:1,total_price:parseFloat(price),discount_amount:0,warehouse_id:wh||null,part_inventory_id:type==='part'?id:null,vehicle_inventory_id:type==='vehicle'?id:null,unit_number:unit||null,vat_included:!!vatIncluded});
     renderCart();
 }
 function removeFromCart(i){_cart.splice(i,1);renderCart();}
@@ -724,12 +726,16 @@ function renderCart(){
         var g=groups[key];
         var ico=g.type==='vehicle'?'bi-truck-front':'bi-gear-wide-connected';
         var unitCnt=g.units.length;
+        // Check if this group has VAT included (no tax)
+        var isVatFree=g.units.length>0&&_cart[g.units[0].idx]&&_cart[g.units[0].idx].vat_included;
+        var borderColor=isVatFree?'var(--green)':'var(--primary)';
         // Group header (clickable to expand)
-        h+='<div class="ci-group" onclick="$(this).next().toggle();$(this).find(\'.ci-arrow i\').toggleClass(\'bi-chevron-down bi-chevron-up\');" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-radius:var(--rs);border-left:3px solid var(--primary);margin-bottom:2px;cursor:pointer;">';
+        h+='<div class="ci-group" onclick="$(this).next().toggle();$(this).find(\'.ci-arrow i\').toggleClass(\'bi-chevron-down bi-chevron-up\');" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-radius:var(--rs);border-left:3px solid '+borderColor+';margin-bottom:2px;cursor:pointer;">';
         h+='<div class="ci-ico"><i class="bi '+ico+'"></i></div>';
         h+='<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(g.name)+'</div>';
         h+='<div style="font-size:10px;color:var(--muted);">'+esc(g.code)+' \u00B7 '+F(g.price)+' ea</div></div>';
-        h+='<span style="background:var(--primary);color:#fff;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">'+unitCnt+'</span>';
+        h+='<span style="background:'+borderColor+';color:#fff;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">'+unitCnt+'</span>';
+        if(isVatFree)h+='<span style="font-size:8px;color:var(--green);font-weight:700;white-space:nowrap;">VAT Inc</span>';
         h+='<div style="font-size:13px;font-weight:700;color:var(--primary);min-width:50px;text-align:right;">'+F(g.total)+'</div>';
         h+='<span class="ci-arrow"><i class="bi bi-chevron-down" style="font-size:12px;color:var(--muted);"></i></span>';
         h+='</div>';
@@ -750,30 +756,438 @@ function renderCart(){
     });
     $i.html(h);$c.text(_cart.length);$m.text(_cart.length);updTotals(sub);
 }
-function updTotals(s){$('#cSub').text(F(s));$('#cTax').text('0.00');$('#cTotal').text(F(s));$('#cPayAmt').text(F(s));$('#payBtn').prop('disabled',s<=0);}
+function updTotals(sub){
+    // Calculate tax — only on items without vat_included
+    var taxableAmount=0,taxFreeCount=0,taxCount=0;
+    _cart.forEach(function(c){
+        if(c.vat_included){taxFreeCount++;}
+        else{taxableAmount+=c.total_price;taxCount++;}
+    });
+    var taxBreakdown=[],taxTotal=0;
+    if(_taxes.length&&taxableAmount>0){
+        _taxes.forEach(function(t){
+            var pct=parseFloat(t.percentage)||0;
+            if(pct<=0)return;
+            var amt=parseFloat((taxableAmount*pct/100).toFixed(2));
+            taxBreakdown.push({name:t.tax_name,pct:pct,amount:amt});
+            taxTotal+=amt;
+        });
+    }
+    var total=sub+taxTotal;
+    $('#cSub').text(F(sub));
+    // Build tax section
+    var $taxArea=$('#cTaxArea');
+    if(!$taxArea.length){
+        $('#cSub').closest('.cf-row').after('<div id="cTaxArea"></div>');
+        $taxArea=$('#cTaxArea');
+    }
+    var th='';
+    if(taxBreakdown.length){
+        th+='<div style="padding:4px 0;border-top:1px dashed var(--border);margin-top:4px;">';
+        th+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#8b5cf6;font-weight:600;padding:2px 0;"><span><i class="bi bi-receipt-cutoff" style="margin-right:4px;"></i>Tax ('+taxCount+' items)</span><span>'+F(taxTotal)+'</span></div>';
+        taxBreakdown.forEach(function(t){
+            th+='<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);padding:1px 0 1px 16px;"><span>'+esc(t.name)+' ('+t.pct+'%)</span><span>'+F(t.amount)+'</span></div>';
+        });
+        if(taxFreeCount)th+='<div style="font-size:9px;color:var(--green);padding:2px 0;"><i class="bi bi-check-circle" style="margin-right:3px;"></i>'+taxFreeCount+' item'+(taxFreeCount>1?'s':'')+' VAT included (no tax)</div>';
+        th+='</div>';
+    }
+    $taxArea.html(th);
+    $('#cTotal').text(F(total));$('#cPayAmt').text(F(total));$('#payBtn').prop('disabled',total<=0);
+}
 
 /* ══════════════════════════════════════════
    CHECKOUT
    ══════════════════════════════════════════ */
-function openCheckout(){if(!_cart.length)return;showCart();var s=0;_cart.forEach(function(c){s+=c.total_price;});$('#amtRcv').val(F(s));$('#changeDisp').hide();$('#coOverlay').css('display','flex');}
-function selPay(el){$('.pay-method').removeClass('active');$(el).addClass('active');$('#refBox').toggle($(el).data('method')!=='cash');}
-function calcChange(){var r=parseFloat($('#amtRcv').val())||0,t=parseFloat($('#cTotal').text())||0,c=r-t;$('#changeDisp').show().css('color',c>=0?'var(--green)':'var(--red)').html(c>=0?'Change: '+F(c):'Short: '+F(Math.abs(c)));}
+var _coData={sub:0,discount:0,taxable:0,taxes:[],taxTotal:0,total:0};
+
+function openCheckout(){
+    if(!_cart.length)return;
+    var sub=0;
+    _cart.forEach(function(c){sub+=c.total_price;});
+    // Group for summary
+    var groups={};
+    _cart.forEach(function(c){var k=c.item_type+'_'+c.id;if(!groups[k])groups[k]={name:c.item_name,code:c.item_code,cnt:0,total:0,vat:c.vat_included};groups[k].cnt++;groups[k].total+=c.total_price;});
+    var itemsH='';
+    Object.values(groups).forEach(function(g){
+        itemsH+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">';
+        itemsH+='<div style="flex:1;min-width:0;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(g.name)+'</div>';
+        itemsH+='<div style="font-size:10px;color:var(--muted);">'+esc(g.code);
+        if(g.vat)itemsH+=' <span style="color:var(--green);">VAT Inc</span>';
+        itemsH+='</div></div>';
+        itemsH+='<span style="color:var(--primary);font-weight:700;margin:0 8px;">x'+g.cnt+'</span>';
+        itemsH+='<span style="font-weight:700;min-width:60px;text-align:right;">'+F(g.total)+'</span></div>';
+    });
+    $('#coSummary').html(itemsH);
+    $('#coItemCount').text(_cart.length+' item'+(_cart.length>1?'s':''));
+    _coData.sub=sub;
+    // Reset payment UI
+    $('.co-pay-btn').removeClass('active').first().addClass('active');
+    $('#cardTypeBox,#refBox').hide();
+    $('#payRef').val('');
+    calcCheckout();
+    $('#coPage').addClass('open');
+}
+
+function calcCheckout(){
+    var sub=_coData.sub;
+    var dType=$('#dType').val(),dVal=parseFloat($('#dVal').val())||0;
+    var discount=0;
+    if(dType==='percent'&&dVal>0)discount=parseFloat((sub*dVal/100).toFixed(2));
+    else if(dType==='fixed'&&dVal>0)discount=Math.min(dVal,sub);
+    var afterDiscount=sub-discount;
+
+    var taxableAmount=0;
+    _cart.forEach(function(c){if(!c.vat_included)taxableAmount+=c.total_price;});
+    var taxableAfterDiscount=taxableAmount>0?Math.max(0,taxableAmount-(taxableAmount/sub*discount)):0;
+
+    var taxes=[],taxTotal=0;
+    _taxes.forEach(function(t){
+        var pct=parseFloat(t.percentage)||0;if(pct<=0)return;
+        var amt=parseFloat((taxableAfterDiscount*pct/100).toFixed(2));
+        taxes.push({name:t.tax_name,pct:pct,amount:amt});
+        taxTotal+=amt;
+    });
+
+    var total=parseFloat((afterDiscount+taxTotal).toFixed(2));
+    _coData={sub:sub,discount:discount,taxable:taxableAfterDiscount,taxes:taxes,taxTotal:taxTotal,total:total};
+
+    // Render totals in left panel
+    var h='';
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;"><span class="text-muted">Subtotal</span><span style="font-weight:600;">'+F(sub)+'</span></div>';
+    if(discount>0)h+='<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--accent);"><span><i class="bi bi-tag me-1"></i>Discount'+(dType==='percent'?' ('+dVal+'%)':'')+'</span><span style="font-weight:600;">-'+F(discount)+'</span></div>';
+    if(taxes.length){
+        taxes.forEach(function(t){
+            h+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:#8b5cf6;"><span>'+esc(t.name)+' ('+t.pct+'%)</span><span style="font-weight:600;">'+F(t.amount)+'</span></div>';
+        });
+    }
+    h+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:800;border-top:2px solid var(--primary);margin-top:6px;"><span>Total</span><span style="color:var(--primary);">'+F(total)+'</span></div>';
+    $('#coTotals').html(h);
+
+    // Update right panel total display
+    $('#coGrandTotal').text(F(total));
+    $('#coPayTotal').text(F(total));
+
+    // Auto-fill amount received with total
+    $('#amtRcv').val(F(total));
+
+    // Build quick amount buttons
+    var qh='<button class="exact" onclick="$(\'#amtRcv\').val(\''+F(total)+'\');calcChange();">Exact '+F(total)+'</button>';
+    // Round up amounts
+    var rounds=[50,100,200,500,1000,2000,5000];
+    var shown=0;
+    rounds.forEach(function(r){
+        if(r>=total&&shown<4){
+            qh+='<button onclick="$(\'#amtRcv\').val(\''+r+'\');calcChange();">'+r+'</button>';
+            shown++;
+        }
+    });
+    $('#quickAmounts').html(qh);
+
+    calcChange();
+}
+
+function selPay(el){
+    $('.co-pay-btn').removeClass('active');$(el).addClass('active');
+    var method=$(el).data('method');
+    $('#cardTypeBox').toggle(method==='card');
+    $('#refBox').toggle(method==='card' || method==='upi');
+    $('#onlineHint').toggle(method==='online');
+    $('#linkBox').toggle(method==='link');
+    // For non-cash offline modes, amount = exact total (no change)
+    if(method==='card'||method==='upi'||method==='online'||method==='link'){
+        $('#amtRcv').val(F(_coData.total));
+        calcChange();
+    }
+    // Update footer button label for clarity
+    var btnLabel = 'Complete Payment';
+    if(method==='online') btnLabel = 'Pay Online';
+    else if(method==='link') btnLabel = 'Send Payment Link';
+    $('#coComplete').html('<i class="bi bi-check-circle me-1"></i>'+btnLabel+' <span id="coPayTotal" style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+}
+function selCard(el){$('.co-card-btn').removeClass('active');$(el).addClass('active');}
+
+function calcChange(){
+    var r=parseFloat($('#amtRcv').val())||0,t=_coData.total,c=r-t;
+    var $d=$('#changeDisp');
+    if(r<=0){$d.hide();return;}
+    $d.show().removeClass('change-pos change-neg');
+    if(c>=0){
+        $d.addClass('change-pos').html('<i class="bi bi-arrow-return-left me-1"></i>Change: <strong>'+F(c)+'</strong>');
+    } else {
+        $d.addClass('change-neg').html('<i class="bi bi-exclamation-triangle me-1"></i>Short: <strong>'+F(Math.abs(c))+'</strong>');
+    }
+}
 function doCheckout(){
-    if(!_cart.length)return;var $b=$('#coComplete');$b.prop('disabled',true).text('Processing...');
+    if(!_cart.length)return;
+    var payMethod=$('.co-pay-btn.active').data('method')||'cash';
+    // Online gateway and pay-by-link branch off here — they don't use the offline flow
+    if(payMethod==='online'){ return doOnlinePayment(); }
+    if(payMethod==='link'){ return doPaymentLink(); }
+
+    var rcvAmt=parseFloat($('#amtRcv').val())||0;
+    if(rcvAmt<_coData.total){toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');return;}
+    var $b=$('#coComplete');$b.prop('disabled',true).text('Processing...');
     var items=_cart.map(function(c){return{item_type:c.item_type,part_inventory_id:c.part_inventory_id,vehicle_inventory_id:c.vehicle_inventory_id,warehouse_id:c.warehouse_id,item_name:c.item_name,item_code:c.item_code,quantity:c.quantity,unit_price:c.unit_price,discount_amount:c.discount_amount,unit_number:c.unit_number||null};});
-    $.ajax({url:BASE_URL+'/pos/checkout',type:'POST',contentType:'application/json',
-        data:JSON.stringify({items:items,customer_id:$('#custId').val()||null,discount_type:$('#dType').val()||null,discount_value:$('#dVal').val()||0,payment_method:$('.pay-method.active').data('method')||'cash',payment_reference:$('#payRef').val()||null,amount_paid:parseFloat($('#amtRcv').val())||0,notes:$('#oNotes').val()||null}),
-        success:function(r){$b.prop('disabled',false).html('<i class="bi bi-check-circle"></i> Complete');if(r.status===201||r.status===200){$('#coOverlay').hide();$('#successInfo').html('Order <strong>'+esc(r.data.order_number)+'</strong> \u2014 '+F(r.data.total_amount));$('#successOv').css('display','flex');_cart=[];renderCart();$('#custId,$#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').html('');}else toastr.error(r.message||'Failed.');},
-        error:function(){$b.prop('disabled',false).html('<i class="bi bi-check-circle"></i> Complete');toastr.error('Failed.');}});
+    var cardType=payMethod==='card'?($('.co-card-btn.active').data('card')||''):'';
+    var payRef=$('#payRef').val()||null;
+    if(cardType&&payRef)payRef=cardType.toUpperCase()+' - '+payRef;
+    else if(cardType&&!payRef)payRef=cardType.toUpperCase();
+    $.ajax({url:BASE_URL+'/sales/checkout',type:'POST',contentType:'application/json',
+        data:JSON.stringify({items:items,customer_id:$('#custId').val()||null,discount_type:$('#dType').val()||null,discount_value:$('#dVal').val()||0,payment_method:payMethod,payment_reference:payRef,amount_paid:parseFloat($('#amtRcv').val())||0,notes:$('#oNotes').val()||null}),
+        success:function(r){
+            $b.prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+            if(r.status===201||r.status===200){
+                $('#coPage').removeClass('open');
+                $('#successInfo').html('Order <strong>'+esc(r.data.order_number)+'</strong> \u2014 '+F(r.data.total_amount));
+                $('#successOv').css('display','flex');
+                _cart=[];renderCart();
+                $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').html('Walk-in customer');
+            } else if(r.status===409&&r.data&&r.data.stock_errors){
+                // Stock errors — either out-of-stock or held by another cashier
+                var errors=r.data.stock_errors;
+                var names=errors.map(function(e){
+                    var label = '';
+                    // Find cart item for readable name
+                    var match = _cart.find(function(c){
+                        return (String(c.part_inventory_id)===String(e.id)||String(c.vehicle_inventory_id)===String(e.id))
+                            && (e.unit==null || c.unit_number===e.unit);
+                    });
+                    label = (match && match.item_name) || ('Item '+e.id);
+                    return label + (e.unit?' #'+e.unit:'') + ' ('+e.error+')';
+                });
+                posConfirm(r.message || ('Some items are no longer available:\\n\\n'+names.join('\\n')+'\\n\\nRemove them and recalculate?'), function(){
+                    errors.forEach(function(e){
+                        for(var i=_cart.length-1;i>=0;i--){
+                            var c = _cart[i];
+                            var idMatch = String(c.part_inventory_id)===String(e.id) || String(c.vehicle_inventory_id)===String(e.id);
+                            var unitMatch = e.unit==null || c.unit_number===e.unit;
+                            if(idMatch && unitMatch) _cart.splice(i,1);
+                        }
+                    });
+                    renderCart();$('#coPage').removeClass('open');
+                    toastr.info('Unavailable items removed. Please review cart.');
+                });
+            } else toastr.error(r.message||'Failed.');
+        },
+        error:function(){$b.prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');toastr.error('Failed.');}});
+}
+
+/* ══════════════════════════════════════════
+   ONLINE PAYMENT (Razorpay / Stripe)
+   ══════════════════════════════════════════ */
+var _currentTx=null;
+
+function _cartItemsForPayment(){
+    return _cart.map(function(c){return{
+        item_type:c.item_type, part_inventory_id:c.part_inventory_id, vehicle_inventory_id:c.vehicle_inventory_id,
+        warehouse_id:c.warehouse_id, item_name:c.item_name, item_code:c.item_code,
+        quantity:c.quantity, unit_price:c.unit_price, discount_amount:c.discount_amount,
+        unit_number:c.unit_number||null, vat_included:!!c.vat_included,
+    };});
+}
+
+function doOnlinePayment(){
+    var $b=$('#coComplete');$b.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Initialising...');
+    var body = {
+        items: _cartItemsForPayment(),
+        customer_id: $('#custId').val()||null,
+        discount_type: $('#dType').val()||null,
+        discount_value: $('#dVal').val()||0,
+    };
+    $.ajax({url:BASE_URL+'/sales/payment/init', type:'POST', contentType:'application/json', data: JSON.stringify(body),
+        success: function(r){
+            if(r.status===409 && r.data && r.data.stock_errors){
+                _handleStockConflict(r);
+                $b.prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Pay Online <span style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+                return;
+            }
+            if(r.status!==200 || !r.data){ toastr.error(r.message||'Gateway init failed'); $b.prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Pay Online <span style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>'); return; }
+            _currentTx = r.data;
+            if(r.data.gateway==='razorpay') _openRazorpayCheckout(r.data);
+            else if(r.data.gateway==='stripe') _openStripeCheckout(r.data);
+            else { toastr.error('Unknown gateway: '+r.data.gateway); $b.prop('disabled',false); }
+        },
+        error: function(xhr){
+            $b.prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Pay Online <span style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+            var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to initialise payment';
+            toastr.error(msg);
+        }
+    });
+}
+
+function _openRazorpayCheckout(tx){
+    if(typeof Razorpay==='undefined'){ toastr.error('Razorpay library not loaded.'); return; }
+    var rzp = new Razorpay({
+        key: tx.public_key,
+        order_id: tx.gateway_order_id,
+        amount: Math.round(tx.amount*100),
+        currency: tx.currency,
+        name: 'Sales',
+        description: 'Order payment',
+        handler: function(resp){
+            // Verify on server
+            $.ajax({url:BASE_URL+'/sales/payment/verify', type:'POST', contentType:'application/json',
+                data: JSON.stringify({
+                    tx_uuid: tx.tx_uuid, gateway: 'razorpay',
+                    razorpay_order_id: resp.razorpay_order_id,
+                    razorpay_payment_id: resp.razorpay_payment_id,
+                    razorpay_signature: resp.razorpay_signature,
+                }),
+                success: function(vr){
+                    if(vr.status===200 && vr.data && vr.data.order_uuid){
+                        _onPaymentSuccess(vr.data);
+                    } else {
+                        toastr.error(vr.message||'Payment could not be verified');
+                        _resetCheckoutBtn();
+                    }
+                },
+                error: function(){ toastr.error('Verification failed'); _resetCheckoutBtn(); }
+            });
+        },
+        modal: {
+            ondismiss: function(){
+                // User closed without paying — release holds
+                $.post(BASE_URL+'/sales/payment/cancel', { tx_uuid: tx.tx_uuid });
+                toastr.info('Payment cancelled — stock released.');
+                _resetCheckoutBtn();
+            }
+        }
+    });
+    rzp.open();
+}
+
+function _openStripeCheckout(tx){
+    if(typeof Stripe==='undefined'){ toastr.error('Stripe library not loaded.'); return; }
+    // For Stripe we use Payment Intent with a redirect to the gateway-hosted page.
+    // Simpler: just call confirmCardPayment with Elements — but that requires Elements setup.
+    // Cleanest for POS context: use the Checkout Session URL if link flow, or Payment Intent here.
+    // If init returned client_secret, confirm via Stripe.js; otherwise redirect to session URL.
+    if(tx.client_secret){
+        var stripe = Stripe(tx.public_key);
+        // Browser opens stripe-hosted confirm dialog — simplest path for now:
+        stripe.confirmPayment({ clientSecret: tx.client_secret, confirmParams: { return_url: window.location.href + '?tx=' + encodeURIComponent(tx.tx_uuid) } })
+            .then(function(result){
+                if(result.error){
+                    toastr.error(result.error.message||'Stripe error');
+                    $.post(BASE_URL+'/sales/payment/cancel', { tx_uuid: tx.tx_uuid });
+                    _resetCheckoutBtn();
+                } else {
+                    // success — verify on server
+                    $.ajax({url:BASE_URL+'/sales/payment/verify', type:'POST', contentType:'application/json',
+                        data: JSON.stringify({ tx_uuid: tx.tx_uuid, gateway: 'stripe', stripe_payment_intent_id: tx.gateway_order_id }),
+                        success: function(vr){ if(vr.status===200 && vr.data && vr.data.order_uuid) _onPaymentSuccess(vr.data); else { toastr.error(vr.message||'Verify failed'); _resetCheckoutBtn(); } },
+                        error: function(){ toastr.error('Verify failed'); _resetCheckoutBtn(); }
+                    });
+                }
+            });
+    } else {
+        toastr.error('Stripe: missing client secret.');
+        _resetCheckoutBtn();
+    }
+}
+
+function doPaymentLink(){
+    var $b=$('#coComplete');$b.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Creating link...');
+    var body = {
+        items: _cartItemsForPayment(),
+        customer_id: $('#custId').val()||null,
+        discount_type: $('#dType').val()||null,
+        discount_value: $('#dVal').val()||0,
+        notify_sms: $('#linkNotifySms').is(':checked'),
+        notify_email: $('#linkNotifyEmail').is(':checked'),
+    };
+    $.ajax({url:BASE_URL+'/sales/payment/link', type:'POST', contentType:'application/json', data: JSON.stringify(body),
+        success: function(r){
+            $b.prop('disabled',false).html('<i class="bi bi-link-45deg me-1"></i>Send Payment Link <span style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+            if(r.status===409 && r.data && r.data.stock_errors){ _handleStockConflict(r); return; }
+            if(r.status!==200 || !r.data){ toastr.error(r.message||'Failed to create link'); return; }
+            _currentTx = r.data;
+            // Show link in a toast with copy-to-clipboard
+            var url = r.data.link_url || '';
+            toastr.success('Payment link created — waiting for customer to pay.');
+            window.prompt('Copy this link and send to customer:', url);
+            // Poll for success
+            _pollPaymentStatus(r.data.tx_uuid);
+        },
+        error: function(xhr){
+            $b.prop('disabled',false).html('<i class="bi bi-link-45deg me-1"></i>Send Payment Link <span style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+            var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to create link';
+            toastr.error(msg);
+        }
+    });
+}
+
+function _pollPaymentStatus(txUuid){
+    if(!txUuid) return;
+    var tries = 0, max = 60; // 60 * 5s = 5 min (matches hold TTL)
+    var timer = setInterval(function(){
+        tries++;
+        if(tries>max){ clearInterval(timer); toastr.warning('Payment link expired.'); return; }
+        $.get(BASE_URL+'/sales/payment/status/'+txUuid, function(r){
+            if(r.status!==200 || !r.data) return;
+            if(r.data.status==='paid' && r.data.order_uuid){
+                clearInterval(timer);
+                _onPaymentSuccess({ order_uuid: r.data.order_uuid, order_number: r.data.order_number, total_amount: r.data.amount });
+            } else if(r.data.status==='failed' || r.data.status==='cancelled'){
+                clearInterval(timer);
+                toastr.error('Payment '+r.data.status);
+            }
+        });
+    }, 5000);
+}
+
+function _onPaymentSuccess(d){
+    $('#coPage').removeClass('open');
+    $('#successInfo').html('Order <strong>'+esc(d.order_number||'')+'</strong> — '+F(d.total_amount||_coData.total));
+    $('#successOv').css('display','flex');
+    _cart=[]; renderCart();
+    $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').html('Walk-in customer');
+    _currentTx = null;
+}
+
+function _resetCheckoutBtn(){
+    var m = $('.co-pay-btn.active').data('method')||'cash';
+    var label = m==='online'?'Pay Online':(m==='link'?'Send Payment Link':'Complete Payment');
+    $('#coComplete').prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>'+label+' <span style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+}
+
+function _handleStockConflict(r){
+    var errors = r.data.stock_errors || [];
+    var names = errors.map(function(e){
+        var match = _cart.find(function(c){return (String(c.part_inventory_id)===String(e.id)||String(c.vehicle_inventory_id)===String(e.id)) && (e.unit==null || c.unit_number===e.unit);});
+        return ((match&&match.item_name)||('Item '+e.id)) + (e.unit?' #'+e.unit:'') + ' ('+e.error+')';
+    });
+    posConfirm(r.message || ('Items unavailable:\n'+names.join('\n')+'\nRemove and retry?'), function(){
+        errors.forEach(function(e){
+            for(var i=_cart.length-1;i>=0;i--){
+                var c=_cart[i];
+                if((String(c.part_inventory_id)===String(e.id)||String(c.vehicle_inventory_id)===String(e.id)) && (e.unit==null||c.unit_number===e.unit)) _cart.splice(i,1);
+            }
+        });
+        renderCart(); $('#coPage').removeClass('open');
+    });
 }
 
 /* ══════════════════════════════════════════
    CUSTOMER
    ══════════════════════════════════════════ */
 var _cst;
-$('#custSearch').on('input',function(){clearTimeout(_cst);var q=$(this).val().trim();if(!q){$('#custResult').html('Walk-in');$('#custId').val('');return;}
-    _cst=setTimeout(function(){$.get(BASE_URL+'/pos/customers/search',{q:q},function(r){if(!r||r.status!==200||!r.data||!r.data.length){$('#custResult').html('<span style="color:var(--yellow);">Not found</span>');return;}var h='';r.data.forEach(function(c){h+='<a href="#" style="display:inline-block;padding:3px 8px;font-size:11px;color:var(--primary);text-decoration:none;border:1px solid var(--border);border-radius:6px;margin:2px;" onclick="selCust('+c.id+',\''+esc(c.name)+'\');return false;">'+esc(c.name)+'</a>';});$('#custResult').html(h);});},300);});
-function selCust(id,n){$('#custId').val(id);$('#custSearch').val(n);$('#custResult').html('<i class="bi bi-check-circle" style="color:var(--green);"></i> '+n);}
+$(document).on('input','#custSearch',function(){clearTimeout(_cst);var q=$(this).val().trim();if(!q){$('#custResult').html('Walk-in customer');$('#custId').val('');return;}
+    _cst=setTimeout(function(){$.get(BASE_URL+'/sales/customers/search',{q:q},function(r){if(!r||r.status!==200||!r.data||!r.data.length){$('#custResult').html('<span style="color:var(--yellow);">Not found</span>');return;}var h='';r.data.forEach(function(c){h+='<a href="#" style="display:inline-block;padding:3px 8px;font-size:11px;color:var(--primary);text-decoration:none;border:1px solid var(--border);border-radius:6px;margin:2px;" onclick="selCust('+c.id+',\''+esc(c.name)+'\',\''+esc(c.phone||'')+'\');return false;">'+esc(c.name)+(c.phone?' ('+c.phone+')':'')+'</a>';});$('#custResult').html(h);});},300);});
+function selCust(id,n,p){$('#custId').val(id);$('#custSearch').val(n);$('#custResult').html('<i class="bi bi-check-circle" style="color:var(--green);"></i> '+n+(p?' ('+p+')':''));}
+function openNewCust(){$('#ncName,#ncPhone,#ncEmail,#ncAddr,#ncGst,#ncPan').val('');$('#ncType').val('regular');$('#newCustOv').css('display','flex');}
+function saveNewCust(){
+    var data={name:$('#ncName').val(),phone:$('#ncPhone').val(),email:$('#ncEmail').val(),customer_type:$('#ncType').val(),address:$('#ncAddr').val(),gst_number:$('#ncGst').val(),pan_number:$('#ncPan').val()};
+    if(!data.name){toastr.warning('Name required.');return;}
+    if(!data.phone){toastr.warning('Phone required.');return;}
+    $.ajax({url:BASE_URL+'/sales/customers',type:'POST',contentType:'application/json',data:JSON.stringify(data),success:function(r){
+        if(r.status===201||r.status===200){
+            var c=r.data;$('#newCustOv').hide();
+            selCust(c.id||c.uuid,c.name,c.phone);$('#custSearch').val(c.name);
+            toastr.success('Customer created.');
+        } else toastr.error(r.message||'Failed.');
+    }});
+}
 
 /* ══════════════════════════════════════════
    LIGHTBOX
@@ -786,6 +1200,89 @@ function lbRender(){var u=_lbItems[_lbIdx],bs='width:36px;height:36px;border-rad
     var nav='';if(_lbItems.length>1){nav+='<button onclick="event.stopPropagation();if(_lbIdx>0){_lbIdx--;lbRender();}" style="'+bs+(_lbIdx<=0?'opacity:.3;':'')+'"><i class="bi bi-chevron-left"></i></button>';nav+='<button onclick="event.stopPropagation();if(_lbIdx<_lbItems.length-1){_lbIdx++;lbRender();}" style="'+bs+(_lbIdx>=_lbItems.length-1?'opacity:.3;':'')+'"><i class="bi bi-chevron-right"></i></button>';}
     $('#posLbNav').html(nav);$('#posLightbox').css('display','flex');}
 function lbDl(){var u=_lbItems[_lbIdx];if(!u)return;var a=document.createElement('a');a.href=u;a.download=u.split('/').pop();document.body.appendChild(a);a.click();document.body.removeChild(a);}
+
+/* ══════════════════════════════════════════
+   BARCODE SCANNER — GLOBAL CAPTURE
+   Scanner types fast (< 80ms/char) + Enter
+   Detected as scan → direct cart add (no search)
+   Manual typing → normal search behavior
+   ══════════════════════════════════════════ */
+var _scanBuf='',_scanTimer=null,_scanTimes=[];
+$(document).on('keydown',function(e){
+    if(e.ctrlKey||e.altKey||e.metaKey)return;
+    var now=Date.now();
+    var tag=(e.target.tagName||'').toUpperCase();
+    var inInput=(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT');
+
+    if(e.key==='Enter'){
+        // Check if buffer looks like a scanner (3+ chars, typed fast)
+        if(_scanBuf.length>=3&&_scanTimes.length>=2){
+            var avgSpeed=(_scanTimes[_scanTimes.length-1]-_scanTimes[0])/(_scanTimes.length-1);
+            if(avgSpeed<80){ // Scanner: avg < 80ms between chars
+                e.preventDefault();
+                e.stopPropagation();
+                var val=_scanBuf.trim();
+                _scanBuf='';_scanTimes=[];clearTimeout(_scanTimer);
+                // Clear search box if scanner typed into it
+                if(inInput)$(e.target).val('');
+                handleBarcodeScan(val);
+                return;
+            }
+        }
+        // Not a scanner — if in search box, handle as manual Enter
+        if(inInput&&$(e.target).attr('id')==='fSearch'){
+            var v=$(e.target).val().trim();
+            if(v){e.preventDefault();handleBarcodeScan(v);}
+        }
+        _scanBuf='';_scanTimes=[];clearTimeout(_scanTimer);
+        return;
+    }
+
+    // Buffer printable characters
+    if(e.key.length===1){
+        _scanBuf+=e.key;
+        _scanTimes.push(now);
+        clearTimeout(_scanTimer);
+        _scanTimer=setTimeout(function(){_scanBuf='';_scanTimes=[];},300);
+        // If not in input, focus search box
+        if(!inInput){
+            var $s=$('#fSearch');
+            if($s.length&&$s.is(':visible'))$s.focus();
+        }
+    }
+});
+
+/* ══════════════════════════════════════════
+   BARCODE SCAN → DIRECT CART ADD
+   Internal ID → add all available units
+   Internal ID|Unit → add that specific unit
+   ══════════════════════════════════════════ */
+function handleBarcodeScan(val){
+    toastr.info('<i class="bi bi-upc-scan me-1"></i> Scanning: '+val, '', {timeOut:2000});
+    $.get(BASE_URL+'/sales/barcode-scan',{scan_value:val},function(r){
+        if(!r||r.status!==200||!r.data||!r.data.length){
+            toastr.error(r&&r.message?r.message:'Part not found: "'+val+'"');
+            return;
+        }
+        var added=0,skipped=0;
+        r.data.forEach(function(part){
+            part.units.forEach(function(u){
+                if(_cart.some(function(c){return c.item_type==='part'&&String(c.id)===String(part.id)&&c.unit_number===u.unit_number;})){
+                    skipped++;return;
+                }
+                addToCart('part',part.id,part.name,part.price,1,part.code,u.warehouse_id,u.unit_number,part.vat_included);
+                added++;
+            });
+        });
+        if(added>0) toastr.success('<i class="bi bi-cart-check me-1"></i> '+added+' unit'+(added>1?'s':'')+' added');
+        if(skipped>0) toastr.info(skipped+' already in cart');
+        if(!added&&!skipped) toastr.warning('No available stock for "'+val+'"');
+        // Clear search box
+        $('#fSearch').val('');_search='';
+    }).fail(function(){
+        toastr.error('Scan failed. Check connection.');
+    });
+}
 
 /* ══════════════════════════════════════════
    INIT
@@ -804,9 +1301,16 @@ $(function(){
 
     // Restore sidebar state
     if(localStorage.getItem('pos_sidebar')==='0'){$('.pos-sidebar').addClass('collapsed');$('.ps-toggle').addClass('show');}
-    $.get(BASE_URL+'/pos/warehouses',function(r){if(r&&r.status===200&&r.data)r.data.forEach(function(w){$('#fWarehouse').append('<option value="'+w.id+'">'+esc(w.name)+'</option>');});});
+    $.get(BASE_URL+'/sales/warehouses',function(r){if(r&&r.status===200&&r.data)r.data.forEach(function(w){$('#fWarehouse').append('<option value="'+w.id+'">'+esc(w.name)+'</option>');});});
+    $.get(BASE_URL+'/sales/taxes',function(r){if(r&&r.status===200&&r.data)_taxes=r.data;});
     loadProducts();
+    // Auto-focus search box (scanner types directly here)
+    $('#fSearch').focus();
     var st;$('#fSearch').on('input',function(){clearTimeout(st);_search=$(this).val().trim();st=setTimeout(function(){_page=1;if(_vMode)closeVehicleParts();else loadProducts();},300);});
+    // Barcode scan: Enter key triggers scan-to-cart
+    $('#fSearch').on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var v=$(this).val().trim();if(v)handleBarcodeScan(v);}});
+    // Re-focus search box after modal close / any click on empty area
+    $(document).on('click','.pos-content',function(e){if(!$(e.target).closest('input,select,textarea,button,a,.pc,.ci-wrap').length)$('#fSearch').focus();});
     var vst;$('#vPartSearch').on('input',function(){clearTimeout(vst);vst=setTimeout(function(){loadVehiclePartsFiltered();},300);});
     $('#fWarehouse').on('change',function(){_wh=$(this).val();_page=1;loadProducts();});
     $('#fPerPage').on('change',function(){_pp=parseInt($(this).val())||20;_page=1;loadProducts();});

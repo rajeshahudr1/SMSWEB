@@ -88,8 +88,19 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start ─────────────────────────────────────────
-app.listen(PORT, () => {
-    console.log(chalk.greenBright(`\n  🚗 SMS Web started on port ${chalk.white.bold(PORT)}`));
-    console.log(chalk.cyan(`  App URL : ${process.env.APP_URL || 'http://localhost:' + PORT}`));
-    console.log(chalk.cyan(`  API URL : ${process.env.API_URL || 'http://localhost:3000/api'}\n`));
+const os = require('os');
+function getLocalIps() {
+    const ips = [];
+    Object.values(os.networkInterfaces()).forEach(ifaces => {
+        ifaces.forEach(i => { if (i.family === 'IPv4' && !i.internal) ips.push(i.address); });
+    });
+    return ips;
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+    const ips = getLocalIps();
+    console.log(chalk.greenBright(`\n  🚗 SMS Web started`));
+    console.log(chalk.cyan(`  URL   : http://localhost:${PORT}`));
+    ips.forEach(ip => console.log(chalk.cyan(`          http://${ip}:${PORT}`)));
+    console.log(chalk.cyan(`  API   : ${process.env.API_URL || 'http://localhost:3000/api'}\n`));
 });

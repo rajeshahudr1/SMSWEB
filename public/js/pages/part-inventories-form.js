@@ -1743,6 +1743,11 @@ $(function() {
                     '<option value="3"' + (unitStatus === 3 ? ' selected' : '') + '>' + T('part_inventories.sold','Sold') + '</option>' +
                     '</select></td>' +
                     '<td><input type="text" class="form-control form-control-sm loc-notes" data-row="' + i + '" value="' + H.esc(unitNotes) + '" placeholder="' + T('part_inventories.notes_field','Notes') + '"/></td>' +
+                    '<td class="text-center"><div class="btn-group btn-group-sm">' +
+                    '<button type="button" class="btn btn-sm btn-ghost-purple" title="QR: Unit" onclick="showLocQr('+i+',\'unit\')"><i class="bi bi-qr-code"></i></button>' +
+                    '<button type="button" class="btn btn-sm btn-ghost-primary" title="QR: Internal ID" onclick="showLocQr('+i+',\'id\')"><i class="bi bi-upc-scan"></i></button>' +
+                    '<button type="button" class="btn btn-sm btn-ghost-info" title="QR: Location" onclick="showLocQr('+i+',\'loc\')"><i class="bi bi-geo-alt"></i></button>' +
+                    '</div></td>' +
                     '</tr>';
             }
             $body.html(html);
@@ -1937,3 +1942,33 @@ $(function() {
     }
 
 });
+
+/* ══════════════════════════════════════════════════════
+   QR CODE for Location Units (global scope for onclick)
+══════════════════════════════════════════════════════ */
+function showLocQr(rowIdx, type) {
+    var FD = window._FORM_DATA || {};
+    var internalId = FD.part_internal_id || FD.part_code || '';
+    var rSel = '[data-row="' + rowIdx + '"]';
+    var unitNum = rowIdx + 1;
+    var locCode = $('.loc-code' + rSel).val() || '';
+    var qrVal, title, subtitle, extra;
+
+    if (type === 'unit') {
+        qrVal = internalId + '|' + unitNum;
+        title = internalId + ' / Unit #' + unitNum;
+        subtitle = 'Internal ID + Unit';
+    } else if (type === 'id') {
+        qrVal = internalId || 'N/A';
+        title = internalId;
+        subtitle = 'Internal ID';
+        extra = 'Scan to find all units';
+    } else if (type === 'loc') {
+        qrVal = locCode || 'NO-LOCATION';
+        title = locCode || 'No location';
+        subtitle = 'Location Code';
+        extra = 'Unit #' + unitNum;
+    }
+
+    showCodePopup(qrVal, title, subtitle, extra);
+}

@@ -331,6 +331,59 @@ button,.pc,.dv-unit,.pay-method{-webkit-tap-highlight-color:rgba(59,130,246,.15)
 .pm-btn.cancel:hover{border-color:var(--text2);}
 .pm-btn.confirm{flex:2;border:none;background:var(--green);color:#fff;font-weight:700;}
 .pm-btn.confirm:hover{background:#16a34a;}
+/* ═══ CHECKOUT LAYOUT ═══ */
+.co-left{flex:0 0 380px;padding:16px 20px;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);}
+.co-right{flex:1;padding:20px 24px;overflow-y:auto;background:var(--card);}
+.co-section{padding:12px 0;border-bottom:1px solid var(--border);}
+.co-section:last-child{border-bottom:none;}
+.co-sec-title{font-size:12px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px;}
+.co-total-box{text-align:center;padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+/* Payment method big buttons */
+.co-pay-methods{display:flex;gap:8px;}
+.co-pay-btn{flex:1;padding:14px 8px;border:2px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text2);font-weight:700;font-size:13px;text-align:center;cursor:pointer;transition:all .15s;}
+.co-pay-btn i{display:block;font-size:24px;margin-bottom:4px;color:var(--muted);}
+.co-pay-btn span{display:block;}
+.co-pay-btn:hover{border-color:var(--primary);background:rgba(59,130,246,.04);}
+.co-pay-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 4px 12px rgba(59,130,246,.25);}
+.co-pay-btn.active i{color:#fff;}
+/* Card type buttons */
+.co-card-types{display:flex;gap:6px;flex-wrap:wrap;}
+.co-card-btn{padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--text2);font-weight:600;font-size:11px;cursor:pointer;transition:.15s;}
+.co-card-btn:hover{border-color:var(--primary);}
+.co-card-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+/* Amount input */
+.co-amt-input{font-size:28px!important;font-weight:900!important;text-align:center;padding:16px!important;border-radius:12px!important;border:2px solid var(--primary)!important;background:rgba(59,130,246,.03);}
+.co-amt-input:focus{box-shadow:0 0 0 4px rgba(59,130,246,.12)!important;}
+/* Quick amount buttons */
+.co-quick-amounts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.co-quick-amounts button{flex:1;min-width:60px;padding:8px 4px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--text2);font-weight:700;font-size:12px;cursor:pointer;transition:.15s;}
+.co-quick-amounts button:hover{border-color:var(--primary);background:rgba(59,130,246,.05);}
+.co-quick-amounts button.exact{border-color:var(--green);color:var(--green);}
+/* Change display */
+.co-change-box{text-align:center;margin-top:10px;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:800;}
+.co-change-box.change-pos{background:rgba(22,163,74,.08);color:var(--green);}
+.co-change-box.change-neg{background:rgba(239,68,68,.08);color:var(--red);}
+
+/* Checkout responsive */
+@media(max-width:768px){
+  .co-left{flex:none;width:100%;border-right:none;border-bottom:1px solid var(--border);max-height:35vh;padding:12px 16px;}
+  .co-right{padding:16px;}
+  .co-total-box{padding:12px 0 10px;}
+  #coGrandTotal{font-size:28px!important;}
+  .co-amt-input{font-size:22px!important;padding:12px!important;}
+  .co-pay-btn{padding:10px 6px;}
+  .co-pay-btn i{font-size:20px;}
+  .co-pay-btn span{font-size:11px;}
+  #coPage .ip-body{flex-direction:column;overflow-y:auto;}
+}
+@media(max-width:480px){
+  .co-left{max-height:30vh;padding:10px 12px;}
+  .co-right{padding:12px;}
+  .co-pay-methods{gap:6px;}
+  .co-quick-amounts button{min-width:50px;font-size:11px;padding:6px 2px;}
+}
+
+/* Old pay-method (keep for backward compat) */
 .pay-method{flex:1;min-width:70px;padding:10px;border:2px solid var(--border);border-radius:var(--rs);background:none;color:var(--text2);font-weight:600;font-size:12px;text-align:center;transition:.15s;}
 .pay-method i{display:block;font-size:20px;margin-bottom:3px;}
 .pay-method:hover{border-color:var(--primary);}

@@ -10,10 +10,25 @@ router.use(requireLogin);
 router.get('/', Ctrl.index);
 router.get('/products', Ctrl.products);
 router.get('/vehicle/:uuid/parts', Ctrl.vehicleParts);
+router.get('/barcode-scan', Ctrl.barcodeScan);
 router.post('/validate-stock', Ctrl.validateStock);
 router.post('/checkout', Ctrl.checkout);
+router.post('/release-holds', Ctrl.releaseHolds);
+router.get('/stock-holds/active', Ctrl.activeStockHolds);
+router.get('/invoice-settings', Ctrl.invoiceSettingsGet);
+router.put('/invoice-settings', Ctrl.invoiceSettingsUpdate);
+
+// Payment Gateway
+router.get('/payment/config',   Ctrl.paymentConfigGet);
+router.put('/payment/config',   Ctrl.paymentConfigUpdate);
+router.post('/payment/init',    Ctrl.paymentInit);
+router.post('/payment/link',    Ctrl.paymentLink);
+router.post('/payment/verify',  Ctrl.paymentVerify);
+router.post('/payment/cancel',  Ctrl.paymentCancel);
+router.get('/payment/status/:uuid', Ctrl.paymentStatus);
 router.get('/dashboard-data', Ctrl.dashboard);
 router.get('/warehouses', Ctrl.warehouses);
+router.get('/taxes', Ctrl.taxes);
 
 // Orders
 router.get('/orders', Ctrl.ordersPage);
@@ -23,6 +38,8 @@ router.get('/orders/:uuid', Ctrl.orderShow);
 router.post('/orders/:uuid/cancel', Ctrl.orderCancel);
 router.post('/orders/:uuid/payment', Ctrl.orderPayment);
 router.get('/orders/:uuid/invoice', Ctrl.orderInvoice);
+router.get('/orders/:uuid/invoice/thermal', Ctrl.orderInvoiceThermal);
+router.post('/orders/:uuid/invoice/email', Ctrl.orderInvoiceEmail);
 
 // Customers
 router.get('/customers', Ctrl.customersPage);
@@ -47,5 +64,15 @@ router.get('/returns', Ctrl.returnsPage);
 router.post('/returns', Ctrl.returnCreate);
 router.post('/returns/paginate', Ctrl.returnsPaginate);
 router.get('/returns/:uuid', Ctrl.returnShow);
+
+// Label Printer (proxy to API)
+const api = require('../helpers/api');
+router.get('/label-printer/status', async (req, res) => { res.json(await api.get('/label-printer/status', req.session.token)); });
+router.get('/label-printer/config', async (req, res) => { res.json(await api.get('/label-printer/config', req.session.token)); });
+router.post('/label-printer/config', async (req, res) => { res.json(await api.post('/label-printer/config', req.body, req.session.token)); });
+router.post('/label-printer/test', async (req, res) => { res.json(await api.post('/label-printer/test', req.body, req.session.token)); });
+router.post('/label-printer/qr-internal-id', async (req, res) => { res.json(await api.post('/label-printer/qr-internal-id', req.body, req.session.token)); });
+router.post('/label-printer/qr-unit-location', async (req, res) => { res.json(await api.post('/label-printer/qr-unit-location', req.body, req.session.token)); });
+router.post('/label-printer/barcode-location', async (req, res) => { res.json(await api.post('/label-printer/barcode-location', req.body, req.session.token)); });
 
 module.exports = router;

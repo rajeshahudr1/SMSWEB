@@ -29,7 +29,7 @@ function buildPagination(pg){if(!pg||pg.last_page<=1){$('#tablePagination').html
 
 function loadData(){
     $('#tableBody').html('<tr><td colspan="9" class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>');
-    $.post(BASE_URL+'/pos/returns/paginate',{page:_page,per_page:_pp,search:$('#searchInput').val().trim()},function(res){
+    $.post(BASE_URL+'/sales/returns/paginate',{page:_page,per_page:_pp,search:$('#searchInput').val().trim()},function(res){
         if(!res||res.status!==200){$('#tableBody').html('<tr><td colspan="9" class="text-center text-danger py-4">Failed.</td></tr>');return;}
         var data=res.data&&res.data.data?res.data.data:[],pg=res.data&&res.data.pagination?res.data.pagination:{};
         $('#badgeTotal').text((pg.total||0).toLocaleString());

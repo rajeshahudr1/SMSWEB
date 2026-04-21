@@ -1661,7 +1661,7 @@ $(function() {
                 +   '<div class="table-responsive"><table class="table table-sm table-bordered mb-0" style="font-size:12px;">'
                 +     '<thead><tr>'
                 +       '<th style="width:48px;">Unit</th><th>Warehouse</th><th>Zone</th><th>Shelf</th><th>Rack</th><th>Bin</th>'
-                +       '<th style="width:130px;">Code</th><th style="width:120px;">Status</th><th style="width:140px;">Notes</th><th style="width:40px;"></th>'
+                +       '<th style="width:130px;">Code</th><th style="width:120px;">Status</th><th style="width:140px;">Notes</th><th style="width:50px;text-align:center;"><i class="bi bi-three-dots"></i></th>'
                 +     '</tr></thead>'
                 +     '<tbody>' + _renderLocRows(r, qty) + '</tbody>'
                 +   '</table></div>'
@@ -1695,14 +1695,24 @@ $(function() {
                 +   '<option value="3"' + (unitStatus===3?' selected':'') + '>Sold</option>'
                 + '</select></td>'
                 + '<td><input type="text" class="form-control form-control-sm bl-notes" value="' + H.esc(loc.notes||'') + '" placeholder="Notes"/></td>'
-                + '<td class="text-center"><button type="button" class="btn btn-icon btn-sm btn-ghost-danger b-loc-rm" title="Delete"><i class="bi bi-trash3"></i></button></td>'
+                + '<td class="text-center">'
+                + '<div class="dropdown">'
+                + '<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>'
+                + '<ul class="dropdown-menu dropdown-menu-end">'
+                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+(i+1)+',\'id\');return false;"><i class="bi bi-upc-scan me-2 text-primary"></i>Internal ID</a></li>'
+                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+(i+1)+',\'unit\');return false;"><i class="bi bi-qr-code me-2" style="color:#7c3aed;"></i>ID + Unit</a></li>'
+                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+(i+1)+',\'loc\');return false;"><i class="bi bi-geo-alt me-2 text-info"></i>Location Barcode</a></li>'
+                + '<li><hr class="dropdown-divider"/></li>'
+                + '<li><a class="dropdown-item text-danger b-loc-rm-link" href="#" onclick="return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>'
+                + '</ul></div>'
+                + '</td>'
                 + '</tr>';
         }
         return html;
     }
 
     /* Delete location row → decrement part qty (min 1), update part on server */
-    $('#bLocationsBody').on('click', '.b-loc-rm', function() {
+    $('#bLocationsBody').on('click', '.b-loc-rm, .b-loc-rm-link', function() {
         var $row = $(this).closest('.b-loc-row');
         var $card = $(this).closest('.b-loc-card');
         var row = _rows.find(function(r) { return r.id === parseInt($card.data('id')); });
@@ -1951,3 +1961,39 @@ $(function() {
         }
     }
 });
+
+/* QR Code for batch location rows */
+function doLocCode(partId, unitNum, type) {
+    var $row = $('.b-loc-row[data-pid="'+partId+'"][data-row="'+(unitNum-1)+'"]');
+    var locCode = $row.find('.bl-code').val() || '';
+    var FD = window._FORM_DATA || {};
+    var internalId = FD.part_internal_id || FD.part_code || '';
+    if (!internalId) {
+        var $card = $row.closest('.b-loc-card');
+        var t = $card.find('.card-title strong').text() || '';
+        internalId = t.replace(/^#\d+\s*—\s*/, '').trim();
+    }
+
+    var qrVal, title, subtitle, extra;
+    if (type === 'id') {
+        // 1. Only Internal ID — for POS search to add all parts of this ID
+        qrVal = internalId || 'N/A';
+        title = internalId;
+        subtitle = 'Internal ID';
+        extra = 'Scan to find all units of this part';
+    } else if (type === 'unit') {
+        // 2. Internal ID + Unit # — for POS search to add specific unit
+        qrVal = internalId + '|' + unitNum;
+        title = internalId + ' / Unit #' + unitNum;
+        subtitle = 'Internal ID + Unit';
+        extra = 'Scan to add this specific unit';
+    } else if (type === 'loc') {
+        // 3. Only Location code — barcode for location
+        qrVal = locCode || 'NO-LOCATION';
+        title = locCode || 'No location';
+        subtitle = 'Location Code';
+        extra = 'Unit #' + unitNum;
+    }
+
+    showCodePopup(qrVal, title, subtitle, extra);
+}
