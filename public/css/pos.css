@@ -119,12 +119,14 @@ button,.pc,.dv-unit,.pay-method{-webkit-tap-highlight-color:rgba(59,130,246,.15)
 .pcat.active{background:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.3);}
 
 /* Vehicle back bar */
-.pos-vback{display:none;align-items:center;gap:10px;padding:10px 20px;flex-shrink:0;}
+.pos-vback{display:none;align-items:center;gap:10px;padding:10px 20px;flex-shrink:0;flex-wrap:nowrap;}
 .pos-vback.show{display:flex;}
-.pvb-btn{padding:8px 14px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--card);font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px;}
+.pvb-btn{padding:8px 14px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--card);font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap;}
 .pvb-btn:hover{border-color:var(--primary);color:var(--primary);}
-.pvb-title{font-size:15px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.pvb-all{padding:8px 16px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;}
+.pvb-title{font-size:15px;font-weight:700;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pvb-all{padding:8px 16px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap;}
+/* Override: inside the vehicle back bar, the search keeps its inline width — it must NOT break to a new line like it does in the main POS header */
+.pos-vback .ph-search{flex:0 1 240px!important;max-width:240px!important;order:0!important;min-width:120px;}
 
 /* Product grid */
 .pos-grid{flex:1;overflow-y:auto;padding:0 20px 16px;display:grid;gap:12px;align-content:start;}
@@ -500,4 +502,10 @@ button,.pc,.dv-unit,.pay-method{-webkit-tap-highlight-color:rgba(59,130,246,.15)
   .pc-name{font-size:11px;}
   .pc-price{font-size:13px;}
   .co-box{max-width:100%;border-radius:16px 16px 0 0;}
+  /* Vehicle back bar on phones: allow wrap so elements don't overflow */
+  .pos-vback{flex-wrap:wrap;padding:10px 12px;gap:8px;}
+  .pos-vback .pvb-title{flex:1 1 100%;order:1;font-size:13px;}
+  .pos-vback .pvb-btn{order:0;}
+  .pos-vback .ph-search{flex:1 1 auto!important;max-width:none!important;order:2;}
+  .pos-vback .pvb-all{order:3;}
 }
