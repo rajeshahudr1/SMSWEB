@@ -474,7 +474,7 @@ function vehicleCard(v){
     return '<div class="pc" onclick="pcClick(this)" onmouseenter="showPcTip(this)" onmouseleave="hidePcTip()" data-act="vehicle" data-uuid="'+esc(v.uuid)+'" data-name="'+esc(name)+'" data-img="'+esc(v.image_url||'')+'" data-tipdata=\''+tipData+'\'>'
         +'<div class="pc-img">'+img+'</div>'
         +'<div class="pc-body"><div class="pc-name">'+esc(name)+'</div><div class="pc-code">'+esc(code)+'</div>'
-        +'<div class="pc-foot"><span class="pc-stock" style="background:rgba(59,130,246,.08);color:var(--primary);"><i class="bi bi-gear-wide-connected"></i> '+pc+' parts</span><i class="bi bi-chevron-right" style="color:var(--primary);font-size:12px;"></i></div></div></div>';
+        +'<div class="pc-foot"><span class="pc-stock" style="background:var(--pv2-brand-light,#e3f1ed);color:var(--primary);"><i class="bi bi-gear-wide-connected"></i> '+pc+' parts</span><i class="bi bi-chevron-right" style="color:var(--primary);font-size:12px;"></i></div></div></div>';
 }
 function pcClick(el){var $el=$(el),act=$el.data('act');if(act==='part')openPartDetail($el);else if(act==='vehicle')openVehicleParts($el.data('uuid'),$el.data('name'));}
 
@@ -485,7 +485,7 @@ function openPartDetail($el){
     var uuid=$el.data('uuid'),id=$el.data('id'),name=$el.data('name'),price=$el.data('price'),qty=$el.data('qty'),code=$el.data('code'),wh=$el.data('wh'),img=$el.data('img');
     _selPart={uuid:uuid,id:id,name:name,price:price,qty:qty,code:code,wh:wh};
     $('.pc').removeClass('selected');$el.addClass('selected');
-    $('#dvTitle').text(name);$('#dvBadge').css({background:'rgba(59,130,246,.1)',color:'var(--primary)'}).text('Part');
+    $('#dvTitle').text(name);$('#dvBadge').css({background:'var(--pv2-brand-light,#e3f1ed)',color:'var(--primary)'}).text('Part');
     $('#dvName').text(name);$('#dvCode').text(code);$('#dvPrice').text(F(price));
     var sq=parseInt(qty)||0,stC=sq>5?'var(--green)':sq>0?'var(--yellow)':'var(--red)';
     $('#dvStock').css('color',stC).html('<i class="bi bi-'+(sq>0?'check-circle':'x-circle')+'"></i> '+sq+' qty');

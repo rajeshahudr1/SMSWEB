@@ -8,6 +8,10 @@ router.use(requireLogin);
 
 // POS Screen
 router.get('/', Ctrl.index);
+router.get('/ui-kit', Ctrl.uikitPage);
+router.get('/theme', Ctrl.themeGet);
+router.put('/theme', Ctrl.themeUpdate);
+router.get('/catalog-counts', Ctrl.catalogCounts);
 router.get('/products', Ctrl.products);
 router.get('/vehicle/:uuid/parts', Ctrl.vehicleParts);
 router.get('/barcode-scan', Ctrl.barcodeScan);

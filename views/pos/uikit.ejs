@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>POS · UI Kit | <%- APP_NAME %></title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+<link rel="stylesheet" href="/libs/css/tabler.min.css"/>
+<link rel="stylesheet" href="/libs/css/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/libs/css/toastr.min.css"/>
+<link rel="stylesheet" href="/css/pos.css?v=<%= Date.now() %>"/>
+<style>
+  html,body{height:auto;overflow:auto;}
+  body.pos-mode{overflow:auto;height:auto;}
+  .pv2-kit-top{position:sticky;top:0;z-index:20;background:var(--pv2-surface);border-bottom:1px solid var(--pv2-border);padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .pv2-kit-top .logo{width:36px;height:36px;border-radius:8px;background:var(--pv2-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;letter-spacing:-0.3px;}
+  .pv2-kit-wrap{display:grid;grid-template-columns:320px 1fr;gap:0;min-height:calc(100vh - 70px);}
+  @media(max-width:900px){.pv2-kit-wrap{grid-template-columns:1fr;}}
+  .pv2-editor{background:var(--pv2-surface);border-right:1px solid var(--pv2-border);padding:20px;position:sticky;top:70px;align-self:start;max-height:calc(100vh - 70px);overflow-y:auto;}
+  .pv2-editor h3{font-size:12px;font-weight:700;color:var(--pv2-text);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;margin-top:18px;}
+  .pv2-editor h3:first-child{margin-top:0;}
+  .pv2-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--pv2-border);}
+  .pv2-row:last-child{border-bottom:none;}
+  .pv2-row label{flex:1;font-size:12.5px;color:var(--pv2-text);font-weight:500;}
+  .pv2-row input[type=color]{width:40px;height:32px;padding:0;border:1px solid var(--pv2-border-strong);border-radius:6px;cursor:pointer;background:none;}
+  .pv2-row .hex{width:88px;padding:6px 8px;font-family:var(--pv2-font-mono);font-size:11.5px;border:1px solid var(--pv2-border-strong);border-radius:6px;text-align:center;color:var(--pv2-text);background:var(--pv2-surface);}
+  .pv2-editor-actions{display:flex;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--pv2-border);}
+  .pv2-editor-actions button{flex:1;}
+  .pv2-presets{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:10px;}
+  .pv2-preset{padding:8px 10px;border:1px solid var(--pv2-border-strong);border-radius:7px;background:var(--pv2-surface);cursor:pointer;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--pv2-text);}
+  .pv2-preset:hover{border-color:var(--pv2-brand);}
+  .pv2-preset .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
+  .pv2-preview{padding:24px;background:var(--pv2-surface-alt);}
+  .pv2-hint{font-size:11.5px;color:var(--pv2-muted);margin-top:6px;line-height:1.4;}
+  .pv2-scope-banner{background:var(--pv2-brand-ghost);border:1px solid var(--pv2-border);border-radius:7px;padding:8px 11px;font-size:11.5px;color:var(--pv2-muted);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .pv2-scope-banner i{color:var(--pv2-brand);font-size:14px;}
+
+  /* Mini POS preview mock */
+  .mock-shell{display:grid;grid-template-columns:64px 1fr 300px;background:var(--pv2-surface);border:1px solid var(--pv2-border);border-radius:14px;overflow:hidden;box-shadow:var(--pv2-shadow-md);height:520px;margin-bottom:20px;}
+  .mock-side{background:var(--pv2-ink);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px;}
+  .mock-side .slogo{width:36px;height:36px;border-radius:9px;background:var(--pv2-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:16px;}
+  .mock-side .sbtn{width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.55);font-size:17px;}
+  .mock-side .sbtn.on{background:var(--pv2-brand);color:#fff;}
+  .mock-mid{display:flex;flex-direction:column;background:var(--pv2-surface-alt);}
+  .mock-top{height:48px;background:var(--pv2-surface);border-bottom:1px solid var(--pv2-border);display:flex;align-items:center;padding:0 16px;gap:10px;}
+  .mock-top h4{font-size:14px;font-weight:700;letter-spacing:-0.2px;color:var(--pv2-text);margin:0;}
+  .mock-pill{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--pv2-brand-ghost);border:1px solid rgba(11,18,32,.08);color:var(--pv2-brand);font-size:11px;font-weight:600;}
+  .mock-pill .pd{width:6px;height:6px;border-radius:50%;background:var(--pv2-success);animation:pv2-pulseDot 2s infinite;}
+  .mock-grid{flex:1;padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;overflow:hidden;}
+  .mock-card{background:var(--pv2-surface);border:1px solid var(--pv2-border);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:112px;}
+  .mock-card .ci{width:40px;height:40px;border-radius:5px;background:var(--pv2-surface-sunken);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--pv2-subtle);font-family:var(--pv2-font-mono);}
+  .mock-card .nm{font-size:12px;font-weight:600;color:var(--pv2-text);}
+  .mock-card .sku{font-size:10.5px;color:var(--pv2-subtle);font-family:var(--pv2-font-mono);}
+  .mock-card .pr{display:flex;justify-content:space-between;align-items:center;margin-top:auto;}
+  .mock-card .pr .pv{font-size:13px;font-weight:700;color:var(--pv2-text);}
+  .mock-card .fab{width:22px;height:22px;border-radius:11px;background:var(--pv2-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .mock-right{background:var(--pv2-surface);border-left:1px solid var(--pv2-border);display:flex;flex-direction:column;}
+  .mock-rh{padding:12px 14px;border-bottom:1px solid var(--pv2-border);display:flex;align-items:center;gap:8px;}
+  .mock-rh .av{width:32px;height:32px;border-radius:50%;background:var(--pv2-brand-light);color:var(--pv2-brand);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .mock-rh .nm{font-size:13px;font-weight:600;color:var(--pv2-text);}
+  .mock-rh .sub{font-size:11px;color:var(--pv2-muted);}
+  .mock-items{flex:1;padding:8px 12px;overflow:hidden;}
+  .mock-li{padding:8px 0;border-bottom:1px solid var(--pv2-border);display:flex;gap:10px;align-items:center;font-size:12px;}
+  .mock-li .ln{flex:1;color:var(--pv2-text);font-weight:500;}
+  .mock-li .lp{font-family:var(--pv2-font-mono);color:var(--pv2-text);font-weight:700;}
+  .mock-tot{padding:10px 14px;background:var(--pv2-surface-alt);border-top:1px solid var(--pv2-border);display:flex;justify-content:space-between;align-items:baseline;}
+  .mock-tot .tl{font-size:13px;font-weight:700;}
+  .mock-tot .tv{font-size:20px;font-weight:700;font-family:var(--pv2-font-sans);letter-spacing:-0.4px;}
+  .mock-pay{margin:12px;padding:12px;background:var(--pv2-brand);color:#fff;border-radius:7px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;}
+  .mock-pay:hover{background:var(--pv2-brand-dark);}
+
+  /* ── Custom preset (color-picker tile inside Presets grid) ── */
+  .pv2-preset.custom{position:relative; cursor:pointer; overflow:hidden; border-style:dashed;}
+  .pv2-preset.custom:hover{border-color:var(--pv2-brand); background:var(--pv2-brand-ghost);}
+  .pv2-preset.custom input[type=color]{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; padding:0; border:none; background:none;}
+  .pv2-preset.custom .dot{background:linear-gradient(135deg,#ef4444 0%,#f59e0b 25%,#10b981 50%,#3b82f6 75%,#8b5cf6 100%);}
+
+  /* ── Responsive preview canvas — adapts to current viewport ── */
+  .pv2-prev-tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .pv2-prev-tab{
+    padding:6px 12px;border:1px solid var(--pv2-border);border-radius:6px;
+    background:var(--pv2-surface);font-size:12px;font-weight:600;color:var(--pv2-text);
+    cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+  }
+  .pv2-prev-tab.on{background:var(--pv2-brand);color:#fff;border-color:var(--pv2-brand);}
+  .pv2-prev-viewport{
+    background:var(--pv2-surface);border:1px solid var(--pv2-border);border-radius:14px;
+    overflow:hidden;box-shadow:var(--pv2-shadow-md);
+    margin:0 auto;transition:max-width .2s,height .2s;
+  }
+  .pv2-prev-viewport[data-mode="desktop"]{max-width:100%;height:520px;}
+  .pv2-prev-viewport[data-mode="tablet"] {max-width:768px;height:560px;}
+  .pv2-prev-viewport[data-mode="mobile"] {max-width:390px;height:640px;border-radius:24px;}
+
+  /* Inside the viewport, the mock adapts to the viewport width (not screen) */
+  .pv2-prev-viewport .mock-shell{
+    grid-template-columns:64px 1fr 300px; border:none; border-radius:inherit; box-shadow:none;
+    height:100%;margin:0;
+  }
+  .pv2-prev-viewport[data-mode="tablet"] .mock-shell{grid-template-columns:64px 1fr 260px;}
+  .pv2-prev-viewport[data-mode="mobile"] .mock-shell{
+    grid-template-columns:1fr; grid-template-rows:auto auto 1fr auto;
+  }
+  .pv2-prev-viewport[data-mode="mobile"] .mock-side{
+    order:4; flex-direction:row; width:100%; height:auto; padding:8px 14px; gap:0; justify-content:space-around;
+  }
+  .pv2-prev-viewport[data-mode="mobile"] .mock-side .slogo{display:none;}
+  .pv2-prev-viewport[data-mode="mobile"] .mock-side .sbtn{width:44px;height:40px;}
+  .pv2-prev-viewport[data-mode="mobile"] .mock-right{display:none;}
+  .pv2-prev-viewport[data-mode="mobile"] .mock-grid{grid-template-columns:repeat(2,1fr);}
+
+  /* Tablet mode: shrink cart slightly */
+  .pv2-prev-viewport[data-mode="tablet"] .mock-grid{grid-template-columns:repeat(2,1fr);}
+
+  /* Extra live previews — tabs, rail, filter chips, part-detail header, autocomplete, cart lines */
+  .pv2-live-row{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:20px;}
+  .pv2-live-card{background:var(--pv2-surface);border:1px solid var(--pv2-border);border-radius:10px;overflow:hidden;}
+  .pv2-live-card .lc-hdr{padding:8px 12px;font-size:11px;font-weight:700;color:var(--pv2-muted);text-transform:uppercase;letter-spacing:0.5px;background:var(--pv2-surface-alt);border-bottom:1px solid var(--pv2-border);}
+
+  .lc-tabs{display:flex;gap:6px;padding:12px 14px 0;background:var(--pv2-surface);border-bottom:1px solid var(--pv2-border);}
+  .lc-tabs .t{padding:8px 14px;font-size:13px;font-weight:500;color:var(--pv2-muted);border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;}
+  .lc-tabs .t.on{color:var(--pv2-brand);background:var(--pv2-brand-light);border-bottom-color:var(--pv2-brand);font-weight:600;border-radius:6px 6px 0 0;}
+
+  .lc-rail{display:flex;flex-direction:column;padding:10px 8px;background:var(--pv2-surface);}
+  .lc-rail .r{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;font-size:12.5px;color:var(--pv2-muted);font-weight:500;}
+  .lc-rail .r.on{background:var(--pv2-brand-light);color:var(--pv2-brand);font-weight:600;}
+  .lc-rail .r .ct{margin-left:auto;font-size:10.5px;opacity:.7;}
+
+  .lc-chips{display:flex;gap:6px;flex-wrap:wrap;padding:12px 14px;background:var(--pv2-surface);}
+  .lc-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--pv2-brand);color:#fff;font-size:11.5px;font-weight:600;}
+  .lc-chip .x{cursor:pointer;opacity:.8;font-size:14px;line-height:1;}
+
+  .lc-pdt{background:var(--pv2-surface);padding:14px;display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;}
+  .lc-pdt .lc-pdt-main{flex:1;min-width:180px;}
+  .lc-pdt .lc-sku{display:inline-flex;padding:3px 9px;border-radius:4px;background:var(--pv2-surface-sunken);color:var(--pv2-text);font-size:11px;font-weight:700;font-family:var(--pv2-font-mono);margin-right:6px;}
+  .lc-pdt .lc-chip-brand{display:inline-flex;padding:3px 9px;border-radius:999px;background:var(--pv2-brand-light);color:var(--pv2-brand);font-size:11px;font-weight:600;margin-right:4px;}
+  .lc-pdt .lc-chip-success{display:inline-flex;padding:3px 9px;border-radius:999px;background:var(--pv2-success-bg);color:var(--pv2-success);font-size:11px;font-weight:600;margin-right:4px;}
+  .lc-pdt .lc-chip-warning{display:inline-flex;padding:3px 9px;border-radius:999px;background:var(--pv2-warning-bg);color:var(--pv2-warning);font-size:11px;font-weight:600;}
+  .lc-pdt .lc-title{font-size:18px;font-weight:800;color:var(--pv2-text);letter-spacing:-0.4px;margin-top:6px;}
+  .lc-pdt .lc-price{text-align:right;}
+  .lc-pdt .lc-price .v{font-size:22px;font-weight:800;color:var(--pv2-text);font-family:var(--pv2-font-mono);letter-spacing:-0.5px;}
+  .lc-pdt .lc-price .s{font-size:11px;color:var(--pv2-muted);}
+
+  .lc-ac{background:var(--pv2-surface);padding:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .lc-ac-trigger{min-width:160px;padding:7px 10px;border:1px solid var(--pv2-border);border-radius:6px;color:var(--pv2-text);font-size:12.5px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .lc-ac-trigger.focused{border-color:var(--pv2-brand);box-shadow:0 0 0 3px rgba(0,84,166,.12);}
+  .lc-ac-trigger i{color:var(--pv2-muted);font-size:10px;}
+
+  .lc-cart{background:var(--pv2-surface);padding:10px 14px;display:flex;flex-direction:column;gap:2px;}
+  .lc-cart-line{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--pv2-border);}
+  .lc-cart-line:last-child{border-bottom:none;}
+  .lc-cart-line .ic{width:36px;height:36px;border-radius:5px;background:var(--pv2-surface-sunken);display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--pv2-font-mono);color:var(--pv2-subtle);flex-shrink:0;}
+  .lc-cart-line .nm{flex:1;font-size:12.5px;font-weight:600;color:var(--pv2-text);}
+  .lc-cart-line .pr{font-family:var(--pv2-font-mono);font-weight:700;color:var(--pv2-text);}
+</style>
+</head>
+<body class="pos-mode">
+<script>
+/* Apply saved theme (injected from the server so there's no flash of default colors) */
+window.__pv2SavedTheme = <%- JSON.stringify(savedTheme || {}) %>;
+(function(){ try{ var t=window.__pv2SavedTheme||{}; Object.keys(t).forEach(function(k){ document.documentElement.style.setProperty(k,t[k]); }); }catch(e){} })();
+</script>
+
+<div class="pv2-kit-top">
+  <div class="logo">S</div>
+  <div>
+    <div style="font-size:15px;font-weight:700;letter-spacing:-0.3px;">POS &middot; UI Kit</div>
+    <div style="font-size:11.5px;color:var(--pv2-muted);">Theme editor &middot; saves per company; applies to every POS user.</div>
+  </div>
+  <a class="pos-btn-outline pos-btn-sm" href="/sales" style="margin-left:auto;"><i class="bi bi-arrow-left"></i> Back to POS</a>
+</div>
+
+<div class="pv2-kit-wrap">
+
+  <!-- EDITOR -->
+  <aside class="pv2-editor">
+    <div class="pv2-scope-banner"><i class="bi bi-shield-check"></i> Saved theme is shared across your organization.</div>
+
+    <h3>Presets</h3>
+    <div class="pv2-presets" id="presets"></div>
+
+    <h3>Brand</h3>
+    <div id="grpBrand"></div>
+
+    <h3>Surfaces</h3>
+    <div id="grpSurf"></div>
+
+    <h3>Text &amp; Borders</h3>
+    <div id="grpText"></div>
+
+    <h3>Semantic</h3>
+    <div id="grpSem"></div>
+
+    <div class="pv2-editor-actions">
+      <button class="pos-btn-outline pos-btn-sm" onclick="resetTheme()"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+      <button class="pos-btn-primary pos-btn-sm" id="btnSaveTheme" onclick="saveTheme()"><i class="bi bi-check-lg"></i> Save &amp; apply</button>
+    </div>
+    <div class="pv2-hint" id="saveHint">Click Save to store this theme for your organization.</div>
+  </aside>
+
+  <!-- PREVIEW + KIT -->
+  <section class="pv2-preview">
+
+    <div style="display:flex;align-items:center;margin-bottom:12px;">
+      <div style="font-size:12.5px;font-weight:700;color:var(--pv2-text);text-transform:uppercase;letter-spacing:0.6px;flex:1;">Live preview</div>
+      <div class="pv2-prev-tabs" id="prevTabs">
+        <button type="button" class="pv2-prev-tab" data-mode="desktop"><i class="bi bi-display"></i> Desktop</button>
+        <button type="button" class="pv2-prev-tab" data-mode="tablet"><i class="bi bi-tablet"></i> Tablet</button>
+        <button type="button" class="pv2-prev-tab" data-mode="mobile"><i class="bi bi-phone"></i> Mobile</button>
+      </div>
+    </div>
+    <div class="pv2-prev-viewport" id="prevViewport" data-mode="desktop">
+    <div class="mock-shell">
+      <div class="mock-side">
+        <div class="slogo">S</div>
+        <div class="sbtn on"><i class="bi bi-grid-1x2-fill"></i></div>
+        <div class="sbtn"><i class="bi bi-receipt"></i></div>
+        <div class="sbtn"><i class="bi bi-people"></i></div>
+        <div class="sbtn"><i class="bi bi-gear"></i></div>
+      </div>
+      <div class="mock-mid">
+        <div class="mock-top">
+          <i class="bi bi-grid-1x2-fill" style="color:var(--pv2-brand);font-size:15px;"></i>
+          <h4>POS</h4>
+          <div class="mock-pill"><span class="pd"></span>Register open</div>
+        </div>
+        <div class="mock-grid">
+          <div class="mock-card"><div class="ci">8821</div><div class="nm">Headlight assembly</div><div class="sku">P-8821 &middot; VW Golf VII</div><div class="pr"><div class="pv">&euro; 185</div><div class="fab">+</div></div></div>
+          <div class="mock-card"><div class="ci">8817</div><div class="nm">Alternator 140A</div><div class="sku">P-8817 &middot; Ford Focus</div><div class="pr"><div class="pv">&euro; 95</div><div class="fab">+</div></div></div>
+          <div class="mock-card"><div class="ci">8814</div><div class="nm">Front bumper skin</div><div class="sku">P-8814 &middot; Corolla 2014</div><div class="pr"><div class="pv">&euro; 210</div><div class="fab">+</div></div></div>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-rh">
+          <div class="av">GM</div>
+          <div style="flex:1;"><div class="nm">Giulia Moretti</div><div class="sub">Wholesale &middot; 3 items</div></div>
+        </div>
+        <div class="mock-items">
+          <div class="mock-li"><span class="ln">Headlight assembly</span><span class="lp">&euro; 185</span></div>
+          <div class="mock-li"><span class="ln">Alternator &times;2</span><span class="lp">&euro; 190</span></div>
+          <div class="mock-li"><span class="ln">Tail light (L)</span><span class="lp">&euro; 48</span></div>
+        </div>
+        <div class="mock-tot"><span class="tl">Total</span><span class="tv">&euro; 527</span></div>
+        <button class="mock-pay"><i class="bi bi-check-lg"></i> Charge &euro; 527</button>
+      </div>
+    </div>
+    </div><!-- /pv2-prev-viewport -->
+
+    <!-- Extra live previews reflecting the existing POS design -->
+    <div class="pv2-live-row" style="grid-template-columns:1fr 1fr;">
+      <div class="pv2-live-card">
+        <div class="lc-hdr">Parts / Vehicles tabs</div>
+        <div class="lc-tabs">
+          <div class="t on"><i class="bi bi-gear-wide-connected"></i> Parts</div>
+          <div class="t"><i class="bi bi-truck-front"></i> Vehicles</div>
+        </div>
+        <div style="height:48px;background:var(--pv2-surface-alt);"></div>
+      </div>
+      <div class="pv2-live-card">
+        <div class="lc-hdr">Autocomplete dropdowns</div>
+        <div class="lc-ac">
+          <div class="lc-ac-trigger focused">All Warehouses <i class="bi bi-chevron-down"></i></div>
+          <div class="lc-ac-trigger">20 <i class="bi bi-chevron-down"></i></div>
+          <div class="lc-ac-trigger">Most recent <i class="bi bi-chevron-down"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv2-live-row" style="grid-template-columns:220px 1fr;">
+      <div class="pv2-live-card">
+        <div class="lc-hdr">Category rail</div>
+        <div class="lc-rail">
+          <div class="r on"><i class="bi bi-grid-3x3-gap-fill"></i><span>All parts</span><span class="ct">2,108</span></div>
+          <div class="r"><i class="bi bi-gear"></i><span>Engine</span><span class="ct">412</span></div>
+          <div class="r"><i class="bi bi-layers"></i><span>Body</span><span class="ct">358</span></div>
+          <div class="r"><i class="bi bi-lightbulb"></i><span>Lights</span><span class="ct">297</span></div>
+          <div class="r"><i class="bi bi-box"></i><span>Suspension</span><span class="ct">214</span></div>
+        </div>
+      </div>
+      <div class="pv2-live-card">
+        <div class="lc-hdr">Part detail header</div>
+        <div class="lc-pdt">
+          <div class="lc-pdt-main">
+            <div>
+              <span class="lc-sku">P-8821</span>
+              <span class="lc-chip-brand">OEM</span>
+              <span class="lc-chip-success">3 in stock</span>
+              <span class="lc-chip-warning">−16%</span>
+            </div>
+            <div class="lc-title">Headlight assembly — Right</div>
+          </div>
+          <div class="lc-price"><div class="v">&euro; 185</div><div class="s">VAT incl. · was &euro; 220</div></div>
+        </div>
+        <div class="lc-hdr" style="border-top:1px solid var(--pv2-border);border-bottom:none;">Active filter chips</div>
+        <div class="lc-chips">
+          <span class="lc-chip">Lights <span class="x">&times;</span></span>
+          <span class="lc-chip">OEM <span class="x">&times;</span></span>
+          <span class="lc-chip">VW Golf <span class="x">&times;</span></span>
+          <span class="lc-chip">&euro; 50–300 <span class="x">&times;</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv2-uikit" style="padding:0;">
+      <div class="pv2-sec">
+        <div class="pv2-sec-title">Colors</div>
+        <div class="pv2-color-grid" id="swatches"></div>
+      </div>
+
+      <div class="pv2-sec">
+        <div class="pv2-sec-title">Typography</div>
+        <div class="pv2-panel" id="typePanel"></div>
+      </div>
+
+      <div class="pv2-sec">
+        <div class="pv2-sec-title">Buttons</div>
+        <div class="pv2-panel" style="display:flex;flex-wrap:wrap;gap:10px;">
+          <button class="pos-btn-primary">Primary</button>
+          <button class="pos-btn-outline">Secondary</button>
+          <button class="pos-btn-primary"><i class="bi bi-plus-lg"></i> With icon</button>
+          <button class="pos-btn-primary pos-btn-sm">Small</button>
+          <button class="pos-btn-danger"><i class="bi bi-trash3"></i> Danger</button>
+          <button class="cf-pay" style="width:auto;padding:12px 22px;font-size:14px;margin-top:0;"><i class="bi bi-check-lg"></i> Charge</button>
+        </div>
+      </div>
+
+      <div class="pv2-sec">
+        <div class="pv2-sec-title">Badges</div>
+        <div class="pv2-panel" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <span class="badge bg-secondary-lt">Draft</span>
+          <span class="badge bg-success-lt">Paid</span>
+          <span class="badge bg-warning-lt">Pending</span>
+          <span class="badge bg-danger-lt">Refunded</span>
+          <span class="badge bg-info-lt">Active</span>
+          <span class="badge bg-primary-lt">Partial</span>
+        </div>
+      </div>
+
+      <div class="pv2-sec">
+        <div class="pv2-sec-title">Payment methods</div>
+        <div class="pv2-panel" style="max-width:520px;">
+          <div class="co-pay-methods">
+            <button class="co-pay-btn active"><i class="bi bi-cash-stack"></i><span>Cash</span></button>
+            <button class="co-pay-btn"><i class="bi bi-credit-card-2-front"></i><span>Card</span></button>
+            <button class="co-pay-btn"><i class="bi bi-bank"></i><span>Bank</span></button>
+            <button class="co-pay-btn"><i class="bi bi-phone"></i><span>UPI</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/toastr.min.js"></script>
+<script>toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2500};</script>
+<script>
+/* ─── Theme editor (DB-backed, per-organization) ─── */
+var TOKENS = {
+  brand: [
+    ['--pv2-brand',       'Brand',        '#0054a6'],
+    ['--pv2-brand-dark',  'Brand dark',   '#003d7a'],
+    ['--pv2-brand-light', 'Brand light',  '#e6f0fa'],
+    ['--pv2-brand-ghost', 'Brand ghost',  '#f4f8fc'],
+    ['--pv2-accent',      'Accent',       '#14b8a6']
+  ],
+  surf: [
+    ['--pv2-ink',            'Ink (sidebar)',  '#0b1220'],
+    ['--pv2-surface',        'Surface',        '#ffffff'],
+    ['--pv2-surface-alt',    'Surface alt',    '#f7f9fc'],
+    ['--pv2-surface-sunken', 'Surface sunken', '#f1f4f8']
+  ],
+  text: [
+    ['--pv2-text',          'Text',          '#1a2332'],
+    ['--pv2-muted',         'Muted',         '#5b6578'],
+    ['--pv2-subtle',        'Subtle',        '#8a94a6'],
+    ['--pv2-border',        'Border',        '#e8ecf1'],
+    ['--pv2-border-strong', 'Border strong', '#d3d9e2']
+  ],
+  sem: [
+    ['--pv2-success', 'Success', '#0d9f6e'],
+    ['--pv2-warning', 'Warning', '#d97706'],
+    ['--pv2-danger',  'Danger',  '#dc2626'],
+    ['--pv2-purple',  'Purple',  '#8b5cf6']
+  ]
+};
+var DEFAULTS = {};
+Object.keys(TOKENS).forEach(function(g){ TOKENS[g].forEach(function(t){ DEFAULTS[t[0]] = t[2]; }); });
+
+var PRESETS = [
+  { name: 'ScrapMS (default)', brand:'#0054a6', ink:'#0b1220', accent:'#14b8a6' },
+  { name: 'Shopify green',     brand:'#008060', ink:'#111827', accent:'#2563eb' },
+  { name: 'Indigo',            brand:'#4f46e5', ink:'#1e1b4b', accent:'#06b6d4' },
+  { name: 'Sunset',            brand:'#ea580c', ink:'#1c1917', accent:'#f59e0b' },
+  { name: 'Crimson',           brand:'#be123c', ink:'#111827', accent:'#8b5cf6' },
+  { name: 'Midnight',          brand:'#10b981', ink:'#020617', accent:'#38bdf8' }
+];
+
+function getCurrent(name){ return (window.__pv2SavedTheme && window.__pv2SavedTheme[name]) || DEFAULTS[name]; }
+function setVar(name,val){ document.documentElement.style.setProperty(name,val); }
+function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');var n=parseInt(h,16);return [n>>16&255,n>>8&255,n&255];}
+function rgbToHex(r,g,b){return '#'+[r,g,b].map(function(v){return ('0'+Math.max(0,Math.min(255,v|0)).toString(16)).slice(-2);}).join('');}
+function mix(hex, withWhite, t){ var a=hexToRgb(hex), b=hexToRgb(withWhite); return rgbToHex(a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t); }
+
+function renderGroup(groupKey, containerId){
+  var rows = TOKENS[groupKey].map(function(t){
+    var name=t[0], label=t[1], cur=getCurrent(name);
+    return '<div class="pv2-row" data-var="'+name+'">'
+      + '<label>'+label+'</label>'
+      + '<input type="color" class="pick" value="'+cur+'"/>'
+      + '<input type="text" class="hex" value="'+cur+'" maxlength="9"/>'
+      + '</div>';
+  }).join('');
+  document.getElementById(containerId).innerHTML = rows;
+}
+['brand','surf','text','sem'].forEach(function(g,i){ renderGroup(g, ['grpBrand','grpSurf','grpText','grpSem'][i]); });
+
+function bindEditors(){
+  document.querySelectorAll('.pv2-row').forEach(function(row){
+    var name = row.getAttribute('data-var');
+    var pick = row.querySelector('.pick');
+    var hex  = row.querySelector('.hex');
+    function apply(v){
+      if(!/^#[0-9a-fA-F]{3,8}$/.test(v)) return;
+      setVar(name,v); pick.value = v.slice(0,7); hex.value = v;
+      if(name==='--pv2-brand'){
+        var saved = window.__pv2SavedTheme || {};
+        if(!saved['--pv2-brand-dark'])  { var d = mix(v,'#000000',0.4); setVar('--pv2-brand-dark',d);  var r=document.querySelector('[data-var="--pv2-brand-dark"]');  if(r){r.querySelector('.pick').value=d.slice(0,7); r.querySelector('.hex').value=d;} }
+        if(!saved['--pv2-brand-light']) { var l = mix(v,'#ffffff',0.85); setVar('--pv2-brand-light',l); var r2=document.querySelector('[data-var="--pv2-brand-light"]'); if(r2){r2.querySelector('.pick').value=l.slice(0,7); r2.querySelector('.hex').value=l;} }
+        if(!saved['--pv2-brand-ghost']) { var g = mix(v,'#ffffff',0.95); setVar('--pv2-brand-ghost',g); var r3=document.querySelector('[data-var="--pv2-brand-ghost"]'); if(r3){r3.querySelector('.pick').value=g.slice(0,7); r3.querySelector('.hex').value=g;} }
+      }
+    }
+    pick.addEventListener('input', function(){ apply(pick.value); });
+    hex.addEventListener('input',  function(){ apply(hex.value.trim()); });
+  });
+}
+bindEditors();
+
+/* Presets — plus a "Custom" tile with an inline color-picker */
+var presetsHtml = PRESETS.map(function(p,i){
+  return '<div class="pv2-preset" data-i="'+i+'"><span class="dot" style="background:'+p.brand+';"></span>'+p.name+'</div>';
+}).join('');
+presetsHtml += '<div class="pv2-preset custom" title="Pick any brand color"><span class="dot"></span>Custom color<input type="color" id="presetPick" value="#0054a6"/></div>';
+document.getElementById('presets').innerHTML = presetsHtml;
+
+function applyBrandPalette(brandHex, inkHex, accentHex){
+  setRow('--pv2-brand',       brandHex);
+  setRow('--pv2-brand-dark',  mix(brandHex, '#000000', 0.4));
+  setRow('--pv2-brand-light', mix(brandHex, '#ffffff', 0.85));
+  setRow('--pv2-brand-ghost', mix(brandHex, '#ffffff', 0.95));
+  if (inkHex)    setRow('--pv2-ink',    inkHex);
+  if (accentHex) setRow('--pv2-accent', accentHex);
+}
+document.getElementById('presets').addEventListener('click', function(e){
+  var el = e.target.closest('.pv2-preset'); if (!el) return;
+  if (el.classList.contains('custom')) return; /* color input handles itself */
+  var p = PRESETS[parseInt(el.getAttribute('data-i'))];
+  applyBrandPalette(p.brand, p.ink, p.accent);
+});
+/* Custom color picker — live-updates as the user drags; no preset ink/accent override */
+document.getElementById('presetPick').addEventListener('input', function(){
+  applyBrandPalette(this.value);
+});
+
+/* ── Preview viewport mode switcher (Desktop / Tablet / Mobile) ── */
+(function(){
+  var $vp = document.getElementById('prevViewport');
+  var tabs = document.querySelectorAll('#prevTabs .pv2-prev-tab');
+  function setMode(m){
+    $vp.setAttribute('data-mode', m);
+    tabs.forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-mode') === m); });
+  }
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ setMode(t.getAttribute('data-mode')); }); });
+  /* Auto-pick mode based on current browser window width */
+  function autoMode(){
+    var w = window.innerWidth;
+    if (w <= 640) setMode('mobile');
+    else if (w <= 1024) setMode('tablet');
+    else setMode('desktop');
+  }
+  autoMode();
+  window.addEventListener('resize', autoMode);
+})();
+function setRow(name,val){
+  setVar(name,val);
+  var row = document.querySelector('[data-var="'+name+'"]');
+  if(row){ row.querySelector('.pick').value = val.slice(0,7); row.querySelector('.hex').value = val; }
+}
+
+function collectTheme(){
+  var map = {};
+  document.querySelectorAll('.pv2-row').forEach(function(r){
+    var name = r.getAttribute('data-var');
+    var val  = r.querySelector('.hex').value.trim();
+    if(val && val !== DEFAULTS[name]) map[name] = val;
+  });
+  return map;
+}
+
+function saveTheme(){
+  var $btn = $('#btnSaveTheme');
+  var map = collectTheme();
+  $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Saving…');
+  $.ajax({
+    url: '/sales/theme', method: 'PUT',
+    contentType: 'application/json', data: JSON.stringify({ theme: map }),
+    success: function(r){
+      $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i> Save & apply');
+      if(r && r.status === 200){
+        window.__pv2SavedTheme = (r.data && r.data.theme) || map;
+        try { localStorage.setItem('pv2Theme', JSON.stringify(window.__pv2SavedTheme)); } catch(_){}
+        toastr.success('Theme saved for your organization.');
+        var hint = document.getElementById('saveHint');
+        hint.textContent = 'Saved. POS tabs will update instantly.';
+        hint.style.color = 'var(--pv2-success)';
+        setTimeout(function(){ hint.textContent = 'Click Save to store this theme for your organization.'; hint.style.color=''; }, 2800);
+      } else {
+        toastr.error((r && r.message) || 'Save failed.');
+      }
+    },
+    error: function(xhr){
+      $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i> Save & apply');
+      var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Save failed.';
+      toastr.error(msg);
+    }
+  });
+}
+
+function resetTheme(){
+  if(!confirm('Reset the POS theme to the ScrapMS default for the whole organization?')) return;
+  var $btn = $('#btnSaveTheme');
+  $btn.prop('disabled', true);
+  $.ajax({
+    url: '/sales/theme', method: 'PUT',
+    contentType: 'application/json', data: JSON.stringify({ theme: {} }),
+    success: function(r){
+      $btn.prop('disabled', false);
+      window.__pv2SavedTheme = {};
+      try { localStorage.setItem('pv2Theme', '{}'); } catch(_){}
+      Object.keys(DEFAULTS).forEach(function(k){ setVar(k, DEFAULTS[k]); setRow(k, DEFAULTS[k]); });
+      toastr.success('Theme reset to default.');
+    },
+    error: function(){ $btn.prop('disabled', false); toastr.error('Reset failed.'); }
+  });
+}
+window.saveTheme = saveTheme; window.resetTheme = resetTheme;
+
+/* Static reference content */
+var swatches = [
+  ['Brand','var(--pv2-brand)','#0054a6'],['Brand dark','var(--pv2-brand-dark)','#003d7a'],['Brand light','var(--pv2-brand-light)','#e6f0fa'],['Brand ghost','var(--pv2-brand-ghost)','#f4f8fc'],
+  ['Ink','var(--pv2-ink)','#0b1220'],['Accent','var(--pv2-accent)','#14b8a6'],
+  ['Success','var(--pv2-success)','#0d9f6e'],['Warning','var(--pv2-warning)','#d97706'],['Danger','var(--pv2-danger)','#dc2626'],['Purple','var(--pv2-purple)','#8b5cf6'],
+  ['Muted','var(--pv2-muted)','#5b6578'],['Border','var(--pv2-border)','#e8ecf1']
+];
+document.getElementById('swatches').innerHTML = swatches.map(function(s){
+  return '<div class="pv2-swatch"><div class="pv2-swatch-chip" style="background:'+s[1]+';"></div><div class="pv2-swatch-meta"><div class="pv2-swatch-name">'+s[0]+'</div><div class="pv2-swatch-hex">'+s[2]+'</div></div></div>';
+}).join('');
+var types = [
+  ['Display',40,800,'Charge € 527'],
+  ['H1',26,800,'POS'],
+  ['H2',19,700,'Section heading'],
+  ['H3',15,700,'Card title'],
+  ['Body',14,400,'Description line for cart items.'],
+  ['Small',12,500,'Helper text · timestamps · meta'],
+  ['Mono',13,600,'ORD-3321 · € 527 · P-8821', true]
+];
+document.getElementById('typePanel').innerHTML = types.map(function(t){
+  var mono = t[4] ? 'font-family:var(--pv2-font-mono);' : '';
+  return '<div style="display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid var(--pv2-border);">'
+    + '<div style="width:90px;font-size:11.5px;color:var(--pv2-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;">'+t[0]+'</div>'
+    + '<div style="width:90px;font-size:11.5px;color:var(--pv2-muted);font-family:var(--pv2-font-mono);">'+t[1]+'/'+t[2]+'</div>'
+    + '<div style="flex:1;font-size:'+t[1]+'px;font-weight:'+t[2]+';color:var(--pv2-text);letter-spacing:'+(t[1]>20?'-0.5px':'0')+';'+mono+'">'+t[3]+'</div>'
+    + '</div>';
+}).join('');
+</script>
+</body>
+</html>

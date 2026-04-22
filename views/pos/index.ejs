@@ -16,6 +16,42 @@
 <link rel="stylesheet" href="/css/pos.css?v=<%= Date.now() %>"/>
 </head>
 <body class="pos-mode">
+<script>
+/* Theme loader — prefers DB-saved theme (shared across the organization) with
+   localStorage as an instant-preview fallback. Cross-tab updates still flow via
+   localStorage so saving in the UI Kit tab re-skins the open POS tab instantly. */
+(function(){
+  var ALL_VARS = ['--pv2-brand','--pv2-brand-dark','--pv2-brand-light','--pv2-brand-ghost','--pv2-accent',
+    '--pv2-ink','--pv2-text','--pv2-muted','--pv2-subtle','--pv2-border','--pv2-border-strong',
+    '--pv2-surface','--pv2-surface-alt','--pv2-surface-sunken',
+    '--pv2-success','--pv2-warning','--pv2-danger','--pv2-purple'];
+  function applyTheme(t){
+    ALL_VARS.forEach(function(k){ document.documentElement.style.removeProperty(k); });
+    Object.keys(t||{}).forEach(function(k){ if(k) document.documentElement.style.setProperty(k, t[k]); });
+  }
+  /* 1. Instant cached theme from localStorage (avoids flash while AJAX is in flight) */
+  try { var raw = localStorage.getItem('pv2Theme'); if (raw){ var cached = JSON.parse(raw)||{}; applyTheme(cached); } } catch(_){}
+  /* 2. Authoritative theme from the DB — overwrites cache when fetched */
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/sales/theme', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function(){
+      if (xhr.status === 200){
+        try {
+          var r = JSON.parse(xhr.responseText);
+          var t = (r && r.data && r.data.theme) || {};
+          applyTheme(t);
+          try { localStorage.setItem('pv2Theme', JSON.stringify(t)); } catch(_){}
+        } catch(_){}
+      }
+    };
+    xhr.send();
+  } catch(_){}
+  /* 3. Cross-tab updates when the UI Kit page writes to localStorage */
+  window.addEventListener('storage', function(e){ if(e.key!=='pv2Theme') return; try{ applyTheme(e.newValue?JSON.parse(e.newValue):{}); }catch(_){} });
+})();
+</script>
 
 <div class="pos-layout">
 
@@ -31,9 +67,10 @@
       <button class="ps-btn" data-tip="POS Settings" data-tip-pos="right" onclick="spaNav('settings')"><i class="bi bi-gear"></i></button>
     </div>
     <div class="ps-bottom">
+      <a href="/sales/ui-kit" class="ps-btn" data-tip="UI Kit &middot; theme editor" data-tip-pos="right" data-tip-color="blue"><i class="bi bi-palette"></i></a>
       <button class="ps-btn" id="fsToggle" data-tip="Fullscreen" data-tip-pos="right" onclick="toggleFS()"><i class="bi bi-arrows-fullscreen"></i></button>
       <a href="/logout" class="ps-btn ps-logout-btn" data-tip="Logout" data-tip-pos="right" data-tip-color="red"><i class="bi bi-box-arrow-left"></i></a>
-      <div class="ps-avatar" data-tip="<%- user ? user.name : 'User' %>" data-tip-pos="right"><i class="bi bi-person-fill"></i></div>
+      <div class="ps-avatar" data-tip="<%= user ? user.name : 'User' %>" data-tip-pos="right"><i class="bi bi-person-fill"></i></div>
     </div>
   </div>
 
@@ -54,8 +91,10 @@
 
     <!-- Header -->
     <div class="pos-header" id="posHeader">
-      <h2 class="ph-title">POS</h2>
-      <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Search products..." autocomplete="off"/></div>
+      <div class="ph-heading">
+        <h2 class="ph-title">POS</h2>
+      </div>
+      <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Scan or search SKU, name, or barcode..." autocomplete="off"/></div>
       <button class="pos-btn-outline pos-btn-sm" onclick="openAdvSearch()" data-tip="Advanced Search" data-tip-pos="bottom" id="advSearchBtn"><i class="bi bi-sliders"></i><span id="advCount" style="display:none;background:var(--accent);color:#fff;border-radius:50%;min-width:16px;height:16px;font-size:9px;align-items:center;justify-content:center;margin-left:4px;"></span></button>
       <div class="ph-filters">
         <select class="ph-sel" id="fWarehouse" data-tip="Filter by warehouse" data-tip-pos="bottom"><option value="">All Warehouses</option></select>
@@ -82,11 +121,45 @@
       <button class="pvb-all" onclick="addAllVehicleParts()" data-tip="Add all parts to cart" data-tip-color="orange"><i class="bi bi-cart-plus"></i> Add All</button>
     </div>
 
-    <!-- Products (POS main view) -->
-    <div class="pos-grid g-parts" id="prodGrid"></div>
+    <!-- Body: left category rail + product grid -->
+    <div class="pos-body">
+      <!-- Category rail (desktop only; collapses to chips on tablet/mobile).
+           Populated dynamically from /sales/catalog-counts so stock counts and the
+           list itself reflect current search/warehouse filters. -->
+      <aside class="pos-catrail" id="catRail">
+        <div class="pcr-item active" data-catid="" onclick="selectCatalog(this, '')">
+          <i class="bi bi-grid-3x3-gap-fill"></i>
+          <span class="pcr-label">All parts</span>
+          <span class="pcr-count" id="catCountAll">—</span>
+        </div>
+        <div class="pcr-loading" style="padding:8px 10px;font-size:11px;color:var(--pv2-subtle);">Loading catalogs…</div>
+      </aside>
+
+      <!-- Products -->
+      <div class="pos-grid-wrap">
+        <div class="pos-grid-bar">
+          <div class="pgb-info" id="pgbInfo">Loading parts across warehouses…</div>
+          <div class="pgb-sort">Sort:
+            <select class="ph-sel" id="fSort">
+              <option value="recent">Most recent</option>
+              <option value="price_asc">Price — low</option>
+              <option value="price_desc">Price — high</option>
+            </select>
+          </div>
+        </div>
+        <div class="pos-grid g-parts" id="prodGrid"></div>
+      </div>
+    </div>
 
     <!-- SPA content area (loaded via AJAX for orders/customers/returns/settings) -->
     <div id="spaContent" style="display:none;flex:1;overflow-y:auto;padding:20px;"></div>
+
+    <!-- Mobile sticky bottom cart bar (visible ≤640px when cart has items) -->
+    <div class="pos-mobile-cart-bar" id="mobCartBar" onclick="showCart();$('#posRight').addClass('open');">
+      <div class="mcb-icon"><i class="bi bi-cart3"></i><span class="mcb-badge" id="mcbBadge">0</span></div>
+      <div class="mcb-meta"><div class="line1" id="mcbLine1">0 items</div><div class="line2" id="mcbLine2">0.00</div></div>
+      <button class="mcb-go" onclick="event.stopPropagation();showCart();$('#posRight').addClass('open');openCheckout();">Checkout <i class="bi bi-arrow-right"></i></button>
+    </div>
   </div>
 
   <!-- ═══ RIGHT PANEL ═══ -->
@@ -136,41 +209,56 @@
 <!-- Advanced Search Fullscreen Page -->
 <div class="info-page" id="advSearchPage">
   <div class="ip-hdr">
-    <button class="ip-back" onclick="$('#advSearchPage').removeClass('open');"><i class="bi bi-arrow-left"></i></button>
-    <span class="ip-title">Advanced Filters</span>
-    <button onclick="clearAdvSearch()" style="font-size:11px;color:var(--red);font-weight:600;border:none;background:none;cursor:pointer;margin-left:auto;"><i class="bi bi-x-lg"></i> Clear All</button>
+    <span class="ip-title">Filter parts</span>
+    <span id="advResultHint" style="margin-left:8px;font-size:11.5px;color:var(--pv2-muted);font-weight:500;"></span>
+    <button class="ip-back" onclick="$('#advSearchPage').removeClass('open');$(document.body).removeClass('adv-search-open');" data-tip="Close filters" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
   </div>
+
+  <!-- Active filters chip strip (populated by JS whenever adv filters change) -->
+  <div class="adv-active-bar empty" id="advActiveBar">
+    <div class="aab-hdr">
+      Active filters <span id="advActiveCount" style="margin-left:6px;color:var(--pv2-text);">0</span>
+      <button class="aab-clear" onclick="clearAdvSearch()">Clear all</button>
+    </div>
+    <div class="aab-chips" id="advActiveChips"></div>
+  </div>
+
   <!-- Deep search -->
-  <div style="padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:#fafbfd;">
+  <div style="padding:10px 20px;border-bottom:1px solid var(--pv2-border);display:flex;align-items:center;gap:8px;background:var(--pv2-surface-alt);">
     <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;">
-      <input type="checkbox" id="afDeepSearch" style="width:16px;height:16px;accent-color:var(--primary);"/> Deep Search
+      <input type="checkbox" id="afDeepSearch" style="width:16px;height:16px;accent-color:var(--pv2-brand);"/> Deep Search
     </label>
-    <span style="font-size:10px;color:var(--muted);">Searches notes, damages, locations, attributes</span>
+    <span style="font-size:10px;color:var(--pv2-muted);">Searches notes, damages, locations, attributes</span>
   </div>
   <!-- Tabs — changes based on active POS tab (parts/vehicles) -->
   <div style="display:flex;gap:4px;padding:10px 20px;border-bottom:1px solid var(--border);overflow-x:auto;" id="advTabs"></div>
   <!-- Tab content -->
   <div class="ip-body" id="advBody" style="padding:16px 20px;"></div>
   <!-- Footer -->
-  <div class="ip-foot" style="gap:8px;">
-    <button class="pos-btn-outline" onclick="$('#advSearchPage').removeClass('open');" style="flex:1;">Cancel</button>
-    <button class="pos-btn-primary" onclick="applyAdvSearch()" style="flex:2;"><i class="bi bi-search"></i> Apply Filters</button>
+  <div class="ip-foot" style="gap:10px;">
+    <button class="pos-btn-outline" onclick="clearAdvSearch()"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+    <button class="pos-btn-primary" onclick="applyAdvSearch()"><i class="bi bi-check-lg"></i> <span id="advApplyLabel">Apply filters</span></button>
   </div>
 </div>
 
-<!-- Info Fullscreen Page -->
+<!-- Info Fullscreen Page — tabbed part detail (read-only) -->
 <div class="info-page" id="infoPage">
-  <div class="ip-hdr">
-    <button class="ip-back" onclick="$('#infoPage').removeClass('open');" data-tip="Back to POS"><i class="bi bi-arrow-left"></i></button>
-    <span class="ip-title" id="infoTitle">Part Details</span>
-    <span class="ip-badge" id="infoBadge">Part</span>
+  <!-- Header rebuilt dynamically by showFullInfo() — breadcrumb + SKU chips + title + price -->
+  <div class="pdt-topbar">
+    <button class="ip-back" onclick="$('#infoPage').removeClass('open');" data-tip="Back to POS" data-tip-pos="right"><i class="bi bi-arrow-left"></i></button>
+    <div class="pdt-crumbs" id="infoCrumbs"></div>
   </div>
-  <div class="ip-hero" id="infoHero"></div>
+  <div class="pdt-head" id="infoHead">
+    <div class="pdt-head-main">
+      <div class="pdt-head-chips" id="infoChips"></div>
+      <div class="pdt-head-title" id="infoTitle"></div>
+    </div>
+    <div class="pdt-head-price" id="infoHeadPrice"></div>
+  </div>
+  <!-- Legacy hero element (kept hidden for backward compat with old CSS rules) -->
+  <div class="ip-hero" id="infoHero" style="display:none;"></div>
   <div class="ip-tabs" id="infoTabs"></div>
   <div class="ip-body" id="infoBody"></div>
-  <div class="ip-foot">
-    <button class="dv-add-btn" style="flex:1;" onclick="$('#infoPage').removeClass('open');"><i class="bi bi-arrow-left"></i> Back to POS</button>
-  </div>
 </div>
 
 <!-- Checkout Fullscreen -->
@@ -345,5 +433,903 @@
 <script src="https://js.stripe.com/v3/"></script>
 <script>var BASE_URL='';toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2000};</script>
 <script src="/js/pages/pos.js?v=<%= Date.now() %>"></script>
+<script>
+/* ═══ POS Autocomplete — searchable, POS-themed dropdowns ═══
+   Enhances native <select> elements into type-to-filter dropdowns that match
+   the POS aesthetic. Keeps the underlying <select> intact (hidden) so existing
+   form submissions and change-event listeners in pos.js continue to fire. */
+(function(){
+  if (window.__posAcInit) return; window.__posAcInit = true;
+  var _esc = function(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+  var openAc = null;
+
+  function close(ac){ if (!ac) return; ac.$wrap.removeClass('open'); ac.$drop.removeClass('open'); if (openAc === ac) openAc = null; }
+  function closeAny(){ if (openAc) close(openAc); }
+
+  function open(ac){
+    closeAny();
+    var rect = ac.$wrap[0].getBoundingClientRect();
+    /* Position drop-down absolutely below the trigger, accounting for edges */
+    var dropTop = rect.bottom + 4;
+    var dropLeft = rect.left;
+    var dropWidth = Math.max(rect.width, 200);
+    /* If the drop would go off the bottom, flip above */
+    var vh = window.innerHeight;
+    var needH = Math.min(260, Math.max(120, ac.options.length * 32 + 44));
+    if (dropTop + needH > vh - 12){
+      dropTop = rect.top - needH - 4;
+    }
+    /* Clamp left inside viewport */
+    var vw = window.innerWidth;
+    if (dropLeft + dropWidth > vw - 8) dropLeft = vw - dropWidth - 8;
+    if (dropLeft < 8) dropLeft = 8;
+    ac.$drop.css({ position:'fixed', top:dropTop+'px', left:dropLeft+'px', width:dropWidth+'px' }).addClass('open');
+    ac.$wrap.addClass('open');
+    ac.$search.val('').trigger('input').focus();
+    openAc = ac;
+  }
+
+  function render(ac, term){
+    term = (term||'').toLowerCase().trim();
+    var html = '';
+    var current = ac.$select.val();
+    var hlIdx = -1, visibleIdx = 0;
+    ac.options.forEach(function(o){
+      var label = String(o.label||'');
+      if (term && label.toLowerCase().indexOf(term) < 0) return;
+      var sel = String(o.value) === String(current);
+      html += '<div class="ps-sel-opt'+(sel?' selected':'')+'" data-val="'+_esc(o.value)+'">'+_esc(label)+'</div>';
+      if (sel && hlIdx < 0) hlIdx = visibleIdx;
+      visibleIdx++;
+    });
+    if (!html) html = '<div class="ps-sel-empty">No matches</div>';
+    ac.$list.html(html);
+    /* Highlight the selected (or first) option for keyboard nav */
+    var $opts = ac.$list.children('.ps-sel-opt');
+    $opts.removeClass('hl');
+    if ($opts.length){
+      var i = hlIdx >= 0 ? hlIdx : 0;
+      $opts.eq(i).addClass('hl');
+    }
+  }
+
+  function pick(ac, $opt){
+    if (!$opt || !$opt.length) return;
+    var val = $opt.attr('data-val');
+    var label = $opt.text();
+    ac.$select.val(val).trigger('change');
+    ac.$trigger.text(label).removeClass('is-placeholder');
+    close(ac);
+  }
+
+  window.posAutocomplete = function(selector){
+    $(selector).each(function(){
+      var $sel = $(this);
+      if ($sel.data('posAc')) return;
+      if (!this.id) this.id = 'pac-'+Math.random().toString(36).slice(2,8);
+
+      /* Gather options */
+      var options = [];
+      $sel.find('option').each(function(){
+        options.push({ value: this.value, label: this.textContent || this.value });
+      });
+      var currentVal = $sel.val();
+      var currentLabel = (options.filter(function(o){ return String(o.value) === String(currentVal); })[0]||{}).label || '';
+      var placeholder = $sel.attr('data-placeholder') || (options[0] && options[0].value === '' ? options[0].label : '');
+
+      /* Build wrapper */
+      var $wrap = $('<div class="ps-sel"></div>');
+      var width = $sel[0].style.width || (($sel.attr('style')||'').match(/width:\s*([^;]+)/)||[])[1] || '';
+      if (width) $wrap.css('width', width);
+      /* Copy tooltip attrs so existing data-tip tooltips still work */
+      ['data-tip','data-tip-pos','data-tip-color'].forEach(function(a){
+        if ($sel.attr(a)) $wrap.attr(a, $sel.attr(a));
+      });
+      var $trigger = $('<div class="ps-sel-input" tabindex="0"></div>')
+        .text(currentLabel || placeholder || 'Select…');
+      if (!currentLabel && placeholder) $trigger.addClass('is-placeholder');
+      var $arrow = $('<i class="bi bi-chevron-down ps-sel-arrow"></i>');
+      var $drop = $('<div class="ps-sel-drop"></div>');
+      var $search = $('<input type="text" class="ps-sel-search" placeholder="Search…" />');
+      var $list = $('<div class="ps-sel-list"></div>');
+      $drop.append($search, $list);
+
+      $wrap.append($trigger, $arrow, $drop);
+      $sel.css({ position:'absolute', opacity:0, width:'1px', height:'1px', overflow:'hidden', pointerEvents:'none' }).after($wrap);
+
+      var ac = { $select:$sel, $wrap:$wrap, $trigger:$trigger, $drop:$drop, $search:$search, $list:$list, options:options };
+      $sel.data('posAc', ac);
+
+      /* Events */
+      $trigger.on('click', function(e){ e.preventDefault(); e.stopPropagation(); if (openAc === ac) close(ac); else open(ac); });
+      $trigger.on('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown'){ e.preventDefault(); open(ac); } });
+      $arrow.on('click', function(e){ e.preventDefault(); e.stopPropagation(); $trigger.click(); });
+
+      $search.on('input', function(){ render(ac, $(this).val()); });
+      $search.on('keydown', function(e){
+        var $opts = $list.children('.ps-sel-opt');
+        var i = $opts.index($opts.filter('.hl'));
+        if (e.key === 'ArrowDown'){ e.preventDefault(); $opts.removeClass('hl'); var n = i < $opts.length - 1 ? i + 1 : 0; $opts.eq(n).addClass('hl'); scrollTo(ac, $opts.eq(n)); }
+        else if (e.key === 'ArrowUp'){ e.preventDefault(); $opts.removeClass('hl'); var n = i > 0 ? i - 1 : $opts.length - 1; $opts.eq(n).addClass('hl'); scrollTo(ac, $opts.eq(n)); }
+        else if (e.key === 'Enter'){ e.preventDefault(); pick(ac, $opts.filter('.hl').first() || $opts.first()); }
+        else if (e.key === 'Escape'){ e.preventDefault(); close(ac); $trigger.focus(); }
+      });
+      $list.on('click', '.ps-sel-opt', function(){ pick(ac, $(this)); });
+      $list.on('mouseenter', '.ps-sel-opt', function(){ $list.children('.hl').removeClass('hl'); $(this).addClass('hl'); });
+
+      /* Keep trigger label in sync if pos.js code calls $sel.val(x).trigger('change') */
+      $sel.on('change.posAc', function(){
+        var v = $sel.val();
+        var lbl = (options.filter(function(o){ return String(o.value) === String(v); })[0]||{}).label || '';
+        if (!lbl && placeholder){ $trigger.text(placeholder).addClass('is-placeholder'); }
+        else { $trigger.text(lbl).removeClass('is-placeholder'); }
+      });
+
+      /* Refresh options if pos.js injects warehouse/per-page lists later */
+      var mo = new MutationObserver(function(){
+        var fresh = [];
+        $sel.find('option').each(function(){ fresh.push({ value: this.value, label: this.textContent || this.value }); });
+        options = fresh; ac.options = fresh;
+        $sel.trigger('change.posAc');
+      });
+      mo.observe(this, { childList:true, subtree:true, characterData:true });
+
+      function scrollTo(ac, $opt){
+        if (!$opt || !$opt.length) return;
+        var list = ac.$list[0], el = $opt[0];
+        var top = el.offsetTop, bot = top + el.offsetHeight;
+        if (top < list.scrollTop) list.scrollTop = top;
+        else if (bot > list.scrollTop + list.clientHeight) list.scrollTop = bot - list.clientHeight;
+      }
+    });
+  };
+
+  /* Global close handlers */
+  $(document).on('click', function(e){
+    if (!openAc) return;
+    if ($(e.target).closest(openAc.$wrap).length || $(e.target).closest(openAc.$drop).length) return;
+    close(openAc);
+  });
+  window.addEventListener('scroll', closeAny, true);
+  window.addEventListener('resize', closeAny);
+  $(document).on('keydown', function(e){ if (e.key === 'Escape') closeAny(); });
+
+  /* Enhance known POS dropdowns once pos.js has settled */
+  function enhance(){
+    posAutocomplete('#fWarehouse');
+    posAutocomplete('#fPerPage');
+    posAutocomplete('#fSort');
+  }
+  setTimeout(enhance, 350);
+  /* Also re-enhance if the SPA brings new selects into view */
+  $(document).on('spa:ready', enhance);
+})();
+</script>
+
+<script>
+/* ═══ Part-detail popup — 7-tab redesign (Figma PartDetailTabs.jsx) ═══
+   Overrides pos.js's showFullInfo with a new builder that renders the new
+   tabbed layout (Overview / Fitment / Specs / Stock / Donor / History / Photos).
+   Reuses the same /sales/part-detail endpoint and existing #infoPage DOM.      */
+(function(){
+  if (typeof window.showFullInfo !== 'function') return;
+  var _escHtml = function(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+  var _fmt = function(n){ try { return (typeof F === 'function' ? F(n) : (parseFloat(n)||0).toFixed(2)); } catch(_){ return (parseFloat(n)||0).toFixed(2); } };
+  var _fdt = function(d){ try { return (typeof smsFormatDateTime === 'function' ? smsFormatDateTime(d) : d); } catch(_){ return d; } };
+  var REF_TYPE_LOCAL = (typeof REF_TYPE !== 'undefined') ? REF_TYPE : {};
+
+  function _emptyPane(icon, ttl, sub){
+    return '<div class="pdt-empty"><i class="bi '+icon+'"></i><div class="ttl">'+_escHtml(ttl)+'</div>'+(sub?'<div class="sub">'+_escHtml(sub)+'</div>':'')+'</div>';
+  }
+
+  window.showFullInfo = function(){
+    if (!window._selPart){ if (window.toastr) toastr.warning('Select a part first.'); return; }
+    var sp = window._selPart;
+    if (!sp._full){
+      if (window.toastr) toastr.info('Loading...');
+      $.get(BASE_URL+'/sales/part-detail/'+sp.uuid, function(r){
+        if (r && r.status===200 && r.data){ sp._full = r.data; window.showFullInfo(); }
+        else if (window.toastr) toastr.error('Failed.');
+      });
+      return;
+    }
+    var pi = sp._full;
+    var refs = pi.references||[], dmgs = pi.damages||[], attrs = pi.attribute_values||[];
+    var imgs = pi.images||[], vids = pi.videos||[], locs = pi.locations||[];
+
+    var sq       = parseInt(pi.quantity)||0;
+    var price    = parseFloat(pi.price_1 || pi.price_2 || 0)||0;
+    var priceCmp = (pi.price_2 && pi.price_1 && parseFloat(pi.price_2) > parseFloat(pi.price_1)) ? parseFloat(pi.price_2) : 0;
+    var discount = (priceCmp && priceCmp > price) ? Math.round(((priceCmp - price) / priceCmp) * 100) : 0;
+    var cost     = parseFloat(pi.part_cost_price||0)||0;
+    var margin   = (cost && price > 0) ? Math.round(((price - cost) / price) * 100) : 0;
+    var name     = pi.part_catalog_name || pi.part_code || 'Part';
+    var code     = pi.part_code || '';
+    var heroImg  = imgs.length ? (imgs[0].display_url || imgs[0].image_url || '') : '';
+
+    /* ── Header: breadcrumb + SKU/chips/title + price (view-only, no Edit/Add-to-cart) ── */
+    var crumbs = ['POS', 'Parts'];
+    if (pi.part_catalog_name) crumbs.push(pi.part_catalog_name);
+    var crumbsH = crumbs.map(function(c, i){
+      return '<span'+(i === crumbs.length ? ' style="color:var(--pv2-text);font-weight:600;"' : '')+'>'+_escHtml(c)+'</span>';
+    }).join('<span class="pdt-crumb-sep">·</span>');
+    if (code) crumbsH += '<span class="pdt-crumb-sep">·</span><span style="color:var(--pv2-text);font-weight:600;font-family:var(--pv2-font-mono);">'+_escHtml(code)+'</span>';
+    $('#infoCrumbs').html(crumbsH);
+
+    /* Chips: SKU (mono) + condition + stock + discount */
+    var chipsH = '';
+    if (code) chipsH += '<span class="pdt-sku-chip">'+_escHtml(code)+'</span>';
+    if (pi.condition_name || pi.condition) chipsH += '<span class="pdt-chip tone-brand">'+_escHtml(pi.condition_name || pi.condition)+'</span>';
+    if (sq > 0) chipsH += '<span class="pdt-chip tone-'+(sq > 2 ? 'success' : 'warning')+'">'+sq+' in stock</span>';
+    else chipsH += '<span class="pdt-chip tone-danger">Out of stock</span>';
+    if (discount > 0) chipsH += '<span class="pdt-chip tone-warning">−'+discount+'%</span>';
+    if (pi.part_state_name) chipsH += '<span class="pdt-chip tone-neutral">'+_escHtml(pi.part_state_name)+'</span>';
+    $('#infoChips').html(chipsH);
+
+    $('#infoTitle').text(name);
+
+    /* Price block on the right */
+    var priceH = '<div class="pdt-price-big">'+_fmt(price)+'</div>';
+    var priceSub = [];
+    if (pi.vat_included) priceSub.push('VAT incl.');
+    if (priceCmp && priceCmp > price) priceSub.push('was '+_fmt(priceCmp));
+    if (!priceSub.length) priceSub.push('Per unit');
+    priceH += '<div class="pdt-price-sub">'+_escHtml(priceSub.join(' · '))+'</div>';
+    $('#infoHeadPrice').html(priceH);
+
+    /* ── Tabs — ORIGINAL labels (Details / References / Damages / Attributes / Locations / Media / Sub Parts) ── */
+    var subs = pi.sub_parts || [];
+    var mediaCnt = imgs.length + vids.length;
+    var tabs = [
+      { id:'ipInfo',   label:'Details',    icon:'bi-box-seam' },
+      { id:'ipRefs',   label:'References', icon:'bi-link-45deg',           cnt: refs.length },
+      { id:'ipDmgs',   label:'Damages',    icon:'bi-exclamation-triangle', cnt: dmgs.length },
+      { id:'ipAttrs',  label:'Attributes', icon:'bi-list-check',           cnt: attrs.length },
+      { id:'ipLocs',   label:'Locations',  icon:'bi-geo-alt',              cnt: locs.length },
+      { id:'ipMedia',  label:'Media',      icon:'bi-images',               cnt: mediaCnt },
+    ];
+    if (subs.length) tabs.push({ id:'ipSubs', label:'Sub Parts', icon:'bi-diagram-3', cnt: subs.length });
+    var tabH = tabs.map(function(t, i){
+      return '<button class="ip-tab'+(i===0?' active':'')+'" onclick="ipTabClick(this)" data-t="'+t.id+'">'
+        + '<i class="bi '+t.icon+'"></i> '+_escHtml(t.label)
+        + (t.cnt ? ' <span class="ip-cnt">'+t.cnt+'</span>' : '')
+        + '</button>';
+    }).join('');
+    $('#infoTabs').html(tabH);
+
+    /* Helpers for original grouped-card layout */
+    function _S(t, ic, items){ return '<div class="is"><div class="is-hdr"><i class="bi '+ic+'"></i>'+_escHtml(t)+'</div><div class="is-body">'+items+'</div></div>'; }
+    function _r(l, v){
+      var blank = (v == null || v === '');
+      var val = blank ? '—' : String(v);
+      return '<div class="is-item"><span class="is-lbl">'+_escHtml(l)+'</span><span class="is-val" style="'+(blank?'color:var(--pv2-muted);font-weight:400;font-size:12px;':'')+'">'+_escHtml(val)+'</span></div>';
+    }
+    var REF_TYPE_MAP = (typeof REF_TYPE !== 'undefined') ? REF_TYPE : {};
+    var DMG_TYPE_MAP = (typeof DMG_TYPE !== 'undefined') ? DMG_TYPE : {};
+    var DMG_LOC_MAP  = (typeof DMG_LOC  !== 'undefined') ? DMG_LOC  : {};
+    function _stars(n){
+      var v = parseFloat(n)||0, out = '';
+      for (var i=1;i<=5;i++){
+        var c = i<=v ? 'color:#eab308' : 'color:#d1d5db';
+        out += '<i class="bi bi-star'+(i<=v?'-fill':'')+'" style="'+c+';font-size:13px;"></i>';
+      }
+      return out;
+    }
+
+    /* ═══ Build panes (original structure) ═══ */
+    var h = '';
+
+    /* Details */
+    h += '<div class="ip-pane active" id="ipInfo">';
+    h +=   _S('Catalog & Pricing', 'bi-book',
+                _r('Catalog',      pi.part_catalog_name)
+              + _r('Code',         pi.part_code)
+              + _r('Internal ID',  pi.part_internal_id)
+              + _r('Quantity',     pi.quantity)
+              + _r('Price 1',      pi.price_1 ? _fmt(pi.price_1) : null)
+              + _r('Price 2',      pi.price_2 ? _fmt(pi.price_2) : null)
+              + _r('Cost Price',   pi.part_cost_price ? _fmt(pi.part_cost_price) : null)
+              + _r('Brand',        pi.part_brand_name)
+              + _r('Condition',    pi.condition_name || pi.condition)
+              + _r('State',        pi.part_state_name || pi.part_state)
+              + _r('VAT',          pi.vat_included ? 'Yes' : 'No'));
+    h +=   _S('Vehicle', 'bi-truck',
+                _r('Type',         pi.vehicle_type_name)
+              + _r('Year',         pi.vehicle_year_name)
+              + _r('Make',         pi.vehicle_make_name)
+              + _r('Model',        pi.vehicle_model_name)
+              + _r('Variant',      pi.vehicle_variant_name)
+              + _r('Engine',       pi.vehicle_engine_name)
+              + _r('Fuel',         pi.vehicle_fuel_name)
+              + _r('Motorization', pi.motorization)
+              + _r('CC',           pi.cc)
+              + _r('CV',           pi.cv)
+              + _r('KW',           pi.kw));
+    var dimItems =
+            _r('Weight',      pi.weight_kg ? pi.weight_kg+' kg' : null)
+          + _r('Width',       pi.width_cm  ? pi.width_cm+' cm'  : null)
+          + _r('Height',      pi.height_cm ? pi.height_cm+' cm' : null)
+          + _r('Length',      pi.length_cm ? pi.length_cm+' cm' : null)
+          + _r('Custom Size', pi.custom_size ? 'Yes' : 'No')
+          + _r('Print Label', pi.print_label ? 'Yes' : 'No');
+    if (pi.rating) dimItems += '<div class="is-item"><span class="is-lbl">Rating</span><span class="is-val">'+_stars(pi.rating)+' <span style="font-size:11px;color:var(--pv2-muted);margin-left:4px;">'+pi.rating+'/5</span></span></div>';
+    h +=   _S('Dimensions & Options', 'bi-rulers', dimItems);
+    if (pi.notes || pi.extra_notes || pi.internal_notes){
+      var noteH = '';
+      if (pi.notes)          noteH += '<div class="is-item" style="grid-column:1/-1;"><span class="is-lbl">Notes</span><span class="is-val" style="text-align:left;font-size:13px;font-weight:500;line-height:1.5;">'+_escHtml(pi.notes)+'</span></div>';
+      if (pi.extra_notes)    noteH += '<div class="is-item" style="grid-column:1/-1;"><span class="is-lbl">Extra Notes</span><span class="is-val" style="text-align:left;font-size:13px;font-weight:500;line-height:1.5;">'+_escHtml(pi.extra_notes)+'</span></div>';
+      if (pi.internal_notes) noteH += '<div class="is-item" style="grid-column:1/-1;"><span class="is-lbl">Internal Notes</span><span class="is-val" style="text-align:left;font-size:13px;font-weight:500;line-height:1.5;">'+_escHtml(pi.internal_notes)+'</span></div>';
+      h += _S('Notes', 'bi-journal-text', noteH);
+    }
+    h += '</div>';
+
+    /* References */
+    h += '<div class="ip-pane" id="ipRefs">';
+    if (refs.length){
+      h += '<div class="is"><div class="is-hdr"><i class="bi bi-link-45deg"></i>References</div><div class="is-tbl-wrap"><table class="is-tbl is-tbl-resp"><thead><tr><th>#</th><th>Code</th><th>Type</th><th>Brand</th><th>Manufacturer</th><th>Condition</th></tr></thead><tbody>';
+      refs.forEach(function(r, i){
+        h += '<tr>'
+          + '<td data-label="#">'+(i+1)+'</td>'
+          + '<td data-label="Code" style="font-weight:600;">'+_escHtml(r.reference_code||'—')+'</td>'
+          + '<td data-label="Type">'+_escHtml(REF_TYPE_MAP[r.reference_type]||r.reference_type||'—')+'</td>'
+          + '<td data-label="Brand">'+_escHtml(r.brand||'—')+'</td>'
+          + '<td data-label="Manufacturer">'+_escHtml(r.manufacturer||'—')+'</td>'
+          + '<td data-label="Condition">'+_escHtml((typeof REF_COND!=='undefined' && REF_COND[r.condition]) || r.condition || '—')+'</td>'
+          + '</tr>';
+      });
+      h += '</tbody></table></div></div>';
+    } else {
+      h += _emptyPane('bi-link-45deg', 'No references', null);
+    }
+    h += '</div>';
+
+    /* Damages */
+    h += '<div class="ip-pane" id="ipDmgs">';
+    if (dmgs.length){
+      h += '<div class="is"><div class="is-hdr"><i class="bi bi-exclamation-triangle"></i>Damages</div><div class="is-tbl-wrap"><table class="is-tbl is-tbl-resp"><thead><tr><th>#</th><th>Description</th><th>Type</th><th>Location</th><th>Rating</th></tr></thead><tbody>';
+      dmgs.forEach(function(d, i){
+        h += '<tr>'
+          + '<td data-label="#">'+(i+1)+'</td>'
+          + '<td data-label="Description">'+_escHtml(d.damage_description||'—')+'</td>'
+          + '<td data-label="Type">'+_escHtml(DMG_TYPE_MAP[d.damage_type]||'—')+'</td>'
+          + '<td data-label="Location">'+_escHtml(DMG_LOC_MAP[d.damage_location]||'—')+'</td>'
+          + '<td data-label="Rating">'+(d.damage_rating?_stars(d.damage_rating):'—')+'</td>'
+          + '</tr>';
+      });
+      h += '</tbody></table></div></div>';
+    } else {
+      h += _emptyPane('bi-exclamation-triangle', 'No damages', null);
+    }
+    h += '</div>';
+
+    /* Attributes */
+    h += '<div class="ip-pane" id="ipAttrs">';
+    if (attrs.length){
+      h += _S('Attributes', 'bi-list-check', attrs.map(function(a){ return _r(a.label_name || ('Attr #'+a.attribute_id), a.value); }).join(''));
+    } else {
+      h += _emptyPane('bi-list-check', 'No attributes', null);
+    }
+    h += '</div>';
+
+    /* Locations */
+    h += '<div class="ip-pane" id="ipLocs">';
+    if (locs.length){
+      h += '<div class="is"><div class="is-hdr"><i class="bi bi-geo-alt"></i>Locations</div><div class="is-tbl-wrap"><table class="is-tbl is-tbl-resp"><thead><tr><th>Unit</th><th>Warehouse</th><th>Zone</th><th>Shelf</th><th>Rack</th><th>Bin</th><th>Code</th><th>Notes</th></tr></thead><tbody>';
+      locs.forEach(function(l){
+        h += '<tr>'
+          + '<td data-label="Unit" style="font-weight:700;">#'+(parseInt(l.unit_number)||1)+'</td>'
+          + '<td data-label="Warehouse">'+_escHtml(l.warehouse_name||'—')+'</td>'
+          + '<td data-label="Zone">'+_escHtml(l.warehouse_zone_name||'—')+'</td>'
+          + '<td data-label="Shelf">'+_escHtml(l.warehouse_shelf_name||'—')+'</td>'
+          + '<td data-label="Rack">'+_escHtml(l.warehouse_rack_name||'—')+'</td>'
+          + '<td data-label="Bin">'+_escHtml(l.warehouse_bin_name||'—')+'</td>'
+          + '<td data-label="Code">'+_escHtml(l.location_code||'—')+'</td>'
+          + '<td data-label="Notes">'+_escHtml(l.notes||'—')+'</td>'
+          + '</tr>';
+      });
+      h += '</tbody></table></div></div>';
+    } else {
+      h += _emptyPane('bi-geo-alt', 'No locations', null);
+    }
+    h += '</div>';
+
+    /* Media (Images + Videos) */
+    h += '<div class="ip-pane" id="ipMedia">';
+    if (imgs.length){
+      h += '<div class="is"><div class="is-hdr"><i class="bi bi-images"></i>Images <span class="ip-cnt" style="margin-left:auto;">'+imgs.length+'</span></div><div class="is-media">';
+      imgs.forEach(function(img){
+        var u = img.display_url || img.image_url || '';
+        h += '<div class="is-media-item" onclick="posLightbox(\'image\',\''+_escHtml(u)+'\')"><img src="'+_escHtml(u)+'" alt=""/></div>';
+      });
+      h += '</div></div>';
+    }
+    if (vids.length){
+      h += '<div class="is"><div class="is-hdr"><i class="bi bi-camera-video"></i>Videos <span class="ip-cnt" style="margin-left:auto;">'+vids.length+'</span></div><div class="is-media" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));">';
+      vids.forEach(function(v){
+        var u = v.display_url || v.video_url || '';
+        h += '<div class="is-media-item" style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;background:#111;" onclick="posLightbox(\'video\',\''+_escHtml(u)+'\')"><i class="bi bi-play-circle-fill" style="font-size:24px;color:rgba(255,255,255,.8);z-index:1;"></i></div>';
+      });
+      h += '</div></div>';
+    }
+    if (!imgs.length && !vids.length) h += _emptyPane('bi-images', 'No media', null);
+    h += '</div>';
+
+    /* Sub Parts */
+    if (subs.length){
+      h += '<div class="ip-pane" id="ipSubs">';
+      h += '<div class="is"><div class="is-hdr"><i class="bi bi-diagram-3"></i>Sub Parts</div><div class="is-tbl-wrap"><table class="is-tbl is-tbl-resp"><thead><tr><th>Part</th><th>Code</th><th>Qty</th></tr></thead><tbody>';
+      subs.forEach(function(s){
+        h += '<tr>'
+          + '<td data-label="Part" style="font-weight:600;">'+_escHtml(s.display_name||'—')+'</td>'
+          + '<td data-label="Code">'+_escHtml(s.part_code||'—')+'</td>'
+          + '<td data-label="Qty">'+(s.quantity||0)+'</td>'
+          + '</tr>';
+      });
+      h += '</tbody></table></div></div>';
+      h += '</div>';
+    }
+
+    $('#infoBody').html(h);
+    $('#infoPage').addClass('open');
+  };
+})();
+</script>
+<script>
+/* ═══ Active-filter chip strip (adv-search page) ═══
+   Re-reads the filter form each time filters change, then renders a chip
+   summary at the top of the drawer. Clicking × on a chip clears that field
+   and re-applies. Purely additive — hooks the existing form, no logic changes. */
+(function(){
+  function _clearField(sel){
+    var $el = $(sel);
+    if ($el.length){
+      if ($el.is(':checkbox') || $el.is(':radio')) $el.prop('checked', false);
+      else if ($el.is('select')){
+        $el.val('');
+        try { $el.trigger('change.select2'); } catch(_){}
+      } else $el.val('');
+      try { $el.trigger('change'); } catch(_){}
+    }
+  }
+  function _label(el){
+    var t = $(el).closest('label').text().trim();
+    if (t) return t;
+    var id = $(el).attr('id') || '';
+    return id.replace(/^af/, '').replace(/([A-Z])/g, ' $1').trim();
+  }
+  window.refreshAdvChips = function(){
+    var $chips = $('#advActiveChips');
+    var chips = [];
+    // Text inputs with values
+    $('#advSearchPage input[type=text], #advSearchPage input[type=number], #advSearchPage input[type=date]').each(function(){
+      var v = ($(this).val()||'').trim();
+      if (v){ chips.push({ sel:'#'+this.id, label:_label(this)+': '+v }); }
+    });
+    // Select values
+    $('#advSearchPage select').each(function(){
+      var v = ($(this).val()||'').trim();
+      if (v){
+        var txt = ($(this).find('option:selected').text()||v).trim();
+        chips.push({ sel:'#'+this.id, label:_label(this)+': '+txt });
+      }
+    });
+    // Checkbox toggles (skip deep-search)
+    $('#advSearchPage input[type=checkbox]').each(function(){
+      if (this.id === 'afDeepSearch') return;
+      if (this.checked){ chips.push({ sel:'#'+this.id, label:_label(this) }); }
+    });
+    // Render
+    var $bar = $('#advActiveBar');
+    if (!chips.length){ $bar.addClass('empty'); $('#advActiveCount').text(0); $chips.empty(); return; }
+    $bar.removeClass('empty');
+    $('#advActiveCount').text(chips.length);
+    var esc = function(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+    $chips.html(chips.map(function(c){
+      return '<span class="adv-chip" data-sel="'+esc(c.sel)+'">'+esc(c.label)+'<span class="x" onclick="(function(sel){var fn=window._clearAdvField||function(){};fn(sel);window.refreshAdvChips();})(\''+esc(c.sel)+'\')">×</span></span>';
+    }).join(''));
+  };
+  window._clearAdvField = _clearField;
+  /* Refresh chips whenever anything inside advSearchPage changes */
+  $(document).on('change input', '#advSearchPage input, #advSearchPage select', function(){
+    clearTimeout(window._advChipDebounce);
+    window._advChipDebounce = setTimeout(refreshAdvChips, 80);
+  });
+  /* Toggle body class for desktop backdrop, and refresh chips when opening */
+  var advObserver = null;
+  function syncAdvBodyClass(){
+    if ($('#advSearchPage').hasClass('open')) $(document.body).addClass('adv-search-open');
+    else $(document.body).removeClass('adv-search-open');
+    if ($('#advSearchPage').hasClass('open')) setTimeout(refreshAdvChips, 60);
+  }
+  var adv = document.getElementById('advSearchPage');
+  if (adv){
+    advObserver = new MutationObserver(syncAdvBodyClass);
+    advObserver.observe(adv, { attributes:true, attributeFilter:['class'] });
+  }
+})();
+
+/* ═══ Smart tooltip (data-tip) — themed + auto-positioned ═══
+   Reads [data-tip], [data-tip-pos] (top|bottom|left|right|auto),
+   and [data-tip-color] (blue|green|red|orange). Picks whichever side has
+   the most space, clamps inside the viewport, and points the arrow at
+   the source element. Supports hover, focus, and touch-long-press. */
+(function(){
+  if (window.__pv2TipInit) return; window.__pv2TipInit = true;
+  var TIP = document.createElement('div');
+  TIP.className = 'pv2-tip';
+  TIP.setAttribute('role','tooltip');
+  document.body.appendChild(TIP);
+  var PAD = 8, current = null, showTimer = null, hideTimer = null, animIn = null;
+
+  function setText(el){
+    var text = el.getAttribute('data-tip') || '';
+    var kbd  = el.getAttribute('data-tip-kbd') || '';
+    TIP.innerHTML = ''; TIP.appendChild(document.createTextNode(text));
+    if (kbd){
+      var k = document.createElement('span'); k.className = 'pv2-tip-kbd'; k.textContent = kbd;
+      TIP.appendChild(k);
+    }
+  }
+  function clearTone(){
+    TIP.classList.remove('tone-blue','tone-green','tone-red','tone-orange');
+  }
+  function place(el){
+    setText(el);
+    clearTone();
+    var tone = (el.getAttribute('data-tip-color')||'').toLowerCase();
+    if (tone) TIP.classList.add('tone-'+tone);
+
+    /* Show invisibly to measure */
+    TIP.classList.add('show'); TIP.classList.remove('in');
+    TIP.style.left = '-9999px'; TIP.style.top = '-9999px'; TIP.style.maxWidth = '';
+
+    var er = el.getBoundingClientRect();
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var maxW = Math.min(260, vw - PAD*2);
+    TIP.style.maxWidth = maxW + 'px';
+    var tr = TIP.getBoundingClientRect();
+
+    var forced = (el.getAttribute('data-tip-pos')||'').toLowerCase();
+    var sideOrder;
+    if (forced && forced !== 'auto'){
+      sideOrder = [forced, 'bottom','top','right','left'].filter(function(v,i,a){return a.indexOf(v)===i;});
+    } else {
+      /* Rank sides by available space minus required space; prefer bottom, then top */
+      var spaces = {
+        bottom: vh - er.bottom - PAD,
+        top:    er.top - PAD,
+        right:  vw - er.right - PAD,
+        left:   er.left - PAD
+      };
+      var needs = { bottom: tr.height, top: tr.height, right: tr.width, left: tr.width };
+      var fits = Object.keys(spaces).filter(function(s){ return spaces[s] >= needs[s]; });
+      if (fits.length){
+        var pref = ['bottom','top','right','left'];
+        fits.sort(function(a,b){ return pref.indexOf(a) - pref.indexOf(b); });
+        sideOrder = fits.concat(pref.filter(function(s){ return fits.indexOf(s)<0; }));
+      } else {
+        /* Nothing fits — pick the one with most room */
+        sideOrder = Object.keys(spaces).sort(function(a,b){ return spaces[b]-spaces[a]; });
+      }
+    }
+    var side = sideOrder[0];
+
+    var x, y;
+    if (side === 'bottom'){ x = er.left + er.width/2 - tr.width/2; y = er.bottom + PAD; }
+    else if (side === 'top'){ x = er.left + er.width/2 - tr.width/2; y = er.top - tr.height - PAD; }
+    else if (side === 'right'){ x = er.right + PAD; y = er.top + er.height/2 - tr.height/2; }
+    else { x = er.left - tr.width - PAD; y = er.top + er.height/2 - tr.height/2; }
+
+    /* Clamp inside viewport */
+    var clampedX = Math.max(PAD, Math.min(vw - tr.width - PAD, x));
+    var clampedY = Math.max(PAD, Math.min(vh - tr.height - PAD, y));
+    var shiftX = clampedX - x, shiftY = clampedY - y;
+
+    /* Arrow offset — point at center of source element, within tooltip bounds */
+    var ax = er.left + er.width/2 - clampedX;
+    var ay = er.top + er.height/2 - clampedY;
+    ax = Math.max(12, Math.min(tr.width - 12, ax));
+    ay = Math.max(12, Math.min(tr.height - 12, ay));
+
+    TIP.setAttribute('data-side', side);
+    TIP.style.setProperty('--pv2-tip-ax', ax + 'px');
+    TIP.style.setProperty('--pv2-tip-ay', ay + 'px');
+    TIP.style.left = clampedX + 'px';
+    TIP.style.top  = clampedY + 'px';
+
+    /* Fade in */
+    cancelAnimationFrame(animIn);
+    animIn = requestAnimationFrame(function(){ TIP.classList.add('in'); });
+  }
+  function show(el){
+    if (!el || !el.getAttribute) return;
+    if (!el.getAttribute('data-tip')) return;
+    if (current === el) return;
+    current = el;
+    clearTimeout(hideTimer); clearTimeout(showTimer);
+    showTimer = setTimeout(function(){ if (current===el) place(el); }, 60);
+  }
+  function hide(){
+    current = null;
+    clearTimeout(showTimer);
+    TIP.classList.remove('in');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function(){ TIP.classList.remove('show'); }, 140);
+  }
+
+  function findTipEl(e){
+    var n = e.target;
+    while (n && n !== document.body){
+      if (n.getAttribute && n.getAttribute('data-tip')) return n;
+      n = n.parentNode;
+    }
+    return null;
+  }
+  document.addEventListener('mouseover', function(e){ var el=findTipEl(e); if(el) show(el); });
+  document.addEventListener('mouseout', function(e){
+    var from = findTipEl(e);
+    var to   = e.relatedTarget ? findTipEl({target:e.relatedTarget}) : null;
+    if (from && !to) hide();
+  });
+  document.addEventListener('focusin', function(e){ var el=findTipEl(e); if(el) show(el); });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('click',    hide, true);
+  document.addEventListener('keydown',  function(e){ if(e.key==='Escape') hide(); });
+  window.addEventListener('scroll', hide, true);
+  window.addEventListener('resize', hide);
+})();
+</script>
+<script>
+/* ═══ Category rail — backend-driven ═══
+   Calls /sales/catalog-counts to populate the rail with real part catalog names
+   and stock counts. Counts reflect the current search + warehouse filters.
+   Clicking a catalog sets _advFilters.part_catalog_id so the existing /sales/products
+   pagination filters on that catalog — the backend does the pagination, not us.   */
+(function(){
+  window._posCatalogs = [];
+
+  // Icon mapping — map catalog-name keywords to Bootstrap Icons; falls back to a generic box
+  var ICON_MAP = [
+    [/engine|motor/i,      'bi-gear'],
+    [/body|bumper|panel|door|hood|fender/i, 'bi-layers'],
+    [/light|head.?light|tail.?light|lamp/i, 'bi-lightbulb'],
+    [/brake|disc|rotor|caliper|pad/i,       'bi-shield'],
+    [/suspen|shock|strut|spring|arm/i,      'bi-box'],
+    [/interior|seat|dashboard|trim/i,       'bi-folder'],
+    [/electron|ecu|sensor|module/i,         'bi-cpu'],
+    [/wheel|tire|hub|rim/i,                 'bi-circle'],
+    [/exhaust|cat|muffler/i,                'bi-wind'],
+    [/transmission|gear|clutch|drivetrain/i,'bi-gear-wide-connected'],
+    [/mirror|glass|window/i,                'bi-aspect-ratio'],
+    [/cool|radiator|condens/i,              'bi-thermometer-snow'],
+    [/fuel|injector|pump/i,                 'bi-droplet']
+  ];
+  function catalogIcon(name){
+    for (var i=0; i<ICON_MAP.length; i++) if (ICON_MAP[i][0].test(name||'')) return ICON_MAP[i][1];
+    return 'bi-box-seam';
+  }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+
+  // Returns the current rail mode + extra params based on what's on-screen.
+  //   • Parts tab (list)      → mode=parts   (count = parts per catalog)
+  //   • Vehicles tab (list)   → mode=vehicles (count = vehicles that have parts in that catalog)
+  //   • Inside a vehicle view → mode=vehicle  (count = parts in THIS vehicle per catalog)
+  function railMode(){
+    var tab = (typeof _tab !== 'undefined') ? _tab : 'parts';
+    if (typeof _vMode !== 'undefined' && _vMode && typeof _vUuid !== 'undefined' && _vUuid){
+      return { mode: 'vehicle', vehicle_uuid: _vUuid };
+    }
+    if (tab === 'vehicles') return { mode: 'vehicles' };
+    return { mode: 'parts' };
+  }
+
+  function railLabels(mode){
+    if (mode === 'vehicles') return { all: 'All vehicles', unit: 'vehicle' };
+    if (mode === 'vehicle')  return { all: 'All parts',   unit: 'part' };
+    return                          { all: 'All parts',   unit: 'part' };
+  }
+
+  window.loadCatalogCounts = function(){
+    var ctx = railMode();
+    var labels = railLabels(ctx.mode);
+    $('#catRail').show().children().first().find('.pcr-label').text(labels.all);
+    var params = {
+      mode: ctx.mode,
+      search: (typeof _search !== 'undefined' ? _search : '') || '',
+      warehouse_id: (typeof _wh !== 'undefined' ? _wh : '') || ''
+    };
+    if (ctx.vehicle_uuid) params.vehicle_uuid = ctx.vehicle_uuid;
+
+    $.get(BASE_URL + '/sales/catalog-counts', params, function(r){
+      if (!r || r.status !== 200 || !r.data) return;
+      window._posCatalogs = r.data.catalogs || [];
+      var total = Number(r.data.total || 0);
+      $('#catCountAll').text(total.toLocaleString());
+      /* Tooltip on the "All" row — describes the current mode */
+      var $all = $('#catRail .pcr-item').first();
+      $all.attr('data-tip', labels.all + ' · ' + total.toLocaleString() + ' ' + labels.unit + (total===1?'':'s') + ' in stock');
+      $all.attr('data-tip-pos', 'right');
+
+      var $rail = $('#catRail');
+      /* Keep the first item (All), remove the rest */
+      $rail.children().slice(1).remove();
+      if (!_posCatalogs.length){
+        $rail.append('<div class="pcr-empty" style="padding:8px 10px;font-size:11px;color:var(--pv2-subtle);">No catalogs in stock</div>');
+        syncActiveRail();
+        return;
+      }
+      var h = '';
+      _posCatalogs.forEach(function(c){
+        var tipText = c.name + ' · ' + Number(c.count||0).toLocaleString() + ' ' + labels.unit + ((c.count||0)===1?'':'s');
+        h += '<div class="pcr-item" data-catid="'+esc(c.id)+'" data-tip="'+esc(tipText)+'" data-tip-pos="right" onclick="selectCatalog(this,\''+esc(c.id)+'\')">'
+          + '<i class="bi '+catalogIcon(c.name)+'"></i>'
+          + '<span class="pcr-label">'+esc(c.name)+'</span>'
+          + '<span class="pcr-count">'+Number(c.count||0).toLocaleString()+'</span>'
+          + '</div>';
+      });
+      $rail.append(h);
+      syncActiveRail();
+    });
+  };
+
+  function syncActiveRail(){
+    var cur = String((window._advFilters && _advFilters.part_catalog_id) || '');
+    $('#catRail .pcr-item').removeClass('active').each(function(){
+      if (String($(this).data('catid')||'') === cur) $(this).addClass('active');
+    });
+  }
+
+  window.selectCatalog = function(el, id){
+    if (typeof _advFilters === 'undefined') window._advFilters = {};
+    if (!id){ delete _advFilters.part_catalog_id; }
+    else { _advFilters.part_catalog_id = id; }
+    $('#catRail .pcr-item').removeClass('active');
+    $(el).addClass('active');
+    /* Re-paginate using whichever listing is currently showing */
+    if (typeof _vMode !== 'undefined' && _vMode && typeof loadVehiclePartsFiltered === 'function'){
+      loadVehiclePartsFiltered();
+    } else {
+      _page = 1;
+      if (typeof loadProducts === 'function') loadProducts();
+    }
+    updateGridInfo();
+  };
+
+  function updateGridInfo(){
+    var ctx = railMode();
+    var labels = railLabels(ctx.mode);
+    var catId = (window._advFilters && _advFilters.part_catalog_id) || '';
+    var catName = labels.all;
+    if (catId){
+      var found = (_posCatalogs || []).find(function(c){ return String(c.id) === String(catId); });
+      if (found) catName = found.name;
+    }
+    var whName = ($('#fWarehouse option:selected').text() || '').trim();
+    var search = ((typeof _search!=='undefined' ? _search : '')||'').trim();
+    var bits = [catName];
+    if (ctx.mode === 'vehicle'){
+      var vTitle = ($('#vTitle').text()||'').trim();
+      if (vTitle) bits.unshift(vTitle);
+    }
+    if (whName && whName !== 'All Warehouses') bits.push(whName);
+    if (search) bits.push('matching "'+search+'"');
+    $('#pgbInfo').text(bits.join(' · '));
+  }
+
+  /* Reload rail counts whenever search or warehouse changes. pos.js already
+     debounces search input and resets page — we just piggyback on the same events. */
+  $(document).on('input', '#fSearch', function(){
+    clearTimeout(window._catRailDebounce);
+    window._catRailDebounce = setTimeout(loadCatalogCounts, 350);
+  });
+  $(document).on('change', '#fWarehouse', function(){ loadCatalogCounts(); });
+  /* Also refresh info-bar whenever pos.js rewrites the grid */
+  (function(){
+    var g = document.getElementById('prodGrid');
+    if (g) new MutationObserver(updateGridInfo).observe(g, { childList: true });
+  })();
+  /* When pos.js hides the grid for SPA nav (Orders / Customers / ...), hide whole body
+     AND hide the vehicle back bar. Also, when returning to POS, if vback is stale it
+     gets force-closed so the layout doesn't break.                                       */
+  (function(){
+    var g = document.getElementById('prodGrid');
+    if (!g) return;
+    var wasHidden = false;
+    function syncBody(){
+      var hidden = g.style.display === 'none' || window.getComputedStyle(g).display === 'none';
+      var body = document.querySelector('.pos-body');
+      if (body) body.style.display = hidden ? 'none' : '';
+      var $vBack = $('#vBackBar');
+      if (hidden){
+        /* SPA took over — hide vback too so it doesn't render above other pages */
+        $vBack.removeClass('show');
+      } else if (wasHidden){
+        /* Just returned to POS from SPA. Force-reset any stale vehicle-parts view */
+        if ($vBack.hasClass('show')){
+          $vBack.removeClass('show');
+          $('#posHeader').show();
+          $('.pos-cats').show();
+          try {
+            if (typeof window._vMode !== 'undefined') window._vMode = false;
+            if (typeof window._vUuid !== 'undefined') window._vUuid = '';
+            if (typeof window._vParts !== 'undefined') window._vParts = [];
+            if (window._advFilters) delete window._advFilters.part_catalog_id;
+            $('#vPartSearch').val('');
+            if (typeof loadProducts === 'function') loadProducts();
+            if (typeof loadCatalogCounts === 'function') setTimeout(loadCatalogCounts, 80);
+          } catch(_){ }
+        }
+      }
+      wasHidden = hidden;
+    }
+    new MutationObserver(syncBody).observe(g,{attributes:true,attributeFilter:['style','class']});
+    setTimeout(syncBody, 200);
+  })();
+  /* Switching tabs — reset catalog filter and reload rail in the new mode */
+  $(document).on('click', '.pcat', function(){
+    if (typeof _advFilters === 'undefined') window._advFilters = {};
+    delete _advFilters.part_catalog_id;
+    setTimeout(loadCatalogCounts, 60);
+  });
+
+  /* Detect vehicle-parts view entering/leaving — #vBackBar toggles .show */
+  (function(){
+    var bar = document.getElementById('vBackBar');
+    if (!bar) return;
+    var lastVisible = bar.classList.contains('show');
+    new MutationObserver(function(){
+      var v = bar.classList.contains('show');
+      if (v === lastVisible) return;
+      lastVisible = v;
+      /* Reset catalog filter when switching between "vehicle list" and "inside-vehicle" */
+      if (window._advFilters) delete window._advFilters.part_catalog_id;
+      setTimeout(loadCatalogCounts, 60);
+      setTimeout(updateGridInfo, 120);
+    }).observe(bar, { attributes:true, attributeFilter:['class'] });
+  })();
+
+  /* Initial load — a beat after pos.js has initialized */
+  setTimeout(loadCatalogCounts, 250);
+})();
+
+/* Sort — client-side, reorders already-rendered cards. Keeps "recent" = backend order. */
+$(document).on('change','#fSort',function(){
+  var mode = $(this).val();
+  var $grid = $('#prodGrid');
+  var arr = $grid.children('.pc').get();
+  arr.sort(function(a,b){
+    var pa = parseFloat($(a).data('price'))||0, pb = parseFloat($(b).data('price'))||0;
+    if(mode==='price_asc') return pa-pb;
+    if(mode==='price_desc') return pb-pa;
+    return 0;
+  });
+  arr.forEach(function(el){ $grid.append(el); });
+});
+
+/* Mobile sticky cart bar — observes the existing cart DOM and syncs counts/totals.
+   No pos.js changes; pure DOM observation. Hides bar when cart is empty or cart panel is open. */
+(function(){
+  function syncMobCart(){
+    try{
+      var cnt = parseInt(($('#cCnt').text()||'0').replace(/\D/g,''),10)||0;
+      var tot = $('#cTotal').text()||'0.00';
+      var custName = $('#custResult').text().trim();
+      if(!custName || /walk/i.test(custName)) custName = 'Walk-in customer';
+      $('#mcbBadge').text(cnt);
+      $('#mcbLine1').text(cnt+' item'+(cnt===1?'':'s')+' · '+custName);
+      $('#mcbLine2').text(tot);
+      if(cnt>0) document.body.classList.remove('pos-cart-empty');
+      else document.body.classList.add('pos-cart-empty');
+    }catch(e){}
+  }
+  document.body.classList.add('pos-cart-empty');
+  var target = document.getElementById('cItems');
+  if(target){ new MutationObserver(syncMobCart).observe(target,{childList:true,subtree:true,characterData:true}); }
+  var tot = document.getElementById('cTotal');
+  if(tot){ new MutationObserver(syncMobCart).observe(tot,{childList:true,characterData:true,subtree:true}); }
+  $(document).on('click','.pos-mobile-cart-bar .mcb-go',syncMobCart);
+  setTimeout(syncMobCart,400);
+})();
+</script>
 </body>
 </html>

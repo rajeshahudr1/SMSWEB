@@ -1,8 +1,15 @@
 <% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
+<!-- v2 KPI strip (design extra; populated lazily from first page of results) -->
+<div class="pv2-kpi-row" id="ordKpiRow">
+  <div class="pv2-kpi"><div class="pv2-kpi-lbl">Today</div><div class="pv2-kpi-val" id="kpiToday">&mdash;</div><div class="pv2-kpi-sub" id="kpiTodayCnt">&nbsp;</div></div>
+  <div class="pv2-kpi pv2-kpi-accent"><div class="pv2-kpi-lbl">This period</div><div class="pv2-kpi-val" id="kpiPeriod">&mdash;</div><div class="pv2-kpi-sub" id="kpiPeriodCnt">&nbsp;</div></div>
+  <div class="pv2-kpi pv2-kpi-warning"><div class="pv2-kpi-lbl">Pending</div><div class="pv2-kpi-val" id="kpiPending">&mdash;</div><div class="pv2-kpi-sub" id="kpiPendingCnt">&nbsp;</div></div>
+  <div class="pv2-kpi pv2-kpi-muted"><div class="pv2-kpi-lbl">Refunded</div><div class="pv2-kpi-val" id="kpiRefund">&mdash;</div><div class="pv2-kpi-sub" id="kpiRefundCnt">&nbsp;</div></div>
+</div>
 <div class="card shadow-sm">
   <div class="card-header py-2 border-bottom">
     <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
-      <h3 class="card-title mb-0 me-auto"><i class="bi bi-bag-check me-2 text-primary"></i>Sales Orders <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">-</span></h3>
+      <h3 class="card-title mb-0 me-auto"><i class="bi bi-receipt me-2 text-primary"></i>Invoices <span class="badge bg-secondary-lt rounded-pill ms-1" id="badgeTotal" style="font-size:11px;vertical-align:middle;">-</span></h3>
       <select class="form-select form-select-sm" id="perPageSel" style="width:100px;"><option value="10">10</option><option value="15" selected>15</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
       <div class="dropdown"><button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i>Export</button>
         <ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="doExport('csv');return false;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a></li><li><a class="dropdown-item" href="#" onclick="doExport('print');return false;"><i class="bi bi-printer me-2"></i>Print</a></li></ul>
@@ -78,7 +85,28 @@ function loadData(){
         $('#tableBody').html(rows);
         $('#tableInfo').text('Showing '+(pg.from||1)+'\u2013'+(pg.to||data.length)+' of '+(pg.total||0));
         buildPagination(pg);
+        renderOrdKpis(data, pg);
     });
+}
+
+/* v2 KPI strip — derived from the current page of results, no extra backend calls */
+function renderOrdKpis(data, pg){
+    var today = new Date(); today.setHours(0,0,0,0);
+    var tCnt=0,tSum=0,pCnt=0,pSum=0,pendCnt=0,pendSum=0,refCnt=0,refSum=0;
+    (data||[]).forEach(function(o){
+        var amt = parseFloat(o.total_amount)||0;
+        var d = o.created_at ? new Date(o.created_at) : null;
+        var isToday = d && d >= today;
+        if(isToday){ tCnt++; tSum+=amt; }
+        pCnt++; pSum+=amt;
+        if(o.payment_status==='unpaid' || o.payment_status==='partial'){ pendCnt++; pendSum+=amt; }
+        if(o.order_status==='returned' || o.payment_status==='refunded'){ refCnt++; refSum+=amt; }
+    });
+    var C = (typeof H!=='undefined' && H.currency) ? H.currency : function(v){return (parseFloat(v)||0).toFixed(2);};
+    $('#kpiToday').text(C(tSum));        $('#kpiTodayCnt').text(tCnt+' invoice'+(tCnt===1?'':'s'));
+    $('#kpiPeriod').text(C(pSum));       $('#kpiPeriodCnt').text((pg&&pg.total||pCnt)+' total');
+    $('#kpiPending').text(C(pendSum));   $('#kpiPendingCnt').text(pendCnt+' unpaid / partial');
+    $('#kpiRefund').text(C(refSum));     $('#kpiRefundCnt').text(refCnt+' refund'+(refCnt===1?'':'s'));
 }
 
 var _currentOrderUuid = null;

@@ -6,8 +6,21 @@ exports.index = (req, res) => {
     res.render('pos/index', { page_title: 'POS', activeLink: 'pos' });
 };
 
+// POS UI-Kit / theme editor (full-screen, no layout) — authenticated
+exports.uikitPage = async (req, res) => {
+    let theme = {};
+    try {
+        const r = await api.get('/pos/theme', req.session.token);
+        if (r && r.status === 200 && r.data && r.data.theme) theme = r.data.theme;
+    } catch (_) { theme = {}; }
+    res.render('pos/uikit', { page_title: 'POS · UI Kit', activeLink: 'pos', savedTheme: theme });
+};
+exports.themeGet = async (req, res) => { res.json(await api.get('/pos/theme', req.session.token)); };
+exports.themeUpdate = async (req, res) => { res.json(await api.put('/pos/theme', req.body, req.session.token)); };
+
 // Proxies
 exports.products = async (req, res) => { res.json(await api.get('/pos/products', req.session.token, req.query)); };
+exports.catalogCounts = async (req, res) => { res.json(await api.get('/pos/catalog-counts', req.session.token, req.query)); };
 exports.vehicleParts = async (req, res) => { res.json(await api.get('/pos/vehicle/' + req.params.uuid + '/parts', req.session.token, req.query)); };
 exports.validateStock = async (req, res) => { res.json(await api.post('/pos/validate-stock', req.body, req.session.token)); };
 exports.checkout = async (req, res) => { res.json(await api.post('/pos/checkout', req.body, req.session.token)); };
