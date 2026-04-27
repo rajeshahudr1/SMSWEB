@@ -18,6 +18,15 @@ exports.uikitPage = async (req, res) => {
 exports.themeGet = async (req, res) => { res.json(await api.get('/pos/theme', req.session.token)); };
 exports.themeUpdate = async (req, res) => { res.json(await api.put('/pos/theme', req.body, req.session.token)); };
 
+// Printer assignments
+exports.printersGet = async (req, res) => { res.json(await api.get('/pos/printers', req.session.token)); };
+exports.printersUpdate = async (req, res) => { res.json(await api.put('/pos/printers', req.body, req.session.token)); };
+
+// Printer settings page — render fast, let the JS fetch printers async
+exports.printerSettingsPage = (req, res) => {
+    res.render('pos/printer-settings', { page_title: 'POS · Printer Settings', activeLink: 'pos-printer-settings', savedPrinters: {} });
+};
+
 // Proxies
 exports.products = async (req, res) => { res.json(await api.get('/pos/products', req.session.token, req.query)); };
 exports.catalogCounts = async (req, res) => { res.json(await api.get('/pos/catalog-counts', req.session.token, req.query)); };

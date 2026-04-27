@@ -13,6 +13,43 @@
 <%- block('styles') %>
 </head>
 <body class="pos-mode">
+<script>
+/* POS theme loader — shared across all /sales/* pages (POS home, orders,
+   customers, returns, settings, ui-kit). Loads cached theme instantly from
+   localStorage, then overwrites with the organization's saved theme from
+   the DB. Cross-tab updates flow via the storage event. */
+(function(){
+  var ALL_VARS = ['--pv2-brand','--pv2-brand-dark','--pv2-brand-light','--pv2-brand-ghost','--pv2-accent',
+    '--pv2-ink','--pv2-text','--pv2-muted','--pv2-subtle','--pv2-border','--pv2-border-strong',
+    '--pv2-surface','--pv2-surface-alt','--pv2-surface-sunken',
+    '--pv2-success','--pv2-warning','--pv2-danger','--pv2-purple'];
+  function applyTheme(t){
+    ALL_VARS.forEach(function(k){ document.documentElement.style.removeProperty(k); });
+    Object.keys(t||{}).forEach(function(k){ if (k) document.documentElement.style.setProperty(k, t[k]); });
+  }
+  /* 1. Instant cached theme to avoid a flash of default colors */
+  try { var raw = localStorage.getItem('pv2Theme'); if (raw){ applyTheme(JSON.parse(raw) || {}); } } catch(_){}
+  /* 2. Authoritative theme from DB for this user/org */
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/sales/theme', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function(){
+      if (xhr.status === 200){
+        try {
+          var r = JSON.parse(xhr.responseText);
+          var t = (r && r.data && r.data.theme) || {};
+          applyTheme(t);
+          try { localStorage.setItem('pv2Theme', JSON.stringify(t)); } catch(_){}
+        } catch(_){}
+      }
+    };
+    xhr.send();
+  } catch(_){}
+  /* 3. Cross-tab sync — UI Kit saves update this tab instantly */
+  window.addEventListener('storage', function(e){ if (e.key !== 'pv2Theme') return; try { applyTheme(e.newValue ? JSON.parse(e.newValue) : {}); } catch(_){} });
+})();
+</script>
 
 <div class="pos-layout">
   <!-- Sidebar -->
@@ -47,6 +84,25 @@
       <h2 style="font-size:20px;font-weight:800;margin:0;flex:1;"><%- typeof page_title !== 'undefined' ? page_title : 'POS' %></h2>
       <%- block('headerActions') %>
     </div>
+
+    <!-- Libraries + shared helpers must load before the body injection so any
+         inline script inside the SPA page (orders, customers, returns, settings)
+         can call smsInitPerPage, H.esc, etc. on direct page refresh.  -->
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/tabler.min.js"></script>
+    <script src="/libs/js/toastr.min.js"></script>
+    <script>
+    var BASE_URL='';
+    toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2500};
+    var H={esc:function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');},currency:function(v){return parseFloat(v||0).toFixed(2);}};
+    function smsFormatDateTime(d){if(!d)return '—';var dt=new Date(d);return dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+    function smsFormatDate(d){if(!d)return '—';return new Date(d).toLocaleDateString();}
+    function smsInitPerPage(sel){var v=localStorage.getItem('pp')||15;$(sel).val(v);return parseInt(v);}
+    function smsConfirm(o){if(confirm(o.msg||'Are you sure?'))o.onConfirm();}
+    function smsToast(m,t){if(t==='success')toastr.success(m);else if(t==='error')toastr.error(m);else toastr.info(m);}
+    function showLoading(){$('body').append('<div id="posLoading" style="position:fixed;inset:0;z-index:99999;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;"><div class="spinner-border text-primary"></div></div>');}
+    function hideLoading(){$('#posLoading').remove();}
+    </script>
 
     <!-- Page content -->
     <div class="pos-page-content">

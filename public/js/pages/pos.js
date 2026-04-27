@@ -214,7 +214,7 @@ function buildAdvTabs(mode){
         h+=_afInp('afRatingMax','Rating Max','number');
         h+=_afOpt('afIsMaster','Is Master Part',['','Any'],['1','Yes'],['0','No']);
         h+=_afOpt('afPrintLabel','Print Label',['','Any'],['1','Yes'],['0','No']);
-        h+=_afOpt('afVatIncluded','VAT Included',['','Any'],['1','Yes'],['0','No']);
+        h+=_afOpt('afVatIncluded','Tax Included',['','Any'],['1','Yes'],['0','No']);
         h+=_afOpt('afCustomSize','Custom Size',['','Any'],['1','Yes'],['0','No']);
         h+='</div></div>';
         // Status tab
@@ -572,7 +572,7 @@ function showFullInfo(){
 
     // Details (Part + Vehicle + Extra combined)
     h+='<div class="ip-pane active" id="ipInfo">';
-    h+=_S('Catalog & Pricing','bi-book',_r('Catalog',pi.part_catalog_name)+_r('Code',pi.part_code)+_r('Internal ID',pi.part_internal_id)+_r('Quantity',pi.quantity)+_r('Price 1',pi.price_1?F(pi.price_1):null)+_r('Price 2',pi.price_2?F(pi.price_2):null)+_r('Cost Price',pi.part_cost_price?F(pi.part_cost_price):null)+_r('Brand',pi.part_brand_name)+_r('Condition',pi.condition_name||pi.condition)+_r('State',pi.part_state_name||pi.part_state)+_r('VAT',pi.vat_included?'Yes':'No'));
+    h+=_S('Catalog & Pricing','bi-book',_r('Catalog',pi.part_catalog_name)+_r('Code',pi.part_code)+_r('Internal ID',pi.part_internal_id)+_r('Quantity',pi.quantity)+_r('Price 1',pi.price_1?F(pi.price_1):null)+_r('Price 2',pi.price_2?F(pi.price_2):null)+_r('Cost Price',pi.part_cost_price?F(pi.part_cost_price):null)+_r('Brand',pi.part_brand_name)+_r('Condition',pi.condition_name||pi.condition)+_r('State',pi.part_state_name||pi.part_state)+_r('Tax',pi.vat_included?'Yes':'No'));
     h+=_S('Vehicle','bi-truck',_r('Type',pi.vehicle_type_name)+_r('Year',pi.vehicle_year_name)+_r('Make',pi.vehicle_make_name)+_r('Model',pi.vehicle_model_name)+_r('Variant',pi.vehicle_variant_name)+_r('Engine',pi.vehicle_engine_name)+_r('Fuel',pi.vehicle_fuel_name)+_r('Motorization',pi.motorization)+_r('CC',pi.cc)+_r('CV',pi.cv)+_r('KW',pi.kw));
     var dimItems=_r('Weight',pi.weight_kg?pi.weight_kg+' kg':null)+_r('Width',pi.width_cm?pi.width_cm+' cm':null)+_r('Height',pi.height_cm?pi.height_cm+' cm':null)+_r('Length',pi.length_cm?pi.length_cm+' cm':null)+_r('Custom Size',pi.custom_size?'Yes':'No')+_r('Print Label',pi.print_label?'Yes':'No');
     if(pi.rating) dimItems+='<div class="is-item"><span class="is-lbl">Rating</span><span class="is-val">'+stars(pi.rating)+' <span style="font-size:11px;color:var(--muted);margin-left:4px;">'+pi.rating+'/5</span></span></div>';
@@ -735,7 +735,7 @@ function renderCart(){
         h+='<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(g.name)+'</div>';
         h+='<div style="font-size:10px;color:var(--muted);">'+esc(g.code)+' \u00B7 '+F(g.price)+' ea</div></div>';
         h+='<span style="background:'+borderColor+';color:#fff;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">'+unitCnt+'</span>';
-        if(isVatFree)h+='<span style="font-size:8px;color:var(--green);font-weight:700;white-space:nowrap;">VAT Inc</span>';
+        if(isVatFree)h+='<span style="font-size:8px;color:var(--green);font-weight:700;white-space:nowrap;">Tax Inc</span>';
         h+='<div style="font-size:13px;font-weight:700;color:var(--primary);min-width:50px;text-align:right;">'+F(g.total)+'</div>';
         h+='<span class="ci-arrow"><i class="bi bi-chevron-down" style="font-size:12px;color:var(--muted);"></i></span>';
         h+='</div>';
@@ -788,7 +788,7 @@ function updTotals(sub){
         taxBreakdown.forEach(function(t){
             th+='<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);padding:1px 0 1px 16px;"><span>'+esc(t.name)+' ('+t.pct+'%)</span><span>'+F(t.amount)+'</span></div>';
         });
-        if(taxFreeCount)th+='<div style="font-size:9px;color:var(--green);padding:2px 0;"><i class="bi bi-check-circle" style="margin-right:3px;"></i>'+taxFreeCount+' item'+(taxFreeCount>1?'s':'')+' VAT included (no tax)</div>';
+        if(taxFreeCount)th+='<div style="font-size:9px;color:var(--green);padding:2px 0;"><i class="bi bi-check-circle" style="margin-right:3px;"></i>'+taxFreeCount+' item'+(taxFreeCount>1?'s':'')+' Tax included</div>';
         th+='</div>';
     }
     $taxArea.html(th);
@@ -812,7 +812,7 @@ function openCheckout(){
         itemsH+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">';
         itemsH+='<div style="flex:1;min-width:0;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(g.name)+'</div>';
         itemsH+='<div style="font-size:10px;color:var(--muted);">'+esc(g.code);
-        if(g.vat)itemsH+=' <span style="color:var(--green);">VAT Inc</span>';
+        if(g.vat)itemsH+=' <span style="color:var(--green);">Tax Inc</span>';
         itemsH+='</div></div>';
         itemsH+='<span style="color:var(--primary);font-weight:700;margin:0 8px;">x'+g.cnt+'</span>';
         itemsH+='<span style="font-weight:700;min-width:60px;text-align:right;">'+F(g.total)+'</span></div>';

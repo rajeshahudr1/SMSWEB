@@ -1,0 +1,350 @@
+<% layout('../layouts/pos-layout') %>
+
+<style>
+  /* Page-level styling matches the POS v2 design language */
+  .psp-wrap{max-width:1100px;margin:0 auto;padding:4px 2px;}
+
+  .psp-header{
+    display:flex;align-items:center;gap:14px;
+    padding:18px 20px;margin-bottom:14px;
+    background:var(--pv2-surface);border:1px solid var(--pv2-border);border-radius:12px;
+    box-shadow:var(--pv2-shadow-sm);flex-wrap:wrap;
+  }
+  .psp-header .psp-icon{
+    width:44px;height:44px;border-radius:10px;
+    background:var(--pv2-brand-light);color:var(--pv2-brand);
+    display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+  }
+  .psp-header h2{font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--pv2-text);margin:0;line-height:1.2;}
+  .psp-header .sub{font-size:11.5px;color:var(--pv2-muted);margin-top:2px;}
+
+  .psp-status{
+    padding:10px 14px;border-radius:8px;font-size:12.5px;
+    display:flex;align-items:center;gap:8px;
+    margin-bottom:14px;
+  }
+  .psp-status.ok  {background:var(--pv2-success-bg);color:var(--pv2-success);border:1px solid rgba(13,159,110,.18);}
+  .psp-status.err {background:var(--pv2-danger-bg); color:var(--pv2-danger); border:1px solid rgba(220,38,38,.18);}
+  .psp-status.wait{background:var(--pv2-brand-ghost);color:var(--pv2-muted);border:1px solid var(--pv2-border);}
+
+  .psp-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;}
+  .psp-btn{
+    padding:8px 14px;border-radius:7px;font-size:12.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;letter-spacing:-0.1px;
+    border:1px solid var(--pv2-border-strong);background:var(--pv2-surface);color:var(--pv2-text);
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .psp-btn:hover{border-color:var(--pv2-text);background:var(--pv2-surface-alt);}
+  .psp-btn.primary{background:var(--pv2-brand);color:#fff;border-color:var(--pv2-brand);box-shadow:0 1px 2px rgba(0,84,166,.25);}
+  .psp-btn.primary:hover:not(:disabled){background:var(--pv2-brand-dark);border-color:var(--pv2-brand-dark);}
+  .psp-btn.primary:disabled{opacity:.5;cursor:not-allowed;}
+  .psp-btn.ghost{background:transparent;border:1px dashed var(--pv2-border-strong);}
+
+  /* Section title */
+  .psp-sec-title{
+    font-size:11.5px;font-weight:700;color:var(--pv2-muted);
+    text-transform:uppercase;letter-spacing:0.5px;margin:20px 2px 10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .psp-sec-title .cnt{
+    font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;
+    background:var(--pv2-surface-sunken);color:var(--pv2-text);
+  }
+
+  /* Role cards grid */
+  .psp-roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+  .psp-role{
+    background:var(--pv2-surface);border:1px solid var(--pv2-border);
+    border-radius:12px;padding:16px;
+    display:flex;flex-direction:column;gap:10px;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .psp-role:hover{border-color:var(--pv2-border-strong);box-shadow:var(--pv2-shadow-sm);}
+  .psp-role.assigned{border-color:var(--pv2-brand);box-shadow:0 0 0 1px var(--pv2-brand);}
+  .psp-role-head{display:flex;align-items:center;gap:10px;}
+  .psp-role-icon{
+    width:34px;height:34px;border-radius:8px;
+    background:var(--pv2-brand-light);color:var(--pv2-brand);
+    display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;
+  }
+  .psp-role-title{font-size:14px;font-weight:700;color:var(--pv2-text);letter-spacing:-0.2px;}
+  .psp-role-hint{font-size:11px;color:var(--pv2-muted);margin-top:1px;}
+  .psp-role-status{margin-left:auto;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:999px;}
+  .psp-role-status.on{background:var(--pv2-success-bg);color:var(--pv2-success);}
+  .psp-role-status.off{background:var(--pv2-surface-sunken);color:var(--pv2-muted);}
+  .psp-role-sel{
+    width:100%;padding:9px 12px;font-size:13px;
+    border:1px solid var(--pv2-border-strong);border-radius:7px;
+    background:var(--pv2-surface);color:var(--pv2-text);outline:none;
+    transition:border-color .15s,box-shadow .15s;
+    -webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%235b6578' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+  }
+  .psp-role-sel:focus{border-color:var(--pv2-brand);box-shadow:0 0 0 3px rgba(0,84,166,.12);}
+  .psp-role-actions{display:flex;gap:6px;}
+  .psp-role-actions .psp-btn{padding:6px 10px;font-size:11.5px;}
+
+  /* Discovered printers */
+  .psp-table{
+    background:var(--pv2-surface);border:1px solid var(--pv2-border);
+    border-radius:12px;overflow:hidden;
+  }
+  .psp-tr{
+    display:grid;grid-template-columns:1fr 110px 1.3fr 110px 90px;gap:14px;
+    padding:12px 16px;align-items:center;
+    border-bottom:1px solid var(--pv2-border);font-size:12.5px;
+  }
+  .psp-tr:last-child{border-bottom:none;}
+  .psp-tr.head{
+    background:var(--pv2-surface-alt);font-size:10.5px;font-weight:700;
+    color:var(--pv2-muted);text-transform:uppercase;letter-spacing:0.4px;
+  }
+  .psp-tr .nm{font-weight:600;color:var(--pv2-text);}
+  .psp-tr .dt{color:var(--pv2-muted);font-family:var(--pv2-font-mono);}
+  .psp-kind{
+    display:inline-flex;align-items:center;gap:4px;
+    padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.3px;
+  }
+  .psp-kind.usb    {background:var(--pv2-brand-light);color:var(--pv2-brand);}
+  .psp-kind.windows{background:var(--pv2-surface-sunken);color:var(--pv2-muted);}
+  .psp-kind.network{background:var(--pv2-success-bg);color:var(--pv2-success);}
+  .psp-chip{
+    display:inline-flex;padding:3px 9px;border-radius:999px;
+    font-size:10.5px;font-weight:600;background:var(--pv2-warning-bg);color:var(--pv2-warning);
+  }
+  .psp-empty{padding:40px 20px;text-align:center;color:var(--pv2-muted);}
+  .psp-empty i{font-size:36px;display:block;margin-bottom:8px;opacity:.3;color:var(--pv2-ink);}
+
+  @media(max-width:900px){
+    .psp-tr{grid-template-columns:1fr;gap:6px;padding:12px 14px;}
+    .psp-tr.head{display:none;}
+    .psp-tr .nm{font-size:13.5px;}
+    .psp-tr .dt{font-size:11.5px;}
+  }
+
+  /* Network printer modal — POS-styled */
+  .psp-modal{
+    position:fixed;inset:0;z-index:9999;display:none;
+    align-items:center;justify-content:center;padding:20px;
+    background:rgba(11,18,32,.5);backdrop-filter:blur(3px);
+  }
+  .psp-modal.open{display:flex;animation:pv2-fadeUp .16s ease-out both;}
+  .psp-modal-box{
+    background:var(--pv2-surface);border-radius:12px;max-width:460px;width:100%;
+    box-shadow:var(--pv2-shadow-lg);overflow:hidden;
+  }
+  .psp-modal-hdr{
+    padding:16px 20px;border-bottom:1px solid var(--pv2-border);
+    display:flex;align-items:center;gap:10px;
+  }
+  .psp-modal-hdr h3{font-size:15px;font-weight:700;letter-spacing:-0.2px;color:var(--pv2-text);margin:0;}
+  .psp-modal-hdr .x{
+    margin-left:auto;width:30px;height:30px;border-radius:7px;
+    background:var(--pv2-surface-alt);border:1px solid var(--pv2-border);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--pv2-muted);
+  }
+  .psp-modal-body{padding:18px 20px;}
+  .psp-label{
+    font-size:10.5px;font-weight:700;color:var(--pv2-muted);
+    text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;display:block;
+  }
+  .psp-input{
+    width:100%;padding:9px 12px;font-size:13px;
+    border:1px solid var(--pv2-border-strong);border-radius:7px;
+    background:var(--pv2-surface);color:var(--pv2-text);outline:none;
+  }
+  .psp-input:focus{border-color:var(--pv2-brand);box-shadow:0 0 0 3px rgba(0,84,166,.12);}
+  .psp-modal-foot{
+    padding:12px 20px;border-top:1px solid var(--pv2-border);
+    background:var(--pv2-surface-alt);display:flex;gap:8px;justify-content:flex-end;
+  }
+</style>
+
+<div class="psp-wrap">
+
+  <!-- ── Header card ── -->
+  <div class="psp-header">
+    <div class="psp-icon"><i class="bi bi-printer-fill"></i></div>
+    <div>
+      <h2>Printer Settings</h2>
+      <div class="sub">Scan, select, and assign printers. The POS and admin panel will print silently to the printer you pick for each role.</div>
+    </div>
+    <div class="psp-toolbar">
+      <button type="button" class="psp-btn" id="btnScan"><i class="bi bi-search"></i> Scan printers</button>
+      <button type="button" class="psp-btn" id="btnAddNet"><i class="bi bi-wifi"></i> Add network printer</button>
+      <button type="button" class="psp-btn primary" id="btnSave" disabled><i class="bi bi-check-lg"></i> Save assignments</button>
+    </div>
+  </div>
+
+  <!-- ── Agent status ── -->
+  <div class="psp-status wait" id="agentStatus"><i class="bi bi-hourglass-split"></i> Checking print agent…</div>
+
+  <!-- ── Role assignments ── -->
+  <div class="psp-sec-title">Role assignments <span class="cnt" id="assignedCnt">0 / 5</span></div>
+  <div class="psp-roles">
+    <div class="psp-role" data-role="receipt">
+      <div class="psp-role-head">
+        <div class="psp-role-icon"><i class="bi bi-receipt"></i></div>
+        <div>
+          <div class="psp-role-title">Receipt · 80 mm thermal</div>
+          <div class="psp-role-hint">POS checkout receipts</div>
+        </div>
+        <span class="psp-role-status off">Not set</span>
+      </div>
+      <select class="psp-role-sel"><option value="">— Not configured —</option></select>
+      <div class="psp-role-actions">
+        <button type="button" class="psp-btn ghost role-test"><i class="bi bi-broadcast"></i> Test print</button>
+        <button type="button" class="psp-btn ghost role-clear"><i class="bi bi-x-lg"></i> Clear</button>
+      </div>
+    </div>
+    <div class="psp-role" data-role="label">
+      <div class="psp-role-head">
+        <div class="psp-role-icon"><i class="bi bi-tag"></i></div>
+        <div>
+          <div class="psp-role-title">Label · QR / Barcode</div>
+          <div class="psp-role-hint">Part labels, shelf tags, QR</div>
+        </div>
+        <span class="psp-role-status off">Not set</span>
+      </div>
+      <select class="psp-role-sel"><option value="">— Not configured —</option></select>
+      <div class="psp-role-actions">
+        <button type="button" class="psp-btn ghost role-test"><i class="bi bi-broadcast"></i> Test print</button>
+        <button type="button" class="psp-btn ghost role-clear"><i class="bi bi-x-lg"></i> Clear</button>
+      </div>
+    </div>
+    <div class="psp-role" data-role="invoice_a4">
+      <div class="psp-role-head">
+        <div class="psp-role-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+        <div>
+          <div class="psp-role-title">Invoice · A4</div>
+          <div class="psp-role-hint">Full-page tax invoices</div>
+        </div>
+        <span class="psp-role-status off">Not set</span>
+      </div>
+      <select class="psp-role-sel"><option value="">— Not configured —</option></select>
+      <div class="psp-role-actions">
+        <button type="button" class="psp-btn ghost role-test"><i class="bi bi-broadcast"></i> Test print</button>
+        <button type="button" class="psp-btn ghost role-clear"><i class="bi bi-x-lg"></i> Clear</button>
+      </div>
+    </div>
+    <div class="psp-role" data-role="barcode">
+      <div class="psp-role-head">
+        <div class="psp-role-icon"><i class="bi bi-upc-scan"></i></div>
+        <div>
+          <div class="psp-role-title">Barcode (optional)</div>
+          <div class="psp-role-hint">Dedicated barcode printer</div>
+        </div>
+        <span class="psp-role-status off">Not set</span>
+      </div>
+      <select class="psp-role-sel"><option value="">— Not configured —</option></select>
+      <div class="psp-role-actions">
+        <button type="button" class="psp-btn ghost role-test"><i class="bi bi-broadcast"></i> Test print</button>
+        <button type="button" class="psp-btn ghost role-clear"><i class="bi bi-x-lg"></i> Clear</button>
+      </div>
+    </div>
+    <div class="psp-role" data-role="qr">
+      <div class="psp-role-head">
+        <div class="psp-role-icon"><i class="bi bi-qr-code"></i></div>
+        <div>
+          <div class="psp-role-title">QR code (optional)</div>
+          <div class="psp-role-hint">Dedicated QR printer</div>
+        </div>
+        <span class="psp-role-status off">Not set</span>
+      </div>
+      <select class="psp-role-sel"><option value="">— Not configured —</option></select>
+      <div class="psp-role-actions">
+        <button type="button" class="psp-btn ghost role-test"><i class="bi bi-broadcast"></i> Test print</button>
+        <button type="button" class="psp-btn ghost role-clear"><i class="bi bi-x-lg"></i> Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Discovered printers ── -->
+  <div class="psp-sec-title">Discovered printers <span class="cnt" id="discoveredCount">0</span></div>
+  <div class="psp-table">
+    <div class="psp-tr head">
+      <div>Name</div>
+      <div>Kind</div>
+      <div>Details</div>
+      <div>Suggested role</div>
+      <div style="text-align:right;">Test</div>
+    </div>
+    <div id="discoveredBody">
+      <div class="psp-empty"><i class="bi bi-printer-fill"></i>Click <strong>Scan printers</strong> to begin.</div>
+    </div>
+  </div>
+
+  <div style="padding:12px 4px;font-size:11.5px;color:var(--pv2-muted);">
+    <i class="bi bi-info-circle"></i>
+    Printer assignments are saved per user within your organization. Make sure <code>SMS-Print-Agent</code> is running on this PC.
+  </div>
+</div>
+
+<!-- Add network printer modal (POS-styled) -->
+<div class="psp-modal" id="npModal">
+  <div class="psp-modal-box">
+    <div class="psp-modal-hdr">
+      <i class="bi bi-wifi text-primary" style="font-size:18px;"></i>
+      <h3>Add network printer</h3>
+      <div class="x" id="npClose"><i class="bi bi-x-lg"></i></div>
+    </div>
+    <div class="psp-modal-body">
+      <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+
+        <!-- Dynamic network scan -->
+        <div style="padding:10px 12px;background:var(--pv2-surface-alt);border:1px solid var(--pv2-border);border-radius:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <i class="bi bi-broadcast-pin" style="font-size:16px;color:var(--pv2-brand);"></i>
+            <strong style="font-size:12.5px;">Scan my network</strong>
+            <button type="button" class="psp-btn" id="btnScanNet" style="margin-left:auto;padding:5px 10px;font-size:11.5px;">
+              <i class="bi bi-search"></i> Scan
+            </button>
+          </div>
+          <div id="netScanResult" style="font-size:11.5px;color:var(--pv2-muted);">
+            Click <b>Scan</b> to find printers on your local network automatically.
+          </div>
+        </div>
+
+        <div>
+          <label class="psp-label">Printer name</label>
+          <input class="psp-input" id="npName" placeholder="e.g. Kitchen Receipt">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 120px;gap:10px;">
+          <div>
+            <label class="psp-label">IP address</label>
+            <input class="psp-input" id="npHost" placeholder="192.168.1.100">
+          </div>
+          <div>
+            <label class="psp-label">Port</label>
+            <input class="psp-input" id="npPort" value="9100">
+          </div>
+        </div>
+        <div>
+          <label class="psp-label">Role hint</label>
+          <select class="psp-input" id="npRole">
+            <option value="receipt">Receipt (ESC/POS)</option>
+            <option value="label">Label (ZPL)</option>
+            <option value="invoice_a4">Invoice A4</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div style="padding:10px 12px;background:var(--pv2-brand-ghost);border:1px solid var(--pv2-border);border-radius:8px;font-size:11.5px;color:var(--pv2-muted);">
+          Most WiFi thermal printers accept raw data on port <b>9100</b>. Click Scan above to auto-detect, or type the IP manually.
+        </div>
+      </div>
+    </div>
+    <div class="psp-modal-foot">
+      <button type="button" class="psp-btn ghost" id="npCancel">Cancel</button>
+      <button type="button" class="psp-btn" id="btnTestNet"><i class="bi bi-broadcast"></i> Test</button>
+      <button type="button" class="psp-btn primary" id="btnSaveNet"><i class="bi bi-check-lg"></i> Save printer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Saved assignments rendered server-side for instant init */
+window.SMS_SAVED_PRINTERS = <%- JSON.stringify(savedPrinters || {}) %>;
+</script>
+<% block('scripts', '<script src="/js/pages/pos-printer-settings.js?v=' + Date.now() + '"></script>') %>

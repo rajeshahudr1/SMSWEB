@@ -110,50 +110,62 @@
     <small class="text-muted ms-2">For online card / UPI / pay-by-link. Secrets never leave the server.</small>
   </div>
   <div class="card-body">
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label">Active Gateway</label>
-        <select class="form-select" id="pg_active">
-          <option value="">Disabled (offline only)</option>
-          <option value="razorpay">Razorpay (India)</option>
-          <option value="stripe">Stripe (International)</option>
-        </select>
-        <small class="form-hint">Applied to all "Pay Online" and pay-by-link requests.</small>
+    <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Enable any gateway you want available in the POS. If both are enabled, the cashier picks at checkout time. If neither is enabled, online payment is hidden in the POS.</p>
+
+    <!-- Razorpay (India) — with inline Enable toggle -->
+    <div class="card border mb-3">
+      <div class="card-header py-2 d-flex align-items-center" style="background:var(--pv2-surface-alt);">
+        <h5 class="mb-0 fw-semibold flex-grow-1"><i class="bi bi-bank me-2"></i>Razorpay <span class="text-muted small ms-1">(India)</span></h5>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="pg_razorpay_enabled" role="switch">
+          <label class="form-check-label fw-semibold" for="pg_razorpay_enabled">Enable</label>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Razorpay Key ID</label>
+            <input type="text" class="form-control" id="pg_razorpay_key_id" placeholder="rzp_live_...  /  rzp_test_..."/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Razorpay Key Secret</label>
+            <input type="password" class="form-control" id="pg_razorpay_key_secret" placeholder="••••••••"/>
+            <small class="form-hint">Leave blank to keep the existing secret.</small>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Razorpay Webhook Secret</label>
+            <input type="password" class="form-control" id="pg_razorpay_webhook_secret" placeholder="••••••••"/>
+            <small class="form-hint">Set this to the same value in Razorpay dashboard → Webhooks. URL: <code>/api/pos/payment/webhook/razorpay</code></small>
+          </div>
+        </div>
       </div>
     </div>
-    <hr/>
-    <h5 class="fw-semibold"><i class="bi bi-bank me-1"></i>Razorpay Keys</h5>
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label">Razorpay Key ID</label>
-        <input type="text" class="form-control" id="pg_razorpay_key_id" placeholder="rzp_live_...  /  rzp_test_..."/>
+
+    <!-- Stripe (International) — with inline Enable toggle -->
+    <div class="card border mb-3">
+      <div class="card-header py-2 d-flex align-items-center" style="background:var(--pv2-surface-alt);">
+        <h5 class="mb-0 fw-semibold flex-grow-1"><i class="bi bi-globe me-2"></i>Stripe <span class="text-muted small ms-1">(International)</span></h5>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="pg_stripe_enabled" role="switch">
+          <label class="form-check-label fw-semibold" for="pg_stripe_enabled">Enable</label>
+        </div>
       </div>
-      <div class="col-md-6">
-        <label class="form-label">Razorpay Key Secret</label>
-        <input type="password" class="form-control" id="pg_razorpay_key_secret" placeholder="••••••••"/>
-        <small class="form-hint">Leave blank to keep the existing secret.</small>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Razorpay Webhook Secret</label>
-        <input type="password" class="form-control" id="pg_razorpay_webhook_secret" placeholder="••••••••"/>
-        <small class="form-hint">Set this to the same value in Razorpay dashboard → Webhooks. URL: <code>/api/pos/payment/webhook/razorpay</code></small>
-      </div>
-    </div>
-    <hr/>
-    <h5 class="fw-semibold"><i class="bi bi-globe me-1"></i>Stripe Keys</h5>
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label">Stripe Publishable Key</label>
-        <input type="text" class="form-control" id="pg_stripe_publishable_key" placeholder="pk_live_... / pk_test_..."/>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Stripe Secret Key</label>
-        <input type="password" class="form-control" id="pg_stripe_secret_key" placeholder="••••••••"/>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Stripe Webhook Secret</label>
-        <input type="password" class="form-control" id="pg_stripe_webhook_secret" placeholder="whsec_...  (••••••••)"/>
-        <small class="form-hint">Stripe dashboard → Developers → Webhooks. URL: <code>/api/pos/payment/webhook/stripe</code></small>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Stripe Publishable Key</label>
+            <input type="text" class="form-control" id="pg_stripe_publishable_key" placeholder="pk_live_... / pk_test_..."/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Stripe Secret Key</label>
+            <input type="password" class="form-control" id="pg_stripe_secret_key" placeholder="••••••••"/>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Stripe Webhook Secret</label>
+            <input type="password" class="form-control" id="pg_stripe_webhook_secret" placeholder="whsec_...  (••••••••)"/>
+            <small class="form-hint">Stripe dashboard → Developers → Webhooks. URL: <code>/api/pos/payment/webhook/stripe</code></small>
+          </div>
+        </div>
       </div>
     </div>
     <% if (can('edit_pos_settings')) { %>
@@ -164,41 +176,14 @@
   </div>
 </div>
 
-<!-- Label Printer Configuration -->
-<div class="card shadow-sm mb-3">
-  <div class="card-header py-2 border-bottom d-flex align-items-center">
-    <h3 class="card-title mb-0"><i class="bi bi-printer me-2 text-primary"></i>Label Printer</h3>
-    <span id="lpStatusBadge" class="badge bg-secondary-lt ms-2" style="font-size:11px;">checking...</span>
+<!-- Label Printer moved to dedicated Printer Settings page -->
+<div class="alert alert-info d-flex align-items-center gap-2 mb-3" style="border:1px solid var(--pv2-border);background:var(--pv2-brand-ghost);color:var(--pv2-text);">
+  <i class="bi bi-printer-fill" style="font-size:20px;color:var(--pv2-brand);"></i>
+  <div class="flex-grow-1">
+    <div style="font-weight:600;">Printer configuration has moved</div>
+    <div class="small text-muted">Label, receipt, A4 and QR printers are now managed in the dedicated Printer Settings page — scan USB &amp; network printers, assign roles, and test in one place.</div>
   </div>
-  <div class="card-body">
-    <div class="row g-3">
-      <div class="col-md-4">
-        <label class="form-label">Printer Type</label>
-        <select class="form-select" id="lpType">
-          <option value="network">Network (Ethernet / WiFi)</option>
-          <option value="usb">USB (via Print Agent on this PC)</option>
-        </select>
-        <small class="form-hint">Network recommended for multi-device setups (mobile, tablet, laptop).</small>
-      </div>
-      <div class="col-md-5 lp-network-only">
-        <label class="form-label">Printer IP Address</label>
-        <input type="text" class="form-control" id="lpIp" placeholder="e.g., 192.168.4.50"/>
-        <small class="form-hint">Static IP assigned to the printer. Find it in the printer's network settings.</small>
-      </div>
-      <div class="col-md-3 lp-network-only">
-        <label class="form-label">Port</label>
-        <input type="number" class="form-control" id="lpPort" value="9100" min="1" max="65535"/>
-        <small class="form-hint">Default: 9100 (raw ZPL).</small>
-      </div>
-    </div>
-    <div class="mt-3 d-flex gap-2 flex-wrap">
-      <% if (can('edit_pos_settings')) { %>
-      <button type="button" class="btn btn-primary" id="btnSaveLp"><i class="bi bi-check-lg me-1"></i>Save Printer Config</button>
-      <% } %>
-      <button type="button" class="btn btn-outline-primary" id="btnTestLp"><i class="bi bi-printer me-1"></i>Test Print</button>
-      <span class="text-muted small ms-auto align-self-center" id="lpHelp"></span>
-    </div>
-  </div>
+  <a href="/sales/printer-settings" class="btn btn-sm btn-primary"><i class="bi bi-arrow-right"></i> Open Printer Settings</a>
 </div>
 
 <div class="card shadow-sm">
@@ -324,11 +309,17 @@ $(function(){
     });
   });
 
-  /* ───── Payment Gateway ───── */
+  /* ───── Payment Gateway — toggles per provider ───── */
   $.get('/sales/payment/config', function(res){
     if(res.status!==200||!res.data)return;
     var d = res.data;
-    $('#pg_active').val(d.payment_gateway||'');
+    /* Map saved payment_gateway string → individual toggles. New shape:
+       razorpay_enabled / stripe_enabled (booleans). Falls back to the legacy
+       payment_gateway='razorpay'|'stripe' for backwards compat. */
+    var rzEnabled = d.razorpay_enabled === true || d.razorpay_enabled === '1' || d.payment_gateway === 'razorpay';
+    var stEnabled = d.stripe_enabled   === true || d.stripe_enabled   === '1' || d.payment_gateway === 'stripe';
+    $('#pg_razorpay_enabled').prop('checked', !!rzEnabled);
+    $('#pg_stripe_enabled').prop('checked',   !!stEnabled);
     $('#pg_razorpay_key_id').val(d.razorpay_key_id||'');
     $('#pg_razorpay_key_secret').attr('placeholder', d.razorpay_key_secret_set?'••••••••':'Secret (paste to set)');
     $('#pg_razorpay_webhook_secret').attr('placeholder', d.razorpay_webhook_secret_set?'••••••••':'Webhook secret');
@@ -337,8 +328,15 @@ $(function(){
     $('#pg_stripe_webhook_secret').attr('placeholder', d.stripe_webhook_secret_set?'••••••••':'Webhook secret');
   });
   $('#btnSavePg').on('click', function(){
+    var rz = $('#pg_razorpay_enabled').is(':checked');
+    var st = $('#pg_stripe_enabled').is(':checked');
+    /* Compute legacy single-string for any older code reading payment_gateway:
+       priority razorpay > stripe; if neither enabled → empty. */
+    var primary = rz ? 'razorpay' : (st ? 'stripe' : '');
     var body = {
-      payment_gateway: $('#pg_active').val(),
+      payment_gateway: primary,
+      razorpay_enabled: rz ? '1' : '0',
+      stripe_enabled:   st ? '1' : '0',
       razorpay_key_id: $('#pg_razorpay_key_id').val().trim(),
       razorpay_key_secret: $('#pg_razorpay_key_secret').val().trim(),
       razorpay_webhook_secret: $('#pg_razorpay_webhook_secret').val().trim(),
@@ -356,54 +354,8 @@ $(function(){
     });
   });
 
-  /* ───── Label Printer config ───── */
-  function lpToggleNetworkFields(){
-    var isNet = $('#lpType').val()==='network';
-    $('.lp-network-only').toggle(isNet);
-    $('#lpHelp').text(isNet ? 'Works from any device on the same network.' : 'Requires SMS-Print-Agent.exe on this PC.');
-  }
-  function lpRenderStatus(s){
-    var $b = $('#lpStatusBadge');
-    if (!s) { $b.removeClass().addClass('badge bg-secondary-lt').text('unknown'); return; }
-    if (s.connected) $b.removeClass().addClass('badge bg-success-lt').text(s.type==='network' ? 'Network: online' : 'USB: connected');
-    else $b.removeClass().addClass('badge bg-danger-lt').text(s.type==='network' ? 'Network: offline' : 'USB: not found');
-  }
-  // Load config
-  $.get('/sales/label-printer/config', function(res){
-    if(res.status===200 && res.data){
-      $('#lpType').val(res.data.type||'usb');
-      $('#lpIp').val(res.data.ip||'');
-      $('#lpPort').val(res.data.port||9100);
-    }
-    lpToggleNetworkFields();
-  });
-  // Load status
-  $.get('/sales/label-printer/status', function(res){
-    if(res.status===200) lpRenderStatus(res.data);
-  });
-  $('#lpType').on('change', lpToggleNetworkFields);
-  $('#btnSaveLp').on('click', function(){
-    var body = { type: $('#lpType').val(), ip: $('#lpIp').val().trim(), port: parseInt($('#lpPort').val())||9100 };
-    if (body.type === 'network' && !body.ip){ toastr.error('Enter printer IP.'); return; }
-    $.ajax({ url:'/sales/label-printer/config', type:'POST', contentType:'application/json',
-      data: JSON.stringify(body),
-      success:function(r){
-        if(r.status===200){ toastr.success('Printer config saved.'); $.get('/sales/label-printer/status', function(s){ if(s.status===200) lpRenderStatus(s.data); }); }
-        else toastr.error(r.message||'Failed');
-      },
-      error:function(){ toastr.error('Failed to save printer config'); }
-    });
-  });
-  $('#btnTestLp').on('click', function(){
-    var $btn = $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Printing...');
-    $.post('/sales/label-printer/test', function(r){
-      if(r.status===200) toastr.success('Test label printed.');
-      else toastr.error(r.message||'Test print failed');
-    }).fail(function(xhr){
-      var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Test print failed';
-      toastr.error(msg);
-    }).always(function(){ $btn.prop('disabled', false).html('<i class="bi bi-printer me-1"></i>Test Print'); });
-  });
+  /* Label Printer config moved to /sales/printer-settings */
+  // (Label Printer UI moved to /sales/printer-settings — see banner at top of page)
 
   // Save
   $('#settingsForm').on('submit', function(e){
@@ -424,6 +376,19 @@ $(function(){
       },
       error:function(){ toastr.error('Failed to save settings'); }
     });
+  });
+
+  /* Explicit tab wiring — works whether the page is refreshed directly or
+     loaded through pos.js SPA nav. Bootstrap's auto-wiring only fires on
+     initial DOMContentLoaded; SPA-inserted markup misses it, so the Business
+     sub-tabs (Identity / Bank / Invoice) silently stop working. */
+  $(document).off('click.posSettingsTabs').on('click.posSettingsTabs', '#bizTabs a[data-bs-toggle="tab"]', function(e){
+    e.preventDefault();
+    var href = $(this).attr('href');
+    $('#bizTabs a').removeClass('active');
+    $(this).addClass('active');
+    $('#bizTabs').closest('.card-body, .pos-page-content, body').find('.tab-pane').removeClass('show active');
+    $(href).addClass('show active');
   });
 });
 </script>

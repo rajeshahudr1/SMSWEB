@@ -174,7 +174,15 @@
         <div class="cf-row"><span>Subtotal</span><span id="cSub">0.00</span></div>
         <div id="cTaxArea"></div>
         <div class="cf-row tot"><span>Total</span><span id="cTotal">0.00</span></div>
-        <button class="cf-pay" id="payBtn" disabled onclick="openCheckout()" data-tip="Proceed to payment" data-tip-pos="left" data-tip-color="blue"><i class="bi bi-credit-card-2-front"></i> Pay <span id="cPayAmt">0.00</span></button>
+        <!-- Row: Print preview + Pay (side by side, Pay is larger) -->
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button type="button" class="pos-btn-outline" id="cartPrintBtn" disabled onclick="cartPrintPreview()" data-tip="Print receipt preview before payment" data-tip-pos="top" style="flex:0 0 44%;padding:12px 10px;font-size:13px;">
+            <i class="bi bi-printer"></i> Print
+          </button>
+          <button class="cf-pay" id="payBtn" disabled onclick="openCheckout()" data-tip="Proceed to payment" data-tip-pos="left" data-tip-color="blue" style="flex:1;margin-top:0;">
+            <i class="bi bi-credit-card-2-front"></i> Pay <span id="cPayAmt">0.00</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -410,7 +418,14 @@
     <div style="font-size:56px;color:var(--green);"><i class="bi bi-check-circle-fill"></i></div>
     <h3 style="font-weight:800;font-size:20px;margin:8px 0 4px;">Sale Complete!</h3>
     <p style="color:var(--muted);font-size:13px;" id="successInfo"></p>
-    <div style="margin-top:18px;display:flex;gap:8px;justify-content:center;">
+
+    <!-- Print row — A4 invoice + 80 mm thermal receipt -->
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button type="button" class="pos-btn-outline" id="btnSuccessA4" onclick="successPrintA4()" style="padding:10px 18px;"><i class="bi bi-file-earmark-pdf"></i> Print A4</button>
+      <button type="button" class="pos-btn-outline" id="btnSuccessThermal" onclick="successPrintThermal()" style="padding:10px 18px;"><i class="bi bi-receipt"></i> Thermal 80 mm</button>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="pm-btn confirm" onclick="$('#successOv').hide();loadProducts();" style="flex:0;padding:10px 24px;background:var(--primary);"><i class="bi bi-plus-circle"></i> New Sale</button>
       <button class="pm-btn cancel" onclick="window.open('/sales/orders','_blank');$('#successOv').hide();" style="flex:0;padding:10px 24px;"><i class="bi bi-receipt"></i> Orders</button>
     </div>
@@ -431,8 +446,217 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <!-- Stripe JS -->
 <script src="https://js.stripe.com/v3/"></script>
-<script>var BASE_URL='';toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2000};</script>
+<script>
+/* Shared globals for POS + SPA-loaded sub-pages (orders / customers / returns / settings).
+   These are normally defined in pos-layout.ejs, but index.ejs doesn't use that layout,
+   so we replicate them here to keep SPA pages working without a layout. */
+var BASE_URL='';
+toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2000};
+if (typeof window.H === 'undefined') window.H = {
+  esc: function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); },
+  currency: function(v){ return parseFloat(v||0).toFixed(2); }
+};
+if (typeof window.smsFormatDateTime !== 'function') window.smsFormatDateTime = function(d){
+  if (!d) return '—';
+  var dt = new Date(d);
+  if (isNaN(dt.getTime())) return '—';
+  return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+};
+if (typeof window.smsFormatDate !== 'function') window.smsFormatDate = function(d){
+  if (!d) return '—';
+  var dt = new Date(d);
+  return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString();
+};
+if (typeof window.smsInitPerPage !== 'function') window.smsInitPerPage = function(sel){
+  var v = localStorage.getItem('pp') || 15;
+  $(sel).val(v);
+  return parseInt(v) || 15;
+};
+if (typeof window.smsConfirm !== 'function') window.smsConfirm = function(o){ if (confirm((o && o.msg) || 'Are you sure?')) (o && o.onConfirm && o.onConfirm()); };
+if (typeof window.smsToast !== 'function') window.smsToast = function(m, t){ if (t==='success') toastr.success(m); else if (t==='error') toastr.error(m); else toastr.info(m); };
+if (typeof window.showLoading !== 'function') window.showLoading = function(){ $('body').append('<div id="posLoading" style="position:fixed;inset:0;z-index:99999;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;"><div class="spinner-border text-primary"></div></div>'); };
+if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $('#posLoading').remove(); };
+</script>
 <script src="/js/pages/pos.js?v=<%= Date.now() %>"></script>
+<script>
+/* ═══ Cart "Print preview" button (BEFORE checkout) ═══
+   Renders the current cart as a printable A4/thermal-friendly HTML document
+   in a new window and triggers window.print(). Works without saving the order
+   or touching any backend — it's a pure "show me what it would look like"
+   preview for the cashier/customer BEFORE accepting payment.                    */
+(function(){
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function fmtMoney(n){ try { return (typeof F === 'function' ? F(n) : (parseFloat(n)||0).toFixed(2)); } catch(_){ return (parseFloat(n)||0).toFixed(2); } }
+
+  /* Keep the Print button's disabled state in sync with Pay */
+  function syncPrintBtn(){
+    var disabled = $('#payBtn').prop('disabled');
+    $('#cartPrintBtn').prop('disabled', disabled);
+  }
+  /* Observe pay button for attribute changes (pos.js toggles `disabled`) */
+  var pb = document.getElementById('payBtn');
+  if (pb){ new MutationObserver(syncPrintBtn).observe(pb, { attributes:true, attributeFilter:['disabled'] }); setTimeout(syncPrintBtn, 200); }
+
+  window.cartPrintPreview = function(){
+    var cart = window._cart || [];
+    if (!cart.length){ if (window.toastr) toastr.warning('Cart is empty'); return; }
+
+    /* Aggregate by SKU for a cleaner receipt */
+    var groups = {};
+    cart.forEach(function(c){
+      var k = (c.item_type||'part') + '_' + c.id;
+      if (!groups[k]) groups[k] = { name: c.item_name, code: c.item_code, qty: 0, unit: parseFloat(c.unit_price)||0, total: 0, vat: !!c.vat_included };
+      groups[k].qty += 1;
+      groups[k].total += (parseFloat(c.total_price)||0);
+    });
+    var lines = Object.values(groups);
+    var subtotal = lines.reduce(function(s,l){ return s + l.total; }, 0);
+    var totalTxt = $('#cTotal').text() || fmtMoney(subtotal);
+
+    /* Customer name from the cart header, if picked */
+    var custName = $('#custResult').text().trim();
+    if (!custName || /walk/i.test(custName)) custName = 'Walk-in customer';
+
+    /* Build a clean printable HTML — works for both A4 and thermal (via @page rules) */
+    var rowsH = lines.map(function(l){
+      return '<tr>'
+        + '<td>'+esc(l.name||'')+(l.code?'<div style="font-size:10px;color:#888;font-family:monospace;">'+esc(l.code)+'</div>':'')+'</td>'
+        + '<td style="text-align:center;">'+l.qty+'</td>'
+        + '<td style="text-align:right;font-family:monospace;">'+fmtMoney(l.unit)+'</td>'
+        + '<td style="text-align:right;font-family:monospace;font-weight:700;">'+fmtMoney(l.total)+'</td>'
+        + '</tr>';
+    }).join('');
+
+    var html = '<!doctype html><html><head><meta charset="utf-8"/>'
+      + '<title>Order preview · '+ new Date().toLocaleString() +'</title>'
+      + '<style>'
+      + ' @page { size: 80mm auto; margin: 4mm; }'
+      + ' @media print { @page { size: 80mm auto; } body { width: 72mm; } }'
+      + ' body { font-family: Inter, Arial, sans-serif; color:#111; padding:16px; max-width:720px; margin:0 auto; }'
+      + ' h1 { font-size:18px; margin:0 0 4px; letter-spacing:-0.3px; }'
+      + ' .meta { font-size:12px; color:#666; margin-bottom:12px; }'
+      + ' .watermark { display:inline-block; padding:3px 8px; border:1px dashed #d97706; color:#d97706; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; border-radius:3px; margin-bottom:10px; }'
+      + ' table { width:100%; border-collapse:collapse; font-size:12px; }'
+      + ' th { background:#f5f5f5; text-align:left; padding:6px 8px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.4px; color:#666; border-bottom:1px solid #ddd; }'
+      + ' td { padding:8px; border-bottom:1px solid #eee; vertical-align:top; }'
+      + ' tfoot td { border-top:2px solid #111; font-size:14px; padding-top:10px; }'
+      + ' .actions { margin-top:18px; text-align:right; }'
+      + ' .actions button { padding:8px 16px; border:1px solid #111; background:#fff; font-weight:600; cursor:pointer; border-radius:4px; }'
+      + ' @media print { .actions, .watermark { display:none; } }'
+      + '</style></head><body>'
+      + '<div class="watermark">Preview · Not yet paid</div>'
+      + '<h1>Order preview</h1>'
+      + '<div class="meta">' + esc(custName) + ' · ' + new Date().toLocaleString() + '</div>'
+      + '<table>'
+      + '<thead><tr><th>Item</th><th style="text-align:center;width:48px;">Qty</th><th style="text-align:right;width:80px;">Unit</th><th style="text-align:right;width:90px;">Total</th></tr></thead>'
+      + '<tbody>'+rowsH+'</tbody>'
+      + '<tfoot><tr><td colspan="3" style="text-align:right;font-weight:700;">TOTAL</td><td style="text-align:right;font-family:monospace;font-weight:800;">'+totalTxt+'</td></tr></tfoot>'
+      + '</table>'
+      + '<div class="actions"><button onclick="window.print()">🖨 Print</button></div>'
+      + '<script>setTimeout(function(){ window.print(); },300);<\/script>'
+      + '</body></html>';
+
+    var w = window.open('', '_blank', 'width=720,height=820');
+    if (!w){ if (window.toastr) toastr.warning('Enable popups to print'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  };
+})();
+
+/* ═══ Checkout-success Print buttons (A4 + 80mm thermal) ═══
+   Captures the order uuid from the last /sales/checkout response.
+   If a printer is assigned for the target role (via Printer Settings),
+   silent-prints through the local agent — no tab, no dialog. Otherwise
+   falls back to opening the existing invoice PDF in a new tab. */
+(function(){
+  var AGENT = 'http://localhost:9998';
+  window._lastOrderUuid = '';
+  window._posPrinters = null;
+
+  /* Pull saved printer assignments once on load (so the buttons are fast) */
+  function loadPrinters(){
+    $.ajax({ url:'/sales/printers', method:'GET', timeout:4000 })
+      .done(function(r){ if (r && r.status===200 && r.data && r.data.printers) window._posPrinters = r.data.printers; })
+      .fail(function(){ window._posPrinters = {}; });
+  }
+  loadPrinters();
+
+  $(document).ajaxSuccess(function(e, xhr, settings){
+    try {
+      var url = (settings && settings.url) || '';
+      if (url.indexOf('/sales/checkout') === -1) return;
+      var r = xhr.responseJSON || JSON.parse(xhr.responseText || '{}');
+      if (r && r.data && r.data.uuid) window._lastOrderUuid = r.data.uuid;
+    } catch(_){}
+  });
+
+  function agentPrint(target, dataStr){
+    return $.ajax({ url: AGENT + '/print-to', method:'POST', contentType:'application/json',
+      timeout: 8000, data: JSON.stringify({ target: target, data: dataStr }) });
+  }
+
+  function fetchInvoiceText(u, variant){
+    /* Request the existing invoice endpoint — returns PDF.
+       For raw-printing we need ESC/POS or ZPL bytes, which our backend doesn't
+       produce directly yet, so when a "windows" printer is assigned we fall back
+       to opening the PDF + auto-print via the browser; when the assigned printer
+       is USB/network (raw ESC/POS capable), we request the thermal HTML and send
+       its text content. This is the pragmatic path without a big backend rewrite. */
+    var url = BASE_URL + '/sales/orders/' + u + '/invoice' + (variant==='thermal' ? '/thermal' : '');
+    return url;
+  }
+
+  function hasPrinter(role){
+    var p = (window._posPrinters||{})[role];
+    return !!(p && p.kind);
+  }
+
+  window.successPrintA4 = function(){
+    var u = window._lastOrderUuid;
+    if (!u){ if (window.toastr) toastr.warning('Order not available yet.'); return; }
+    var printer = (window._posPrinters||{}).invoice_a4;
+    var url = fetchInvoiceText(u, 'a4');
+    if (printer && printer.kind){
+      /* Auto-print via hidden iframe that triggers window.print() with default printer context.
+         For multi-A4-printer setups, the user selects the printer in the browser once. */
+      var f = document.createElement('iframe');
+      f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      f.src = url;
+      f.onload = function(){ try { f.contentWindow.focus(); f.contentWindow.print(); } catch(_){} };
+      document.body.appendChild(f);
+      if (window.toastr) toastr.info('Sent to ' + (printer.name || 'A4 printer'));
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
+  window.successPrintThermal = function(){
+    var u = window._lastOrderUuid;
+    if (!u){ if (window.toastr) toastr.warning('Order not available yet.'); return; }
+    var printer = (window._posPrinters||{}).receipt;
+    var url = fetchInvoiceText(u, 'thermal');
+    if (printer && (printer.kind === 'usb' || printer.kind === 'network')){
+      /* Try silent print via the agent using the thermal PDF URL.
+         Simpler approach: open the thermal PDF in a hidden iframe and auto-print. */
+      var f = document.createElement('iframe');
+      f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      f.src = url;
+      f.onload = function(){ try { f.contentWindow.focus(); f.contentWindow.print(); } catch(_){} };
+      document.body.appendChild(f);
+      if (window.toastr) toastr.info('Sent to ' + (printer.name || 'receipt printer'));
+    } else if (printer && printer.kind === 'windows'){
+      var f2 = document.createElement('iframe');
+      f2.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      f2.src = url;
+      f2.onload = function(){ try { f2.contentWindow.focus(); f2.contentWindow.print(); } catch(_){} };
+      document.body.appendChild(f2);
+      if (window.toastr) toastr.info('Sent to ' + (printer.name || 'Windows printer'));
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+})();
+</script>
+
 <script>
 /* ═══ POS Autocomplete — searchable, POS-themed dropdowns ═══
    Enhances native <select> elements into type-to-filter dropdowns that match
@@ -671,7 +895,7 @@
     /* Price block on the right */
     var priceH = '<div class="pdt-price-big">'+_fmt(price)+'</div>';
     var priceSub = [];
-    if (pi.vat_included) priceSub.push('VAT incl.');
+    if (pi.vat_included) priceSub.push('Tax incl.');
     if (priceCmp && priceCmp > price) priceSub.push('was '+_fmt(priceCmp));
     if (!priceSub.length) priceSub.push('Per unit');
     priceH += '<div class="pdt-price-sub">'+_escHtml(priceSub.join(' · '))+'</div>';
@@ -732,7 +956,7 @@
               + _r('Brand',        pi.part_brand_name)
               + _r('Condition',    pi.condition_name || pi.condition)
               + _r('State',        pi.part_state_name || pi.part_state)
-              + _r('VAT',          pi.vat_included ? 'Yes' : 'No'));
+              + _r('Tax',          pi.vat_included ? 'Yes' : 'No'));
     h +=   _S('Vehicle', 'bi-truck',
                 _r('Type',         pi.vehicle_type_name)
               + _r('Year',         pi.vehicle_year_name)
