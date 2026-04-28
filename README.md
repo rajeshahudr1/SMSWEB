@@ -6,6 +6,30 @@ SMSWEB is the frontend web application for the Scrap Management System. Built wi
 
 It acts as a proxy layer between the browser and SMSAPI, rendering server-side EJS views and proxying API calls with session-based authentication.
 
+## Recent additions (2026)
+
+### POS module (`/sales`)
+
+- **Theme system** — `/sales/ui-kit` is a live editor for the POS theme (Inter + JetBrains Mono, ScrapMS-blue palette by default). Theme is stored per-user-within-org and applied via CSS custom properties (`--pv2-brand`, `--pv2-ink`, etc.). Cross-tab sync via `localStorage.pv2Theme` + `storage` event.
+- **Responsive design** — single layout at `views/pos/index.ejs` adapts across desktop ≥1025 → tablet 641–1024 → mobile ≤640. Mobile gets a sticky bottom-cart bar; tabs become ink-filled chips.
+- **Category rail** — left rail at `/sales` is dynamic, populated from `/sales/catalog-counts`. Three modes auto-select based on view: parts list / vehicles list / inside-a-vehicle. Click filters via `_advFilters.part_catalog_id` (server-side pagination).
+- **Part detail modal** — re-skinned with breadcrumb + chips header, original 7 tabs (Details / References / Damages / Attributes / Locations / Media / Sub Parts), responsive table-to-card stacking on tablet/mobile, view-only.
+- **Filter drawer** — desktop right-side 460px drawer, tablet bottom sheet, mobile full-page; live "Active filter chips" bar that auto-summarises the form.
+- **Smart tooltips** (`data-tip`) — JS-driven, auto-positions, theme-aware, viewport-clamps, supports tones.
+- **Autocomplete dropdowns** (`posAutocomplete()`) — searchable POS-themed component applied to topbar selects (warehouse / per-page / sort).
+- **Print before payment** — preview button in cart footer renders cart as printable HTML (A4 + 80mm thermal) before the customer pays.
+- **Print after payment** — Sale Complete modal has Print A4 + Thermal 80mm buttons.
+
+### POS printer settings (`/sales/printer-settings`)
+
+- Scan + assign in one UI: USB raw + Windows-installed online + saved network printers → assign per role (Receipt / Label / Invoice A4 / Barcode / QR) → Test + Save.
+- **Add network printer** modal includes a **Scan my network** button that probes the local /24 subnet on port 9100 and lists every responder with reverse-DNS name.
+- Assignments saved per-user-within-org via `/sales/printers` (proxies to `/pos/printers`).
+
+### Companion: sms-print-agent
+
+Local Node.js agent that runs on each cashier PC, listens on `localhost:9998`, and bridges the browser to USB / Windows-spooler / TCP network printers. Self-installs on first launch. Endpoints: `/status`, `/scan`, `/scan-network`, `/print-to`, `/test-network`, `/add-network-printer`, `/config`.
+
 ---
 
 ## Architecture

@@ -111,6 +111,11 @@ function renderOrdKpis(data, pg){
 
 var _currentOrderUuid = null;
 function viewOrder(uuid){
+    // Open the full POS-style detail page (parts breakdown + actions)
+    // instead of the in-list popup.
+    window.location.href = BASE_URL + '/sales/orders/' + uuid + '/view';
+}
+function _viewOrderModalLegacy(uuid){
     _currentOrderUuid = uuid;
     // Invoice buttons
     $('#btnInvA4').off('click').on('click', function(){ window.open(BASE_URL+'/sales/orders/'+uuid+'/invoice', '_blank'); });

@@ -21,19 +21,60 @@ $(function() {
             damageImageLinks[idx] = (d.image_ids || []).map(String);
             damageVideoLinks[idx] = (d.video_ids || []).map(String);
         });
+        // ─── DEBUG: log raw record + locations from server ───────
+        try {
+            console.group('[PartEdit] _buildEditRow');
+            console.log('FD.uuid:', FD.uuid);
+            console.log('rec.quantity (raw):', r.quantity, '  type:', typeof r.quantity);
+            console.log('rec.inventory_status (raw):', r.inventory_status);
+            console.log('rec.sold_count / available_count / reserved_count:',
+                r.sold_count, '/', r.available_count, '/', r.reserved_count);
+            console.log('FD.locations.length:', (FD.locations || []).length);
+            console.log('FD.locations:', FD.locations);
+            console.groupEnd();
+        } catch (e) {}
         return {
             id: ++_seq,
             savedUuid: FD.uuid || r.uuid,
+            // Floor for qty-reduction guard. Synced from the saved part on
+            // every successful update so the user can never type a value
+            // lower than what the server has on record.
+            // Use the raw saved value (incl. 0 for out-of-stock) — don't
+            // default to 1 here, otherwise sold-out parts can't go back to 0.
+            _savedQty: parseInt(r.quantity || 0),
+            // Counts from part_inventory_locations — drives the "Sold qty" badge.
+            _soldCount:      parseInt(r.sold_count      || 0),
+            _availableCount: parseInt(r.available_count || 0),
+            _reservedCount:  parseInt(r.reserved_count  || 0),
             year:    pick(r.vehicle_year_id,    r.vehicle_year_name),
             type:    pick(r.vehicle_type_id,    r.vehicle_type_name),
             make:    pick(r.vehicle_make_id,    r.vehicle_make_name),
             model:   pick(r.vehicle_model_id,   r.vehicle_model_name),
             variant: pick(r.vehicle_variant_id, r.vehicle_variant_name),
             catalog: pick(r.part_catalog_id,    r.part_catalog_name),
-            vehicleId:    r.vehicle_inventory_id || '',
-            vehicleLabel: r.vehicle_inventory_name || r.vehicle_inventory_code || '',
+            // Vehicle dropdown prefill: use the UUID (matches autocomplete
+            // option values so the dropdown stays consistent across changes)
+            // and a human label "#INTERNAL — MAKE | MODEL" identical to what
+            // the search results show.
+            vehicleId:    r.vehicle_inventory_uuid || r.vehicle_inventory_id || '',
+            vehicleLabel: (function() {
+                var bits = [];
+                if (r.vehicle_make_name)  bits.push(r.vehicle_make_name);
+                if (r.vehicle_model_name) bits.push(r.vehicle_model_name);
+                var lbl = bits.join(' | ');
+                if (r.vehicle_inventory_code) {
+                    lbl = '#' + r.vehicle_inventory_code + (lbl ? ' — ' + lbl : '');
+                }
+                return lbl || r.vehicle_inventory_name || r.vehicle_inventory_code || '';
+            })(),
             details: {
-                quantity: r.quantity || 1,
+                // Preserve 0 (out-of-stock) — `r.quantity || 1` would
+                // mistakenly bump it to 1. Coerce to a finite number so the
+                // input never renders "NaN".
+                quantity: (function() {
+                    var n = parseInt(r.quantity);
+                    return Number.isFinite(n) ? n : 1;
+                })(),
                 inventory_status: String(r.inventory_status || '1'),
                 price_1: r.price_1 != null ? String(r.price_1) : '0',
                 price_2: r.price_2 != null ? String(r.price_2) : '0',
@@ -404,12 +445,30 @@ $(function() {
                 + '</div>'
                 + '<div class="card-body">'
 
-                /* Row 1: Qty / Inventory Status / Price1 / Price2 / Cost */
+                /* Row 1: Qty / Inventory Status / Price1 / Price2 / Cost.
+                   Add-mode (no savedUuid): min=1. Edit-mode: min=0 — backend
+                   blocks reductions below saved qty, but out-of-stock parts
+                   are allowed to sit at 0 until the user enters new stock. */
+                /* "Sold qty" badge inside the label is populated by
+                   _refreshSoldBadges() once the row data is available. */
                 + '<div class="row g-2">'
-                +   '<div class="col-md-2"><label class="form-label small mb-1">Quantity <span class="text-danger">*</span></label><input type="number" min="1" step="1" class="form-control form-control-sm b-fld" data-k="quantity" value="' + (d.quantity||1) + '"/></div>'
+                +   '<div class="col-md-2"><label class="form-label small mb-1">Quantity <span class="text-danger">*</span>'
+                +     ' <span class="b-sold-badge badge bg-secondary-lt ms-1" style="display:none;font-size:9px;"></span>'
+                +   '</label>'
+                +   (function() {
+                        var n = parseInt(d.quantity);
+                        if (!Number.isFinite(n) || n < 0) n = (r.savedUuid ? 0 : 1);
+                        var minAttr = r.savedUuid ? 0 : 1;
+                        try {
+                            console.log('[PartEdit] qty input render',
+                                { rowId: r.id, raw: d.quantity, parsed: parseInt(d.quantity), final_n: n, savedUuid: r.savedUuid, minAttr: minAttr });
+                        } catch (e) {}
+                        return '<input type="number" min="' + minAttr + '" step="1" class="form-control form-control-sm b-fld" data-k="quantity" value="' + n + '"/>';
+                    })()
+                +   '</div>'
                 +   '<div class="col-md-3"><label class="form-label small mb-1">Inventory Status <span class="text-danger">*</span></label>'
                 +     '<select class="form-select form-select-sm b-fld" data-k="inventory_status">'
-                +       _opts([['1','In Stock'],['2','Out of Stock'],['4','Returned'],['5','Scrapped']], d.inventory_status||'1')
+                +       _opts([['1','In Stock'],['2','Out of Stock'],['3','Sent to Wastage'],['4','Reserved']], d.inventory_status||'1')
                 +     '</select></div>'
                 +   _fld('Price 1 ('+SMS_CURRENCY+')', 'number', 'price_1', d.price_1!==''?d.price_1:'0', 'col-md-2', 'min="0" step="0.01"')
                 +   _fld('Price 2 ('+SMS_CURRENCY+')', 'number', 'price_2', d.price_2!==''?d.price_2:'0', 'col-md-2', 'min="0" step="0.01"')
@@ -533,6 +592,130 @@ $(function() {
                 $w.on('click', '.sms-star-clear', function() { d.rating = 0; _paintStars($w, 0); });
             })();
         });
+        // Paint the "Sold qty" badge after the cards are in the DOM.
+        _refreshSoldBadges();
+        // ─── DEBUG: hunt for any element containing the literal text "NaN" ──
+        try { _debugFindNaN(); } catch (e) {}
+    }
+
+    /** Scan the rendered Part Details tab for any element whose text or
+     *  value attribute contains the substring "NaN". Logs the exact path
+     *  and outerHTML so we can see precisely which element is bad. Runs
+     *  twice — once immediately, once on a 500ms delay to catch async
+     *  writes (post-save callbacks etc.). */
+    function _debugFindNaN() {
+        function pathOf(el) {
+            if (!el || el === document) return '';
+            var p = pathOf(el.parentElement);
+            var t = el.tagName ? el.tagName.toLowerCase() : '';
+            var cls = (el.className && typeof el.className === 'string')
+                ? '.' + el.className.split(/\s+/).filter(Boolean).join('.') : '';
+            var k = el.getAttribute && el.getAttribute('data-k');
+            var i = el.id ? '#' + el.id : '';
+            return p + ' > ' + t + i + (k ? '[data-k=' + k + ']' : '') + cls;
+        }
+
+        function scan(label) {
+            var bd = document.getElementById('bDetailsBody');
+            if (!bd) { console.log('[NaN-hunt] no #bDetailsBody (' + label + ')'); return; }
+            var hits = [];
+            bd.querySelectorAll('*').forEach(function(el) {
+                // Inline text only (skip text from descendants).
+                var ownText = '';
+                for (var i = 0; i < el.childNodes.length; i++) {
+                    var c = el.childNodes[i];
+                    if (c.nodeType === 3) ownText += c.nodeValue;
+                }
+                if (/NaN/.test(ownText)) {
+                    hits.push({ kind: 'text', path: pathOf(el), html: el.outerHTML, ownText: ownText.trim() });
+                }
+                if (el.value && /NaN/.test(String(el.value))) {
+                    hits.push({ kind: 'value', path: pathOf(el), html: el.outerHTML, value: el.value });
+                }
+                ['value','data-k','placeholder'].forEach(function(a) {
+                    var v = el.getAttribute && el.getAttribute(a);
+                    if (v && /NaN/.test(v)) {
+                        hits.push({ kind: 'attr-' + a, path: pathOf(el), html: el.outerHTML, attrVal: v });
+                    }
+                });
+            });
+            if (hits.length) {
+                console.group('[NaN-hunt] (' + label + ') found ' + hits.length + ' element(s) containing NaN');
+                hits.forEach(function(h, i) { console.log('#' + (i+1), h); });
+                console.groupEnd();
+            } else {
+                console.log('[NaN-hunt] (' + label + ') no NaN found in #bDetailsBody');
+            }
+        }
+
+        scan('immediate');
+        setTimeout(function() { scan('after 500ms'); }, 500);
+    }
+
+    /* Show "Sold qty: N" badge next to the Quantity label whenever a part
+       has Sold/Reserved units. Counts are computed from `row.locations`
+       (always loaded with the part) — that's the single source of truth
+       and avoids a second show() round-trip. */
+    function _refreshSoldBadges() {
+        $('.b-detail-card').each(function() {
+            var $card = $(this);
+            var id = parseInt($card.data('id'));
+            var row = _rows.find(function(r) { return r.id === id; });
+            if (!row) return;
+            var locs = Array.isArray(row.locations) ? row.locations : [];
+            var sold = 0, resv = 0;
+            for (var i = 0; i < locs.length; i++) {
+                var s = parseInt(locs[i] && locs[i].unit_status);
+                if (s === 3) sold = sold + 1;
+                else if (s === 2) resv = resv + 1;
+            }
+            // ─── DEBUG: log what the badge function sees ───────
+            try {
+                console.group('[PartEdit] _refreshSoldBadges (row id=' + id + ')');
+                console.log('row.savedUuid:', row.savedUuid);
+                console.log('row.locations.length:', locs.length);
+                console.log('unit_status values:',
+                    locs.map(function(l){ return l && l.unit_status; }));
+                console.log('counted → sold:', sold, ' resv:', resv);
+                console.groupEnd();
+            } catch (e) {}
+            // Defence in depth: never let a bad value slip through into the
+            // badge text. parseInt of "" / null / undefined returns NaN.
+            if (!Number.isFinite(sold)) sold = 0;
+            if (!Number.isFinite(resv)) resv = 0;
+            row._soldCount     = sold;
+            row._reservedCount = resv;
+
+            var $badge = $card.find('.b-fld[data-k="quantity"]').closest('.col-md-2').find('.b-sold-badge');
+            if (!$badge.length) {
+                try { console.warn('[PartEdit] sold badge: no .b-sold-badge element found for row id=' + id); } catch (e) {}
+                return;
+            }
+            var bits = [];
+            if (sold > 0) bits.push('Sold ' + sold);
+            if (resv > 0) bits.push('Reserved ' + resv);
+            var finalText = bits.length ? bits.join(' · ') : '';
+            try {
+                console.log('[PartEdit] sold badge set →', JSON.stringify(finalText), '  badges found:', $badge.length);
+            } catch (e) {}
+            if (bits.length) {
+                $badge.text(finalText).show();
+            } else {
+                $badge.text('').hide();
+            }
+            try {
+                // Read back what's actually in the DOM after we set it.
+                console.log('[PartEdit] sold badge DOM after set:', $badge[0] && $badge[0].outerHTML);
+                // Also log the surrounding label so we can see if anything else
+                // wrote "NaN" into the same area.
+                console.log('[PartEdit] full label HTML:',
+                    $card.find('.b-fld[data-k="quantity"]').closest('.col-md-2').find('label')[0]
+                        ? $card.find('.b-fld[data-k="quantity"]').closest('.col-md-2').find('label')[0].outerHTML : '(no label)');
+                console.log('[PartEdit] qty input value attr:',
+                    $card.find('.b-fld[data-k="quantity"]').attr('value'),
+                    ' .val():', $card.find('.b-fld[data-k="quantity"]').val());
+            } catch (e) {}
+        });
     }
 
     /* Half-star rating widget HTML & paint */
@@ -583,10 +766,65 @@ $(function() {
         else row.details[k] = $(this).val();
     });
 
-    /* Force quantity ≥ 1 (snap back to 1 if user tries 0/empty/negative) */
+    /* Quantity normalisation rules (matches the backend's update validator):
+       - Add (no savedUuid):                  minimum 1.
+       - Edit, In Stock (savedQty > 0):       minimum = savedQty (no reductions).
+       - Edit, Out of Stock (savedQty = 0):   0 is allowed; any positive int OK.
+       Empty / negative / NaN inputs are clamped to the minimum allowed. */
     $('#bDetailsBody').on('blur', '.b-fld[data-k="quantity"]', function() {
-        var v = parseInt($(this).val());
-        if (!v || v < 1) { $(this).val(1).trigger('change'); toastr.warning('Quantity must be at least 1.'); }
+        var $input = $(this);
+        var $card = $input.closest('.b-detail-card');
+        var id = parseInt($card.data('id'));
+        var row = _rows.find(function(r) { return r.id === id; });
+
+        var v = parseInt($input.val());
+        if (!Number.isFinite(v)) v = NaN;
+
+        var isEdit = !!(row && row.savedUuid);
+        var savedQty = isEdit ? (parseInt(row._savedQty) || 0) : null;
+
+        if (!isEdit) {
+            // Add: minimum 1.
+            if (!Number.isFinite(v) || v < 1) {
+                $input.val(1).trigger('change');
+                toastr.warning('Quantity must be at least 1.');
+                return;
+            }
+            $input.val(v);
+            return;
+        }
+
+        // Edit
+        if (savedQty > 0) {
+            // In-stock: ≥ savedQty.
+            if (!Number.isFinite(v) || v < savedQty) {
+                $input.val(savedQty).trigger('change');
+                toastr.warning('Cannot reduce quantity below ' + savedQty + '. Delete units from the Location tab to reduce.');
+                return;
+            }
+            $input.val(v);
+            return;
+        }
+
+        // Edit, Out of Stock — 0 or positive integer.
+        if (!Number.isFinite(v) || v < 0) v = 0;
+        $input.val(v);
+    });
+
+    /* Sync `row.details.quantity` as the user types, but DON'T re-render the
+       Locations tab live — locations now mirror the database (sold rows stay
+       in the table as history) so the count is total = sold + reserved + qty.
+       Trying to slice `r.locations` by `newQty` would render the wrong rows
+       for out-of-stock parts. The post-save handler refetches /locations and
+       re-renders Tab 8 with the authoritative state. */
+    $('#bDetailsBody').on('input change', '.b-fld[data-k="quantity"]', function() {
+        var $card = $(this).closest('.b-detail-card');
+        var id = parseInt($card.data('id'));
+        var row = _rows.find(function(r) { return r.id === id; });
+        if (!row) return;
+        var newQty = parseInt($(this).val());
+        if (isNaN(newQty) || newQty < 0) return;
+        row.details.quantity = newQty;
     });
 
     /* Custom size toggle */
@@ -720,8 +958,33 @@ $(function() {
                 data: JSON.stringify(_buildPartPayload(r)),
                 success: function(resp) {
                     btnReset($btn);
-                    if (resp && (resp.status === 200 || resp.status === 201)) toastr.success('Part updated.');
-                    else toastr.error(resp && resp.message ? resp.message : 'Failed.');
+                    if (resp && (resp.status === 200 || resp.status === 201)) {
+                        toastr.success('Part updated.');
+                        // Refresh saved qty + status (server may have auto-revived
+                        // an Out-of-Stock part to In Stock when qty was added).
+                        var data = resp.data || {};
+                        if (Number.isFinite(parseInt(data.quantity))) {
+                            r.details.quantity = parseInt(data.quantity);
+                            r._savedQty = r.details.quantity;
+                            $('.b-detail-card[data-id="' + r.id + '"] .b-fld[data-k="quantity"]').val(r._savedQty);
+                        }
+                        if (typeof data.inventory_status !== 'undefined' && data.inventory_status !== null) {
+                            r.details.inventory_status = String(data.inventory_status);
+                            $('.b-detail-card[data-id="' + r.id + '"] .b-fld[data-k="inventory_status"]').val(r.details.inventory_status);
+                        }
+                        // Refresh locations from server, then recompute badges
+                        // and re-render Tab 8. Badge counts are derived from
+                        // `r.locations` so the order matters.
+                        $.get(BASE_URL + '/part-inventories/' + r.savedUuid + '/locations', function(locRes) {
+                            if (locRes && locRes.status === 200 && Array.isArray(locRes.data)) {
+                                r.locations = locRes.data;
+                            }
+                            _refreshSoldBadges();
+                            _renderLocations();
+                        });
+                    } else {
+                        toastr.error(resp && resp.message ? resp.message : 'Failed.');
+                    }
                 },
                 error: function(xhr) { btnReset($btn); toastr.error(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Network error.'); }
             });
@@ -737,6 +1000,10 @@ $(function() {
         function _buildPayloadForRow(r) {
             var d = r.details;
             var payload = {
+                // Add-from-vehicle flow stores the vehicle reference here so
+                // the saved part is linked to the source vehicle. The id may
+                // be either an integer or a UUID — backend resolves both.
+                vehicle_inventory_id: r.vehicleId || '',
                 vehicle_year_id: r.year.id,
                 vehicle_type_id: r.type.id,
                 vehicle_make_id: r.make.id,
@@ -1639,7 +1906,10 @@ $(function() {
     $('#btnSaveVideoLinks').on('click', function() { _saveMediaLinks('video'); });
 
     /* ══════════════════════════════════════════════════════
-       TAB 8: LOCATIONS — per-part rows = quantity
+       TAB 8: LOCATIONS — one row per `part_inventory_locations` entry
+       (not per `part_inventories.quantity`). Sold/Reserved units stay in
+       the table with their pos_order_id reference, so the count here can
+       legitimately exceed the part's current quantity.
     ══════════════════════════════════════════════════════ */
     function _renderLocations() {
         var $body = $('#bLocationsBody');
@@ -1648,13 +1918,19 @@ $(function() {
         var html = '';
         saved.forEach(function(r, i) {
             if (!r.locations) r.locations = [];
-            var qty = parseInt(r.details.quantity) || 1;
+            var rowCount = r.locations.length;
+            var avail = r.locations.filter(function(l){ return parseInt(l.unit_status||1) === 1; }).length;
+            var resv  = r.locations.filter(function(l){ return parseInt(l.unit_status) === 2; }).length;
+            var sold  = r.locations.filter(function(l){ return parseInt(l.unit_status) === 3; }).length;
             html += '<div class="card shadow-sm mb-3 b-loc-card" data-id="' + r.id + '" data-pid="' + r.id + '">'
                 + '<div class="card-header py-2">'
                 +   '<div class="card-title mb-0" style="font-size:13px;">'
                 +     '<i class="bi bi-geo-alt me-1"></i><strong>#' + (i+1) + ' — ' + H.esc(r.catalog.text) + '</strong>'
                 +     ' <span class="ms-2" style="font-weight:400;font-size:11px;">' + H.esc(r.year.text+' · '+r.make.text+' · '+r.model.text+' · '+r.variant.text) + '</span>'
-                +     ' <span class="badge bg-primary-lt ms-2">Qty: ' + qty + '</span>'
+                +     ' <span class="badge bg-primary-lt ms-2">Total: ' + rowCount + '</span>'
+                +     ' <span class="badge bg-success-lt ms-1">Available: ' + avail + '</span>'
+                + (resv ? ' <span class="badge bg-warning-lt ms-1">Reserved: ' + resv + '</span>' : '')
+                + (sold ? ' <span class="badge bg-secondary-lt ms-1">Sold: ' + sold + '</span>' : '')
                 +   '</div>'
                 + '</div>'
                 + '<div class="card-body p-2">'
@@ -1663,97 +1939,161 @@ $(function() {
                 +       '<th style="width:48px;">Unit</th><th>Warehouse</th><th>Zone</th><th>Shelf</th><th>Rack</th><th>Bin</th>'
                 +       '<th style="width:130px;">Code</th><th style="width:120px;">Status</th><th style="width:140px;">Notes</th><th style="width:50px;text-align:center;"><i class="bi bi-three-dots"></i></th>'
                 +     '</tr></thead>'
-                +     '<tbody>' + _renderLocRows(r, qty) + '</tbody>'
+                +     '<tbody>' + _renderLocRows(r, rowCount) + '</tbody>'
                 +   '</table></div>'
                 + '</div>'
                 + '</div>';
         });
         $body.html(html);
-        // Init select2 for every row
+        // Init select2 for every row that isn't locked (Sold/Reserved keep their saved values as plain text).
         saved.forEach(function(r) {
-            var qty = parseInt(r.details.quantity) || 1;
-            for (var k = 0; k < qty; k++) _initLocRow(r, k);
+            var rowCount = r.locations.length;
+            for (var k = 0; k < rowCount; k++) {
+                var loc = r.locations[k] || {};
+                var status = parseInt(loc.unit_status || 1);
+                if (status === 1) _initLocRow(r, k);    // editable
+            }
         });
     }
 
-    function _renderLocRows(r, qty) {
+    function _renderLocRows(r, count) {
         var html = '';
-        for (var i = 0; i < qty; i++) {
+        for (var i = 0; i < count; i++) {
             var loc = r.locations[i] || {};
             var unitStatus = parseInt(loc.unit_status) || 1;
-            html += '<tr class="b-loc-row" data-pid="' + r.id + '" data-row="' + i + '">'
-                + '<td class="text-center fw-semibold">' + (i + 1) + '</td>'
-                + '<td><select class="form-select form-select-sm bl-wh" style="width:100%;"></select></td>'
-                + '<td><select class="form-select form-select-sm bl-zn" style="width:100%;"></select></td>'
-                + '<td><select class="form-select form-select-sm bl-sh" style="width:100%;"></select></td>'
-                + '<td><select class="form-select form-select-sm bl-rk" style="width:100%;"></select></td>'
-                + '<td><select class="form-select form-select-sm bl-bn" style="width:100%;"></select></td>'
-                + '<td><input type="text" class="form-control form-control-sm bl-code" value="' + H.esc(loc.location_code||'') + '" readonly style="background:#f8f9fa;"/></td>'
+            var unitNo = loc.unit_number || (i + 1);
+            var locked = unitStatus !== 1;       // Sold/Reserved → row is locked
+            var rowClass = 'b-loc-row';
+            if (unitStatus === 3) rowClass += ' b-loc-sold';
+            else if (unitStatus === 2) rowClass += ' b-loc-reserved';
+
+            // For locked rows we render the saved values as plain readonly
+            // inputs (no select2). Editing locations on a sold/reserved unit
+            // would rewrite history — the backend rejects it anyway.
+            var rowStyle = locked ? ' style="background:#f8f9fa;color:#6b7280;"' : '';
+            var disAttr  = locked ? ' disabled' : '';
+
+            html += '<tr class="' + rowClass + '" data-pid="' + r.id + '" data-row="' + i + '" data-status="' + unitStatus + '"' + rowStyle + '>'
+                + '<td class="text-center fw-semibold">' + unitNo + '</td>';
+
+            if (locked) {
+                // Locked: show saved hierarchy as readonly text.
+                html += '<td><input type="text" class="form-control form-control-sm" value="' + H.esc(loc.warehouse_name||'')      + '" readonly></td>'
+                      + '<td><input type="text" class="form-control form-control-sm" value="' + H.esc(loc.warehouse_zone_name||'') + '" readonly></td>'
+                      + '<td><input type="text" class="form-control form-control-sm" value="' + H.esc(loc.warehouse_shelf_name||'')+ '" readonly></td>'
+                      + '<td><input type="text" class="form-control form-control-sm" value="' + H.esc(loc.warehouse_rack_name||'') + '" readonly></td>'
+                      + '<td><input type="text" class="form-control form-control-sm" value="' + H.esc(loc.warehouse_bin_name||'')  + '" readonly></td>';
+            } else {
+                html += '<td><select class="form-select form-select-sm bl-wh" style="width:100%;"></select></td>'
+                      + '<td><select class="form-select form-select-sm bl-zn" style="width:100%;"></select></td>'
+                      + '<td><select class="form-select form-select-sm bl-sh" style="width:100%;"></select></td>'
+                      + '<td><select class="form-select form-select-sm bl-rk" style="width:100%;"></select></td>'
+                      + '<td><select class="form-select form-select-sm bl-bn" style="width:100%;"></select></td>';
+            }
+
+            html += '<td><input type="text" class="form-control form-control-sm bl-code" value="' + H.esc(loc.location_code||'') + '" readonly style="background:#f8f9fa;"/></td>'
                 + '<td><select class="form-select form-select-sm bl-status" disabled>'
                 +   '<option value="1"' + (unitStatus===1?' selected':'') + '>Available</option>'
                 +   '<option value="2"' + (unitStatus===2?' selected':'') + '>Reserved</option>'
                 +   '<option value="3"' + (unitStatus===3?' selected':'') + '>Sold</option>'
                 + '</select></td>'
+                // Notes stay editable on locked rows so users can leave a paper trail.
                 + '<td><input type="text" class="form-control form-control-sm bl-notes" value="' + H.esc(loc.notes||'') + '" placeholder="Notes"/></td>'
                 + '<td class="text-center">'
                 + '<div class="dropdown">'
                 + '<button class="btn btn-sm btn-ghost-secondary" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>'
                 + '<ul class="dropdown-menu dropdown-menu-end">'
-                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+(i+1)+',\'id\');return false;"><i class="bi bi-upc-scan me-2 text-primary"></i>Internal ID</a></li>'
-                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+(i+1)+',\'unit\');return false;"><i class="bi bi-qr-code me-2" style="color:#7c3aed;"></i>ID + Unit</a></li>'
-                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+(i+1)+',\'loc\');return false;"><i class="bi bi-geo-alt me-2 text-info"></i>Location Barcode</a></li>'
-                + '<li><hr class="dropdown-divider"/></li>'
-                + '<li><a class="dropdown-item text-danger b-loc-rm-link" href="#" onclick="return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>'
-                + '</ul></div>'
-                + '</td>'
-                + '</tr>';
+                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+unitNo+',\'id\');return false;"><i class="bi bi-upc-scan me-2 text-primary"></i>Internal ID</a></li>'
+                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+unitNo+',\'unit\');return false;"><i class="bi bi-qr-code me-2" style="color:#7c3aed;"></i>ID + Unit</a></li>'
+                + '<li><a class="dropdown-item" href="#" onclick="doLocCode('+r.id+','+unitNo+',\'loc\');return false;"><i class="bi bi-geo-alt me-2 text-info"></i>Location Barcode</a></li>'
+                + '<li><hr class="dropdown-divider"/></li>';
+
+            // Sold/Reserved → "Invoice" link goes straight to the printable
+            // invoice for the order this unit was consumed under (not the
+            // order-detail page) so the user lands on the receipt for that qty.
+            // Available → the usual Delete (decrements qty, only allowed on status=1).
+            if (locked && loc.pos_order_uuid) {
+                var label = unitStatus === 3 ? 'View Invoice' : 'View Reserved Invoice';
+                var iconCls = unitStatus === 3 ? 'bi-receipt text-success' : 'bi-clock-history text-warning';
+                html += '<li><a class="dropdown-item" target="_blank" href="/sales/orders/' + loc.pos_order_uuid + '/invoice">'
+                      + '<i class="bi ' + iconCls + ' me-2"></i>' + label
+                      + (loc.pos_order_number ? ' <span class="text-muted small ms-1">#' + H.esc(loc.pos_order_number) + '</span>' : '')
+                      + '</a></li>';
+                // Bonus: thermal-receipt variant for when the user wants the
+                // narrow 80mm copy of the same invoice.
+                html += '<li><a class="dropdown-item" target="_blank" href="/sales/orders/' + loc.pos_order_uuid + '/invoice/thermal">'
+                      + '<i class="bi bi-printer text-info me-2"></i>Thermal Receipt</a></li>';
+            } else if (locked) {
+                // Locked but no order info — should be rare; show a disabled placeholder.
+                html += '<li><span class="dropdown-item disabled text-muted"><i class="bi bi-lock me-2"></i>Locked</span></li>';
+            } else {
+                html += '<li><a class="dropdown-item text-danger b-loc-rm-link" href="#" onclick="return false;"><i class="bi bi-trash3 me-2"></i>Delete</a></li>';
+            }
+
+            html += '</ul></div></td></tr>';
         }
         return html;
     }
 
-    /* Delete location row → decrement part qty (min 1), update part on server */
+    /* Delete location row → backend deletes the row and re-syncs
+       part_inventories.quantity to the remaining Available count. */
     $('#bLocationsBody').on('click', '.b-loc-rm, .b-loc-rm-link', function() {
         var $row = $(this).closest('.b-loc-row');
         var $card = $(this).closest('.b-loc-card');
         var row = _rows.find(function(r) { return r.id === parseInt($card.data('id')); });
         if (!row) return;
-        // Only Available units can be deleted
-        var rowStatus = parseInt($row.find('.bl-status').val()) || 1;
+        var rowStatus = parseInt($row.attr('data-status')) || 1;
         if (rowStatus !== 1) {
             toastr.warning('Only Available units can be deleted (this one is ' + (rowStatus === 2 ? 'Reserved' : 'Sold') + ').');
             return;
         }
-        var curQty = parseInt(row.details.quantity) || 1;
-        if (curQty <= 1) { toastr.warning('At least 1 quantity must remain.'); return; }
+        // Find the saved location row's DB id — needed by the API.
+        var idx = parseInt($row.data('row'));
+        var loc = (row.locations || [])[idx];
+        if (!loc || !loc.id) {
+            toastr.error('This row is not saved yet — nothing to delete.');
+            return;
+        }
+        // Disallow dropping the last available unit (qty must stay ≥ 1).
+        var availableCount = (row.locations || []).filter(function(l){ return parseInt(l.unit_status||1) === 1; }).length;
+        if (availableCount <= 1) { toastr.warning('At least 1 available unit must remain.'); return; }
 
         smsConfirm({
             icon: '🗑️', title: T('btn.delete','Delete'),
             msg: 'Delete this location row? Part quantity will decrease by 1.',
             btnClass: 'btn-danger', btnText: T('btn.delete','Delete'),
             onConfirm: function() {
-                // Persist current DOM into r.locations first so other rows survive
-                row.locations = _collectLocsForPart(row);
-                var idx = parseInt($row.data('row'));
-                row.locations.splice(idx, 1);
-                row.details.quantity = curQty - 1;
-
-                // Update part qty on server
                 $.ajax({
-                    url: BASE_URL + '/part-inventories/' + row.savedUuid,
+                    url: BASE_URL + '/part-inventories/' + row.savedUuid + '/locations/delete',
                     type: 'POST', contentType: 'application/json',
-                    data: JSON.stringify({ quantity: row.details.quantity }),
+                    data: JSON.stringify({ location_id: loc.id }),
                     success: function(resp) {
-                        if (resp && (resp.status === 200 || resp.status === 201)) {
-                            toastr.success('Quantity updated to ' + row.details.quantity);
-                        } else toastr.error(resp && resp.message ? resp.message : 'Failed to update quantity.');
+                        if (!resp || (resp.status !== 200 && resp.status !== 201)) {
+                            toastr.error(resp && resp.message ? resp.message : 'Failed to delete location.');
+                            return;
+                        }
+                        toastr.success('Location removed.');
+                        if (resp.data && typeof resp.data.remaining_quantity !== 'undefined') {
+                            row.details.quantity = parseInt(resp.data.remaining_quantity) || 1;
+                            row._savedQty = row.details.quantity;
+                            // Reflect new qty in Tab 2's input.
+                            $('.b-detail-card[data-id="' + row.id + '"] .b-fld[data-k="quantity"]').val(row.details.quantity);
+                        }
+                        // Refetch locations from server so the card mirrors DB
+                        // truth (correct ids, status, badges, etc.).
+                        $.get(BASE_URL + '/part-inventories/' + row.savedUuid + '/locations', function(locRes) {
+                            if (locRes && locRes.status === 200 && Array.isArray(locRes.data)) {
+                                row.locations = locRes.data;
+                            }
+                            _refreshSoldBadges();
+                            _renderLocations();
+                        });
                     },
-                    error: function() { toastr.error('Network error updating quantity.'); }
+                    error: function(xhr) {
+                        var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Network error deleting location.';
+                        toastr.error(msg);
+                    }
                 });
-
-                // Re-render this card's location grid
-                $card.find('tbody').html(_renderLocRows(row, row.details.quantity));
-                for (var k = 0; k < row.details.quantity; k++) _initLocRow(row, k);
-                $card.find('.badge').text('Qty: ' + row.details.quantity);
             }
         });
     });
@@ -1811,8 +2151,27 @@ $(function() {
         $('.b-loc-row[data-pid="' + r.id + '"]').each(function() {
             var $row = $(this);
             var i = parseInt($row.data('row'));
+            var status = parseInt($row.attr('data-status')) || 1;
+            var saved = (r.locations && r.locations[i]) ? r.locations[i] : {};
+            // The unit_number on the saved row is the source of truth — it
+            // can differ from `i + 1` if older rows were deleted before some
+            // sold rows were created.
+            var unitNo = saved.unit_number || (i + 1);
+
+            // Sold (3) / Reserved (2) — backend ignores everything except
+            // notes anyway, so send only those fields. This also avoids
+            // wiping the saved warehouse hierarchy from the UI's plain-text
+            // inputs (which carry display names, not IDs).
+            if (status === 2 || status === 3) {
+                rows.push({
+                    unit_number: unitNo,
+                    notes: $row.find('.bl-notes').val() || null,
+                });
+                return;
+            }
+
             rows.push({
-                unit_number:        i + 1,
+                unit_number:        unitNo,
                 warehouse_id:       $row.find('.bl-wh').val() || null,
                 warehouse_zone_id:  $row.find('.bl-zn').val() || null,
                 warehouse_shelf_id: $row.find('.bl-sh').val() || null,
@@ -1829,17 +2188,15 @@ $(function() {
     /* Save All Locations */
     $('#btnSaveAllLocs').on('click', function() {
         var saved = _rows.filter(function(r) { return r.savedUuid; });
-        // Collect & filter parts that have at least one row with a warehouse picked
+        // Send every part's location rows, even if all warehouses are empty.
+        // Empty fields are intentionally allowed — they save as null and the
+        // user can fill them in later from the Location tab.
         var queue = [];
         saved.forEach(function(r) {
-            var locs = _collectLocsForPart(r);
-            // Skip if no warehouse picked anywhere
-            if (locs.some(function(l) { return l.warehouse_id; })) {
-                r._locsToSave = locs;
-                queue.push(r);
-            }
+            r._locsToSave = _collectLocsForPart(r);
+            queue.push(r);
         });
-        if (!queue.length) { toastr.warning('Please assign at least one warehouse before saving.'); return; }
+        if (!queue.length) { toastr.info('No parts to save.'); return; }
 
         var $btn = $(this); btnLoading($btn);
         var ok = 0, fail = 0;
@@ -1951,6 +2308,48 @@ $(function() {
         _renderImages();
         _renderVideos();
         _renderLocations();
+
+        // Edit-mode: when the user changes the Vehicle dropdown, check
+        // /check-duplicate first. If the new vehicle already has a part with
+        // the same catalog, revert the dropdown and show an error. Otherwise
+        // the row's vehicleId is updated and the save will overwrite all the
+        // vehicle cascade fields server-side.
+        if (IS_FROM_VEHICLE) {
+            var _prevVehicleSel = { id: er.vehicleId, text: er.vehicleLabel };
+            $('#bVehicle').on('select2:select', function(e) {
+                var pick = e.params && e.params.data;
+                if (!pick || !pick.id) return;
+                if (String(pick.id) === String(_prevVehicleSel.id)) return; // no change
+                var catId = er.catalog && er.catalog.id;
+                if (!catId) {
+                    _prevVehicleSel = { id: pick.id, text: pick.text };
+                    er.vehicleId = pick.id; er.vehicleLabel = pick.text;
+                    return;
+                }
+                var $sel = $(this);
+                $.get(BASE_URL + '/part-inventories/check-duplicate', {
+                    vehicle_inventory_id: pick.id,
+                    part_catalog_id: catId,
+                    exclude_uuid: er.savedUuid,
+                }, function(res) {
+                    if (res && res.status === 200 && res.data && res.data.exists) {
+                        var partLbl = (res.data.part && res.data.part.part_code) ? (' (' + res.data.part.part_code + ')') : '';
+                        toastr.error('This vehicle already has a part with the same catalog' + partLbl + '. Choose a different vehicle.');
+                        // Revert the dropdown back to the previous vehicle.
+                        $sel.append(new Option(_prevVehicleSel.text || '', _prevVehicleSel.id, true, true)).trigger('change');
+                        return;
+                    }
+                    // Accept change. Backend will cascade type/make/model/year etc.
+                    _prevVehicleSel = { id: pick.id, text: pick.text };
+                    er.vehicleId = pick.id;
+                    er.vehicleLabel = pick.text;
+                    toastr.info('Vehicle changed — click Update to apply. Year/Type/Make/Model/Variant will be auto-set from the new vehicle.');
+                }).fail(function() {
+                    toastr.error('Could not verify vehicle change — try again.');
+                    $sel.append(new Option(_prevVehicleSel.text || '', _prevVehicleSel.id, true, true)).trigger('change');
+                });
+            });
+        }
 
         // Deep-link: open the tab from URL hash (#tab-bDetails / #tab-bRefs / etc.)
         if (window.location.hash) {

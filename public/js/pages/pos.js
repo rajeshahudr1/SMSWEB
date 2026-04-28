@@ -917,7 +917,7 @@ function calcChange(){
         $d.addClass('change-neg').html('<i class="bi bi-exclamation-triangle me-1"></i>Short: <strong>'+F(Math.abs(c))+'</strong>');
     }
 }
-function doCheckout(){
+function doCheckout(autoPrint){
     if(!_cart.length)return;
     var payMethod=$('.co-pay-btn.active').data('method')||'cash';
     // Online gateway and pay-by-link branch off here — they don't use the offline flow
@@ -926,7 +926,8 @@ function doCheckout(){
 
     var rcvAmt=parseFloat($('#amtRcv').val())||0;
     if(rcvAmt<_coData.total){toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');return;}
-    var $b=$('#coComplete');$b.prop('disabled',true).text('Processing...');
+    var $b = autoPrint ? $('#coPrint') : $('#coComplete');
+    $b.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Processing...');
     var items=_cart.map(function(c){return{item_type:c.item_type,part_inventory_id:c.part_inventory_id,vehicle_inventory_id:c.vehicle_inventory_id,warehouse_id:c.warehouse_id,item_name:c.item_name,item_code:c.item_code,quantity:c.quantity,unit_price:c.unit_price,discount_amount:c.discount_amount,unit_number:c.unit_number||null};});
     var cardType=payMethod==='card'?($('.co-card-btn.active').data('card')||''):'';
     var payRef=$('#payRef').val()||null;
@@ -935,11 +936,21 @@ function doCheckout(){
     $.ajax({url:BASE_URL+'/sales/checkout',type:'POST',contentType:'application/json',
         data:JSON.stringify({items:items,customer_id:$('#custId').val()||null,discount_type:$('#dType').val()||null,discount_value:$('#dVal').val()||0,payment_method:payMethod,payment_reference:payRef,amount_paid:parseFloat($('#amtRcv').val())||0,notes:$('#oNotes').val()||null}),
         success:function(r){
-            $b.prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+            // Reset both footer buttons regardless of which path triggered Save.
+            $('#coComplete').prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+            $('#coPrint').prop('disabled',false).html('<i class="bi bi-printer me-1"></i>Print');
             if(r.status===201||r.status===200){
                 $('#coPage').removeClass('open');
                 $('#successInfo').html('Order <strong>'+esc(r.data.order_number)+'</strong> \u2014 '+F(r.data.total_amount));
                 $('#successOv').css('display','flex');
+                window._smsLastOrder = { uuid: r.data.uuid || r.data.order_uuid, number: r.data.order_number };
+                // \u2605 Save & Print path: silent-print to the printer assigned to
+                //   the "receipt" role in /sales/printer-settings. Falls back
+                //   to opening the receipt-preview page in a new tab if no
+                //   printer has been wired up yet.
+                if (autoPrint && window._smsLastOrder && window._smsLastOrder.uuid) {
+                    autoPrintReceipt(window._smsLastOrder.uuid);
+                }
                 _cart=[];renderCart();
                 $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').html('Walk-in customer');
             } else if(r.status===409&&r.data&&r.data.stock_errors){
@@ -1136,10 +1147,15 @@ function _pollPaymentStatus(txUuid){
     }, 5000);
 }
 
+// Holds the most-recently-completed order so the success-overlay print
+// buttons know which receipt to render.
+window._smsLastOrder = null;
+
 function _onPaymentSuccess(d){
     $('#coPage').removeClass('open');
     $('#successInfo').html('Order <strong>'+esc(d.order_number||'')+'</strong> — '+F(d.total_amount||_coData.total));
     $('#successOv').css('display','flex');
+    window._smsLastOrder = { uuid: d.order_uuid || d.uuid, number: d.order_number || '' };
     _cart=[]; renderCart();
     $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').html('Walk-in customer');
     _currentTx = null;
@@ -1238,8 +1254,10 @@ $(document).on('keydown',function(e){
         return;
     }
 
-    // Buffer printable characters
-    if(e.key.length===1){
+    // Buffer printable characters. `e.key` is undefined for some synthesised
+    // events (e.g. browser autofill, IME composition starts) — guard the read
+    // so the keydown handler doesn't blow up the whole POS page.
+    if(typeof e.key === 'string' && e.key.length === 1){
         _scanBuf+=e.key;
         _scanTimes.push(now);
         clearTimeout(_scanTimer);
@@ -1309,6 +1327,460 @@ $(function(){
     var st;$('#fSearch').on('input',function(){clearTimeout(st);_search=$(this).val().trim();st=setTimeout(function(){_page=1;if(_vMode)closeVehicleParts();else loadProducts();},300);});
     // Barcode scan: Enter key triggers scan-to-cart
     $('#fSearch').on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var v=$(this).val().trim();if(v)handleBarcodeScan(v);}});
+    // ───── Receipt print handlers (Sale Complete overlay) ─────
+    // Open the canonical receipt template (driven by Receipt-tab settings)
+    // in a new tab. The page auto-prints when the user clicks the "Print"
+    // toolbar button — the Receipt tab settings drive every detail
+    // (company block, QR, terms, format, etc.).
+    window.successPrintReceipt = function(printType) {
+        var d = window._smsLastOrder;
+        if (!d || !d.uuid) { toastr.warning('Order info missing — refresh and retry.'); return; }
+        var url = '/sales/receipt-preview?order=' + encodeURIComponent(d.uuid)
+            + '&print_type=' + encodeURIComponent(printType || 'original');
+        window.open(url, '_blank');
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Direct cart print — Print button on the Checkout panel
+    //
+    //  Sends the *current cart* (NOT a saved order) to the printer
+    //  assigned to the "receipt" role on /sales/printer-settings via
+    //  the local print agent on port 9998. Pure print — no AJAX save,
+    //  no stock touch, no order creation. Same agent path the Test
+    //  Print button uses.
+    //
+    //  Logo + UPI QR are embedded directly into the ESC/POS payload.
+    // ═══════════════════════════════════════════════════════════════
+    var _smsReceiptCache = null;       // cached settings for fast print
+    function _loadReceiptSettingsForPrint(cb) {
+        // Refresh on every print so the cashier always sees latest values.
+        $.get('/sales/settings/data', function(res) {
+            _smsReceiptCache = (res && res.data) || {};
+            cb(_smsReceiptCache);
+        }).fail(function() { cb(_smsReceiptCache || {}); });
+    }
+
+    // Convert a Bootstrap Image URL → ESC/POS raster bytes (GS v 0).
+    // Returns a Promise<string> with raw bytes; never rejects (resolves '' on
+    // any failure so the print still proceeds without the logo).
+    function _imgToEscpos(url, maxWidth) {
+        return new Promise(function(resolve) {
+            if (!url) return resolve('');
+            try {
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onerror = function() { resolve(''); };
+                img.onload = function() {
+                    try {
+                        maxWidth = maxWidth || 384;       // 80mm thermal max width
+                        var w = Math.min(maxWidth, img.naturalWidth || img.width);
+                        if (w % 8 !== 0) w = w - (w % 8);  // multiple of 8
+                        if (w <= 0) return resolve('');
+                        var ratio = (img.naturalWidth || img.width) / (img.naturalHeight || img.height || 1);
+                        var h = Math.max(1, Math.floor(w / ratio));
+                        var canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        var ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        var pixels = ctx.getImageData(0, 0, w, h).data;
+                        var bpr = w / 8, bytes = '';
+                        for (var y = 0; y < h; y++) {
+                            for (var b = 0; b < bpr; b++) {
+                                var byte = 0;
+                                for (var bit = 0; bit < 8; bit++) {
+                                    var x = b * 8 + bit, i = (y * w + x) * 4;
+                                    var gray = (pixels[i] + pixels[i+1] + pixels[i+2]) / 3;
+                                    var a = pixels[i+3];
+                                    if (a > 128 && gray < 128) byte |= (1 << (7 - bit));
+                                }
+                                bytes += String.fromCharCode(byte);
+                            }
+                        }
+                        var xL = bpr & 0xff, xH = (bpr >> 8) & 0xff;
+                        var yL = h   & 0xff, yH = (h   >> 8) & 0xff;
+                        // ESC a 1 (center) + GS v 0 m xL xH yL yH data + LF
+                        resolve('\x1ba\x01' + '\x1dv0\x00'
+                            + String.fromCharCode(xL) + String.fromCharCode(xH)
+                            + String.fromCharCode(yL) + String.fromCharCode(yH)
+                            + bytes + '\n');
+                    } catch (e) { resolve(''); }
+                };
+                img.src = url;
+            } catch (e) { resolve(''); }
+        });
+    }
+
+    // ESC/POS QR (GS ( k) — works on most modern thermal printers.
+    function _qrEscpos(data) {
+        if (!data) return '';
+        var fn = '\x1d\x28\x6b';
+        // Set model 2
+        var setModel = fn + '\x04\x00\x31\x41\x32\x00';
+        // Module size = 6 (decent at 80mm)
+        var setSize  = fn + '\x03\x00\x31\x43\x06';
+        // Error correction level M
+        var setEC    = fn + '\x03\x00\x31\x45\x31';
+        // Store the payload
+        var len = data.length + 3;
+        var pL = len & 0xff, pH = (len >> 8) & 0xff;
+        var store = fn + String.fromCharCode(pL) + String.fromCharCode(pH)
+                  + '\x31\x50\x30' + data;
+        // Print
+        var pr = fn + '\x03\x00\x31\x51\x30';
+        // Center, then back to left
+        return '\x1ba\x01' + setModel + setSize + setEC + store + pr + '\n' + '\x1ba\x00';
+    }
+
+    // ─── Build ESC/POS bytes from cart + settings ─────────────────
+    function _buildCartEscpos(cart, settings, logoBytes) {
+        var s = settings || {};
+        function pick(key, fallback) {
+            return (s[key] && String(s[key]).trim()) ? String(s[key]) : (fallback || '');
+        }
+        function on(key, def) {
+            var v = s[key];
+            if (v == null || v === '') return def !== false;
+            return v === '1' || v === true || v === 'true';
+        }
+
+        var ESC = '\x1b', GS = '\x1d';
+        var INIT      = ESC + '@';
+        var FONT_A    = ESC + 'M' + '\x00';   // pin Font A (12x24) — 42 cols on 80mm
+        // Leave the printer's natural left margin alone — that gives a
+        // symmetric ~2mm space on both sides via mechanical print head limits.
+        // If a specific printer needs explicit left padding (rare), set
+        // `pos_receipt_left_margin_dots` (e.g. 16 ≈ 1.3mm). 0 = flush left.
+        var marginDots = parseInt(s.pos_receipt_left_margin_dots);
+        var LEFT_MARGIN = (Number.isFinite(marginDots) && marginDots >= 0)
+            ? GS + 'L' + String.fromCharCode(marginDots & 0xff)
+                       + String.fromCharCode((marginDots >> 8) & 0xff)
+            : '';   // empty → don't touch printer's saved/default margin
+        var ALIGN_L   = ESC + 'a' + '\x00';
+        var ALIGN_C   = ESC + 'a' + '\x01';
+        var SIZE_NORM = ESC + '!' + '\x00';
+        var SIZE_BIG  = ESC + '!' + '\x30';
+        var SIZE_TALL = ESC + '!' + '\x10';
+        var BOLD_ON   = ESC + 'E' + '\x01';
+        var BOLD_OFF  = ESC + 'E' + '\x00';
+        var CUT       = GS  + 'V' + '\x00';
+
+        // 48 cols at Font B is the most common configuration that prints
+        // edge-to-edge on 80mm paper, leaving only the printer's natural
+        // ~2mm mechanical margin on each side. Settings can override via
+        // pos_receipt_print_cols (e.g. 32 for narrow / 42 for Font A).
+        var COLS = parseInt(s.pos_receipt_print_cols) || 48;
+        if (COLS < 24 || COLS > 64) COLS = 48;
+        var SEP  = '-'.repeat(COLS);
+
+        // Pick font based on column width: ≥48 → Font B (small, fills paper),
+        // <48 → Font A (default size). This must be set before any printing.
+        var FONT_PIN = COLS >= 48
+            ? (ESC + 'M' + '\x01')   // Font B
+            : (ESC + 'M' + '\x00');  // Font A
+
+        function padR(t, n) { t = String(t || ''); return t.length >= n ? t.slice(0, n) : t + ' '.repeat(n - t.length); }
+        function padL(t, n) { t = String(t || ''); return t.length >= n ? t.slice(-n) : ' '.repeat(n - t.length) + t; }
+        function row2(l, r) {
+            l = String(l || ''); r = String(r || '');
+            var space = Math.max(1, COLS - l.length - r.length);
+            if (l.length + r.length >= COLS) return l.slice(0, COLS - r.length - 1) + ' ' + r;
+            return l + ' '.repeat(space) + r;
+        }
+        function wrap(t, width) {
+            t = String(t || ''); if (!t) return [];
+            var out = [], words = t.split(/\s+/), cur = '';
+            for (var i = 0; i < words.length; i++) {
+                var w = words[i];
+                if ((cur + ' ' + w).trim().length > width) { if (cur) out.push(cur); cur = w; }
+                else cur = cur ? cur + ' ' + w : w;
+            }
+            if (cur) out.push(cur);
+            return out;
+        }
+        function fmt(n) { return Number(n || 0).toFixed(2); }
+
+        // ── Settings → display ──
+        var company = pick('pos_receipt_company_name', 'Your Company');
+        var tagline = pick('pos_receipt_tagline', '');
+        var address = pick('pos_receipt_address', '');
+        var city    = pick('pos_receipt_city', '');
+        var pincode = pick('pos_receipt_pincode', '');
+        var phone   = pick('pos_receipt_phone', '');
+        var altPh   = pick('pos_receipt_alt_mobile', '');
+        var email   = pick('pos_receipt_email', '');
+        var website = pick('pos_receipt_website', '');
+        var taxLine = pick('pos_receipt_tax_line', '');
+        var counter = pick('pos_receipt_counter_no', '');
+        var headerTxt = s.pos_receipt_header || '';
+        var footerTxt = s.pos_receipt_footer || '';
+        var thanks    = s.pos_receipt_thank_you || 'Thank you!';
+        var policy    = s.pos_receipt_return_policy || '';
+        var terms     = s.pos_receipt_terms || '';
+        var upiId     = s.pos_receipt_upi_id || '';
+        var upiPayee  = s.pos_receipt_upi_payee_name || company;
+        var currency  = s.pos_receipt_currency_symbol || (window.SMS_CURRENCY || 'Rs.');
+
+        var showGst       = on('pos_receipt_show_gst');
+        var showCustomer  = on('pos_receipt_show_customer');
+        var showCashier   = on('pos_receipt_show_cashier');
+        var showInvNum    = on('pos_receipt_show_invoice_number');
+        var showDisc      = on('pos_receipt_show_discount');
+        var showTaxBd     = on('pos_receipt_show_tax_breakdown');
+        var showPay       = on('pos_receipt_show_payment_method');
+        var showQr        = on('pos_receipt_show_qr');
+        var showTerms     = on('pos_receipt_show_terms', false);
+        var showLogo      = on('pos_receipt_show_logo');
+
+        // ── Cart roll-up ──
+        var subtotal = 0;
+        var lines = (cart || []).map(function(c) {
+            var qty  = parseInt(c.quantity) || 1;
+            var rate = parseFloat(c.unit_price) || 0;
+            var amt  = parseFloat(c.total_price) || (qty * rate);
+            subtotal += amt;
+            return { name: c.item_name || '', qty: qty, rate: rate, amt: amt };
+        });
+        var dType = $('#dType').val() || '';
+        var dVal  = parseFloat($('#dVal').val()) || 0;
+        var discountAmt = 0;
+        if (dType === 'percent') discountAmt = subtotal * (dVal / 100);
+        else if (dType === 'fixed') discountAmt = dVal;
+        if (discountAmt > subtotal) discountAmt = subtotal;
+        var taxableBase = subtotal - discountAmt;
+        var taxTotal = parseFloat(($('#cTaxArea').data('total') || 0)) || 0;
+        // Read parsed tax rows out of #cTaxArea if available.
+        var taxRows = [];
+        $('#cTaxArea .tax-row').each(function() {
+            var nm = $(this).find('.tax-name').text() || '';
+            var amt = parseFloat($(this).find('.tax-amt').text().replace(/[^0-9.\-]/g, '')) || 0;
+            if (amt > 0) taxRows.push({ name: nm, amount: amt });
+            taxTotal += amt;
+        });
+        if (taxRows.length === 0 && $('#cTotal').length) {
+            var totalTxt = parseFloat($('#cTotal').text().replace(/[^0-9.\-]/g, '')) || (taxableBase);
+            taxTotal = Math.max(0, totalTxt - taxableBase);
+        }
+        var grandTotal = taxableBase + taxTotal;
+
+        // Customer chip
+        var custName = ($('#custResult').text() || '').trim();
+        if (!custName || /walk/i.test(custName)) custName = 'Walk-in';
+        var notes = $('#oNotes').val() || '';
+
+        // Date / time
+        var d = new Date();
+        var dd = String(d.getDate()).padStart(2,'0');
+        var mm = String(d.getMonth()+1).padStart(2,'0');
+        var yy = d.getFullYear();
+        var h = d.getHours(), mi = String(d.getMinutes()).padStart(2,'0');
+        var ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+        var dateStr = dd + '-' + mm + '-' + yy;
+        var timeStr = String(h).padStart(2,'0') + ':' + mi + ' ' + ap;
+
+        // Column widths scale with paper width.
+        //   48 cols (Font B): name=24, qty=4, rate=9, amt=11
+        //   42 cols (Font A): name=20, qty=4, rate=8, amt=10
+        //   32 cols (narrow): name=14, qty=4, rate=7, amt=7
+        var QTY_W  = 4;
+        var RATE_W = COLS >= 48 ? 9  : (COLS >= 40 ? 8  : 7);
+        var AMT_W  = COLS >= 48 ? 11 : (COLS >= 40 ? 10 : 7);
+        var NAME_W = COLS - QTY_W - RATE_W - AMT_W;
+
+        // ── Compose ──
+        // 1. INIT — reset the printer to defaults (also restores the
+        //    printer's saved left margin, which gives symmetric paper margins).
+        // 2. LEFT_MARGIN — only emitted when an explicit override is set in
+        //    settings; otherwise we leave the printer's default alone.
+        // 3. FONT_PIN — Font A or Font B based on COLS so columns line up.
+        var out = INIT + LEFT_MARGIN + FONT_PIN;
+        if (showLogo && logoBytes) out += logoBytes;
+
+        out += ALIGN_C + SIZE_BIG + BOLD_ON + company + '\n' + BOLD_OFF + SIZE_NORM;
+        if (tagline) out += ALIGN_C + tagline + '\n';
+        if (address) wrap(address.replace(/\n/g, ', '), COLS).forEach(function(l){ out += ALIGN_C + l + '\n'; });
+        if (city || pincode) out += ALIGN_C + [city, pincode].filter(Boolean).join(' ') + '\n';
+        if (phone || altPh)  out += ALIGN_C + 'Mo: ' + [phone, altPh].filter(Boolean).join(' / ') + '\n';
+        if (email || website) out += ALIGN_C + [email, website].filter(Boolean).join(' · ') + '\n';
+        if (showGst && taxLine) out += ALIGN_C + taxLine + '\n';
+        if (headerTxt) out += ALIGN_C + headerTxt + '\n';
+        out += ALIGN_L + SEP + '\n';
+
+        // ── Bill / Date / Time / User / Counter ──
+        // All four lines print so the cashier or auditor can identify
+        // exactly which counter and shift produced this bill.
+        if (showInvNum) out += row2('Bill: PREVIEW', 'Date: ' + dateStr) + '\n';
+        else            out += row2('', 'Date: ' + dateStr) + '\n';
+        out += row2('Time: ' + timeStr,
+            showCashier ? ('User: ' + ((window.SMS_USER && SMS_USER.name) || 'Cashier')) : '') + '\n';
+        if (counter) out += row2('Counter: ' + counter, '') + '\n';
+
+        // ── Customer block ──
+        if (showCustomer) {
+            out += SEP + '\n';
+            out += 'Customer: ' + custName + '\n';
+            // Pull phone / GST out of the cached customer record set when
+            // the cashier picked someone (window._smsCurrentCustomer).
+            var c = window._smsCurrentCustomer || {};
+            if (c.phone)      out += 'Mobile  : ' + c.phone + '\n';
+            if (c.gst_number) out += 'GSTIN   : ' + c.gst_number + '\n';
+        }
+
+        out += SEP + '\n';
+        out += BOLD_ON
+             + padR('Item', NAME_W)
+             + padL('Qty',  QTY_W)
+             + padL('Rate', RATE_W)
+             + padL('Amt',  AMT_W) + '\n'
+             + BOLD_OFF;
+        out += SEP + '\n';
+
+        for (var i = 0; i < lines.length; i++) {
+            var ln = lines[i];
+            var nameLines = wrap(ln.name, NAME_W);
+            if (nameLines.length === 0) nameLines = [''];
+            out += padR(nameLines[0], NAME_W)
+                 + padL(String(ln.qty), QTY_W)
+                 + padL(fmt(ln.rate),  RATE_W)
+                 + padL(fmt(ln.amt),   AMT_W) + '\n';
+            for (var k = 1; k < nameLines.length; k++) out += '  ' + nameLines[k] + '\n';
+        }
+
+        out += SEP + '\n';
+        out += row2('Subtotal', currency + ' ' + fmt(subtotal)) + '\n';
+        if (showDisc && discountAmt > 0) out += row2('Discount', '- ' + currency + ' ' + fmt(discountAmt)) + '\n';
+        if (taxRows.length && showTaxBd) {
+            for (var t = 0; t < taxRows.length; t++) {
+                out += row2('  ' + taxRows[t].name, currency + ' ' + fmt(taxRows[t].amount)) + '\n';
+            }
+        } else if (taxTotal > 0) {
+            out += row2('Tax', currency + ' ' + fmt(taxTotal)) + '\n';
+        }
+        out += SEP + '\n';
+        out += BOLD_ON + SIZE_TALL + row2('TOTAL', currency + ' ' + fmt(grandTotal)) + '\n' + SIZE_NORM + BOLD_OFF;
+
+        // Notes
+        if (notes) {
+            out += SEP + '\n';
+            wrap(notes, COLS).forEach(function(l){ out += l + '\n'; });
+        }
+
+        // QR for UPI
+        if (showQr && upiId) {
+            var upiUrl = 'upi://pay?pa=' + encodeURIComponent(upiId)
+                       + '&pn=' + encodeURIComponent(upiPayee)
+                       + '&am=' + fmt(grandTotal)
+                       + '&cu=' + (currency === '₹' ? 'INR' : 'USD');
+            out += SEP + '\n';
+            out += ALIGN_C + 'Scan & Pay (UPI)\n' + ALIGN_L;
+            out += _qrEscpos(upiUrl);
+            out += ALIGN_C + upiId + '\n' + ALIGN_L;
+        }
+
+        out += SEP + '\n';
+        if (thanks) out += ALIGN_C + BOLD_ON + thanks + '\n' + BOLD_OFF + ALIGN_L;
+        if (policy) wrap(policy, COLS).forEach(function(l){ out += ALIGN_C + l + '\n'; });
+        if (showTerms && terms) {
+            out += SEP + '\n';
+            wrap(terms, COLS).forEach(function(l){ out += l + '\n'; });
+        }
+        if (footerTxt) {
+            out += SEP + '\n';
+            wrap(footerTxt, COLS).forEach(function(l){ out += ALIGN_C + l + '\n'; });
+            out += ALIGN_L;
+        }
+
+        out += '\n\n\n' + CUT;
+        return out;
+    }
+
+    // ─── Print button click — pure silent print, no save ──────────
+    window.cartPrintNow = function() {
+        if (!window._cart || !window._cart.length) {
+            if (window.toastr) toastr.warning('Cart is empty');
+            return;
+        }
+        var assigned = (window._posPrinters || {}).receipt;
+        if (!assigned || !assigned.kind) {
+            if (window.toastr) toastr.warning('No receipt printer assigned. Open Printer Settings.');
+            return;
+        }
+        var $btn = $('#coPrint').prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Printing...');
+        function reset(){ $btn.prop('disabled', false).html('<i class="bi bi-printer me-1"></i>Print'); }
+
+        _loadReceiptSettingsForPrint(function(settings) {
+            // Try to load logo bitmap; resolves '' on any failure.
+            var logoUrl = settings.pos_receipt_logo_url || '';
+            _imgToEscpos(logoUrl, 384).then(function(logoBytes) {
+                var data = _buildCartEscpos(window._cart, settings, logoBytes);
+                $.ajax({
+                    url: 'http://localhost:9998/print-to', method: 'POST',
+                    contentType: 'application/json', timeout: 12000,
+                    data: JSON.stringify({ target: assigned, data: data }),
+                }).done(function(r) {
+                    reset();
+                    if (r && r.ok) {
+                        if (window.toastr) toastr.success('Printed on ' + (assigned.name || 'printer'));
+                    } else {
+                        if (window.toastr) toastr.error((r && r.error) || 'Print failed');
+                    }
+                }).fail(function(xhr) {
+                    reset();
+                    var msg = (xhr.responseJSON && xhr.responseJSON.error)
+                        || xhr.statusText
+                        || 'Print agent unreachable (port 9998). Is it running?';
+                    if (window.toastr) toastr.error(msg);
+                });
+            });
+        });
+    };
+
+    // ───── Direct silent print to the assigned 80mm receipt printer ─────
+    // No popup, no browser print dialog. The receipt is rendered to ESC/POS
+    // bytes server-side and POSTed straight to the local print agent on
+    // localhost:9998 — exact same path the "Test Print" button uses on
+    // /sales/printer-settings.
+    window.autoPrintReceipt = function(orderUuid) {
+        if (!orderUuid) return;
+        var assigned = (window._posPrinters || {}).receipt;
+        if (!assigned || !assigned.kind) {
+            if (window.toastr) toastr.warning('No receipt printer assigned. Open Printer Settings to assign one.');
+            return;
+        }
+        var label = assigned.name || (assigned.kind + ' printer');
+        if (window.toastr) toastr.info('Sending receipt to ' + label + '…');
+
+        // 1. Fetch the ESC/POS payload for this order from the backend.
+        $.ajax({
+            url: '/sales/orders/' + encodeURIComponent(orderUuid) + '/receipt-escpos',
+            method: 'GET', dataType: 'text', timeout: 8000,
+        }).done(function(data) {
+            // 2. POST to the local print agent — same shape as test-print.
+            $.ajax({
+                url: 'http://localhost:9998/print-to', method: 'POST',
+                contentType: 'application/json', timeout: 10000,
+                data: JSON.stringify({ target: assigned, data: data }),
+            }).done(function(r) {
+                if (r && r.ok) {
+                    if (window.toastr) toastr.success('Printed on ' + label);
+                } else {
+                    if (window.toastr) toastr.error((r && r.error) || 'Print failed on agent');
+                }
+            }).fail(function(xhr) {
+                var msg = (xhr.responseJSON && xhr.responseJSON.error) || xhr.statusText || 'Print agent unreachable (port 9998)';
+                if (window.toastr) toastr.error(msg);
+            });
+        }).fail(function() {
+            if (window.toastr) toastr.error('Could not load receipt for printing.');
+        });
+    };
+    // A4 invoice → PDF rendered server-side from the same order data.
+    window.successPrintA4 = function() {
+        var d = window._smsLastOrder;
+        if (!d || !d.uuid) { toastr.warning('Order info missing — refresh and retry.'); return; }
+        window.open('/sales/orders/' + d.uuid + '/invoice', '_blank');
+    };
+
     // Re-focus search box after modal close / any click on empty area
     $(document).on('click','.pos-content',function(e){if(!$(e.target).closest('input,select,textarea,button,a,.pc,.ci-wrap').length)$('#fSearch').focus();});
     var vst;$('#vPartSearch').on('input',function(){clearTimeout(vst);vst=setTimeout(function(){loadVehiclePartsFiltered();},300);});

@@ -41,7 +41,12 @@ router.get('/taxes', Ctrl.taxes);
 router.get('/orders', Ctrl.ordersPage);
 router.post('/orders/paginate', Ctrl.ordersPaginate);
 router.post('/orders/export', Ctrl.ordersExport);
+// JSON endpoint (used by the orders list popup, search, refresh, etc.)
 router.get('/orders/:uuid', Ctrl.orderShow);
+// Full POS-style detail page (POS layout, parts breakdown, action buttons)
+router.get('/orders/:uuid/view', Ctrl.orderDetailPage);
+// ESC/POS bytes for direct silent thermal printing via the local print agent.
+router.get('/orders/:uuid/receipt-escpos', Ctrl.orderReceiptEscpos);
 router.post('/orders/:uuid/cancel', Ctrl.orderCancel);
 router.post('/orders/:uuid/payment', Ctrl.orderPayment);
 router.get('/orders/:uuid/invoice', Ctrl.orderInvoice);
@@ -65,6 +70,9 @@ router.get('/vehicle-detail/:uuid', Ctrl.vehicleDetail);
 router.get('/settings', Ctrl.settingsPage);
 router.get('/settings/data', Ctrl.settingsGet);
 router.put('/settings', Ctrl.settingsUpdate);
+// File uploads for receipt assets — kind = logo | qr | signature
+router.post('/settings/upload/:kind', Ctrl.settingsUpload);
+router.get('/receipt-preview', Ctrl.receiptPreview);
 
 // Returns
 router.get('/returns', Ctrl.returnsPage);

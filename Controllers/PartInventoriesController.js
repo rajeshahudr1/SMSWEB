@@ -42,6 +42,16 @@ exports.edit = async (req, res) => {
         (req.session.user && req.session.user.is_super_admin) ? getOrgs(req.session.token) : Promise.resolve([])
     ]);
     if (r.status !== 200) { req.flash('error', 'Not found.'); return res.redirect('/part-inventories'); }
+    // ─── DEBUG: log what SMSWEB receives from API and sends to EJS ───
+    console.log('[WEB] /part-inventories/' + req.params.uuid + '/edit', {
+        api_status: r.status,
+        record_quantity: r.data && r.data.quantity,
+        record_inventory_status: r.data && r.data.inventory_status,
+        record_sold_count: r.data && r.data.sold_count,
+        locations_length: r.data && r.data.locations ? r.data.locations.length : 0,
+        location_statuses: r.data && Array.isArray(r.data.locations)
+            ? r.data.locations.map((l) => l.unit_status) : [],
+    });
     res.render('part-inventories/form', {
         page_title: 'Edit Part', activeLink: 'part-inventories',
         breadcrumbs: [{ name: 'Dashboard', url: '/dashboard' }, { name: 'Part Inventory', url: '/part-inventories' }, { name: 'Edit', url: '' }],

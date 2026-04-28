@@ -19,9 +19,15 @@ app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 
 // ── Cross-Origin headers (required for FFmpeg WASM / SharedArrayBuffer) ──
-// Skip COEP on payment pages (Razorpay/Stripe load external scripts)
+// Skip COEP on any page that loads third-party payment SDKs (Razorpay/Stripe).
+// `require-corp` blocks scripts served without `Cross-Origin-Resource-Policy`,
+// which Razorpay's checkout.js and Stripe's v3 do not set.
 app.use((req, res, next) => {
-    const isPaymentPage = req.path.startsWith('/subscriptions/payment') || req.path === '/choose-plan';
+    const p = req.path || '';
+    const isPaymentPage =
+        p.startsWith('/subscriptions/payment') ||
+        p === '/choose-plan' ||
+        p.startsWith('/sales');             // POS checkout uses Razorpay/Stripe inline
     if (!isPaymentPage) {
         res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
         res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
@@ -30,7 +36,16 @@ app.use((req, res, next) => {
 });
 
 // ── Static files ──────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+// Disable browser caching for static files. The CSS/JS are mostly small,
+// the page-loads few, and this saves an entire class of "user reports a bug
+// that's already fixed because they're on stale assets" support tickets.
+app.use(express.static(path.join(__dirname, 'public'), {
+    etag: false,
+    lastModified: false,
+    setHeaders(res) {
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+    },
+}));
 
 // ── Body parsers ──────────────────────────────────
 app.use(bodyParser.json());

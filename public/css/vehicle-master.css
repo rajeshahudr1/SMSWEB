@@ -75,6 +75,12 @@
 }
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background: var(--tblr-primary, #0054a6) !important;
+    color: #fff !important;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] *,
+.select2-container--default .select2-results__option--highlighted[aria-selected] small,
+.select2-container--default .select2-results__option--highlighted[aria-selected] .text-muted {
+    color: #fff !important;
 }
 .select2-container--default .select2-results__option[aria-selected=true] {
     background: var(--tblr-bg-surface-secondary, #f4f6fa) !important;

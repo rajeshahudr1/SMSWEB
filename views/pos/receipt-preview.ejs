@@ -1,0 +1,542 @@
+<%
+/**
+ * Receipt Preview / Print
+ *
+ * Renders the canonical thermal receipt for the organisation. Two modes:
+ *   • Preview  (no order in locals) — sample data is filled in.
+ *   • Live     (locals.order present) — actual order data is rendered.
+ *
+ * Locals expected:
+ *   settings  — all POS_RECEIPT_* keys (overrides for company block, UPI, toggles)
+ *   invoice   — org-level invoice profile (legal_name, address, gst_number, …)
+ *   order     — pos_orders row (optional). If present, items + totals + payment
+ *               come from the order; otherwise sample data is used.
+ *   customer  — pos_customers row (optional)
+ *   org       — organizations row fallback for any field not on `invoice`
+ *   printType — 'original' | 'duplicate' (default = settings.default_print_type)
+ *   printCount — current copy number for the "Original / Duplicate" stamp
+ */
+const s   = (typeof settings  !== 'undefined' && settings)  ? settings  : {};
+const inv = (typeof invoice   !== 'undefined' && invoice)   ? invoice   : {};
+const o   = (typeof order     !== 'undefined' && order)     ? order     : null;
+const cu  = (typeof customer  !== 'undefined' && customer)  ? customer  : null;
+const og  = (typeof org       !== 'undefined' && org)       ? org       : {};
+// Resolve print type / copy count up front into local aliases — referencing
+// `typeof printType` inside a `const printType = …` line throws TDZ in EJS.
+const _printType = (typeof printType  !== 'undefined' && printType)
+    ? String(printType)
+    : (s.pos_receipt_default_print_type || 'original');
+const _printCount = (typeof printCount !== 'undefined' && parseInt(printCount))
+    ? parseInt(printCount)
+    : 1;
+
+function pick(key, fallback) {
+    if (s[key] && String(s[key]).trim()) return s[key];
+    if (fallback) return fallback;
+    return '';
+}
+function on(key, defaultOn) {
+    const v = s[key];
+    if (v == null || v === '') return defaultOn !== false;
+    return v === '1' || v === true || v === 'true';
+}
+
+// Company block — settings override → invoice profile → org row.
+const company   = pick('pos_receipt_company_name', inv.legal_name || og.company_name || 'Your Company');
+const tagline   = pick('pos_receipt_tagline', '');
+const phone     = pick('pos_receipt_phone', og.phone || '');
+const altPhone  = pick('pos_receipt_alt_mobile', '');
+const email     = pick('pos_receipt_email', og.email || '');
+const website   = pick('pos_receipt_website', og.website || '');
+const city      = pick('pos_receipt_city', '');
+const pincode   = pick('pos_receipt_pincode', og.zip_code || '');
+const address   = pick('pos_receipt_address', inv.billing_address || og.address || '');
+const taxLine   = pick('pos_receipt_tax_line',
+    inv.gst_number ? ('GSTIN: ' + inv.gst_number) : (og.gst_number ? ('GSTIN: ' + og.gst_number) : ''));
+const logoUrl   = s.pos_receipt_logo_url || og.logo || '';
+const counterNo = pick('pos_receipt_counter_no', '');
+
+const headerTxt = s.pos_receipt_header || '';
+const footerTxt = s.pos_receipt_footer || '';
+const thanks    = s.pos_receipt_thank_you || 'Thank you for your business!';
+const policy    = s.pos_receipt_return_policy || '';
+const terms     = s.pos_receipt_terms || inv.invoice_terms || '';
+const extraChrgLabel = pick('pos_receipt_extra_charges_label', 'Extra Charges');
+
+const upiId       = s.pos_receipt_upi_id || '';
+const upiPayee    = s.pos_receipt_upi_payee_name || company;
+
+const currency  = s.pos_receipt_currency_symbol || '₹';
+const size      = s.pos_receipt_size || '80mm';
+
+// Visibility toggles — all on by default for first-time users.
+const showLogo     = on('pos_receipt_show_logo');
+const showGst      = on('pos_receipt_show_gst');
+const showTaxBd    = on('pos_receipt_show_tax_breakdown');
+const showDisc     = on('pos_receipt_show_discount');
+const showCashier  = on('pos_receipt_show_cashier');
+const showCustomer = on('pos_receipt_show_customer');
+const showInvNum   = on('pos_receipt_show_invoice_number');
+const showBarcode  = on('pos_receipt_show_barcode');
+const showQr       = on('pos_receipt_show_qr');
+const showPay      = on('pos_receipt_show_payment_method');
+const showSig      = on('pos_receipt_show_signature', false);
+const showTerms    = on('pos_receipt_show_terms', false);
+
+const acceptedModes = (s.pos_receipt_payment_modes || '')
+    .split(',').map(m => m.trim()).filter(Boolean);
+const modeLabels = {
+    cash: 'Cash', card: 'Card', upi: 'UPI', wallet: 'Wallet',
+    netbanking: 'Net Banking', bank_transfer: 'Bank Transfer',
+    cheque: 'Cheque', credit: 'Credit',
+};
+
+// ── Order data (live or sample) ──────────────────────────────
+const items   = o && Array.isArray(o.items) ? o.items : [
+    { name: 'Engine Mount',   qty: 1, unit: 'pcs', rate: 2500, amount: 2500 },
+    { name: 'Tyre 195/55 R16', qty: 2, unit: 'pcs', rate: 800,  amount: 1600 },
+    { name: 'Battery 12V 60Ah', qty: 1, unit: 'pcs', rate: 900, amount: 900  },
+];
+
+const subtotal      = o ? Number(o.subtotal || 0)      : items.reduce((s, i) => s + Number(i.amount || 0), 0);
+const discountAmt   = o ? Number(o.discount_amount || 0) : 200;
+const extraChrgAmt  = o ? Number(o.extra_charges || 0)   : 0;
+const taxableBase   = subtotal - discountAmt + extraChrgAmt;
+const taxBreakdown  = o && o.tax_breakdown ? (typeof o.tax_breakdown === 'string' ? JSON.parse(o.tax_breakdown) : o.tax_breakdown) : [];
+let cgst = 0, sgst = 0, igst = 0;
+if (taxBreakdown.length) {
+    for (const t of taxBreakdown) {
+        const nm = String(t.tax_name || '').toUpperCase();
+        if (nm.includes('CGST')) cgst += Number(t.amount || 0);
+        else if (nm.includes('SGST')) sgst += Number(t.amount || 0);
+        else if (nm.includes('IGST')) igst += Number(t.amount || 0);
+    }
+} else if (!o) {
+    cgst = +(taxableBase * 0.09).toFixed(2);
+    sgst = +(taxableBase * 0.09).toFixed(2);
+}
+const taxTotal     = o ? Number(o.tax_total || 0) : (cgst + sgst + igst);
+const grandTotal   = o ? Number(o.total_amount || 0) : +(taxableBase + taxTotal).toFixed(2);
+const paidAmount   = o ? Number(o.amount_paid || 0)  : grandTotal;
+const balanceDue   = o ? Number(o.amount_due || 0)   : 0;
+const paymentMode  = o ? String(o.payment_method || 'cash') : 'cash';
+const paymentRef   = o ? (o.payment_reference || '')        : '';
+const orderNumber  = o ? (o.order_number || ('INV-PREVIEW')) : ((inv.invoice_prefix || 'INV') + '-PREVIEW');
+const orderDate    = o ? new Date(o.created_at || Date.now()) : new Date();
+const cashierName  = o && o._cashier_name ? o._cashier_name : (typeof user !== 'undefined' && user ? user.name : 'Demo User');
+
+// Customer
+const custName    = (cu && cu.name) || (o && o._customer_name) || 'Walk-in';
+const custMobile  = (cu && cu.phone) || '';
+const custAddress = (cu && cu.address) || '';
+const custGst     = (cu && cu.gst_number) || '';
+const custType    = (cu && cu.customer_type) || '';
+
+// Vehicle / scrap (when present)
+const vehicleNo    = o && o._vehicle_plate    ? o._vehicle_plate    : '';
+const vehicleType  = o && o._vehicle_type     ? o._vehicle_type     : '';
+const vehicleModel = o && o._vehicle_model    ? o._vehicle_model    : '';
+const scrapWeight  = o && o._scrap_weight     ? Number(o._scrap_weight)     : 0;
+const scrapRate    = o && o._scrap_rate       ? Number(o._scrap_rate)       : 0;
+const scrapValue   = o && o._scrap_value      ? Number(o._scrap_value)      : (scrapWeight * scrapRate);
+const txnType      = o && o._transaction_type ? o._transaction_type : 'PARTS SALE';
+
+// Format helpers
+function fmtN(n) { return Number(n || 0).toFixed(2); }
+function fmtDate(d) {
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    return dd + '-' + mm + '-' + yyyy;
+}
+function fmtTime(d) {
+    let h = d.getHours(); const m = String(d.getMinutes()).padStart(2,'0');
+    const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    return String(h).padStart(2,'0') + ':' + m + ' ' + ap;
+}
+
+// UPI QR string per UPI Linking Spec — encodable into a real QR.
+const qrAmount = grandTotal - paidAmount > 0 ? (grandTotal - paidAmount) : grandTotal;
+const upiUrl = upiId
+    ? ('upi://pay?pa=' + encodeURIComponent(upiId)
+        + '&pn=' + encodeURIComponent(upiPayee)
+        + '&am=' + qrAmount.toFixed(2)
+        + '&cu=' + encodeURIComponent(currency === '₹' ? 'INR' : 'USD')
+        + '&tn=' + encodeURIComponent(orderNumber))
+    : '';
+%>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Receipt — <%= orderNumber %></title>
+<script src="/libs/js/qrcode-generator.js"></script>
+<style>
+:root {
+  --rc-fg: #1a1a1a;
+  --rc-muted: #6b7280;
+  --rc-soft: #9ca3af;
+  --rc-border: #e5e7eb;
+  --rc-accent: #111;
+  --rc-grand-bg: #111;
+  --rc-grand-fg: #fff;
+  --rc-mono: 'JetBrains Mono','Courier New', Menlo, monospace;
+  --rc-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; }
+body { background:#eaeef2; margin:0; padding:0; font-family: var(--rc-sans); color:#1a2332; }
+
+/* Toolbar strip */
+.preview-shell { max-width: 100%; margin: 0 auto; padding: 18px 24px 60px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.preview-shell h1 { font-size:18px; font-weight:700; margin:0 0 4px; align-self: flex-start; max-width: 720px; width: 100%; }
+.preview-shell .lead { color:#6b7280; font-size:13px; margin-bottom: 14px; align-self: flex-start; max-width: 720px; width: 100%; }
+.toolbar { display:flex; gap:8px; margin-bottom:22px; flex-wrap: wrap; align-self: flex-start; max-width: 720px; width: 100%; }
+.toolbar button, .toolbar a { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; color:inherit; }
+.toolbar button:hover, .toolbar a:hover { background:#f9fafb; }
+.toolbar .primary { background:#0f766e; color:#fff; border-color:#0f766e; }
+.toolbar .primary:hover { background:#115e59; }
+
+/* ───────── Receipt — clean professional template ───────── */
+.receipt {
+  position: relative;
+  background:#fff; color:var(--rc-fg);
+  font-family: var(--rc-sans);
+  font-size: 12.5px; line-height: 1.55;
+  padding: 22px 22px 14px;
+  margin: 0 auto;
+  filter: drop-shadow(0 12px 28px rgba(11,18,32,.12));
+}
+/* Wavy top + bottom edges using SVG mask — gives the "torn paper" feel
+   real thermal receipts have. Falls back to plain edges in old browsers. */
+.receipt::before, .receipt::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 8px;
+  background-color: #fff;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 8' preserveAspectRatio='none'><path d='M0 0 L4 6 L8 0 L12 6 L16 0 L16 8 L0 8 Z' fill='black'/></svg>");
+          mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 8' preserveAspectRatio='none'><path d='M0 0 L4 6 L8 0 L12 6 L16 0 L16 8 L0 8 Z' fill='black'/></svg>");
+  -webkit-mask-size: 16px 8px; mask-size: 16px 8px;
+  -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x;
+}
+.receipt::before { top: -8px; transform: rotate(180deg); }
+.receipt::after  { bottom: -8px; }
+
+.receipt.r80 { width: 320px; }
+.receipt.r58 { width: 240px; font-size: 11px; padding: 18px 18px 12px; }
+.receipt.rA4 { width: 100%; max-width: 720px; padding: 40px 56px; font-size: 13.5px; line-height: 1.55; }
+
+/* Headings */
+.receipt .center  { text-align:center; }
+.receipt .right   { text-align:right; }
+.receipt .muted   { color: var(--rc-muted); font-size: 11px; }
+.receipt .small   { font-size: 10.5px; color: var(--rc-soft); }
+.receipt .num     { font-family: var(--rc-mono); font-variant-numeric: tabular-nums; }
+
+/* Dividers — alternating styles for visual rhythm */
+.receipt hr { border:0; border-top:1px dashed var(--rc-border); margin: 8px 0; }
+.receipt hr.solid { border-top:1px solid var(--rc-fg); margin: 10px 0; }
+.receipt hr.thick { border-top:2px solid var(--rc-fg); margin: 10px 0 4px; }
+
+/* Logo + brand block */
+.receipt .logo { max-width:140px; max-height:64px; display:block; margin: 0 auto 8px; }
+.receipt .company-name {
+  font-weight:800; font-size:17px; letter-spacing:-0.2px;
+  text-transform: uppercase; line-height: 1.2;
+}
+.receipt .tagline { font-style: italic; font-size: 11.5px; color: var(--rc-muted); margin-top: 2px; }
+.receipt .contact { font-size: 11px; color: var(--rc-muted); margin-top: 4px; line-height: 1.5; }
+.receipt .gstin   { font-size: 10.5px; color: var(--rc-fg); margin-top: 4px; font-weight:600; letter-spacing: 0.3px; }
+
+/* Two-column rows (label · value) */
+.receipt .row { display:flex; justify-content:space-between; gap:8px; align-items: baseline; }
+.receipt .row .l { color: var(--rc-muted); font-size: 11.5px; }
+.receipt .row .r { color: var(--rc-fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Section caption like "ITEMS" */
+.receipt .section-cap {
+  text-align:center; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 2px; color: var(--rc-muted);
+  text-transform: uppercase; margin: 6px 0 4px;
+}
+
+/* Items table */
+.receipt table { width:100%; border-collapse: collapse; }
+.receipt th, .receipt td { padding: 4px 0; vertical-align: top; }
+.receipt thead th {
+  font-weight:700; font-size:9.5px; letter-spacing:1.2px;
+  border-top: 1px solid var(--rc-fg); border-bottom: 1px solid var(--rc-fg);
+  text-align:left; padding: 5px 0; color: var(--rc-fg); text-transform: uppercase;
+}
+.receipt th.right, .receipt td.right { text-align:right; }
+.receipt tbody td { border-bottom: 1px dashed var(--rc-border); font-size: 12px; }
+.receipt tbody tr:last-child td { border-bottom: none; }
+.receipt .item-name { word-break: break-word; font-weight: 500; }
+
+/* Grand total — black filled bar, white text. The hero element of the receipt. */
+.receipt .grand-bar {
+  background: var(--rc-grand-bg); color: var(--rc-grand-fg);
+  margin: 10px -22px 4px;
+  padding: 12px 22px;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.receipt.r58 .grand-bar { margin: 8px -18px 4px; padding: 10px 18px; }
+.receipt.rA4 .grand-bar { margin: 12px -56px 4px; padding: 14px 56px; }
+.receipt .grand-bar .l { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
+.receipt .grand-bar .r { font-family: var(--rc-mono); font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
+
+/* Stamp (Original / Duplicate) */
+.receipt .stamp {
+  border:1px dashed var(--rc-fg); display:inline-block; padding: 2px 10px;
+  font-size: 9.5px; color:var(--rc-fg); letter-spacing: 2px; text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* QR block */
+.receipt .qr-block { text-align:center; margin-top: 10px; padding: 10px 0; }
+.receipt .qr-block img,
+.receipt .qr-block canvas,
+.receipt .qr-block table { margin: 0 auto; }
+.receipt .qr-block .qr-cap { font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--rc-muted); margin-bottom: 6px; }
+.receipt .qr-block .upi { font-size: 10.5px; color: var(--rc-fg); margin-top: 6px; font-family: var(--rc-mono); font-weight: 600; word-break: break-all; }
+
+/* Barcode placeholder */
+.receipt .barcode-stub {
+  display:inline-block; padding:5px 10px;
+  font-family: var(--rc-mono); font-size:10.5px; letter-spacing: 2px;
+  color: var(--rc-fg); margin-top:8px;
+  background: repeating-linear-gradient(90deg, #111 0 1px, transparent 1px 2px, #111 2px 4px, transparent 4px 5px);
+  color: transparent; min-width: 160px; height: 28px; position: relative;
+}
+.receipt .barcode-stub::after {
+  content: attr(data-code); position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+  font-family: var(--rc-mono); font-size: 9px; letter-spacing: 1px; color: var(--rc-fg);
+}
+
+/* Thank-you / footer block */
+.receipt .thanks-line {
+  text-align: center; font-weight: 700; font-size: 13px;
+  letter-spacing: 0.4px; margin-top: 10px;
+}
+.receipt .footer-text { text-align: center; font-size: 10.5px; color: var(--rc-muted); line-height: 1.5; margin-top: 4px; white-space: pre-wrap; }
+.receipt .terms-text  { font-size: 10px; color: var(--rc-muted); margin-top: 6px; line-height: 1.5; white-space: pre-wrap; }
+
+@media print {
+  body { background:#fff; padding:0; margin:0; }
+  .toolbar, .preview-shell h1, .preview-shell .lead { display:none !important; }
+  .receipt { filter: none; padding: 4mm 4mm 2mm; margin: 0; }
+  .receipt::before, .receipt::after { display:none; }
+  .receipt .grand-bar { margin: 8px -4mm 4px; padding: 8px 4mm; }
+  @page { margin: 0; }
+}
+</style>
+</head>
+<body>
+<div class="preview-shell">
+  <h1>Receipt <% if (!o) { %><span class="text-muted">(Preview)</span><% } %></h1>
+  <p class="lead"><% if (o) { %>Order <strong><%= orderNumber %></strong> — <%= fmtDate(orderDate) %><% } else { %>Sample data — adjust settings on the Receipt tab and refresh.<% } %></p>
+  <div class="toolbar">
+    <button class="primary" onclick="window.print()">🖨 Print</button>
+    <button onclick="window.location.reload()">🔄 Refresh</button>
+    <button onclick="window.close()">✕ Close</button>
+  </div>
+
+  <div id="receipt" class="receipt <%= size === '58mm' ? 'r58' : (size === 'a4' ? 'rA4' : 'r80') %>">
+
+    <% if (_printType && _printType !== 'original') { %>
+      <div class="center"><span class="stamp"><%= _printType.toUpperCase() %> COPY</span></div>
+    <% } %>
+
+    <% if (showLogo && logoUrl) { %>
+      <img src="<%= logoUrl %>" alt="logo" class="logo"/>
+    <% } %>
+    <div class="center">
+      <div class="company-name"><%= company %></div>
+      <% if (tagline) { %><div class="tagline">"<%= tagline %>"</div><% } %>
+      <% if (address || city || pincode) { %>
+        <div class="contact"><%= [address.replace(/\n/g, ', '), city, pincode].filter(Boolean).join(', ') %></div>
+      <% } %>
+      <% if (phone || altPhone) { %>
+        <div class="contact">Mo: <%= [phone, altPhone].filter(Boolean).join(' / ') %></div>
+      <% } %>
+      <% if (email || website) { %>
+        <div class="contact"><%= [email, website].filter(Boolean).join(' · ') %></div>
+      <% } %>
+      <% if (showGst && taxLine) { %><div class="gstin"><%= taxLine %></div><% } %>
+    </div>
+    <% if (headerTxt) { %>
+      <hr/>
+      <div class="center small"><%= headerTxt %></div>
+    <% } %>
+    <hr class="solid"/>
+
+    <% if (showInvNum) { %>
+      <div class="row"><span class="l">Bill #</span><span class="r"><%= orderNumber %></span></div>
+    <% } %>
+    <div class="row"><span class="l">Date</span><span class="r"><%= fmtDate(orderDate) %></span></div>
+    <div class="row"><span class="l">Time</span><span class="r"><%= fmtTime(orderDate) %></span></div>
+    <% if (showCashier) { %>
+      <div class="row"><span class="l">Cashier</span><span class="r"><%= cashierName %></span></div>
+    <% } %>
+    <% if (counterNo) { %>
+      <div class="row"><span class="l">Counter</span><span class="r"><%= counterNo %></span></div>
+    <% } %>
+
+    <% if (showCustomer) { %>
+      <hr/>
+      <div class="row"><span class="l">Customer</span><span class="r"><%= custName %></span></div>
+      <% if (custMobile) { %><div class="row"><span class="l">Mobile</span><span class="r"><%= custMobile %></span></div><% } %>
+      <% if (custAddress) { %><div class="muted" style="font-size:10.5px;margin-top:2px;"><%= custAddress %></div><% } %>
+      <% if (custGst) { %><div class="row"><span class="l">GSTIN</span><span class="r"><%= custGst %></span></div><% } %>
+    <% } %>
+
+    <% if (vehicleNo || vehicleType) { %>
+      <hr/>
+      <% if (vehicleNo) { %><div class="row"><span>Vehicle:</span><span><%= vehicleNo %></span></div><% } %>
+      <% if (vehicleType || vehicleModel) { %><div class="row"><span>Model:</span><span><%= [vehicleType, vehicleModel].filter(Boolean).join(' — ') %></span></div><% } %>
+      <% if (scrapWeight) { %>
+        <div class="row"><span>Weight:</span><span><%= fmtN(scrapWeight) %> Kg @ <%= currency %><%= fmtN(scrapRate) %>/kg</span></div>
+        <div class="row"><span>Scrap Value:</span><span><%= currency %><%= fmtN(scrapValue) %></span></div>
+      <% } %>
+    <% } %>
+
+    <div class="section-cap"><%= txnType %></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th class="right" style="width:30px;">Qty</th>
+          <th class="right" style="width:64px;">Rate</th>
+          <th class="right" style="width:68px;">Amt</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach(function(i){ %>
+          <tr>
+            <td class="item-name"><%= i.name || i.item_name %></td>
+            <td class="right num"><%= i.qty || i.quantity %></td>
+            <td class="right num"><%= currency %><%= fmtN(i.rate || i.unit_price) %></td>
+            <td class="right num"><%= currency %><%= fmtN(i.amount || i.total_price) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <hr/>
+    <div class="row"><span class="l">Subtotal</span><span class="r num"><%= currency %><%= fmtN(subtotal) %></span></div>
+    <% if (showDisc && discountAmt > 0) { %>
+      <div class="row"><span class="l">Discount</span><span class="r num">− <%= currency %><%= fmtN(discountAmt) %></span></div>
+    <% } %>
+    <% if (extraChrgAmt > 0) { %>
+      <div class="row"><span class="l"><%= extraChrgLabel %></span><span class="r num"><%= currency %><%= fmtN(extraChrgAmt) %></span></div>
+    <% } %>
+    <% if (showTaxBd) { %>
+      <% if (cgst) { %><div class="row"><span class="l">CGST</span><span class="r num"><%= currency %><%= fmtN(cgst) %></span></div><% } %>
+      <% if (sgst) { %><div class="row"><span class="l">SGST</span><span class="r num"><%= currency %><%= fmtN(sgst) %></span></div><% } %>
+      <% if (igst) { %><div class="row"><span class="l">IGST</span><span class="r num"><%= currency %><%= fmtN(igst) %></span></div><% } %>
+      <% if (!cgst && !sgst && !igst && taxTotal) { %><div class="row"><span class="l">Tax</span><span class="r num"><%= currency %><%= fmtN(taxTotal) %></span></div><% } %>
+    <% } else if (taxTotal) { %>
+      <div class="row"><span class="l">Tax</span><span class="r num"><%= currency %><%= fmtN(taxTotal) %></span></div>
+    <% } %>
+
+    <!-- Black filled grand-total bar — the visual hero of the receipt -->
+    <div class="grand-bar">
+      <span class="l">Grand Total</span>
+      <span class="r"><%= currency %><%= fmtN(grandTotal) %></span>
+    </div>
+
+    <% if (showPay) { %>
+      <hr class="solid" style="margin-top:8px;"/>
+      <div class="section-cap">Payment</div>
+      <div class="row"><span class="l">Mode</span><span class="r" style="text-transform:capitalize;"><%= modeLabels[paymentMode] || (paymentMode || 'Cash') %></span></div>
+      <% if (paymentRef) { %><div class="row"><span class="l">Txn Ref</span><span class="r num"><%= paymentRef %></span></div><% } %>
+      <div class="row"><span class="l">Paid</span><span class="r num"><%= currency %><%= fmtN(paidAmount) %></span></div>
+      <% if (balanceDue > 0) { %>
+        <div class="row"><span class="l">Balance Due</span><span class="r num" style="color:#b91c1c;font-weight:700;"><%= currency %><%= fmtN(balanceDue) %></span></div>
+      <% } else if (paidAmount > grandTotal) { %>
+        <div class="row"><span class="l">Change</span><span class="r num"><%= currency %><%= fmtN(paidAmount - grandTotal) %></span></div>
+      <% } %>
+    <% } %>
+
+    <% if (acceptedModes.length) { %>
+      <div class="muted center small" style="margin-top:6px;">Accepted: <%= acceptedModes.map(m => modeLabels[m] || m).join(' · ') %></div>
+    <% } %>
+
+    <% if (showQr && (s.pos_receipt_qr_image_url || upiUrl)) { %>
+      <hr/>
+      <div class="qr-block">
+        <div class="qr-cap">Scan &amp; Pay (UPI)</div>
+        <% if (s.pos_receipt_qr_image_url) { %>
+          <img src="<%= s.pos_receipt_qr_image_url %>" alt="UPI QR" style="max-width:160px;max-height:160px;object-fit:contain;display:block;margin:0 auto;"/>
+        <% } else { %>
+          <div id="qrTarget"></div>
+        <% } %>
+        <% if (upiId) { %><div class="upi"><%= upiId %></div><% } %>
+        <% if (balanceDue > 0) { %>
+          <div class="muted small" style="margin-top:4px;">Pay <%= currency %><%= fmtN(balanceDue) %></div>
+        <% } %>
+      </div>
+    <% } %>
+
+    <hr/>
+    <% if (thanks) { %>
+      <div class="thanks-line"><%= thanks %></div>
+    <% } %>
+    <% if (policy) { %>
+      <div class="footer-text"><%= policy %></div>
+    <% } %>
+    <% if (showTerms && terms) { %>
+      <hr/>
+      <div class="terms-text"><%= terms %></div>
+    <% } %>
+    <% if (footerTxt) { %>
+      <hr/>
+      <div class="footer-text"><%= footerTxt %></div>
+    <% } %>
+
+    <% if (showSig) { %>
+      <hr/>
+      <div class="right" style="margin-top:30px;">
+        <div style="border-top:1px solid #999;display:inline-block;padding-top:2px;width:120px;text-align:center;font-size:10px;color:#666;">Authorised Signatory</div>
+      </div>
+    <% } %>
+
+    <% if (showBarcode) { %>
+      <div class="center" style="margin-top:14px;">
+        <div class="barcode-stub" data-code="<%= orderNumber %>"></div>
+      </div>
+    <% } %>
+
+    <div class="center small" style="margin-top:14px;letter-spacing:1px;">Copy <%= _printCount %> · <%= _printType.toUpperCase() %></div>
+  </div>
+</div>
+
+<% if (showQr && upiUrl && !s.pos_receipt_qr_image_url) { %>
+<script>
+  // Auto-generate QR from UPI URL only when no static image was uploaded.
+  (function(){
+    if (typeof qrcode !== 'function') return;
+    try {
+      var qr = qrcode(0, 'M');
+      qr.addData(<%- JSON.stringify(upiUrl) %>);
+      qr.make();
+      var size = <%= size === '58mm' ? 5 : (size === 'a4' ? 7 : 6) %>;
+      var html = qr.createImgTag(size, 0);
+      var t = document.getElementById('qrTarget');
+      if (t) t.innerHTML = html;
+    } catch (e) { /* fall back silent */ }
+  })();
+</script>
+<% } %>
+<script>
+  // Auto-print when called with ?auto=1 (Save & Print flow uses a hidden
+  // iframe and expects the page to print itself once everything is rendered).
+  (function(){
+    var qs = new URLSearchParams(window.location.search);
+    if (qs.get('auto') === '1') {
+      // Slight delay so the QR (loaded via inline script above) and any
+      // images have a chance to render in the print job.
+      setTimeout(function(){ try { window.print(); } catch(_) {} }, 600);
+    }
+  })();
+</script>
+</body>
+</html>

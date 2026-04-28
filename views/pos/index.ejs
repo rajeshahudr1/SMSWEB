@@ -174,15 +174,10 @@
         <div class="cf-row"><span>Subtotal</span><span id="cSub">0.00</span></div>
         <div id="cTaxArea"></div>
         <div class="cf-row tot"><span>Total</span><span id="cTotal">0.00</span></div>
-        <!-- Row: Print preview + Pay (side by side, Pay is larger) -->
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button type="button" class="pos-btn-outline" id="cartPrintBtn" disabled onclick="cartPrintPreview()" data-tip="Print receipt preview before payment" data-tip-pos="top" style="flex:0 0 44%;padding:12px 10px;font-size:13px;">
-            <i class="bi bi-printer"></i> Print
-          </button>
-          <button class="cf-pay" id="payBtn" disabled onclick="openCheckout()" data-tip="Proceed to payment" data-tip-pos="left" data-tip-color="blue" style="flex:1;margin-top:0;">
-            <i class="bi bi-credit-card-2-front"></i> Pay <span id="cPayAmt">0.00</span>
-          </button>
-        </div>
+        <!-- Print button moved into the Checkout panel footer (next to Cancel + Pay) -->
+        <button class="cf-pay" id="payBtn" disabled onclick="openCheckout()" data-tip="Proceed to payment" data-tip-pos="left" data-tip-color="blue">
+          <i class="bi bi-credit-card-2-front"></i> Pay <span id="cPayAmt">0.00</span>
+        </button>
       </div>
     </div>
 
@@ -307,7 +302,7 @@
       <!-- Notes -->
       <div class="co-section">
         <div class="co-sec-title"><i class="bi bi-journal-text"></i> Notes</div>
-        <textarea id="oNotes" rows="2" class="pos-input" style="resize:none;margin-top:8px;font-size:12px;" placeholder="Optional..."></textarea>
+        <textarea id="oNotes" rows="5" class="pos-input" style="resize:vertical;min-height:110px;margin-top:8px;font-size:13px;line-height:1.5;" placeholder="Any note for this order — visible on the receipt and admin dashboard..."></textarea>
       </div>
     </div>
 
@@ -382,10 +377,11 @@
       </div>
     </div>
   </div>
-  <!-- Footer -->
+  <!-- Footer: Cancel · Print · Pay -->
   <div class="ip-foot" style="gap:10px;">
     <button class="pos-btn-outline" onclick="$('#coPage').removeClass('open');" style="flex:1;padding:14px;font-size:14px;"><i class="bi bi-x-lg me-1"></i>Cancel</button>
-    <button class="pos-btn-primary" id="coComplete" onclick="doCheckout()" style="flex:2;padding:14px;font-size:16px;font-weight:800;"><i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;"></span></button>
+    <button class="pos-btn-outline" id="coPrint" onclick="cartPrintNow()" data-tip="Send the cart to the printer assigned to Receipt · 80mm in Printer Settings (does NOT save the order)" data-tip-pos="top" style="flex:1.4;padding:14px;font-size:15px;font-weight:700;border-color:var(--pv2-brand);color:var(--pv2-brand);background:var(--pv2-brand-ghost);"><i class="bi bi-printer me-1"></i>Print</button>
+    <button class="pos-btn-primary" id="coComplete" onclick="doCheckout(false)" style="flex:2;padding:14px;font-size:16px;font-weight:800;"><i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;"></span></button>
   </div>
 </div>
 
@@ -419,10 +415,11 @@
     <h3 style="font-weight:800;font-size:20px;margin:8px 0 4px;">Sale Complete!</h3>
     <p style="color:var(--muted);font-size:13px;" id="successInfo"></p>
 
-    <!-- Print row — A4 invoice + 80 mm thermal receipt -->
+    <!-- Print row — opens the configured receipt (uses settings → format/size/QR/etc.) -->
     <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button type="button" class="pos-btn-outline" id="btnSuccessA4" onclick="successPrintA4()" style="padding:10px 18px;"><i class="bi bi-file-earmark-pdf"></i> Print A4</button>
-      <button type="button" class="pos-btn-outline" id="btnSuccessThermal" onclick="successPrintThermal()" style="padding:10px 18px;"><i class="bi bi-receipt"></i> Thermal 80 mm</button>
+      <button type="button" class="pos-btn-outline" id="btnSuccessReceipt" onclick="successPrintReceipt('original')" style="padding:10px 18px;background:var(--brand);color:#fff;border-color:var(--brand);"><i class="bi bi-printer"></i> Print Receipt</button>
+      <button type="button" class="pos-btn-outline" id="btnSuccessReceiptDup" onclick="successPrintReceipt('duplicate')" style="padding:10px 18px;"><i class="bi bi-files"></i> Duplicate Copy</button>
+      <button type="button" class="pos-btn-outline" id="btnSuccessA4" onclick="successPrintA4()" style="padding:10px 18px;"><i class="bi bi-file-earmark-pdf"></i> A4 Invoice</button>
     </div>
 
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">

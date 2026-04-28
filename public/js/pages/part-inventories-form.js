@@ -378,6 +378,17 @@ $(function() {
                     if (!FD.isEdit && r.data && r.data.uuid) {
                         // First save - redirect to edit page (unlocks all tabs)
                         setTimeout(function() { window.location = BASE_URL + '/part-inventories/' + r.data.uuid + '/edit'; }, 600);
+                    } else if (FD.isEdit && r.data) {
+                        // In-place save: refresh the qty floor + re-pull the
+                        // location grid so any newly-created empty unit rows
+                        // (added server-side via _syncLocationUnits) appear
+                        // immediately. No reload required.
+                        if (typeof r.data.quantity !== 'undefined') {
+                            FD.quantity = parseInt(r.data.quantity) || 1;
+                            if (typeof window.__refreshLocationGrid === 'function') {
+                                window.__refreshLocationGrid(FD.quantity);
+                            }
+                        }
                     }
                 } else toastr.error(r.message || T('general.error','Error.'));
             },
@@ -1704,18 +1715,55 @@ $(function() {
         ══════════════════════════════════════════════════════ */
         var _locations = FD.locations || [];
         var _currentQty = FD.quantity || 1;
+        // Saved qty on the server — used to block reductions client-side.
+        // For new parts (no FD.uuid yet) there is no saved qty so we let the
+        // user pick anything ≥ 1.
+        var _savedQty = FD.uuid ? (parseInt(FD.quantity) || 1) : 0;
 
         renderLocationGrid();
 
-        /* Listen for quantity change on Tab 2 to re-render location grid */
-        $('#fQuantity').on('change', function() {
-            var newQty = parseInt($(this).val()) || 1;
+        // Expose a refresh hook so the main save handler can re-pull the
+        // location list after a part update (qty may have changed → backend
+        // auto-created new empty unit rows).
+        window.__refreshLocationGrid = function(newQty) {
+            if (typeof newQty !== 'undefined') {
+                _savedQty   = parseInt(newQty) || _savedQty;
+                _currentQty = parseInt(newQty) || _currentQty;
+                $('#fQuantity').val(_currentQty);
+            }
+            if (FD.uuid) {
+                $.get(BASE_URL + '/part-inventories/' + FD.uuid + '/locations', function(res) {
+                    if (res && res.status === 200 && Array.isArray(res.data)) {
+                        _locations = res.data;
+                        if (!newQty) _currentQty = _locations.length || _currentQty;
+                        renderLocationGrid();
+                    }
+                });
+            } else {
+                renderLocationGrid();
+            }
+        };
+
+        /* Live re-render the location grid as qty changes on Tab 2.
+           Both `input` (every keystroke / spinner click) and `change`
+           (paste / arrow-key blur) are bound so the grid updates without
+           waiting for blur. Reductions below the saved qty are clamped —
+           the backend rejects them, and reducing must happen via deleting
+           rows from the Location tab. */
+        function _onQtyChange() {
+            var newQty = parseInt($('#fQuantity').val()) || 1;
             if (newQty < 1) newQty = 1;
+            if (_savedQty && newQty < _savedQty) {
+                newQty = _savedQty;
+                $('#fQuantity').val(_savedQty);
+                if (window.toastr) toastr.warning('Cannot reduce quantity below ' + _savedQty + '. Delete units from the Location tab to reduce.');
+            }
             if (newQty !== _currentQty) {
                 _currentQty = newQty;
                 renderLocationGrid();
             }
-        });
+        }
+        $('#fQuantity').on('input change', _onQtyChange);
 
         function renderLocationGrid() {
             var $body = $('#locationGridBody');
@@ -1907,7 +1955,12 @@ $(function() {
                     btnReset($btn);
                     if (r.status === 200 || r.status === 201) {
                         toastr.success(r.message || T('part_inventories.locations_saved','Locations saved.'));
-                        if (Array.isArray(r.data)) {
+                        // Re-pull from server so server-computed fields
+                        // (location_code / location_name) stay in sync with
+                        // what was actually saved.
+                        if (typeof window.__refreshLocationGrid === 'function') {
+                            window.__refreshLocationGrid();
+                        } else if (Array.isArray(r.data)) {
                             _locations = r.data;
                         }
                     } else {

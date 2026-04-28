@@ -458,7 +458,10 @@ textarea.form-control {
   border-color: var(--tblr-primary) !important;
   box-shadow: 0 0 0 3px rgba(0,84,166,.1) !important;
 }
-.select2-results__option--highlighted { background: var(--tblr-primary) !important; }
+.select2-results__option--highlighted { background: var(--tblr-primary) !important; color: #fff !important; }
+.select2-results__option--highlighted *,
+.select2-results__option--highlighted small,
+.select2-results__option--highlighted .text-muted { color: #fff !important; }
 .select2-dropdown { border-radius: var(--sms-radius-sm) !important; border: 1px solid var(--sms-border) !important; box-shadow: var(--sms-card-shadow) !important; }
 
 /* ================================================================

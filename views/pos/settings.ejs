@@ -11,6 +11,7 @@
       <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#bizIdentity"><i class="bi bi-card-heading me-1"></i>Identity &amp; GST</a></li>
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizBank"><i class="bi bi-bank me-1"></i>Bank Details</a></li>
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizInvoice"><i class="bi bi-receipt me-1"></i>Invoice Defaults</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizReceipt"><i class="bi bi-receipt-cutoff me-1"></i>Receipt</a></li>
     </ul>
     <div class="tab-content">
       <div class="tab-pane fade show active" id="bizIdentity">
@@ -93,6 +94,250 @@
             <textarea class="form-control" id="biz_invoice_notes" rows="2" placeholder="e.g., Thank you for your business!"></textarea>
           </div>
         </div>
+      </div>
+
+      <!-- ========== Receipt Tab ========== -->
+      <div class="tab-pane fade" id="bizReceipt">
+        <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Drives every receipt the POS prints — A4 invoice, 80&nbsp;mm thermal, and email. Anything blank falls back to the company defaults from the Identity tab.</p>
+
+        <!-- Company block on receipt -->
+        <h6 class="fw-semibold mt-2 mb-2"><i class="bi bi-building me-1"></i>Company Block</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Company Logo</label>
+            <div class="d-flex align-items-center gap-3">
+              <div id="rc_logo_preview" class="border rounded d-flex align-items-center justify-content-center" style="width:72px;height:72px;background:#f9fafb;color:#9ca3af;font-size:11px;text-align:center;">No logo</div>
+              <div class="flex-grow-1">
+                <input type="file" class="form-control form-control-sm" id="rc_logo_file" accept="image/*"/>
+                <input type="hidden" id="rc_logo_url" name="pos_receipt_logo_url"/>
+                <small class="form-hint">PNG / JPG / WEBP up to 5 MB. Saved automatically on file pick.</small>
+                <a href="#" id="rc_logo_remove" class="small text-danger d-none">Remove logo</a>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Display Name (overrides company name)</label>
+            <input type="text" class="form-control" id="rc_company_name" name="pos_receipt_company_name" placeholder="Leave blank to use registered company name"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Tagline / Slogan</label>
+            <input type="text" class="form-control" id="rc_tagline" name="pos_receipt_tagline" placeholder='e.g., "A Perfect Scrap Solution"'/>
+            <small class="form-hint">Printed below the company name in italics.</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Phone</label>
+            <input type="text" class="form-control" id="rc_phone" name="pos_receipt_phone" placeholder="+91 XXXXX XXXXX"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Alternate Phone</label>
+            <input type="text" class="form-control" id="rc_alt_mobile" name="pos_receipt_alt_mobile" placeholder="+91 XXXXX XXXXX"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="rc_email" name="pos_receipt_email" placeholder="billing@company.com"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Website</label>
+            <input type="text" class="form-control" id="rc_website" name="pos_receipt_website" placeholder="www.company.com"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">City</label>
+            <input type="text" class="form-control" id="rc_city" name="pos_receipt_city" placeholder="e.g., Surat"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Pincode</label>
+            <input type="text" class="form-control" id="rc_pincode" name="pos_receipt_pincode" placeholder="6 digits" maxlength="10"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Tax / GSTIN Line (override)</label>
+            <input type="text" class="form-control" id="rc_tax_line" name="pos_receipt_tax_line" placeholder="GSTIN: 27ABCDE1234F1Z5"/>
+            <small class="form-hint">Leave blank to use the GSTIN from the Identity tab.</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Counter / Terminal No</label>
+            <input type="text" class="form-control" id="rc_counter_no" name="pos_receipt_counter_no" placeholder="e.g., COUNTER-1"/>
+            <small class="form-hint">Printed in the bill header so multi-counter setups can be reconciled.</small>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Address (override)</label>
+            <textarea class="form-control" id="rc_address" name="pos_receipt_address" rows="2" placeholder="Full address as it should appear on receipts"></textarea>
+          </div>
+        </div>
+
+        <!-- UPI / Payment block -->
+        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-qr-code me-1"></i>UPI &amp; QR Block</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">UPI ID (VPA)</label>
+            <input type="text" class="form-control" id="rc_upi_id" name="pos_receipt_upi_id" placeholder="merchant@upi"/>
+            <small class="form-hint">Auto-generates a "Scan &amp; Pay" QR if no image is uploaded.</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">UPI Payee Name</label>
+            <input type="text" class="form-control" id="rc_upi_payee_name" name="pos_receipt_upi_payee_name" placeholder="Shown on the customer's UPI app"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">QR Code Image (override)</label>
+            <div class="d-flex align-items-center gap-3">
+              <div id="rc_qr_preview" class="border rounded d-flex align-items-center justify-content-center" style="width:96px;height:96px;background:#f9fafb;color:#9ca3af;font-size:11px;text-align:center;">No QR</div>
+              <div class="flex-grow-1">
+                <input type="file" class="form-control form-control-sm" id="rc_qr_file" accept="image/*"/>
+                <input type="hidden" id="rc_qr_image_url" name="pos_receipt_qr_image_url"/>
+                <small class="form-hint">Upload your existing UPI QR (e.g. printed from your bank app). When uploaded, the receipt prints this image directly. Leave empty to auto-generate from UPI ID above.</small>
+                <a href="#" id="rc_qr_remove" class="small text-danger d-none">Remove QR image</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms / Extra charges -->
+        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-file-text me-1"></i>Terms &amp; Extra Charges</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Extra Charges Label</label>
+            <input type="text" class="form-control" id="rc_extra_charges_label" name="pos_receipt_extra_charges_label" placeholder="e.g., Loading / Cutting"/>
+            <small class="form-hint">If you add extra-charges manually on the bill, this label is printed.</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Default Print Type</label>
+            <select class="form-select" id="rc_default_print_type" name="pos_receipt_default_print_type">
+              <option value="original">Original</option>
+              <option value="duplicate">Duplicate</option>
+            </select>
+            <small class="form-hint">Stamp shown on each printed copy. Re-prints flip to "Duplicate".</small>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Terms &amp; Conditions</label>
+            <textarea class="form-control" id="rc_terms" name="pos_receipt_terms" rows="3" placeholder="Goods once sold are not refundable…"></textarea>
+            <small class="form-hint">Printed when the "Show terms &amp; conditions" toggle below is on.</small>
+          </div>
+        </div>
+
+        <!-- Header / Footer text -->
+        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-text-paragraph me-1"></i>Header &amp; Footer</h6>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Header Text</label>
+            <textarea class="form-control" id="rc_header" name="pos_receipt_header" rows="2" placeholder="Tagline / promo / branch info shown above the items list"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Thank-you Message</label>
+            <input type="text" class="form-control" id="rc_thank_you" name="pos_receipt_thank_you" placeholder="Thank you for shopping with us!"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Return / Refund Policy</label>
+            <textarea class="form-control" id="rc_return_policy" name="pos_receipt_return_policy" rows="2" placeholder="e.g., Returns accepted within 7 days with original invoice."></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Footer Text</label>
+            <textarea class="form-control" id="rc_footer" name="pos_receipt_footer" rows="2" placeholder="Anything you want at the very bottom — slogan, social handle, etc."></textarea>
+          </div>
+        </div>
+
+        <!-- Section toggles -->
+        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-toggles me-1"></i>What to print on the receipt</h6>
+        <div class="row g-3">
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_logo" name="pos_receipt_show_logo">
+            <label class="form-check-label" for="rc_show_logo">Show logo</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_gst" name="pos_receipt_show_gst">
+            <label class="form-check-label" for="rc_show_gst">Show GSTIN line</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_tax_breakdown" name="pos_receipt_show_tax_breakdown">
+            <label class="form-check-label" for="rc_show_tax_breakdown">Show tax breakdown (CGST/SGST/IGST)</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_discount" name="pos_receipt_show_discount">
+            <label class="form-check-label" for="rc_show_discount">Show discount line</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_cashier" name="pos_receipt_show_cashier">
+            <label class="form-check-label" for="rc_show_cashier">Show cashier name</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_customer" name="pos_receipt_show_customer">
+            <label class="form-check-label" for="rc_show_customer">Show customer details</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_invoice_number" name="pos_receipt_show_invoice_number">
+            <label class="form-check-label" for="rc_show_invoice_number">Show invoice number</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_barcode" name="pos_receipt_show_barcode">
+            <label class="form-check-label" for="rc_show_barcode">Show barcode</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_qr" name="pos_receipt_show_qr">
+            <label class="form-check-label" for="rc_show_qr">Show QR code</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_payment_method" name="pos_receipt_show_payment_method">
+            <label class="form-check-label" for="rc_show_payment_method">Show payment method &amp; change</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_signature" name="pos_receipt_show_signature">
+            <label class="form-check-label" for="rc_show_signature">Show signature line</label>
+          </div></div>
+          <div class="col-md-4"><div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rc_show_terms" name="pos_receipt_show_terms">
+            <label class="form-check-label" for="rc_show_terms">Show terms &amp; conditions</label>
+          </div></div>
+        </div>
+
+        <!-- Payment modes -->
+        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-credit-card me-1"></i>Accepted Payment Modes</h6>
+        <p class="text-muted small mb-2">Tick every method you accept. The list is printed on the receipt under "We accept" and used to populate the cashier's pay-method picker.</p>
+        <div class="row g-2">
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_cash" value="cash"><label class="form-check-label" for="rc_pm_cash">Cash</label></div></div>
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_card" value="card"><label class="form-check-label" for="rc_pm_card">Card (Debit / Credit)</label></div></div>
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_upi" value="upi"><label class="form-check-label" for="rc_pm_upi">UPI</label></div></div>
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_wallet" value="wallet"><label class="form-check-label" for="rc_pm_wallet">Wallet (Paytm / PhonePe)</label></div></div>
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_netbanking" value="netbanking"><label class="form-check-label" for="rc_pm_netbanking">Net Banking</label></div></div>
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_bank_transfer" value="bank_transfer"><label class="form-check-label" for="rc_pm_bank_transfer">Bank Transfer</label></div></div>
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_cheque" value="cheque"><label class="form-check-label" for="rc_pm_cheque">Cheque</label></div></div>
+          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_credit" value="credit"><label class="form-check-label" for="rc_pm_credit">Credit / On-account</label></div></div>
+          <input type="hidden" id="rc_payment_modes" name="pos_receipt_payment_modes"/>
+        </div>
+
+        <!-- Format -->
+        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-rulers me-1"></i>Format</h6>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Default Receipt Size</label>
+            <select class="form-select" id="rc_size" name="pos_receipt_size">
+              <option value="80mm">80 mm (Thermal)</option>
+              <option value="58mm">58 mm (Thermal)</option>
+              <option value="a4">A4 (Tax Invoice)</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Currency Symbol</label>
+            <input type="text" class="form-control" id="rc_currency_symbol" name="pos_receipt_currency_symbol" maxlength="4" placeholder="₹"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Date Format</label>
+            <select class="form-select" id="rc_date_format" name="pos_receipt_date_format">
+              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+              <option value="DD-MMM-YYYY">DD-MMM-YYYY</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Number of Copies</label>
+            <input type="number" class="form-control" id="rc_copies" name="pos_receipt_copies" min="1" max="5" value="1"/>
+          </div>
+        </div>
+
+        <% if (can('edit_pos_settings')) { %>
+        <div class="mt-4 d-flex gap-2">
+          <button type="button" class="btn btn-primary" id="btnSaveReceipt"><i class="bi bi-check-lg me-1"></i>Save Receipt Settings</button>
+          <button type="button" class="btn btn-outline-secondary" id="btnPreviewReceipt"><i class="bi bi-eye me-1"></i>Preview</button>
+        </div>
+        <% } %>
       </div>
     </div>
     <% if (can('edit_pos_settings')) { %>
@@ -241,18 +486,8 @@
             </div>
           </div>
         </div>
-        <div class="col-12">
-          <div class="mb-3">
-            <label class="form-label">Receipt Header</label>
-            <textarea class="form-control" id="pos_receipt_header" name="pos_receipt_header" rows="2" placeholder="Company name, address, etc."></textarea>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="mb-3">
-            <label class="form-label">Receipt Footer</label>
-            <textarea class="form-control" id="pos_receipt_footer" name="pos_receipt_footer" rows="2" placeholder="Thank you message, return policy, etc."></textarea>
-          </div>
-        </div>
+        <!-- Receipt header / footer fields moved to the Receipt tab so all
+             receipt-related settings live in one place. -->
       </div>
       <% if (can('edit_pos_settings')) { %>
       <div class="mt-3">
@@ -296,16 +531,18 @@ $(function(){
     });
     $('#biz_include_cgst_sgst').val(res.data.include_cgst_sgst===false||res.data.include_cgst_sgst==='0' ? '0' : '1');
   });
-  $('#btnSaveBiz').on('click', function(){
+  $(document).off('click.posBiz').on('click.posBiz', '#btnSaveBiz', function(){
     var body = { include_cgst_sgst: $('#biz_include_cgst_sgst').val()==='1' };
     bizFields.forEach(function(k){ body[k] = $('#biz_'+k).val(); });
+    var $btn = $(this).prop('disabled', true);
     $.ajax({ url:'/sales/invoice-settings', type:'PUT', contentType:'application/json',
       data: JSON.stringify(body),
       success:function(r){
+        $btn.prop('disabled', false);
         if(r.status===200) toastr.success('Business details saved');
         else toastr.error(r.message||'Failed');
       },
-      error:function(){ toastr.error('Failed to save business details'); }
+      error:function(){ $btn.prop('disabled', false); toastr.error('Failed to save business details'); }
     });
   });
 
@@ -327,7 +564,7 @@ $(function(){
     $('#pg_stripe_secret_key').attr('placeholder', d.stripe_secret_key_set?'••••••••':'Secret (paste to set)');
     $('#pg_stripe_webhook_secret').attr('placeholder', d.stripe_webhook_secret_set?'••••••••':'Webhook secret');
   });
-  $('#btnSavePg').on('click', function(){
+  $(document).off('click.posPg').on('click.posPg', '#btnSavePg', function(){
     var rz = $('#pg_razorpay_enabled').is(':checked');
     var st = $('#pg_stripe_enabled').is(':checked');
     /* Compute legacy single-string for any older code reading payment_gateway:
@@ -357,8 +594,8 @@ $(function(){
   /* Label Printer config moved to /sales/printer-settings */
   // (Label Printer UI moved to /sales/printer-settings — see banner at top of page)
 
-  // Save
-  $('#settingsForm').on('submit', function(e){
+  // Save (main POS settings card)
+  $(document).off('submit.posSettings').on('submit.posSettings', '#settingsForm', function(e){
     e.preventDefault();
     var data = {};
     $(this).find('input,select,textarea').each(function(){
@@ -376,6 +613,148 @@ $(function(){
       },
       error:function(){ toastr.error('Failed to save settings'); }
     });
+  });
+
+  /* ───── Receipt Settings tab ───── */
+  // All field IDs → backing settings keys. Toggles are checkboxes.
+  var rcTextFields = [
+    // Company block
+    'logo_url','company_name','tagline','phone','alt_mobile','email','website',
+    'city','pincode','tax_line','counter_no','address',
+    // UPI / QR
+    'upi_id','upi_payee_name',
+    // Terms / extra charges / print type
+    'extra_charges_label','default_print_type','terms',
+    // Header / Footer
+    'header','thank_you','return_policy','footer',
+    // Format
+    'currency_symbol','date_format','size','copies'
+  ];
+  var rcToggleFields = [
+    'show_logo','show_gst','show_tax_breakdown','show_discount','show_cashier',
+    'show_customer','show_invoice_number','show_barcode','show_qr',
+    'show_payment_method','show_signature','show_terms'
+  ];
+  var rcPaymentModes = ['cash','card','upi','wallet','netbanking','bank_transfer','cheque','credit'];
+
+  function _loadReceiptSettings(){
+    $.get('/sales/settings/data', function(res){
+      if(res.status!==200 || !res.data) return;
+      var d = res.data;
+      // Text fields
+      rcTextFields.forEach(function(k){
+        var v = d['pos_receipt_'+k]; if (v == null) v = '';
+        $('#rc_'+k).val(v);
+      });
+      // Toggles — default to ON for first-time users so receipts look complete
+      rcToggleFields.forEach(function(k){
+        var raw = d['pos_receipt_'+k];
+        var checked = raw==null ? true : (raw==='1'||raw===true||raw==='true');
+        $('#rc_'+k).prop('checked', checked);
+      });
+      // Payment modes — comma-separated string
+      var modes = (d.pos_receipt_payment_modes||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+      rcPaymentModes.forEach(function(m){
+        $('#rc_pm_'+m).prop('checked', modes.indexOf(m) > -1);
+      });
+      // Size default
+      if (!$('#rc_size').val()) $('#rc_size').val('80mm');
+      if (!$('#rc_date_format').val()) $('#rc_date_format').val('DD/MM/YYYY');
+      // ─── File previews ────────────────────────────
+      _renderImgPreview('logo', d.pos_receipt_logo_url || '');
+      _renderImgPreview('qr',   d.pos_receipt_qr_image_url || '');
+    });
+  }
+  _loadReceiptSettings();
+
+  // Renders a thumbnail in the logo / QR preview box and toggles the
+  // "Remove" link. `kind` = 'logo' | 'qr'.
+  function _renderImgPreview(kind, url) {
+    var hidden = kind === 'logo' ? '#rc_logo_url' : '#rc_qr_image_url';
+    var box    = kind === 'logo' ? '#rc_logo_preview' : '#rc_qr_preview';
+    var rm     = kind === 'logo' ? '#rc_logo_remove' : '#rc_qr_remove';
+    $(hidden).val(url || '');
+    if (url) {
+      $(box).html('<img src="' + url + '" style="max-width:100%;max-height:100%;object-fit:contain;"/>');
+      $(rm).removeClass('d-none');
+    } else {
+      $(box).html(kind === 'qr' ? 'No QR' : 'No logo');
+      $(rm).addClass('d-none');
+    }
+  }
+
+  // ─── File upload (logo / QR) ───────────────────────
+  // Each <input type="file"> auto-uploads on change → backend writes the URL
+  // into the right setting → preview updates → no extra Save click needed.
+  function _doUpload(kind, fileInput, onDone) {
+    var f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    var fd = new FormData();
+    fd.append('file', f);
+    $.ajax({
+      url: '/sales/settings/upload/' + kind,
+      type: 'POST', data: fd, processData: false, contentType: false,
+      success: function(r) {
+        if (r.status === 200 && r.data && r.data.url) {
+          if (typeof toastr !== 'undefined') toastr.success('Uploaded.');
+          if (onDone) onDone(r.data.url);
+        } else {
+          if (typeof toastr !== 'undefined') toastr.error(r.message || 'Upload failed.');
+        }
+        fileInput.value = '';     // reset so re-pick of same file fires change again
+      },
+      error: function(xhr) {
+        if (typeof toastr !== 'undefined') toastr.error((xhr.responseJSON && xhr.responseJSON.message) || 'Upload failed.');
+        fileInput.value = '';
+      },
+    });
+  }
+  $(document).off('change.posLogoUp').on('change.posLogoUp', '#rc_logo_file', function() {
+    _doUpload('logo', this, function(url) { _renderImgPreview('logo', url); });
+  });
+  $(document).off('change.posQrUp').on('change.posQrUp', '#rc_qr_file', function() {
+    _doUpload('qr', this, function(url) { _renderImgPreview('qr', url); });
+  });
+  // Remove links — clear the URL and persist via the receipt save (or write
+  // an empty value through the same /settings PUT).
+  $(document).off('click.posLogoRm').on('click.posLogoRm', '#rc_logo_remove', function(e) {
+    e.preventDefault();
+    $.ajax({ url:'/sales/settings', type:'PUT', contentType:'application/json',
+      data: JSON.stringify({ pos_receipt_logo_url: '' }),
+      success: function() { _renderImgPreview('logo', ''); if (typeof toastr !== 'undefined') toastr.success('Logo removed'); },
+    });
+  });
+  $(document).off('click.posQrRm').on('click.posQrRm', '#rc_qr_remove', function(e) {
+    e.preventDefault();
+    $.ajax({ url:'/sales/settings', type:'PUT', contentType:'application/json',
+      data: JSON.stringify({ pos_receipt_qr_image_url: '' }),
+      success: function() { _renderImgPreview('qr', ''); if (typeof toastr !== 'undefined') toastr.success('QR removed'); },
+    });
+  });
+
+  $(document).off('click.posReceipt').on('click.posReceipt', '#btnSaveReceipt', function(){
+    var body = {};
+    rcTextFields.forEach(function(k){ body['pos_receipt_'+k] = $('#rc_'+k).val() || ''; });
+    rcToggleFields.forEach(function(k){ body['pos_receipt_'+k] = $('#rc_'+k).is(':checked') ? '1' : '0'; });
+    var modes = [];
+    rcPaymentModes.forEach(function(m){ if ($('#rc_pm_'+m).is(':checked')) modes.push(m); });
+    body.pos_receipt_payment_modes = modes.join(',');
+    var $btn = $(this).prop('disabled', true);
+    $.ajax({ url:'/sales/settings', type:'PUT', contentType:'application/json',
+      data: JSON.stringify(body),
+      success:function(r){
+        $btn.prop('disabled', false);
+        if(r.status===200) toastr.success('Receipt settings saved');
+        else toastr.error(r.message||'Failed');
+      },
+      error:function(){ $btn.prop('disabled', false); toastr.error('Failed to save receipt settings'); }
+    });
+  });
+
+  // Receipt preview — opens a thermal-receipt preview in a new tab using
+  // the most recent saved settings.
+  $(document).off('click.posReceiptPreview').on('click.posReceiptPreview', '#btnPreviewReceipt', function(){
+    window.open('/sales/receipt-preview', '_blank');
   });
 
   /* Explicit tab wiring — works whether the page is refreshed directly or
