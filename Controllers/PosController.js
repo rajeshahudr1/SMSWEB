@@ -30,7 +30,14 @@ const settingsUpload = multer({
 
 // POS Screen (full-screen, no layout)
 exports.index = (req, res) => {
-    res.render('pos/index', { page_title: 'POS', activeLink: 'pos' });
+    const u = req.session && req.session.user || {};
+    const user = {
+        id: u.id || null,
+        name: u.full_name || u.name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || 'User',
+        role: u.role_name || u.role || (u.is_super_admin ? 'Super Admin' : 'Operator'),
+        email: u.email || '',
+    };
+    res.render('pos/index', { page_title: 'POS', activeLink: 'pos', user });
 };
 
 // POS UI-Kit / theme editor (full-screen, no layout) — authenticated
@@ -378,6 +385,8 @@ exports.settingsPage = (req, res) => {
 };
 exports.settingsGet = async (req, res) => { res.json(await api.get('/pos/settings', req.session.token)); };
 exports.settingsUpdate = async (req, res) => { res.json(await api.put('/pos/settings', req.body, req.session.token)); };
+// Proxy: peek the next invoice number for draft-printing in the POS UI.
+exports.nextInvoiceNumber = async (req, res) => { res.json(await api.get('/pos/next-invoice-number', req.session.token)); };
 
 // POST /sales/settings/upload/:kind  (kind = logo | qr | signature)
 // Multipart file upload. Saves to /public/uploads/settings/, then PUTs the

@@ -70,6 +70,7 @@ router.get('/vehicle-detail/:uuid', Ctrl.vehicleDetail);
 router.get('/settings', Ctrl.settingsPage);
 router.get('/settings/data', Ctrl.settingsGet);
 router.put('/settings', Ctrl.settingsUpdate);
+router.get('/next-invoice-number', Ctrl.nextInvoiceNumber);
 // File uploads for receipt assets — kind = logo | qr | signature
 router.post('/settings/upload/:kind', Ctrl.settingsUpload);
 router.get('/receipt-preview', Ctrl.receiptPreview);

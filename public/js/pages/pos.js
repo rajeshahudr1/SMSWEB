@@ -35,8 +35,18 @@ var REF_COND={'1':'OEM','2':'Aftermarket'};
 function stars(r){var v=parseFloat(r)||0,h='';for(var i=1;i<=5;i++){var c=i<=v?'color:#eab308':'color:#d1d5db';h+='<i class="bi bi-star'+(i<=v?'-fill':'')+'" style="'+c+';font-size:13px;"></i>';}return h;}
 
 /* ── Panel ── */
-function openPanel(){if(isMob())$('#posRight').addClass('open');}
-function closePanel(){if(isMob())$('#posRight').removeClass('open');}
+function openPanel(){if(isMob())$('#posRight').addClass('open');$('body').addClass('pos-cart-open');}
+function closePanel(){if(isMob())$('#posRight').removeClass('open');$('body').removeClass('pos-cart-open');}
+/* Sync the .pos-cart-open body class with any direct toggle of #posRight.open
+   (inline onclick handlers like `$('#posRight').toggleClass('open')` exist in the
+   EJS markup, so we observe the attribute and mirror it). */
+$(function(){
+    if (typeof MutationObserver !== 'function') return;
+    var $pr = $('#posRight'); if (!$pr.length) return;
+    new MutationObserver(function(){
+        $('body').toggleClass('pos-cart-open', $pr.hasClass('open'));
+    }).observe($pr[0], { attributes:true, attributeFilter:['class'] });
+});
 function showCart(){$('#detailView').removeClass('active');$('#cartView').removeClass('hidden');_selPart=null;$('.pc').removeClass('selected');}
 function showDetailPanel(){$('#cartView').addClass('hidden');$('#detailView').addClass('active');openPanel();}
 
@@ -755,6 +765,7 @@ function renderCart(){
         h+='</div>';
     });
     $i.html(h);$c.text(_cart.length);$m.text(_cart.length);updTotals(sub);
+    if (typeof window.attachCartSwipe === 'function') attachCartSwipe();
 }
 function updTotals(sub){
     // Calculate tax — only on items without vat_included
@@ -802,30 +813,675 @@ var _coData={sub:0,discount:0,taxable:0,taxes:[],taxTotal:0,total:0};
 
 function openCheckout(){
     if(!_cart.length)return;
-    var sub=0;
-    _cart.forEach(function(c){sub+=c.total_price;});
-    // Group for summary
-    var groups={};
-    _cart.forEach(function(c){var k=c.item_type+'_'+c.id;if(!groups[k])groups[k]={name:c.item_name,code:c.item_code,cnt:0,total:0,vat:c.vat_included};groups[k].cnt++;groups[k].total+=c.total_price;});
-    var itemsH='';
-    Object.values(groups).forEach(function(g){
-        itemsH+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">';
-        itemsH+='<div style="flex:1;min-width:0;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(g.name)+'</div>';
-        itemsH+='<div style="font-size:10px;color:var(--muted);">'+esc(g.code);
-        if(g.vat)itemsH+=' <span style="color:var(--green);">Tax Inc</span>';
-        itemsH+='</div></div>';
-        itemsH+='<span style="color:var(--primary);font-weight:700;margin:0 8px;">x'+g.cnt+'</span>';
-        itemsH+='<span style="font-weight:700;min-width:60px;text-align:right;">'+F(g.total)+'</span></div>';
+
+    // ── Subtotal + grouped lines for the cps-items table ──
+    var sub = 0;
+    _cart.forEach(function(c){ sub += c.total_price; });
+    // Group cart by item, but also keep the per-unit list so the expand panel
+    // mirrors what the cart page shows (#1 · Unit · price, #2 · Unit · price, …).
+    var groups = {};
+    var order  = [];
+    _cart.forEach(function(c){
+        var k = c.item_type + '_' + c.id;
+        if (!groups[k]) {
+            groups[k] = { name: c.item_name, code: c.item_code, type: c.item_type, cnt: 0, total: 0, unit: c.unit_price, vat: c.vat_included, units: [] };
+            order.push(k);
+        }
+        groups[k].cnt++;
+        groups[k].total += c.total_price;
+        groups[k].units.push({ unit_number: c.unit_number, qty: c.quantity || 1, price: c.total_price, unit_price: c.unit_price });
     });
-    $('#coSummary').html(itemsH);
-    $('#coItemCount').text(_cart.length+' item'+(_cart.length>1?'s':''));
-    _coData.sub=sub;
-    // Reset payment UI
-    $('.co-pay-btn').removeClass('active').first().addClass('active');
-    $('#cardTypeBox,#refBox').hide();
+
+    var itemsRows = '';
+    var i = 0;
+    order.forEach(function(k){
+        i++;
+        var g = groups[k];
+        var typeLabel = g.type === 'vehicle' ? 'Vehicle' : 'Part';
+        var rid = 'cpsRow' + i;
+
+        // Build the per-unit list (matches the cart page: #1 · Unit · ₹price).
+        var unitsHtml = '';
+        g.units.forEach(function(u, idx){
+            var label = (u.unit_number != null && u.unit_number !== '')
+                      ? '#' + u.unit_number
+                      : '#' + (idx + 1);
+            var qtyStr = (u.qty && u.qty > 1) ? (u.qty + ' × ' + F(u.unit_price)) : 'Unit';
+            unitsHtml += '<div class="cps-unit-row">'
+                      +   '<span class="cps-unit-no">' + label + '</span>'
+                      +   '<span class="cps-unit-lbl">' + qtyStr + '</span>'
+                      +   '<span class="cps-unit-price">' + F(u.price) + '</span>'
+                      + '</div>';
+        });
+
+        itemsRows += '<tr class="cps-row" onclick="cpsToggleRow(\''+rid+'\')">'
+                  +   '<td><i class="bi bi-chevron-right cps-row-chev" id="'+rid+'_chev"></i></td>'
+                  +   '<td><div class="cps-row-name">' + esc(g.name) + '</div>'
+                  +     (g.code ? '<div class="cps-row-sub">' + esc(g.code) + (g.vat ? ' · <span style="color:var(--cps-green);">Tax Inc</span>' : '') + '</div>' : '')
+                  +   '</td>'
+                  +   '<td>' + typeLabel + '</td>'
+                  +   '<td class="num">' + g.cnt + '</td>'
+                  +   '<td class="num">' + F(g.unit) + '</td>'
+                  +   '<td class="num">' + F(g.total) + '</td>'
+                  + '</tr>'
+                  + '<tr class="cps-row-detail" id="'+rid+'_d" hidden><td colspan="6">'
+                  +   '<div class="cps-rd-summary">'
+                  +     '<div><div class="cps-rd-l">Total Units</div><div class="cps-rd-v">'+g.cnt+'</div></div>'
+                  +     '<div><div class="cps-rd-l">Unit Price</div><div class="cps-rd-v">'+F(g.unit)+'</div></div>'
+                  +     '<div><div class="cps-rd-l">Sub-total</div><div class="cps-rd-v cps-rd-blue">'+F(g.total)+'</div></div>'
+                  +     (g.vat ? '<div><div class="cps-rd-l">Tax</div><div class="cps-rd-v" style="color:var(--cps-green);">Included</div></div>' : '')
+                  +     (g.code ? '<div><div class="cps-rd-l">Code / SKU</div><div class="cps-rd-v">'+esc(g.code)+'</div></div>' : '')
+                  +   '</div>'
+                  +   '<div class="cps-units-h">Units (' + g.cnt + ')</div>'
+                  +   '<div class="cps-units">' + unitsHtml + '</div>'
+                  + '</td></tr>';
+    });
+    $('#cpsItems').html(itemsRows);
+
+    // ── Hero card (image + title) — uses first cart item ──
+    var first = _cart[0] || {};
+    $('#cpsHeroId').text('DRAFT — ' + (first.item_code || ('Order #' + Date.now().toString().slice(-6))));
+    $('#cpsHeroD1').text(_cart.length + ' line item' + (_cart.length > 1 ? 's' : ''));
+    $('#cpsHeroD2').text(first.item_name || '');
+    $('#cpsHeroD3').text('');
+    $('#cpsHeroPill').text(first.item_type === 'vehicle' ? 'Scrap Vehicle' : 'Scrap Order');
+    if (first.image_url) {
+        $('#cpsHeroImg').css({ 'background-image': 'url("' + first.image_url + '")', 'color': 'transparent' }).html('');
+    } else {
+        $('#cpsHeroImg').css('background-image', '').html('<i class="bi bi-box-seam"></i>');
+    }
+
+    // Hidden mirrors used by legacy code
+    $('#coSummary').html(itemsRows);
+    $('#coItemCount').text(_cart.length + ' item' + (_cart.length > 1 ? 's' : ''));
+    $('#coItemsBtnCount').text(_cart.length);
+
+    _coData.sub = sub;
+
+    // ── Created By + Order Date (live clock keeps Order Date current until save) ──
+    var u = window.SMS_USER || {};
+    $('#cpsCreatedBy').val(u.name || 'User');
+    $('#cpsHdrUserName').text(u.name || 'User');
+    $('#cpsHdrUserRole').text(u.role || 'Operator');
+    if (window.SMS_ORG_NAME) $('#cpsBrandName').text(String(SMS_ORG_NAME).toUpperCase());
+    cpsTickClock();
+    if (!window._cpsClockTimer) window._cpsClockTimer = setInterval(cpsTickClock, 1000);
+
+    // ── Mobile-only: Order Items collapsible counter + start collapsed ──
+    $('#cpsItemsBarCount').text('(' + _cart.length + ')');
+    if (window.matchMedia('(max-width: 767px)').matches) {
+        $('#cpsItemsWrap').hide();
+        $('#cpsItemsBar').removeClass('open');
+        $('#cpsPDBody').hide();
+        $('#cpsPDChev').removeClass('open');
+    } else {
+        $('#cpsItemsWrap').show();
+        $('#cpsPDBody').show();
+    }
+
+    // ── Order ID — peek next invoice number from server (DRAFT prefix until paid) ──
+    $('#cpsOrderId').val('DRAFT');
+    $.ajax({
+        url: BASE_URL + '/sales/next-invoice-number',
+        type: 'GET',
+        success: function(r){
+            var num = (r && r.data && r.data.invoice_number) || (r && r.invoice_number) || null;
+            if (num) $('#cpsOrderId').val('DRAFT — ' + num);
+        },
+        error: function(){ /* keep DRAFT */ }
+    });
+
+    // ── Currency labels ──
+    $('.cps-cur').text(window.SMS_CURRENCY || '₹');
+
+    // ── Customer info chip + walk-in fallback fields ──
+    $('#walkInName,#walkInPhone').val('');
+    cpsResetCustomerInfo();
+    if (!window._cpsWalkinBound) {
+        $(document).on('input', '#walkInName, #walkInPhone', cpsSyncWalkinChip);
+        window._cpsWalkinBound = true;
+    }
+
+    // ── Reset discount / notes / payment ref ──
+    $('#dType').val('');
+    $('#dVal').val('').prop('disabled', true).attr('placeholder', '0.00');
+    $('#dVal').closest('.cps-input-wrap').find('.cps-kb-trigger').prop('disabled', true);
+    $('#oNotes').val('');
+    $('#cpsNotesCount').text('0');
     $('#payRef').val('');
+
+    // ── Default payment mode = UPI (matches the screenshot's pre-selected tile) ──
+    $('.co-pay-btn,.cps-pmode').removeClass('active');
+    $('.cps-pmode[data-method="upi"]').addClass('active');
+    $('#cardTypeBox,#onlineHint,#linkBox').hide();
+
+    // Trigger selPay logic so right-side conditional boxes get set correctly.
+    var $first = $('.cps-pmode[data-method="upi"]')[0];
+    if ($first) selPay($first);
+
     calcCheckout();
     $('#coPage').addClass('open');
+}
+
+/* Live-tick the readonly Order Date input until the order is actually saved.
+   Also fills the tablet/mobile header date+time pills (visible at <1100px). */
+function cpsTickClock(){
+    var d = new Date();
+    var h = d.getHours(), m = d.getMinutes();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    var dd = d.getDate(), mm = d.getMonth() + 1, yyyy = d.getFullYear();
+    var dStr = (dd<10?'0'+dd:dd) + '-' + (mm<10?'0'+mm:mm) + '-' + yyyy
+             + ' ' + (h<10?'0'+h:h) + ':' + (m<10?'0'+m:m) + ' ' + ampm;
+    $('#cpsOrderDate').val(dStr);
+    // Tablet header date pill: "24 May 2025" / "02:45 PM"
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    $('#cpsHdrDate').text(d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear());
+    $('#cpsHdrTime').text((h<10?'0'+h:h) + ':' + (m<10?'0'+m:m) + ' ' + ampm);
+}
+
+/* Mobile-only: collapsible "Order Items (N)" bar toggle. */
+window.cpsToggleItems = function(){
+    var $w = $('#cpsItemsWrap');
+    var $b = $('#cpsItemsBar');
+    var open = $b.hasClass('open');
+    if (open) { $w.slideUp(180); $b.removeClass('open'); }
+    else      { $w.slideDown(180); $b.addClass('open'); }
+};
+
+/* Mobile-only: collapsible Payment Details card toggle. */
+window.cpsTogglePD = function(){
+    if (window.matchMedia('(min-width: 768px)').matches) return; // only on mobile
+    var $b = $('#cpsPDBody');
+    var $c = $('#cpsPDChev');
+    if ($b.is(':visible')) { $b.slideUp(180); $c.removeClass('open'); }
+    else                   { $b.slideDown(180); $c.addClass('open'); }
+};
+
+/* ════════════════════════════════════════════════════════════════════════
+   POS keyboard auto-attach.
+
+   For every text-like input + textarea inside the POS app (`<body class="pos-mode">`)
+   that doesn't already have a `.cps-kb-trigger` sibling, wrap it in
+   `.cps-input-wrap` and append a small keyboard icon. Click → opens the
+   virtual keyboard bound to that input.
+
+   To opt out, mark the input with `data-no-keyboard` or `.no-vk`.
+   To force amount mode, mark with `data-vk="amount"`.
+   ════════════════════════════════════════════════════════════════════════ */
+window.posAttachKeyboards = function(root){
+    var $root = root ? $(root) : $('body.pos-mode, body .pos-mode, body');
+    if (!$root.length) return;
+
+    /* Cleanup: any kb-trigger that ended up inside a wrap also containing a
+       <select>, .select2-container, or other dropdown-type widget — drop it. */
+    $root.find('.cps-input-wrap').each(function(){
+        var $wrap = $(this);
+        if ($wrap.find('> select, > .select2-container, > [role="combobox"], > [role="listbox"]').length) {
+            $wrap.find('> .cps-kb-trigger').remove();
+        }
+    });
+
+    /* Restrict to real text-typing fields. Note we EXCLUDE input[type="search"]
+       on purpose — Select2 / autocomplete widgets create those internally and
+       the user has explicitly asked that dropdowns never get a keyboard icon. */
+    var sel = 'input[type="text"], input[type="number"], input[type="tel"], input[type="email"], input[type="password"], input[type="url"], input:not([type]), textarea';
+    $root.find(sel).each(function(){
+        var $el = $(this);
+        if ($el.is('[data-no-keyboard], .no-vk')) return;
+        if ($el.attr('readonly') !== undefined && $el.attr('readonly') !== false) return;
+        // Skip widget-internal search inputs.
+        if ($el.is('.select2-search__field, .flatpickr-input, .bootstrap-select input, .ts-input input')) return;
+        if ($el.closest('.select2-container, .select2-dropdown, .select2-results, .select2-selection, .flatpickr-calendar, .ts-dropdown').length) return;
+        // ARIA combobox / searchbox / listbox children are not plain text inputs.
+        var role = ($el.attr('role') || '').toLowerCase();
+        if (role === 'combobox' || role === 'searchbox' || role === 'listbox') return;
+        if ($el.closest('[role="combobox"], [role="listbox"]').length) return;
+        // Skip hidden inputs
+        if ($el.is(':hidden')) return;
+        // Already wrapped?
+        if ($el.parent().hasClass('cps-input-wrap')) return;
+        if ($el.next('.cps-kb-trigger').length) return;
+        // Need a unique id — invent one if missing.
+        if (!$el.attr('id')) {
+            $el.attr('id', 'kbinp_' + Math.random().toString(36).slice(2, 9));
+        }
+        var id = $el.attr('id');
+        var isTextarea = $el.is('textarea');
+        var type  = ($el.attr('data-vk')
+                  || ($el.attr('type') === 'number' ? 'amount' : 'text'));
+        var $wrap = $('<div class="cps-input-wrap"></div>');
+        if (isTextarea) $wrap.addClass('cps-input-wrap-textarea');
+        var $btn = $(
+            '<button type="button" class="cps-kb-trigger'
+          + (isTextarea ? ' cps-kb-trigger-tarea' : '')
+          + '" data-tip="Open keyboard" data-tip-pos="left">'
+          + '<i class="bi bi-keyboard"></i></button>'
+        );
+        $btn.on('click', function(e){
+            e.preventDefault(); e.stopPropagation();
+            window.openVK(id, type);
+        });
+        // Wrap: replace input with wrap > input + btn
+        $el.wrap($wrap);
+        $el.parent().append($btn);
+    });
+};
+
+/* Run after DOM ready, after SPA partials swap into #spaContent, and after
+   any modal opens (newCust / advSearch etc.). */
+$(function(){
+    setTimeout(function(){ posAttachKeyboards('body.pos-mode'); }, 50);
+});
+$(document).on('shown.bs.modal', '.modal', function(){ posAttachKeyboards(this); });
+/* Hook into spaNav so SPA-loaded pages get the icons too. */
+(function(){
+    var origSpaNav = window.spaNav;
+    if (typeof origSpaNav === 'function') {
+        window.spaNav = function(){
+            var r = origSpaNav.apply(this, arguments);
+            setTimeout(function(){ posAttachKeyboards('#spaContent'); }, 80);
+            setTimeout(function(){ posAttachKeyboards('#spaContent'); }, 400);
+            return r;
+        };
+    }
+})();
+/* MutationObserver fallback — covers dynamically-rendered popups + tabs that
+   don't use spaNav (e.g. settings tab switches, returns popup, etc.). */
+(function(){
+    if (typeof MutationObserver !== 'function') return;
+    var pending = false;
+    var obs = new MutationObserver(function(){
+        if (pending) return;
+        pending = true;
+        setTimeout(function(){
+            pending = false;
+            posAttachKeyboards('body.pos-mode');
+        }, 120);
+    });
+    $(function(){
+        try { obs.observe(document.body, { childList:true, subtree:true }); } catch(_){}
+    });
+})();
+
+/* ════════════════════════════════════════════════════════════════════════
+   VK — Virtual Keyboard. Opened from `.cps-kb-trigger` icons next to inputs.
+   Feeds keystrokes back into the bound `<input>` / `<textarea>` and fires
+   the standard `input`/`change` events so existing handlers (calcCheckout,
+   onDiscountTypeChange, etc.) react automatically.
+   ════════════════════════════════════════════════════════════════════════ */
+var _vkTarget = null;        // jQuery reference to the input being typed into
+var _vkType   = 'text';      // 'text' | 'amount'
+var _vkCaps   = false;
+var _vkShift  = false;       // one-shot — auto-clears after the next letter
+
+window.openVK = function(targetId, type){
+    var $el = $('#' + targetId);
+    if (!$el.length) return;
+    _vkTarget = $el;
+    _vkType   = type || ($el.attr('type') === 'number' ? 'amount' : 'text');
+    var cur   = window.SMS_CURRENCY || '₹';
+    $('#vkTypeLabel').text(_vkType === 'amount' ? ('Amount (' + cur + ')') : 'Text');
+    $('#vkPrecLabel').text(_vkType === 'amount' ? '2 Decimal' : '—');
+    // Show / hide the QWERTY block + Quick amounts row depending on input type.
+    $('#vkQwerty').toggle(_vkType !== 'amount');
+    $('#vkQuickRow').toggle(_vkType === 'amount');
+    // Reset caps/shift state.
+    _vkCaps = false; _vkShift = false;
+    $('#vkCaps').removeClass('on');
+    $('#vkShift').removeClass('on');
+    vkRefreshAlpha();
+    vkRender();
+    $('#vkOv').css('display', 'flex');
+};
+
+window.closeVK = function(){
+    $('#vkOv').hide();
+    _vkTarget = null;
+};
+
+function _vkRaw(){ return _vkTarget ? String(_vkTarget.val() || '') : ''; }
+
+function vkRender(){
+    var raw = _vkRaw();
+    var disp;
+    if (_vkType === 'amount') {
+        var n = parseFloat(raw) || 0;
+        disp = (window.SMS_CURRENCY || '₹') + ' ' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        // For an empty input keep it visually clean.
+        if (!raw) disp = (window.SMS_CURRENCY || '₹') + ' 0.00';
+    } else {
+        disp = raw || ' ';
+    }
+    $('#vkDisplay').text(disp);
+}
+
+function _vkSetVal(v){
+    if (!_vkTarget) return;
+    _vkTarget.val(v);
+    // Fire native input/change events so calcCheckout / calcChange / oninput hooks run.
+    _vkTarget.trigger('input').trigger('change');
+    vkRender();
+}
+
+window.vkType = function(ch){
+    if (!_vkTarget) return;
+    var current = _vkRaw();
+    var c = ch;
+    // Caps/Shift only apply to letters.
+    if (/^[a-zA-Z]$/.test(c)) {
+        var upper = (_vkCaps && !_vkShift) || (!_vkCaps && _vkShift);
+        c = upper ? c.toUpperCase() : c.toLowerCase();
+        if (_vkShift) { _vkShift = false; $('#vkShift').removeClass('on'); vkRefreshAlpha(); }
+    } else if (c === '\t') {
+        c = '\t';
+    }
+    // Numeric guards: at most one '.' and only at start for '-'.
+    if (_vkType === 'amount') {
+        if (c === '.' && current.indexOf('.') >= 0) return;
+        if (!/^[0-9.]$/.test(c)) return;
+    }
+    _vkSetVal(current + c);
+};
+
+window.vkAlpha = function(btn){
+    var letter = ($(btn).text() || '').trim();
+    if (!letter) return;
+    vkType(letter);
+};
+
+window.vkBack = function(){
+    if (!_vkTarget) return;
+    _vkSetVal(_vkRaw().slice(0, -1));
+};
+
+window.vkClear = function(){
+    if (!_vkTarget) return;
+    _vkSetVal('');
+};
+
+window.vkSet = function(v){
+    if (!_vkTarget) return;
+    _vkSetVal(String(v));
+};
+
+window.vkSign = function(){
+    if (!_vkTarget) return;
+    var v = _vkRaw();
+    if (v.startsWith('-')) v = v.slice(1);
+    else v = '-' + v;
+    _vkSetVal(v);
+};
+
+window.vkOK = function(){
+    if (!_vkTarget) return;
+    closeVK();
+};
+
+window.vkToggleCaps = function(){
+    _vkCaps = !_vkCaps;
+    $('#vkCaps').toggleClass('on', _vkCaps);
+    vkRefreshAlpha();
+};
+
+window.vkToggleShift = function(){
+    _vkShift = !_vkShift;
+    $('#vkShift').toggleClass('on', _vkShift);
+    vkRefreshAlpha();
+};
+
+function vkRefreshAlpha(){
+    var upper = (_vkCaps && !_vkShift) || (!_vkCaps && _vkShift);
+    $('#vkQwerty .vk-alpha').each(function(){
+        var t = ($(this).text() || '').trim();
+        if (t.length === 1 && /[A-Za-z]/.test(t)) {
+            $(this).text(upper ? t.toUpperCase() : t.toLowerCase());
+        }
+    });
+}
+
+/* Keyboard shortcuts when VK is open: Esc closes, Enter confirms,
+   the user can also type physically on the host keyboard and it falls
+   through to the bound input as normal — we DON'T capture other keys. */
+$(document).on('keydown', function(e){
+    if ($('#vkOv').is(':hidden')) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeVK(); }
+    else if (e.key === 'Enter' && $(e.target).closest('.vk-panel').length === 0) {
+        e.preventDefault(); vkOK();
+    }
+});
+
+/* Open the cash-confirm dialog before actually charging. Pre-fills total /
+   received / change / customer / item count and warns if amount is short. */
+window.cpsOpenCashConfirm = function(){
+    var total = _coData.total || 0;
+    var rcv = parseFloat($('#amtRcv').val()) || 0;
+    var change = rcv - total;
+    var cur = window.SMS_CURRENCY || '₹';
+    $('#ccTotal').text(cur + ' ' + F(total));
+    $('#ccRcv').text(cur + ' ' + F(rcv));
+    $('#ccChange').text(cur + ' ' + F(Math.max(0, change)));
+    var custName = ($('#custId').val()
+        ? $('#ciName').text()
+        : ($('#walkInName').val() || 'Walk-in Customer')).trim();
+    $('#ccCust').text(custName);
+    $('#ccItems').text(_cart.length + ' item' + (_cart.length > 1 ? 's' : ''));
+    var short = rcv < total;
+    $('#ccWarn').toggle(short);
+    $('#ccConfirmBtn').prop('disabled', short);
+    $('#cashConfirmOv').css('display', 'flex');
+};
+
+/* User confirmed the cash payment in the dialog → re-enter doCheckout with
+   the bypass flag set so the second call goes straight through to /checkout. */
+window.cpsCashConfirm = function(){
+    $('#cashConfirmOv').hide();
+    window._cashConfirmed = true;
+    var ap = !!window._cashPendingAutoPrint;
+    window._cashPendingAutoPrint = false;
+    doCheckout(ap);
+};
+
+/* Expand / collapse a row in the order-items table.
+   The detail <tr> ships with the HTML `hidden` attribute — jQuery's `.show()`
+   doesn't remove that, so we toggle it explicitly. */
+window.cpsToggleRow = function(id){
+    var $d = $('#' + id + '_d');
+    var $c = $('#' + id + '_chev');
+    var open = $c.hasClass('open');
+    if (open) {
+        $d.attr('hidden', true).hide();
+        $c.removeClass('open');
+    } else {
+        $d.removeAttr('hidden').css('display', 'table-row');
+        $c.addClass('open');
+    }
+};
+
+/* Reset state to "no customer picked": show the walk-in inputs and HIDE the
+   info chip (it's redundant — the walk-in fields capture the same details). */
+function cpsResetCustomerInfo(){
+    $('#ciName').text('Walk-in Customer');
+    $('#ciSub').text('General Customer');
+    $('#ciPhone').text('-');
+    $('#ciEmail').text('-');
+    $('#custId').val('');
+    $('#custSearch').val('');
+    $('#custResult').empty().removeClass('show');
+    $('#cpsWalkin').show();
+    $('.cps-cust-info').hide();
+}
+
+/* Stub kept for compatibility with prior bindings — no longer drives any UI
+   since the chip is hidden during walk-in flow. */
+window.cpsSyncWalkinChip = function(){};
+
+/* When a customer is selected (existing autocomplete), populate the chip and
+   hide the walk-in fallback inputs. */
+window.cpsSetCustomer = function(c){
+    if (!c) { cpsResetCustomerInfo(); return; }
+    $('#ciName').text(c.name || c.full_name || 'Customer');
+    $('#ciSub').text(c.customer_type || c.type || 'Registered');
+    $('#ciPhone').text(c.phone || c.mobile || '-');
+    $('#ciEmail').text(c.email || '-');
+    $('#custId').val(c.id || c.uuid || '');
+    $('#cpsWalkin').hide();
+    $('.cps-cust-info').show();
+    $('#walkInName').val('');
+    $('#walkInPhone').val('');
+};
+
+/* Indian-English number-to-words (for "In Words" line on Amount To Pay). */
+function _numToWordsIN(n){
+    n = Math.floor(parseFloat(n) || 0);
+    if (n === 0) return 'Zero';
+    var ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    var tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    function twoDigits(x){
+        if (x < 20) return ones[x];
+        return tens[Math.floor(x/10)] + (x%10 ? ' ' + ones[x%10] : '');
+    }
+    function threeDigits(x){
+        var h = Math.floor(x/100), r = x%100;
+        return (h ? ones[h] + ' Hundred' + (r ? ' ' : '') : '') + (r ? twoDigits(r) : '');
+    }
+    var parts = [];
+    var crore = Math.floor(n/10000000); n %= 10000000;
+    var lakh  = Math.floor(n/100000);   n %= 100000;
+    var thou  = Math.floor(n/1000);     n %= 1000;
+    var rest  = n;
+    if (crore) parts.push(threeDigits(crore) + ' Crore');
+    if (lakh)  parts.push(threeDigits(lakh)  + ' Lakh');
+    if (thou)  parts.push(threeDigits(thou)  + ' Thousand');
+    if (rest)  parts.push(threeDigits(rest));
+    return parts.join(' ').replace(/\s+/g,' ').trim();
+}
+function cpsAmountInWords(n){
+    var rupees = Math.floor(parseFloat(n) || 0);
+    var paise  = Math.round((parseFloat(n) - rupees) * 100);
+    var w = _numToWordsIN(rupees) + ' Rupee' + (rupees === 1 ? '' : 's');
+    if (paise > 0) w += ' and ' + _numToWordsIN(paise) + ' Paise';
+    return w + ' Only';
+}
+
+/**
+ * Discount type → toggle the value input. Empty type ("No discount") hides
+ * the input completely and clears its value so calcCheckout() returns 0.
+ */
+function onDiscountTypeChange(){
+    var t = $('#dType').val();
+    var $v = $('#dVal');
+    var $kb = $v.closest('.cps-input-wrap').find('.cps-kb-trigger');
+    if (!t) {
+        $v.val('').prop('disabled', true).attr('placeholder', '0.00');
+        $kb.prop('disabled', true);
+    } else {
+        $v.prop('disabled', false);
+        $kb.prop('disabled', false);
+        var ph = (t === 'percent') ? 'e.g. 10  (= 10%)' : 'e.g. 50  (flat)';
+        $v.attr('placeholder', ph).trigger('focus');
+    }
+}
+
+/**
+ * Open the "Order items" popup from step 1 — renders the cart lines into
+ * #coItemsPopBody and shows the overlay.
+ */
+function openCartItemsPopup(){
+    if (!_cart.length) { return; }
+    var groups = {};
+    _cart.forEach(function(c){
+        var k = c.item_type + '_' + c.id;
+        if (!groups[k]) groups[k] = { name: c.item_name, code: c.item_code, cnt: 0, total: 0, vat: c.vat_included, unit: c.unit_price };
+        groups[k].cnt++;
+        groups[k].total += c.total_price;
+    });
+    var rows = '';
+    Object.values(groups).forEach(function(g){
+        rows += '<div class="co-summary-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--pv2-border);gap:10px;">'
+              +   '<div style="flex:1;min-width:0;">'
+              +     '<div style="font-weight:700;color:var(--pv2-text);font-size:13.5px;">' + esc(g.name) + '</div>'
+              +     (g.code ? '<div style="font-size:11px;color:var(--pv2-muted);margin-top:2px;">' + esc(g.code) + (g.vat ? ' · <span style="color:var(--pv2-success);">Tax Inc</span>' : '') + '</div>' : '')
+              +   '</div>'
+              +   '<div style="min-width:54px;text-align:center;font-size:12px;color:var(--pv2-muted);font-weight:600;">×' + g.cnt + '</div>'
+              +   '<div style="min-width:78px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;">' + F(g.total) + '</div>'
+              + '</div>';
+    });
+    $('#coItemsPopBody').html(rows || '<div style="text-align:center;color:var(--pv2-muted);padding:24px 0;">No items in cart.</div>');
+    $('#coItemsPopCount').text('(' + _cart.length + ' item' + (_cart.length > 1 ? 's' : '') + ')');
+    $('#coItemsOv').css('display', 'flex');
+}
+
+/**
+ * Switch the checkout wizard between Step 1 (Review) and Step 2 (Pay).
+ * The CSS does the heavy lifting via [data-step]; we only need to set the
+ * attribute and focus the right element so a Bluetooth/keyboard cashier
+ * can keep typing without re-clicking.
+ */
+function goCoStep(step){
+    var $w = $('#coPage');
+    $w.attr('data-step', String(step));
+    if (step === 2) {
+        // Mirror the total into the step-2 hero card + header.
+        var totalText = $('#coGrandTotal').text();
+        $('#coGrandTotal2').text(totalText);
+        $('#coStep2Total').text('Total: ' + totalText);
+
+        // Populate the Confirm Payment grid from current state.
+        var custName = ($('#custResult').text() || '').trim() || 'Walk-in customer';
+        $('#coConfirmCust').text(custName);
+        $('#coConfirmItems').text(_cart.length + ' item' + (_cart.length > 1 ? 's' : ''));
+        var $m = $('.co-pay-btn.active');
+        var method = ($m.data('method') || 'cash');
+        var label = ($m.find('span').text() || method).trim();
+        $('#coConfirmMethod').text(label);
+        $('#coConfirmSub').text(F(_coData.sub));
+        if (_coData.discount > 0) {
+            $('#coConfirmDisc').text('-' + F(_coData.discount));
+            $('#coConfirmDiscRow').show();
+        } else {
+            $('#coConfirmDiscRow').hide();
+        }
+        if (_coData.taxTotal > 0) {
+            $('#coConfirmTax').text(F(_coData.taxTotal));
+            $('#coConfirmTaxRow').show();
+        } else {
+            $('#coConfirmTaxRow').hide();
+        }
+        $('#coConfirmTotal').text(F(_coData.total));
+
+        // Reference row — only shown when card / upi / link
+        var ref = ($('#payRef').val() || '').trim();
+        if ((method === 'card' || method === 'upi' || method === 'link') && ref) {
+            $('#coConfirmRef').text(ref);
+            $('#coConfirmRefRow').show();
+        } else {
+            $('#coConfirmRefRow').hide();
+        }
+
+        // Step-2 boxes: Reference input only for card/upi/link, Amount Received only for cash.
+        var needsRef = (method === 'card' || method === 'upi' || method === 'link');
+        $('#step2RefBox').toggle(needsRef);
+        $('#step2AmtBox').toggle(method === 'cash');
+
+        // Step-2 button label adapts to chosen method.
+        var btnLabel = 'Pay';
+        if (method === 'online') btnLabel = 'Pay & Open Gateway';
+        else if (method === 'link') btnLabel = 'Send Payment Link';
+        else if (method === 'card') btnLabel = 'Confirm Card Payment';
+        else if (method === 'upi') btnLabel = 'Confirm UPI Payment';
+        else if (method === 'cash') btnLabel = 'Complete Cash Payment';
+        $('#coStep2BtnLabel').text(btnLabel);
+        $('#coStep2BtnAmt').text(F(_coData.total));
+
+        // Auto-focus the most relevant input for the chosen method.
+        setTimeout(function(){
+            if (method === 'cash')      $('#amtRcv').trigger('focus').trigger('select');
+            else if (needsRef)          $('#payRef').trigger('focus');
+        }, 80);
+    }
+    // Scroll the active step back to the top so users see the hero card first.
+    $w.find('.co-step').scrollTop(0);
 }
 
 function calcCheckout(){
@@ -851,20 +1507,34 @@ function calcCheckout(){
     var total=parseFloat((afterDiscount+taxTotal).toFixed(2));
     _coData={sub:sub,discount:discount,taxable:taxableAfterDiscount,taxes:taxes,taxTotal:taxTotal,total:total};
 
-    // Render totals in left panel
-    var h='';
-    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;"><span class="text-muted">Subtotal</span><span style="font-weight:600;">'+F(sub)+'</span></div>';
-    if(discount>0)h+='<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--accent);"><span><i class="bi bi-tag me-1"></i>Discount'+(dType==='percent'?' ('+dVal+'%)':'')+'</span><span style="font-weight:600;">-'+F(discount)+'</span></div>';
-    if(taxes.length){
+    // ── New cps-* layout — left column totals (table-style) ──
+    var cpsHtml = '';
+    cpsHtml += '<div class="cps-trow"><span class="cps-tl">Subtotal</span><span class="cps-tr">'+F(sub)+'</span></div>';
+    if (discount > 0) {
+        var dLbl = 'Discount' + (dType === 'percent' ? ' ('+dVal+'%)' : '');
+        cpsHtml += '<div class="cps-trow minus"><span class="cps-tl">'+esc(dLbl)+'</span><span class="cps-tr">-'+F(discount)+'</span></div>';
+    }
+    if (taxes.length) {
         taxes.forEach(function(t){
-            h+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:#8b5cf6;"><span>'+esc(t.name)+' ('+t.pct+'%)</span><span style="font-weight:600;">'+F(t.amount)+'</span></div>';
+            cpsHtml += '<div class="cps-trow"><span class="cps-tl">'+esc(t.name)+' ('+t.pct+'%)</span><span class="cps-tr">'+F(t.amount)+'</span></div>';
         });
     }
-    h+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:800;border-top:2px solid var(--primary);margin-top:6px;"><span>Total</span><span style="color:var(--primary);">'+F(total)+'</span></div>';
-    $('#coTotals').html(h);
+    $('#cpsTotals').html(cpsHtml);
 
-    // Update right panel total display
-    $('#coGrandTotal').text(F(total));
+    // ── Grand total + Amount To Pay + In Words + 3-box summary ──
+    var cur = window.SMS_CURRENCY || '₹';
+    $('#cpsGrand').text(cur + ' ' + F(total));
+    $('#cpsAmtPay,#cpsAmtPayMobile').text(cur + ' ' + F(total));
+    var inWords = cpsAmountInWords(total);
+    $('#cpsAmtWords,#cpsAmtWordsMobile').text(inWords);
+    $('#cpsDisc').text(F(discount));
+    $('#cpsTaxable').text(F(taxableAfterDiscount + taxTotal));
+    $('#cpsTotalPayable').text(cur + ' ' + F(total));
+
+    // Hidden mirrors for legacy code paths (doCheckout, online/link flows)
+    $('#coTotals').html(cpsHtml);
+    $('#coGrandTotal,#coGrandTotal2').text(F(total));
+    $('#coStep2Total').text('Total: ' + F(total));
     $('#coPayTotal').text(F(total));
 
     // Auto-fill amount received with total
@@ -887,34 +1557,58 @@ function calcCheckout(){
 }
 
 function selPay(el){
-    $('.co-pay-btn').removeClass('active');$(el).addClass('active');
-    var method=$(el).data('method');
-    $('#cardTypeBox').toggle(method==='card');
-    $('#refBox').toggle(method==='card' || method==='upi');
-    $('#onlineHint').toggle(method==='online');
-    $('#linkBox').toggle(method==='link');
-    // For non-cash offline modes, amount = exact total (no change)
-    if(method==='card'||method==='upi'||method==='online'||method==='link'){
+    $('.co-pay-btn,.cps-pmode').removeClass('active');
+    $(el).addClass('active');
+    var method = $(el).data('method');
+
+    // ── Right-column conditional cards ──
+    // Reference / cheque-no input: shown for card, upi, online (txn id), cheque
+    var needsRef = (method === 'card' || method === 'upi' || method === 'online' || method === 'cheque');
+    $('#cpsRefBox').toggle(needsRef);
+    var refLabel = 'TRANSACTION REFERENCE';
+    var refPh    = 'Transaction ID / UTR / Approval Code';
+    if (method === 'cheque') { refLabel = 'CHEQUE DETAILS'; refPh = 'Cheque No / Bank / Date'; }
+    else if (method === 'upi') { refLabel = 'UPI REFERENCE'; refPh = 'UPI Transaction ID / UTR'; }
+    else if (method === 'card') { refLabel = 'CARD REFERENCE'; refPh = 'Approval Code / Last 4 digits'; }
+    else if (method === 'online') { refLabel = 'GATEWAY REFERENCE'; refPh = 'Filled automatically after success'; }
+    $('#cpsRefLabel').text(refLabel);
+    $('#payRef').attr('placeholder', refPh);
+
+    // Amount Received card: only meaningful for cash
+    $('#cpsAmtRcvBox').toggle(method === 'cash');
+
+    // For non-cash modes, force amount received = total (no change calculation).
+    if (method !== 'cash') {
         $('#amtRcv').val(F(_coData.total));
-        calcChange();
     }
-    // Update footer button label for clarity
-    var btnLabel = 'Complete Payment';
-    if(method==='online') btnLabel = 'Pay Online';
-    else if(method==='link') btnLabel = 'Send Payment Link';
-    $('#coComplete').html('<i class="bi bi-check-circle me-1"></i>'+btnLabel+' <span id="coPayTotal" style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
+    calcChange();
+
+    // ── Footer "PAY NOW" button label adapts to the chosen method ──
+    var label = 'PAY NOW';
+    if (method === 'online')      label = 'PAY ONLINE';
+    else if (method === 'card')   label = 'PAY BY CARD';
+    else if (method === 'upi')    label = 'PAY BY UPI';
+    else if (method === 'cheque') label = 'ACCEPT CHEQUE';
+    else if (method === 'cash')   label = 'COLLECT CASH';
+    $('#cpsPayLabel').text(label);
+
+    // Hidden legacy footer chip
+    $('#coPayTotal').text(F(_coData.total));
 }
 function selCard(el){$('.co-card-btn').removeClass('active');$(el).addClass('active');}
 
 function calcChange(){
-    var r=parseFloat($('#amtRcv').val())||0,t=_coData.total,c=r-t;
-    var $d=$('#changeDisp');
-    if(r<=0){$d.hide();return;}
+    var r = parseFloat($('#amtRcv').val()) || 0;
+    var t = _coData.total;
+    var c = r - t;
+    var cur = window.SMS_CURRENCY || '₹';
+    var $d = $('#changeDisp');
+    if (r <= 0) { $d.hide(); return; }
     $d.show().removeClass('change-pos change-neg');
-    if(c>=0){
-        $d.addClass('change-pos').html('<i class="bi bi-arrow-return-left me-1"></i>Change: <strong>'+F(c)+'</strong>');
+    if (c >= 0) {
+        $d.addClass('change-pos').html('<i class="bi bi-arrow-return-left me-1"></i>Change Due: <strong>' + cur + ' ' + F(c) + '</strong>');
     } else {
-        $d.addClass('change-neg').html('<i class="bi bi-exclamation-triangle me-1"></i>Short: <strong>'+F(Math.abs(c))+'</strong>');
+        $d.addClass('change-neg').html('<i class="bi bi-exclamation-triangle me-1"></i>Short by: <strong>' + cur + ' ' + F(Math.abs(c)) + '</strong>');
     }
 }
 function doCheckout(autoPrint){
@@ -925,6 +1619,19 @@ function doCheckout(autoPrint){
     if(payMethod==='link'){ return doPaymentLink(); }
 
     var rcvAmt=parseFloat($('#amtRcv').val())||0;
+    // Cash flow → open the confirm dialog instead of processing immediately.
+    // The dialog's "Confirm & Collect" button calls cpsCashConfirm() which
+    // sets _pendingAutoPrint and re-enters this function with __confirmed=true.
+    if (payMethod === 'cash' && !window._cashConfirmed) {
+        if (rcvAmt < _coData.total) {
+            toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');
+            return;
+        }
+        window._cashPendingAutoPrint = !!autoPrint;
+        cpsOpenCashConfirm();
+        return;
+    }
+    window._cashConfirmed = false; // reset for next round
     if(rcvAmt<_coData.total){toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');return;}
     var $b = autoPrint ? $('#coPrint') : $('#coComplete');
     $b.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Processing...');
@@ -933,8 +1640,10 @@ function doCheckout(autoPrint){
     var payRef=$('#payRef').val()||null;
     if(cardType&&payRef)payRef=cardType.toUpperCase()+' - '+payRef;
     else if(cardType&&!payRef)payRef=cardType.toUpperCase();
+    var walkinName  = ($('#walkInName').val()  || '').trim() || null;
+    var walkinPhone = ($('#walkInPhone').val() || '').trim() || null;
     $.ajax({url:BASE_URL+'/sales/checkout',type:'POST',contentType:'application/json',
-        data:JSON.stringify({items:items,customer_id:$('#custId').val()||null,discount_type:$('#dType').val()||null,discount_value:$('#dVal').val()||0,payment_method:payMethod,payment_reference:payRef,amount_paid:parseFloat($('#amtRcv').val())||0,notes:$('#oNotes').val()||null}),
+        data:JSON.stringify({items:items,customer_id:$('#custId').val()||null,walkin_name:walkinName,walkin_phone:walkinPhone,discount_type:$('#dType').val()||null,discount_value:$('#dVal').val()||0,payment_method:payMethod,payment_reference:payRef,amount_paid:parseFloat($('#amtRcv').val())||0,notes:$('#oNotes').val()||null}),
         success:function(r){
             // Reset both footer buttons regardless of which path triggered Save.
             $('#coComplete').prop('disabled',false).html('<i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;">'+F(_coData.total)+'</span>');
@@ -952,7 +1661,7 @@ function doCheckout(autoPrint){
                     autoPrintReceipt(window._smsLastOrder.uuid);
                 }
                 _cart=[];renderCart();
-                $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').html('Walk-in customer');
+                $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').empty().removeClass('show');if(typeof cpsResetCustomerInfo==='function')cpsResetCustomerInfo();
             } else if(r.status===409&&r.data&&r.data.stock_errors){
                 // Stock errors — either out-of-stock or held by another cashier
                 var errors=r.data.stock_errors;
@@ -1157,7 +1866,7 @@ function _onPaymentSuccess(d){
     $('#successOv').css('display','flex');
     window._smsLastOrder = { uuid: d.order_uuid || d.uuid, number: d.order_number || '' };
     _cart=[]; renderCart();
-    $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').html('Walk-in customer');
+    $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').empty().removeClass('show');if(typeof cpsResetCustomerInfo==='function')cpsResetCustomerInfo();
     _currentTx = null;
 }
 
@@ -1188,9 +1897,70 @@ function _handleStockConflict(r){
    CUSTOMER
    ══════════════════════════════════════════ */
 var _cst;
-$(document).on('input','#custSearch',function(){clearTimeout(_cst);var q=$(this).val().trim();if(!q){$('#custResult').html('Walk-in customer');$('#custId').val('');return;}
-    _cst=setTimeout(function(){$.get(BASE_URL+'/sales/customers/search',{q:q},function(r){if(!r||r.status!==200||!r.data||!r.data.length){$('#custResult').html('<span style="color:var(--yellow);">Not found</span>');return;}var h='';r.data.forEach(function(c){h+='<a href="#" style="display:inline-block;padding:3px 8px;font-size:11px;color:var(--primary);text-decoration:none;border:1px solid var(--border);border-radius:6px;margin:2px;" onclick="selCust('+c.id+',\''+esc(c.name)+'\',\''+esc(c.phone||'')+'\');return false;">'+esc(c.name)+(c.phone?' ('+c.phone+')':'')+'</a>';});$('#custResult').html(h);});},300);});
-function selCust(id,n,p){$('#custId').val(id);$('#custSearch').val(n);$('#custResult').html('<i class="bi bi-check-circle" style="color:var(--green);"></i> '+n+(p?' ('+p+')':''));}
+function _custResultsClear(){
+    $('#custResult').empty().removeClass('show');
+}
+function _custResultsShow(html){
+    $('#custResult').html(html).addClass('show');
+}
+
+$(document).on('input','#custSearch',function(){
+    clearTimeout(_cst);
+    var q = $(this).val().trim();
+    if (!q) {
+        _custResultsClear();
+        $('#custId').val('');
+        if (typeof cpsResetCustomerInfo === 'function') cpsResetCustomerInfo();
+        return;
+    }
+    _cst = setTimeout(function(){
+        $.get(BASE_URL+'/sales/customers/search', { q: q }, function(r){
+            if (!r || r.status !== 200 || !r.data || !r.data.length) {
+                _custResultsShow(
+                    '<a href="#" onclick="return false;" style="color:var(--cps-muted) !important;background:#fafbfc;cursor:default;">'
+                  + '<span style="flex:1;font-size:12.5px;">No customers match “' + esc(q) + '”</span>'
+                  + '<button class="cps-btn-primary" style="font-size:11px;padding:4px 10px;" onclick="event.preventDefault();_custResultsClear();openNewCust();">+ Add</button>'
+                  + '</a>'
+                );
+                return;
+            }
+            var h = '';
+            r.data.forEach(function(c){
+                var args = [c.id, c.name, c.phone||'', c.email||'', c.customer_type||''].map(function(v){
+                    return "'" + String(v).replace(/'/g,"\\'") + "'";
+                }).join(',');
+                h += '<a href="#" onclick="selCust('+args+');return false;">'
+                   +   '<div style="flex:1;min-width:0;">'
+                   +     '<div style="font-weight:700;color:var(--cps-text);">'+esc(c.name)+'</div>'
+                   +     '<div style="font-size:11.5px;color:var(--cps-muted);margin-top:1px;">'
+                   +       (c.phone ? '<i class="bi bi-telephone" style="margin-right:3px;"></i>'+esc(c.phone) : '')
+                   +       (c.phone && c.email ? '<span style="margin:0 6px;">·</span>' : '')
+                   +       (c.email ? '<i class="bi bi-envelope" style="margin-right:3px;"></i>'+esc(c.email) : '')
+                   +     '</div>'
+                   +   '</div>'
+                   + '</a>';
+            });
+            _custResultsShow(h);
+        });
+    }, 250);
+});
+
+/* Close customer dropdown on outside click. */
+$(document).on('mousedown', function(e){
+    var $r = $('#custResult');
+    if (!$r.length || !$r.hasClass('show')) return;
+    if ($(e.target).closest('#custResult, #custSearch').length) return;
+    _custResultsClear();
+});
+
+function selCust(id, n, p, e, type){
+    $('#custId').val(id);
+    $('#custSearch').val(n);
+    _custResultsClear();
+    if (typeof window.cpsSetCustomer === 'function') {
+        cpsSetCustomer({ id: id, name: n, phone: p, email: e || '', customer_type: type || 'Registered Customer' });
+    }
+}
 function openNewCust(){$('#ncName,#ncPhone,#ncEmail,#ncAddr,#ncGst,#ncPan').val('');$('#ncType').val('regular');$('#newCustOv').css('display','flex');}
 function saveNewCust(){
     var data={name:$('#ncName').val(),phone:$('#ncPhone').val(),email:$('#ncEmail').val(),customer_type:$('#ncType').val(),address:$('#ncAddr').val(),gst_number:$('#ncGst').val(),pan_number:$('#ncPan').val()};
@@ -1199,7 +1969,7 @@ function saveNewCust(){
     $.ajax({url:BASE_URL+'/sales/customers',type:'POST',contentType:'application/json',data:JSON.stringify(data),success:function(r){
         if(r.status===201||r.status===200){
             var c=r.data;$('#newCustOv').hide();
-            selCust(c.id||c.uuid,c.name,c.phone);$('#custSearch').val(c.name);
+            selCust(c.id||c.uuid, c.name, c.phone, c.email, c.customer_type);$('#custSearch').val(c.name);
             toastr.success('Customer created.');
         } else toastr.error(r.message||'Failed.');
     }});
@@ -1306,16 +2076,97 @@ function handleBarcodeScan(val){
    INIT
    ══════════════════════════════════════════ */
 $(function(){
-    // Swipe to delete on mobile cart items
-    var _swStart=null,_swEl=null;
-    $(document).on('touchstart','.ci-wrap',function(e){_swStart=e.originalEvent.touches[0].clientX;_swEl=$(this);$('.ci-wrap').not(this).removeClass('swiped');});
-    $(document).on('touchmove','.ci-wrap',function(e){
-        if(!_swStart||!_swEl)return;
-        var dx=_swStart-e.originalEvent.touches[0].clientX;
-        if(dx>40)_swEl.addClass('swiped');
-        else if(dx<-20)_swEl.removeClass('swiped');
+    // ── Swipe-to-delete cart items (touch only).
+    //    jQuery's delegated `touchmove` is passive and can't `preventDefault`,
+    //    which is why the prior version got hijacked by vertical scroll.
+    //    Attach native non-passive listeners on each .ci-wrap after renderCart. */
+    var _swStart = null;
+    var _swEl    = null;
+    var _swActive = false;
+    function _swOnStart(e){
+        if (!e.touches || !e.touches[0]) return;
+        _swEl = this;
+        _swStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        _swActive = false;
+        // Close any other swiped row
+        document.querySelectorAll('.ci-wrap.swiped').forEach(function(el){ if (el !== _swEl) el.classList.remove('swiped'); });
+    }
+    function _swOnMove(e){
+        if (!_swStart || !_swEl) return;
+        if (!e.touches || !e.touches[0]) return;
+        var dx = _swStart.x - e.touches[0].clientX;
+        var dy = _swStart.y - e.touches[0].clientY;
+        // If clearly a vertical scroll, abandon the swipe and don't preventDefault.
+        if (!_swActive && Math.abs(dy) > Math.abs(dx) + 4) {
+            _swStart = null; _swEl = null;
+            return;
+        }
+        // Lock into horizontal mode once we've moved >8px sideways.
+        if (Math.abs(dx) > 8) _swActive = true;
+        if (_swActive) {
+            // Block the default vertical-scroll so the row swipes cleanly.
+            if (e.cancelable) e.preventDefault();
+            if (dx > 40)      _swEl.classList.add('swiped');
+            else if (dx < -10) _swEl.classList.remove('swiped');
+        }
+    }
+    function _swOnEnd(){ _swStart = null; _swEl = null; _swActive = false; }
+    window.attachCartSwipe = function(){
+        document.querySelectorAll('.ci-wrap').forEach(function(el){
+            if (el._swBound) return;
+            el._swBound = true;
+            el.addEventListener('touchstart', _swOnStart, { passive: true });
+            el.addEventListener('touchmove',  _swOnMove,  { passive: false });
+            el.addEventListener('touchend',   _swOnEnd,   { passive: true });
+            el.addEventListener('touchcancel',_swOnEnd,   { passive: true });
+        });
+    };
+    // Tap anywhere outside a swiped row → collapse it.
+    $(document).on('touchstart click', function(e){
+        if ($(e.target).closest('.ci-wrap').length) return;
+        $('.ci-wrap.swiped').removeClass('swiped');
     });
-    $(document).on('touchend',function(){_swStart=null;_swEl=null;});
+
+    // ── Checkout-screen keyboard shortcuts: ESC / Ctrl+P / F6 / F9 / F11 ──
+    $(document).on('keydown', function(e){
+        if (!$('#coPage').hasClass('open')) return;
+        // ESC → cancel/close
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            $('#coPage').removeClass('open');
+            return;
+        }
+        // F9 → Pay Now
+        if (e.key === 'F9') {
+            e.preventDefault();
+            $('#coComplete').trigger('click');
+            return;
+        }
+        // F6 → Save
+        if (e.key === 'F6') {
+            e.preventDefault();
+            $('#cpsSaveBtn').trigger('click');
+            return;
+        }
+        // Ctrl+P / Cmd+P → Print
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            $('#coPrint').trigger('click');
+            return;
+        }
+        // F11 → focus header search (don't fight browser fullscreen — only if header search exists)
+        if (e.key === 'F11' && $('#cpsSearch').length) {
+            e.preventDefault();
+            $('#cpsSearch').trigger('focus').trigger('select');
+        }
+    });
+
+    // SAVE button — saves order + auto-prints receipt to assigned printer.
+    window.cpsSaveOrder = function(){
+        if (!_cart.length) { toastr.warning('Cart is empty.'); return; }
+        // doCheckout(true) = process payment + auto-print receipt
+        doCheckout(true);
+    };
 
     // Restore sidebar state
     if(localStorage.getItem('pos_sidebar')==='0'){$('.pos-sidebar').addClass('collapsed');$('.ps-toggle').addClass('show');}
@@ -1433,8 +2284,10 @@ $(function(){
     }
 
     // ─── Build ESC/POS bytes from cart + settings ─────────────────
-    function _buildCartEscpos(cart, settings, logoBytes) {
+    // opts: { invoiceNumber: 'INV-0042', isDraft: true|false }
+    function _buildCartEscpos(cart, settings, logoBytes, opts) {
         var s = settings || {};
+        opts = opts || {};
         function pick(key, fallback) {
             return (s[key] && String(s[key]).trim()) ? String(s[key]) : (fallback || '');
         }
@@ -1447,6 +2300,10 @@ $(function(){
         var ESC = '\x1b', GS = '\x1d';
         var INIT      = ESC + '@';
         var FONT_A    = ESC + 'M' + '\x00';   // pin Font A (12x24) — 42 cols on 80mm
+        // Default line spacing is ~30/180", which packs lines tightly.
+        // Bump to 40/180" (~5.6mm) so each row gets a little breathing room
+        // below it — easier to read on long thermal receipts.
+        var LINE_SPACE = ESC + '3' + String.fromCharCode(40);
         // Leave the printer's natural left margin alone — that gives a
         // symmetric ~2mm space on both sides via mechanical print head limits.
         // If a specific printer needs explicit left padding (rare), set
@@ -1588,14 +2445,16 @@ $(function(){
         var NAME_W = COLS - QTY_W - RATE_W - AMT_W;
 
         // ── Compose ──
-        // 1. INIT — reset the printer to defaults (also restores the
-        //    printer's saved left margin, which gives symmetric paper margins).
-        // 2. LEFT_MARGIN — only emitted when an explicit override is set in
-        //    settings; otherwise we leave the printer's default alone.
-        // 3. FONT_PIN — Font A or Font B based on COLS so columns line up.
-        var out = INIT + LEFT_MARGIN + FONT_PIN;
+        // 1. INIT — reset the printer to defaults (restores saved left margin).
+        // 2. LEFT_MARGIN — only emitted when an explicit override is configured.
+        // 3. FONT_PIN — Font A or Font B based on COLS.
+        // 4. LINE_SPACE — slightly looser line spacing for readability.
+        var out = INIT + LEFT_MARGIN + FONT_PIN + LINE_SPACE;
         if (showLogo && logoBytes) out += logoBytes;
 
+        // Company name — double size, bold, centered. Add a half line of
+        // space after each line in the company block by repeating \n so the
+        // header doesn't feel cramped.
         out += ALIGN_C + SIZE_BIG + BOLD_ON + company + '\n' + BOLD_OFF + SIZE_NORM;
         if (tagline) out += ALIGN_C + tagline + '\n';
         if (address) wrap(address.replace(/\n/g, ', '), COLS).forEach(function(l){ out += ALIGN_C + l + '\n'; });
@@ -1604,13 +2463,25 @@ $(function(){
         if (email || website) out += ALIGN_C + [email, website].filter(Boolean).join(' · ') + '\n';
         if (showGst && taxLine) out += ALIGN_C + taxLine + '\n';
         if (headerTxt) out += ALIGN_C + headerTxt + '\n';
+        out += '\n';                         // blank line after company block
         out += ALIGN_L + SEP + '\n';
 
+        // ── Invoice number — prominent at the top of the bill block ──
+        // Drafts get a "DRAFT" stamp so the customer + cashier know the
+        // sale hasn't been saved yet.
+        var invNum = opts.invoiceNumber || '';
+        if (invNum) {
+            if (opts.isDraft) {
+                out += ALIGN_C + BOLD_ON + 'DRAFT — ' + invNum + '\n' + BOLD_OFF + ALIGN_L;
+            } else {
+                out += ALIGN_C + SIZE_TALL + BOLD_ON + 'INVOICE  ' + invNum + '\n' + BOLD_OFF + SIZE_NORM + ALIGN_L;
+            }
+            out += SEP + '\n';
+        }
+
         // ── Bill / Date / Time / User / Counter ──
-        // All four lines print so the cashier or auditor can identify
-        // exactly which counter and shift produced this bill.
-        if (showInvNum) out += row2('Bill: PREVIEW', 'Date: ' + dateStr) + '\n';
-        else            out += row2('', 'Date: ' + dateStr) + '\n';
+        if (showInvNum && !invNum) out += row2('Bill: PREVIEW', 'Date: ' + dateStr) + '\n';
+        else                       out += row2('', 'Date: ' + dateStr) + '\n';
         out += row2('Time: ' + timeStr,
             showCashier ? ('User: ' + ((window.SMS_USER && SMS_USER.name) || 'Cashier')) : '') + '\n';
         if (counter) out += row2('Counter: ' + counter, '') + '\n';
@@ -1695,6 +2566,11 @@ $(function(){
     }
 
     // ─── Print button click — pure silent print, no save ──────────
+    // Pulls the *next* invoice number from the server (peek; no reservation)
+    // and prints it as a DRAFT receipt. The actual sale, when saved via
+    // Complete Payment, gets the same or the next number depending on
+    // whether someone else saved in between — so this print is intentionally
+    // marked DRAFT so customers know it's the pre-payment estimate.
     window.cartPrintNow = function() {
         if (!window._cart || !window._cart.length) {
             if (window.toastr) toastr.warning('Cart is empty');
@@ -1708,11 +2584,20 @@ $(function(){
         var $btn = $('#coPrint').prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Printing...');
         function reset(){ $btn.prop('disabled', false).html('<i class="bi bi-printer me-1"></i>Print'); }
 
-        _loadReceiptSettingsForPrint(function(settings) {
-            // Try to load logo bitmap; resolves '' on any failure.
+        // Fetch settings + next invoice number in parallel, then build print.
+        $.when(
+            $.get('/sales/settings/data'),
+            $.get('/sales/next-invoice-number')
+        ).done(function(settingsRes, invRes) {
+            var settings = (settingsRes && settingsRes[0] && settingsRes[0].data) || {};
+            var nextInv  = (invRes && invRes[0] && invRes[0].data && invRes[0].data.next) || '';
             var logoUrl = settings.pos_receipt_logo_url || '';
             _imgToEscpos(logoUrl, 384).then(function(logoBytes) {
-                var data = _buildCartEscpos(window._cart, settings, logoBytes);
+                // Mark draft prints so the customer + cashier know it's pre-payment.
+                var data = _buildCartEscpos(window._cart, settings, logoBytes, {
+                    invoiceNumber: nextInv,
+                    isDraft: true,
+                });
                 $.ajax({
                     url: 'http://localhost:9998/print-to', method: 'POST',
                     contentType: 'application/json', timeout: 12000,
@@ -1720,7 +2605,7 @@ $(function(){
                 }).done(function(r) {
                     reset();
                     if (r && r.ok) {
-                        if (window.toastr) toastr.success('Printed on ' + (assigned.name || 'printer'));
+                        if (window.toastr) toastr.success('Draft printed (' + (nextInv || 'no #') + ') on ' + (assigned.name || 'printer'));
                     } else {
                         if (window.toastr) toastr.error((r && r.error) || 'Print failed');
                     }
@@ -1732,6 +2617,9 @@ $(function(){
                     if (window.toastr) toastr.error(msg);
                 });
             });
+        }).fail(function() {
+            reset();
+            if (window.toastr) toastr.error('Failed to load print data — try again.');
         });
     };
 

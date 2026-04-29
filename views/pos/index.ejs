@@ -80,13 +80,15 @@
 
     <!-- Mobile top bar (hidden on desktop) -->
     <div class="mob-topbar" style="display:none;align-items:center;gap:6px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);">
-      <a href="/dashboard" style="font-size:16px;font-weight:800;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:5px;"><i class="bi bi-grid-1x2-fill"></i> SMS</a>
+      <a href="/dashboard" class="ps-btn" data-tip="Dashboard" style="width:32px;height:32px;background:var(--bg);font-size:14px;color:var(--primary);"><i class="bi bi-grid-1x2-fill"></i></a>
+      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('orders')" data-tip="Orders"><i class="bi bi-bag-check"></i></button>
+      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('customers')" data-tip="Customers"><i class="bi bi-people"></i></button>
+      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('returns')" data-tip="Returns"><i class="bi bi-arrow-counterclockwise"></i></button>
+      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('settings')" data-tip="Settings"><i class="bi bi-gear"></i></button>
       <div style="flex:1;"></div>
-      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('orders')"><i class="bi bi-bag-check"></i></button>
-      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('customers')"><i class="bi bi-people"></i></button>
-      <button class="ps-btn" onclick="toggleFS()" style="width:32px;height:32px;background:var(--bg);font-size:14px;"><i class="bi bi-arrows-fullscreen"></i></button>
-      <button class="ps-btn" onclick="showCart();$('#posRight').toggleClass('open');" style="width:32px;height:32px;background:var(--primary);color:#fff;position:relative;font-size:14px;"><i class="bi bi-cart3"></i><span id="mobCartCnt" style="position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;">0</span></button>
-      <a href="/logout" class="ps-btn" style="width:32px;height:32px;background:rgba(239,68,68,.1);color:var(--red);font-size:14px;"><i class="bi bi-box-arrow-left"></i></a>
+      <button class="ps-btn" onclick="toggleFS()" style="width:32px;height:32px;background:var(--bg);font-size:14px;" data-tip="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button class="ps-btn" onclick="showCart();$('#posRight').toggleClass('open');" style="width:36px;height:36px;background:var(--primary);color:#fff;position:relative;font-size:15px;" data-tip="Cart"><i class="bi bi-cart3"></i><span id="mobCartCnt" style="position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0 4px;">0</span></button>
+      <a href="/logout" class="ps-btn" style="width:32px;height:32px;background:rgba(239,68,68,.1);color:var(--red);font-size:14px;" data-tip="Logout"><i class="bi bi-box-arrow-left"></i></a>
     </div>
 
     <!-- Header -->
@@ -94,7 +96,7 @@
       <div class="ph-heading">
         <h2 class="ph-title">POS</h2>
       </div>
-      <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Scan or search SKU, name, or barcode..." autocomplete="off"/></div>
+      <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Scan or search SKU, name, or barcode..." autocomplete="off" data-no-keyboard/></div>
       <button class="pos-btn-outline pos-btn-sm" onclick="openAdvSearch()" data-tip="Advanced Search" data-tip-pos="bottom" id="advSearchBtn"><i class="bi bi-sliders"></i><span id="advCount" style="display:none;background:var(--accent);color:#fff;border-radius:50%;min-width:16px;height:16px;font-size:9px;align-items:center;justify-content:center;margin-left:4px;"></span></button>
       <div class="ph-filters">
         <select class="ph-sel" id="fWarehouse" data-tip="Filter by warehouse" data-tip-pos="bottom"><option value="">All Warehouses</option></select>
@@ -117,7 +119,7 @@
     <div class="pos-vback" id="vBackBar">
       <button class="pvb-btn" onclick="closeVehicleParts()" data-tip="Back to vehicles list"><i class="bi bi-arrow-left"></i> Back</button>
       <span class="pvb-title" id="vTitle"></span>
-      <div class="ph-search" style="max-width:240px;flex:1;"><i class="bi bi-search"></i><input type="text" id="vPartSearch" placeholder="Search parts..." autocomplete="off"/></div>
+      <div class="ph-search" style="max-width:240px;flex:1;"><i class="bi bi-search"></i><input type="text" id="vPartSearch" placeholder="Search parts..." autocomplete="off" data-no-keyboard/></div>
       <button class="pvb-all" onclick="addAllVehicleParts()" data-tip="Add all parts to cart" data-tip-color="orange"><i class="bi bi-cart-plus"></i> Add All</button>
     </div>
 
@@ -264,146 +266,617 @@
   <div class="ip-body" id="infoBody"></div>
 </div>
 
-<!-- Checkout Fullscreen -->
-<div class="info-page" id="coPage">
-  <div class="ip-hdr">
-    <button class="ip-back" onclick="$('#coPage').removeClass('open');"><i class="bi bi-arrow-left"></i></button>
-    <span class="ip-title">Checkout</span>
-    <span id="coItemCount" style="font-size:12px;color:var(--muted);font-weight:600;"></span>
+<!--
+  Checkout — single-screen 3-column "Payment Screen" layout (web/desktop first).
+  Header (navy) + 3 columns (Order details · Customer/Discount/Notes/Payment details ·
+  Amount to Pay + Payment Modes) + sticky footer (Cancel · Print · Save · Pay Now).
+  Same input IDs as before so existing JS hooks (calcCheckout, selPay, calcChange,
+  doCheckout, cartPrintNow) keep working untouched.
+-->
+<div class="info-page cps-screen" id="coPage">
+  <button class="cps-close-fab" onclick="$('#coPage').removeClass('open');" data-tip="Back to cart (Esc)" data-tip-pos="left">
+    <i class="bi bi-arrow-left"></i>
+  </button>
+
+  <!-- ════════════ Top header bar (tablet + mobile only) ════════════ -->
+  <div class="cps-header">
+    <button class="cps-header-back cps-header-mobile" onclick="$('#coPage').removeClass('open');" data-tip="Back" data-tip-pos="bottom"><i class="bi bi-list"></i></button>
+    <div class="cps-brand">
+      <div class="cps-brand-icon"><i class="bi bi-truck-front"></i></div>
+      <div class="cps-brand-txt">
+        <div class="cps-brand-title" id="cpsBrandName">SCRAP MANAGEMENT</div>
+        <div class="cps-brand-sub">POS — Payment Screen</div>
+      </div>
+    </div>
+    <div class="cps-search cps-header-tablet">
+      <input type="text" id="cpsSearch" placeholder="Search Vehicle / Order / Customer…" data-no-keyboard/>
+      <kbd>F11</kbd>
+      <i class="bi bi-search"></i>
+    </div>
+    <button class="cps-header-icon cps-header-mobile" data-tip="Search" data-tip-pos="bottom"><i class="bi bi-search"></i></button>
+    <div class="cps-meta cps-header-tablet">
+      <i class="bi bi-calendar3"></i>
+      <div>
+        <div class="cps-meta-d" id="cpsHdrDate">--</div>
+        <div class="cps-meta-t" id="cpsHdrTime">--</div>
+      </div>
+    </div>
+    <div class="cps-user cps-header-tablet">
+      <div class="cps-user-av"><i class="bi bi-person"></i></div>
+      <div class="cps-user-txt">
+        <div class="cps-user-n" id="cpsHdrUserName">User</div>
+        <div class="cps-user-r" id="cpsHdrUserRole">Operator</div>
+      </div>
+      <i class="bi bi-chevron-down cps-user-chev"></i>
+    </div>
+    <button class="cps-header-icon cps-header-mobile" data-tip="More" data-tip-pos="bottom"><i class="bi bi-three-dots-vertical"></i></button>
   </div>
-  <div class="ip-body" style="padding:0;display:flex;flex-direction:row;overflow:hidden;">
-    <!-- Left Panel: Summary + Customer + Discount -->
-    <div class="co-left">
-      <!-- Order Summary -->
-      <div class="co-section">
-        <div class="co-sec-title"><i class="bi bi-receipt"></i> Order Summary</div>
+
+  <!-- ════════════ 3-column body ════════════ -->
+  <div class="cps-body">
+
+    <!-- ════════════ LEFT — Order details ════════════ -->
+    <div class="cps-col cps-col-l">
+      <div class="cps-card" data-mob="order">
+        <div class="cps-card-h"><i class="bi bi-list-ul"></i> ORDER DETAILS</div>
+        <div class="cps-card-b cps-card-b-flush">
+          <div class="cps-order-hero" id="cpsOrderHero">
+            <div class="cps-hero-img" id="cpsHeroImg"><i class="bi bi-box-seam"></i></div>
+            <div class="cps-hero-meta">
+              <div class="cps-hero-id" id="cpsHeroId">DRAFT</div>
+              <div class="cps-hero-d1" id="cpsHeroD1">Multiple Items</div>
+              <div class="cps-hero-d2" id="cpsHeroD2"></div>
+              <div class="cps-hero-d3" id="cpsHeroD3"></div>
+              <span class="cps-pill cps-pill-green" id="cpsHeroPill">Scrap Order</span>
+            </div>
+          </div>
+          <!-- Mobile-only collapsible bar header (hidden on web/tablet) -->
+          <button type="button" class="cps-collapse-bar cps-mobile-only" id="cpsItemsBar" onclick="cpsToggleItems()">
+            <i class="bi bi-list-ul"></i>
+            <span>Order Items <span id="cpsItemsBarCount">(0)</span></span>
+            <i class="bi bi-chevron-down cps-collapse-chev"></i>
+          </button>
+          <div class="cps-items-wrap" id="cpsItemsWrap">
+            <table class="cps-items">
+              <thead><tr>
+                <th>#</th>
+                <th>ITEM DESCRIPTION</th>
+                <th>TYPE</th>
+                <th class="num">QTY</th>
+                <th class="num">RATE</th>
+                <th class="num">AMOUNT</th>
+              </tr></thead>
+              <tbody id="cpsItems"></tbody>
+            </table>
+          </div>
+          <div class="cps-totals" id="cpsTotals"></div>
+          <div class="cps-grand">
+            <span>Grand Total</span>
+            <span id="cpsGrand">0.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ CENTER — Customer · Discount · Notes · Payment Details ════════════ -->
+    <div class="cps-col cps-col-c">
+
+      <!-- Mobile-only "Amount to Pay" card (hidden on tablet/desktop) -->
+      <div class="cps-amt-card cps-mobile-only" data-mob="amount">
+        <div class="cps-amt-l-row">
+          <i class="bi bi-credit-card"></i>
+          <div class="cps-amt-l">Amount to Pay</div>
+          <div class="cps-amt-v" id="cpsAmtPayMobile">0.00</div>
+        </div>
+        <div class="cps-amt-words">In Words: <span id="cpsAmtWordsMobile">Zero Rupees Only</span></div>
+      </div>
+
+      <div class="cps-card" data-mob="customer">
+        <div class="cps-card-h"><i class="bi bi-person"></i> CUSTOMER SELECTION</div>
+        <div class="cps-card-b">
+          <div class="cps-cust-row">
+            <div class="cps-input-wrap" style="flex:1;">
+              <input type="text" id="custSearch" class="cps-input" placeholder="Search customer by name or phone…" autocomplete="off"/>
+              <button type="button" class="cps-kb-trigger" onclick="openVK('custSearch','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+              <div id="custResult" class="cps-cust-results"></div>
+            </div>
+            <button class="cps-btn-primary" onclick="openNewCust()"><i class="bi bi-plus-lg"></i> New Customer</button>
+          </div>
+          <!-- Walk-in fallback fields: just two inputs side-by-side, no caption line. -->
+          <div class="cps-walkin" id="cpsWalkin">
+            <div class="cps-walkin-row">
+              <div class="cps-input-wrap" style="flex:1;">
+                <input type="text" id="walkInName" class="cps-input" placeholder="Walk-in customer name (optional)"/>
+                <button type="button" class="cps-kb-trigger" onclick="openVK('walkInName','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+              </div>
+              <div class="cps-input-wrap" style="flex:1;">
+                <input type="tel" id="walkInPhone" class="cps-input" placeholder="Phone (optional)"/>
+                <button type="button" class="cps-kb-trigger" onclick="openVK('walkInPhone','text')" data-tip="Open keypad" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="cps-cust-info">
+            <div class="ci-l">
+              <i class="bi bi-person-circle"></i>
+              <div>
+                <div class="ci-name" id="ciName">Walk-in Customer</div>
+                <div class="ci-sub" id="ciSub">General Customer</div>
+              </div>
+            </div>
+            <div class="ci-r">
+              <div class="ci-lbl">Phone</div>
+              <div class="ci-val" id="ciPhone">-</div>
+            </div>
+            <div class="ci-r">
+              <div class="ci-lbl">Email</div>
+              <div class="ci-val" id="ciEmail">-</div>
+            </div>
+          </div>
+          <input type="hidden" id="custId" value=""/>
+        </div>
+      </div>
+
+      <div class="cps-card" data-mob="discount">
+        <div class="cps-card-h"><i class="bi bi-tag"></i> DISCOUNT SELECTION</div>
+        <div class="cps-card-b">
+          <div class="cps-disc-row">
+            <div class="cps-fld">
+              <label>Discount Type</label>
+              <select id="dType" class="cps-input" onchange="onDiscountTypeChange();calcCheckout();">
+                <option value="">Select Discount Type</option>
+                <option value="percent">% Percent</option>
+                <option value="fixed">Fixed amount</option>
+              </select>
+            </div>
+            <div class="cps-fld">
+              <label>Discount Amount (<span class="cps-cur"></span>)</label>
+              <div class="cps-input-wrap">
+                <input type="number" id="dVal" class="cps-input" placeholder="0.00" min="0" oninput="calcCheckout()"/>
+                <button type="button" class="cps-kb-trigger" onclick="openVK('dVal','amount')" data-tip="Open keypad" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="cps-3box">
+            <div class="cps-box">
+              <div class="cps-box-l">Discount (<span class="cps-cur"></span>)</div>
+              <div class="cps-box-v" id="cpsDisc">0.00</div>
+            </div>
+            <div class="cps-box">
+              <div class="cps-box-l">Taxable Amount</div>
+              <div class="cps-box-v cps-box-blue" id="cpsTaxable">0.00</div>
+            </div>
+            <div class="cps-box">
+              <div class="cps-box-l">Total Payable</div>
+              <div class="cps-box-v cps-box-green" id="cpsTotalPayable">0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cps-card" data-mob="notes">
+        <div class="cps-card-h"><i class="bi bi-pencil-square"></i> NOTES</div>
+        <div class="cps-card-b">
+          <div class="cps-input-wrap cps-input-wrap-textarea">
+            <textarea id="oNotes" class="cps-input cps-textarea" maxlength="200" rows="3" placeholder="Enter notes here…" oninput="document.getElementById('cpsNotesCount').textContent=this.value.length;"></textarea>
+            <button type="button" class="cps-kb-trigger cps-kb-trigger-tarea" onclick="openVK('oNotes','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+          <div class="cps-counter"><span id="cpsNotesCount">0</span> / 200</div>
+        </div>
+      </div>
+
+      <div class="cps-card cps-pd-card" data-mob="pd">
+        <button type="button" class="cps-card-h cps-card-h-toggle" onclick="cpsTogglePD()">
+          <i class="bi bi-file-earmark-text"></i>
+          <span>PAYMENT DETAILS</span>
+          <i class="bi bi-chevron-down cps-collapse-chev cps-mobile-only" id="cpsPDChev"></i>
+        </button>
+        <div class="cps-card-b" id="cpsPDBody">
+          <div class="cps-pd-row">
+            <label>Order ID</label>
+            <input type="text" id="cpsOrderId" class="cps-input cps-input-readonly" readonly value="DRAFT"/>
+          </div>
+          <div class="cps-pd-row">
+            <label>Order Date</label>
+            <input type="text" id="cpsOrderDate" class="cps-input cps-input-readonly" readonly/>
+          </div>
+          <div class="cps-pd-row">
+            <label>Created By</label>
+            <input type="text" id="cpsCreatedBy" class="cps-input cps-input-readonly" readonly/>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════════════ RIGHT — Payment Modes ════════════ -->
+    <div class="cps-col cps-col-r">
+
+      <!-- Hidden mirrors so legacy code (calcCheckout / cpsAmountInWords) can write here -->
+      <div style="display:none;" aria-hidden="true">
+        <span id="cpsAmtPay">0.00</span>
+        <span id="cpsAmtWords">Zero Rupees Only</span>
+      </div>
+
+      <div class="cps-card" data-mob="modes">
+        <div class="cps-card-h"><i class="bi bi-credit-card"></i> PAYMENT MODES</div>
+        <div class="cps-card-b cps-pmodes">
+          <div class="cps-pmode active co-pay-btn" data-method="upi" onclick="selPay(this)">
+            <span class="cps-pmode-radio"><span></span></span>
+            <div class="cps-pmode-l">
+              <div class="cps-pmode-t">UPI / QR / Online</div>
+              <div class="cps-pmode-s">Google Pay, PhonePe, Paytm, BHIM, UPI</div>
+            </div>
+            <i class="bi bi-qr-code cps-pmode-icon"></i>
+            <span style="display:none;">UPI</span>
+          </div>
+          <div class="cps-pmode co-pay-btn" data-method="online" onclick="selPay(this)">
+            <span class="cps-pmode-radio"><span></span></span>
+            <div class="cps-pmode-l">
+              <div class="cps-pmode-t">Net Banking</div>
+              <div class="cps-pmode-s">All Major Banks</div>
+            </div>
+            <i class="bi bi-bank cps-pmode-icon"></i>
+            <span style="display:none;">Net Banking</span>
+          </div>
+          <div class="cps-pmode co-pay-btn" data-method="card" onclick="selPay(this)">
+            <span class="cps-pmode-radio"><span></span></span>
+            <div class="cps-pmode-l">
+              <div class="cps-pmode-t">Card Payment</div>
+              <div class="cps-pmode-s">Debit / Credit Card</div>
+            </div>
+            <i class="bi bi-credit-card-2-front cps-pmode-icon"></i>
+            <span style="display:none;">Card</span>
+          </div>
+          <div class="cps-pmode co-pay-btn" data-method="cash" onclick="selPay(this)">
+            <span class="cps-pmode-radio"><span></span></span>
+            <div class="cps-pmode-l">
+              <div class="cps-pmode-t">Cash</div>
+              <div class="cps-pmode-s">Cash Payment</div>
+            </div>
+            <i class="bi bi-cash-stack cps-pmode-icon"></i>
+            <span style="display:none;">Cash</span>
+          </div>
+          <div class="cps-pmode co-pay-btn" data-method="cheque" onclick="selPay(this)">
+            <span class="cps-pmode-radio"><span></span></span>
+            <div class="cps-pmode-l">
+              <div class="cps-pmode-t">Cheque</div>
+              <div class="cps-pmode-s">Cheque Payment</div>
+            </div>
+            <i class="bi bi-receipt-cutoff cps-pmode-icon"></i>
+            <span style="display:none;">Cheque</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reference (UPI / Card / Cheque transaction id / cheque no) -->
+      <div class="cps-card" id="cpsRefBox" data-mob="ref" style="display:none;">
+        <div class="cps-card-h"><i class="bi bi-card-text"></i> <span id="cpsRefLabel">TRANSACTION REFERENCE</span></div>
+        <div class="cps-card-b">
+          <div class="cps-input-wrap">
+            <input type="text" id="payRef" class="cps-input" placeholder="Transaction ID / UTR / Cheque No"/>
+            <button type="button" class="cps-kb-trigger" onclick="openVK('payRef','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amount received (Cash only) -->
+      <div class="cps-card" id="cpsAmtRcvBox" data-mob="rcv">
+        <div class="cps-card-h"><i class="bi bi-cash"></i> AMOUNT RECEIVED</div>
+        <div class="cps-card-b">
+          <div class="cps-input-wrap">
+            <input type="number" id="amtRcv" class="cps-input cps-amt-input" min="0" step="0.01" oninput="calcChange()"/>
+            <button type="button" class="cps-kb-trigger" onclick="openVK('amtRcv','amount')" data-tip="Open keypad" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+          <div class="cps-quick" id="quickAmounts"></div>
+          <div id="changeDisp" class="cps-change" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Hidden mirrors so legacy JS keeps working -->
+      <div style="display:none;" aria-hidden="true">
+        <div id="cardTypeBox"></div>
+        <div id="onlineHint"></div>
+        <div id="linkBox"></div>
+        <span id="coGrandTotal">0.00</span>
+        <span id="coGrandTotal2">0.00</span>
+        <span id="coStep2Total"></span>
+        <span id="coPayTotal">0.00</span>
+        <span id="coStep2BtnLabel"></span>
+        <span id="coStep2BtnAmt"></span>
+        <div id="coTotals"></div>
         <div id="coSummary"></div>
+        <span id="coItemCount"></span>
+        <span id="coItemsBtnCount"></span>
+        <span id="coConfirmCust"></span>
+        <span id="coConfirmItems"></span>
+        <span id="coConfirmMethod"></span>
+        <span id="coConfirmSub"></span>
+        <span id="coConfirmDisc"></span>
+        <span id="coConfirmTax"></span>
+        <span id="coConfirmTotal"></span>
+        <span id="coConfirmRef"></span>
+        <div id="coConfirmRefRow"></div>
+        <div id="coConfirmDiscRow"></div>
+        <div id="coConfirmTaxRow"></div>
+        <div id="step2RefBox"></div>
+        <div id="step2AmtBox"></div>
       </div>
-      <!-- Totals -->
-      <div class="co-section" id="coTotals"></div>
-      <!-- Customer -->
-      <div class="co-section">
-        <div class="co-sec-title"><i class="bi bi-person"></i> Customer</div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <input type="text" id="custSearch" class="pos-input" placeholder="Search name/phone..." style="flex:1;font-size:12px;padding:8px 10px;"/>
-          <button onclick="openNewCust()" class="pos-btn-primary" style="padding:8px 12px;font-size:11px;white-space:nowrap;"><i class="bi bi-plus"></i> New</button>
-        </div>
-        <div id="custResult" style="font-size:11px;margin-top:4px;color:var(--muted);">Walk-in customer</div>
-        <input type="hidden" id="custId" value=""/>
-      </div>
-      <!-- Discount -->
-      <div class="co-section">
-        <div class="co-sec-title"><i class="bi bi-tag"></i> Discount</div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <select id="dType" class="pos-input" style="width:80px;font-size:12px;padding:8px;" onchange="calcCheckout()"><option value="">None</option><option value="percent">%</option><option value="fixed">Fixed</option></select>
-          <input type="number" id="dVal" class="pos-input" placeholder="0" min="0" style="flex:1;font-size:12px;padding:8px;" oninput="calcCheckout()"/>
-        </div>
-      </div>
-      <!-- Notes -->
-      <div class="co-section">
-        <div class="co-sec-title"><i class="bi bi-journal-text"></i> Notes</div>
-        <textarea id="oNotes" rows="5" class="pos-input" style="resize:vertical;min-height:110px;margin-top:8px;font-size:13px;line-height:1.5;" placeholder="Any note for this order — visible on the receipt and admin dashboard..."></textarea>
-      </div>
+
     </div>
 
-    <!-- Right Panel: Payment -->
-    <div class="co-right">
-      <!-- Total Display -->
-      <div class="co-total-box">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Total Amount</div>
-        <div id="coGrandTotal" style="font-size:36px;font-weight:900;color:var(--primary);line-height:1;margin:6px 0;">0.00</div>
-      </div>
-
-      <!-- Payment Method -->
-      <div class="co-sec-title" style="margin-bottom:10px;"><i class="bi bi-wallet2"></i> Payment Method</div>
-      <div class="co-pay-methods" style="flex-wrap:wrap;">
-        <button class="co-pay-btn active" data-method="cash" onclick="selPay(this)">
-          <i class="bi bi-cash-stack"></i><span>Cash</span>
-        </button>
-        <button class="co-pay-btn" data-method="card" onclick="selPay(this)">
-          <i class="bi bi-credit-card-2-front"></i><span>Card</span>
-        </button>
-        <button class="co-pay-btn" data-method="upi" onclick="selPay(this)">
-          <i class="bi bi-phone"></i><span>UPI</span>
-        </button>
-        <button class="co-pay-btn" data-method="online" onclick="selPay(this)" title="Online payment via Razorpay / Stripe">
-          <i class="bi bi-globe"></i><span>Online</span>
-        </button>
-        <button class="co-pay-btn" data-method="link" onclick="selPay(this)" title="Send payment link via SMS / email">
-          <i class="bi bi-link-45deg"></i><span>Pay Link</span>
-        </button>
-      </div>
-
-      <!-- Online payment hint -->
-      <div id="onlineHint" style="display:none;margin-top:8px;padding:10px 12px;border-radius:8px;background:rgba(59,130,246,.06);color:var(--primary);font-size:12px;">
-        <i class="bi bi-info-circle me-1"></i>Clicking "Complete Payment" will open the gateway checkout. Stock is held for 5 minutes while the customer pays.
-      </div>
-      <!-- Pay-by-link options -->
-      <div id="linkBox" style="display:none;margin-top:10px;">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Send payment link to</div>
-        <div class="d-flex gap-3 flex-wrap" style="font-size:12px;">
-          <label class="d-flex align-items-center gap-1"><input type="checkbox" id="linkNotifySms" checked/> SMS (uses customer phone)</label>
-          <label class="d-flex align-items-center gap-1"><input type="checkbox" id="linkNotifyEmail" checked/> Email (uses customer email)</label>
-        </div>
-        <small class="form-hint d-block mt-1">Requires a selected customer with phone/email. You'll also get the link to copy.</small>
-      </div>
-
-      <!-- Card Type (visible only when Card selected) -->
-      <div id="cardTypeBox" style="display:none;margin-top:10px;">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Card Type</div>
-        <div class="co-card-types">
-          <button class="co-card-btn active" data-card="visa" onclick="selCard(this)">Visa</button>
-          <button class="co-card-btn" data-card="mastercard" onclick="selCard(this)">MasterCard</button>
-          <button class="co-card-btn" data-card="rupay" onclick="selCard(this)">Rupay</button>
-          <button class="co-card-btn" data-card="amex" onclick="selCard(this)">Amex</button>
-          <button class="co-card-btn" data-card="other" onclick="selCard(this)">Other</button>
-        </div>
-      </div>
-
-      <!-- Reference (Card/UPI) -->
-      <div id="refBox" style="display:none;margin-top:10px;">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Transaction Reference</div>
-        <input type="text" id="payRef" class="pos-input" placeholder="Transaction ID / Approval Code" style="font-size:13px;"/>
-      </div>
-
-      <!-- Amount Received -->
-      <div style="margin-top:14px;">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Amount Received</div>
-        <input type="number" id="amtRcv" class="pos-input co-amt-input" min="0" step="0.01" oninput="calcChange()"/>
-        <!-- Quick amount buttons -->
-        <div class="co-quick-amounts" id="quickAmounts"></div>
-        <!-- Change display -->
-        <div id="changeDisp" class="co-change-box" style="display:none;"></div>
-      </div>
-    </div>
   </div>
-  <!-- Footer: Cancel · Print · Pay -->
-  <div class="ip-foot" style="gap:10px;">
-    <button class="pos-btn-outline" onclick="$('#coPage').removeClass('open');" style="flex:1;padding:14px;font-size:14px;"><i class="bi bi-x-lg me-1"></i>Cancel</button>
-    <button class="pos-btn-outline" id="coPrint" onclick="cartPrintNow()" data-tip="Send the cart to the printer assigned to Receipt · 80mm in Printer Settings (does NOT save the order)" data-tip-pos="top" style="flex:1.4;padding:14px;font-size:15px;font-weight:700;border-color:var(--pv2-brand);color:var(--pv2-brand);background:var(--pv2-brand-ghost);"><i class="bi bi-printer me-1"></i>Print</button>
-    <button class="pos-btn-primary" id="coComplete" onclick="doCheckout(false)" style="flex:2;padding:14px;font-size:16px;font-weight:800;"><i class="bi bi-check-circle me-1"></i>Complete Payment <span id="coPayTotal" style="margin-left:6px;opacity:.8;"></span></button>
+
+  <!-- ════════════ Sticky 4-button footer ════════════ -->
+  <div class="cps-footer">
+    <button class="cps-fbtn cps-fbtn-cancel" onclick="$('#coPage').removeClass('open');" data-tip="Esc — close without saving" data-tip-pos="top">
+      <div class="cps-fbtn-i"><i class="bi bi-x-lg"></i></div>
+      <div class="cps-fbtn-l"><div class="cps-fbtn-t">CANCEL</div><div class="cps-fbtn-k">ESC</div></div>
+    </button>
+    <button class="cps-fbtn cps-fbtn-print" id="coPrint" onclick="cartPrintNow()" data-tip="Print a draft receipt (no save)" data-tip-pos="top">
+      <div class="cps-fbtn-i"><i class="bi bi-printer"></i></div>
+      <div class="cps-fbtn-l"><div class="cps-fbtn-t">PRINT</div><div class="cps-fbtn-k">CTRL + P</div></div>
+    </button>
+    <button class="cps-fbtn cps-fbtn-save" id="cpsSaveBtn" onclick="cpsSaveOrder()" data-tip="Save as draft" data-tip-pos="top">
+      <div class="cps-fbtn-i"><i class="bi bi-floppy"></i></div>
+      <div class="cps-fbtn-l"><div class="cps-fbtn-t">SAVE AS DRAFT</div><div class="cps-fbtn-k">F6</div></div>
+    </button>
+    <button class="cps-fbtn cps-fbtn-pay" id="coComplete" onclick="doCheckout(false)" data-tip="Complete payment" data-tip-pos="top">
+      <div class="cps-fbtn-i"><i class="bi bi-check-circle"></i></div>
+      <div class="cps-fbtn-l"><div class="cps-fbtn-t" id="cpsPayLabel">PAY NOW</div><div class="cps-fbtn-k">F9</div></div>
+    </button>
   </div>
 </div>
 
-<!-- New Customer Popup -->
-<div class="co-overlay" id="newCustOv" onclick="if(event.target===this)$(this).hide();">
-  <div class="co-box" style="max-width:440px;">
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-      <h3 style="font-size:15px;font-weight:800;margin:0;flex:1;"><i class="bi bi-person-plus" style="color:var(--primary);margin-right:6px;"></i>New Customer</h3>
-      <button onclick="$('#newCustOv').hide();" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+<!-- ═══════════ Cash confirm popup ═══════════ -->
+<div class="cps-confirm-ov" id="cashConfirmOv" style="display:none;" onclick="if(event.target===this)$('#cashConfirmOv').hide();">
+  <div class="cps-confirm-box">
+    <div class="cps-confirm-h">
+      <i class="bi bi-cash-stack"></i>
+      <h3>Confirm Cash Payment</h3>
+      <button class="cps-confirm-x" onclick="$('#cashConfirmOv').hide()" data-tip="Close (Esc)" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
     </div>
-    <div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div><label class="co-label">Name *</label><input class="pos-input" id="ncName" required/></div>
-      <div><label class="co-label">Phone *</label><input class="pos-input" id="ncPhone" type="tel"/></div>
-      <div><label class="co-label">Email</label><input class="pos-input" id="ncEmail" type="email"/></div>
-      <div><label class="co-label">Type</label><select class="pos-input" id="ncType"><option value="regular">Regular</option><option value="wholesale">Wholesale</option></select></div>
-      <div style="grid-column:1/-1;"><label class="co-label">Address</label><textarea class="pos-input" id="ncAddr" rows="2" style="resize:none;"></textarea></div>
-      <div><label class="co-label">GST</label><input class="pos-input" id="ncGst"/></div>
-      <div><label class="co-label">PAN</label><input class="pos-input" id="ncPan"/></div>
+    <div class="cps-confirm-b">
+      <div class="cps-confirm-grid">
+        <div><div class="cps-confirm-l">Order Total</div><div class="cps-confirm-v" id="ccTotal">0.00</div></div>
+        <div><div class="cps-confirm-l">Amount Received</div><div class="cps-confirm-v cps-confirm-blue" id="ccRcv">0.00</div></div>
+        <div><div class="cps-confirm-l">Change Due</div><div class="cps-confirm-v cps-confirm-green" id="ccChange">0.00</div></div>
+      </div>
+      <div class="cps-confirm-list">
+        <div><span>Customer</span><strong id="ccCust">Walk-in Customer</strong></div>
+        <div><span>Items</span><strong id="ccItems">0</strong></div>
+        <div><span>Payment Method</span><strong>Cash</strong></div>
+      </div>
+      <div class="cps-confirm-warn" id="ccWarn" style="display:none;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>Amount received is less than the total. Please collect the full amount before confirming.</span>
+      </div>
     </div>
-    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;">
-      <button class="pos-btn-outline" onclick="$('#newCustOv').hide();" style="flex:1;">Cancel</button>
-      <button class="pos-btn-primary" onclick="saveNewCust()" style="flex:2;"><i class="bi bi-check-lg"></i> Save & Select</button>
+    <div class="cps-confirm-f">
+      <button class="cps-confirm-btn cps-confirm-cancel" onclick="$('#cashConfirmOv').hide()"><i class="bi bi-x-lg"></i> Cancel</button>
+      <button class="cps-confirm-btn cps-confirm-ok" id="ccConfirmBtn" onclick="cpsCashConfirm()"><i class="bi bi-check-circle-fill"></i> Confirm &amp; Collect</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ Virtual Keyboard popup (opened from .cps-kb-trigger icons) ═══════════ -->
+<div class="vk-overlay" id="vkOv" style="display:none;" onclick="if(event.target===this)closeVK();">
+  <div class="vk-panel" onmousedown="event.stopPropagation();">
+
+    <!-- ── Top row: Active Input + Numeric Keypad ── -->
+    <div class="vk-top">
+      <div class="vk-active">
+        <div class="vk-active-h">
+          <label class="vk-lbl">Active Input</label>
+          <button class="vk-close" onclick="closeVK()" title="Close (Esc)"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="vk-display" id="vkDisplay">0</div>
+        <div class="vk-meta-row">
+          <div class="vk-meta">
+            <label>Input Type</label>
+            <div class="vk-meta-v" id="vkTypeLabel">Text</div>
+          </div>
+          <div class="vk-meta">
+            <label>Precision</label>
+            <div class="vk-meta-v" id="vkPrecLabel">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vk-numpad" id="vkNumpad">
+        <div class="vk-numpad-h">
+          <i class="bi bi-keyboard-fill"></i>
+          <span>NUMERIC KEYPAD</span>
+        </div>
+        <div class="vk-numpad-grid">
+          <button class="vk-key vk-num" onclick="vkType('7')">7</button>
+          <button class="vk-key vk-num" onclick="vkType('8')">8</button>
+          <button class="vk-key vk-num" onclick="vkType('9')">9</button>
+          <button class="vk-key vk-back" onclick="vkBack()"><i class="bi bi-backspace"></i></button>
+
+          <button class="vk-key vk-num" onclick="vkType('4')">4</button>
+          <button class="vk-key vk-num" onclick="vkType('5')">5</button>
+          <button class="vk-key vk-num" onclick="vkType('6')">6</button>
+          <button class="vk-key vk-clr" onclick="vkClear()">C</button>
+
+          <button class="vk-key vk-num" onclick="vkType('1')">1</button>
+          <button class="vk-key vk-num" onclick="vkType('2')">2</button>
+          <button class="vk-key vk-num" onclick="vkType('3')">3</button>
+          <button class="vk-key vk-ok" id="vkOkBtn" onclick="vkOK()" rowspan="2">OK</button>
+
+          <button class="vk-key vk-num" onclick="vkType('0')">0</button>
+          <button class="vk-key vk-num" onclick="vkType('.')">.</button>
+          <button class="vk-key vk-num" onclick="vkSign()">+/-</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Quick amounts row (only meaningful for amount inputs) ── -->
+    <div class="vk-quick" id="vkQuickRow">
+      <span class="vk-quick-l">Quick Actions</span>
+      <button onclick="vkSet('100')">₹100</button>
+      <button onclick="vkSet('200')">₹200</button>
+      <button onclick="vkSet('500')">₹500</button>
+      <button onclick="vkSet('1000')">₹1000</button>
+      <button onclick="vkSet('2000')">₹2000</button>
+      <button onclick="vkSet('5000')">₹5000</button>
+      <button onclick="vkSet('10000')">₹10000</button>
+      <button class="vk-clear-all" onclick="vkClear()">Clear All</button>
+    </div>
+
+    <!-- ── Full QWERTY (shown for text inputs only) ── -->
+    <div class="vk-qwerty" id="vkQwerty">
+      <div class="vk-row">
+        <button class="vk-key vk-k" onclick="vkType('1')">1</button>
+        <button class="vk-key vk-k" onclick="vkType('2')">2</button>
+        <button class="vk-key vk-k" onclick="vkType('3')">3</button>
+        <button class="vk-key vk-k" onclick="vkType('4')">4</button>
+        <button class="vk-key vk-k" onclick="vkType('5')">5</button>
+        <button class="vk-key vk-k" onclick="vkType('6')">6</button>
+        <button class="vk-key vk-k" onclick="vkType('7')">7</button>
+        <button class="vk-key vk-k" onclick="vkType('8')">8</button>
+        <button class="vk-key vk-k" onclick="vkType('9')">9</button>
+        <button class="vk-key vk-k" onclick="vkType('0')">0</button>
+        <button class="vk-key vk-k" onclick="vkType('-')">-</button>
+        <button class="vk-key vk-k" onclick="vkType('=')">=</button>
+        <button class="vk-key vk-k vk-back-sm" onclick="vkBack()"><i class="bi bi-backspace"></i></button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" onclick="vkType('\t')">Tab</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Q</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">W</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">E</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">R</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">T</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Y</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">U</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">I</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">O</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">P</button>
+        <button class="vk-key vk-k" onclick="vkType('[')">[</button>
+        <button class="vk-key vk-k" onclick="vkType(']')">]</button>
+        <button class="vk-key vk-k" onclick="vkType('\\')">\</button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" id="vkCaps" onclick="vkToggleCaps()"><span class="vk-caps-led"></span> Caps</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">A</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">S</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">D</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">F</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">G</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">H</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">J</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">K</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">L</button>
+        <button class="vk-key vk-k" onclick="vkType(';')">;</button>
+        <button class="vk-key vk-k" onclick="vkType(&quot;'&quot;)">'</button>
+        <button class="vk-key vk-k vk-mod" onclick="vkOK()">Enter</button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" id="vkShift" onclick="vkToggleShift()">Shift</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Z</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">X</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">C</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">V</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">B</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">N</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">M</button>
+        <button class="vk-key vk-k" onclick="vkType(',')">,</button>
+        <button class="vk-key vk-k" onclick="vkType('.')">.</button>
+        <button class="vk-key vk-k" onclick="vkType('/')">/</button>
+        <button class="vk-key vk-k vk-mod" onclick="vkToggleShift()">Shift</button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" disabled>Ctrl</button>
+        <button class="vk-key vk-k vk-mod" disabled>Alt</button>
+        <button class="vk-key vk-k vk-space" onclick="vkType(' ')">Space</button>
+        <button class="vk-key vk-k" onclick="vkType('@')">@</button>
+        <button class="vk-key vk-k" onclick="vkType('.')">.</button>
+        <button class="vk-key vk-k vk-back-sm" onclick="vkBack()">&lt;&lt;</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════ Order Items popup (opened from "View order items") ═══════════ -->
+<div class="co-overlay" id="coItemsOv" onclick="if(event.target===this)$('#coItemsOv').hide();" style="display:none;">
+  <div class="co-box" style="max-width:520px;width:96%;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--pv2-border);display:flex;align-items:center;gap:8px;">
+      <i class="bi bi-receipt" style="color:var(--pv2-brand);font-size:18px;"></i>
+      <h3 style="font-size:15px;font-weight:800;margin:0;flex:1;">Order Items <span id="coItemsPopCount" style="color:var(--pv2-muted);font-weight:500;font-size:12px;"></span></h3>
+      <button onclick="$('#coItemsOv').hide();" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--pv2-border);background:none;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div id="coItemsPopBody" style="padding:14px 20px;max-height:60vh;overflow-y:auto;"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--pv2-border);text-align:right;">
+      <button class="pos-btn-primary" onclick="$('#coItemsOv').hide();" style="padding:8px 22px;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Customer Popup (CPS-style with keyboard icons) -->
+<div class="cps-confirm-ov" id="newCustOv" style="display:none;" onclick="if(event.target===this)$('#newCustOv').hide();">
+  <div class="cps-confirm-box" style="max-width:560px;">
+    <div class="cps-confirm-h">
+      <i class="bi bi-person-plus-fill" style="color:var(--cps-blue);"></i>
+      <h3>New Customer</h3>
+      <button class="cps-confirm-x" onclick="$('#newCustOv').hide();" data-tip="Close (Esc)" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="cps-confirm-b">
+      <div class="cps-nc-grid">
+        <div class="cps-fld">
+          <label>Name <span class="cps-req">*</span></label>
+          <div class="cps-input-wrap">
+            <input type="text" id="ncName" class="cps-input" placeholder="Customer name" required/>
+            <button type="button" class="cps-kb-trigger" onclick="openVK('ncName','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+        </div>
+        <div class="cps-fld">
+          <label>Phone <span class="cps-req">*</span></label>
+          <div class="cps-input-wrap">
+            <input type="tel" id="ncPhone" class="cps-input" placeholder="Phone number"/>
+            <button type="button" class="cps-kb-trigger" onclick="openVK('ncPhone','text')" data-tip="Open keypad" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+        </div>
+        <div class="cps-fld">
+          <label>Email</label>
+          <div class="cps-input-wrap">
+            <input type="email" id="ncEmail" class="cps-input" placeholder="email@example.com"/>
+            <button type="button" class="cps-kb-trigger" onclick="openVK('ncEmail','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+        </div>
+        <div class="cps-fld">
+          <label>Type</label>
+          <select id="ncType" class="cps-input">
+            <option value="regular">Regular</option>
+            <option value="wholesale">Wholesale</option>
+          </select>
+        </div>
+        <div class="cps-fld cps-nc-full">
+          <label>Address</label>
+          <div class="cps-input-wrap cps-input-wrap-textarea">
+            <textarea id="ncAddr" class="cps-input cps-textarea" rows="2" placeholder="Street, city, state…"></textarea>
+            <button type="button" class="cps-kb-trigger cps-kb-trigger-tarea" onclick="openVK('ncAddr','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+        </div>
+        <div class="cps-fld">
+          <label>GST</label>
+          <div class="cps-input-wrap">
+            <input type="text" id="ncGst" class="cps-input" placeholder="GST number"/>
+            <button type="button" class="cps-kb-trigger" onclick="openVK('ncGst','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+        </div>
+        <div class="cps-fld">
+          <label>PAN</label>
+          <div class="cps-input-wrap">
+            <input type="text" id="ncPan" class="cps-input" placeholder="PAN number"/>
+            <button type="button" class="cps-kb-trigger" onclick="openVK('ncPan','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cps-confirm-f">
+      <button class="cps-confirm-btn cps-confirm-cancel" onclick="$('#newCustOv').hide();"><i class="bi bi-x-lg"></i> Cancel</button>
+      <button class="cps-confirm-btn cps-confirm-ok" style="background:var(--cps-blue);" onclick="saveNewCust()"><i class="bi bi-check-lg"></i> Save &amp; Select</button>
     </div>
   </div>
 </div>
@@ -448,6 +921,9 @@
    These are normally defined in pos-layout.ejs, but index.ejs doesn't use that layout,
    so we replicate them here to keep SPA pages working without a layout. */
 var BASE_URL='';
+var SMS_USER = <%- JSON.stringify(typeof user!=='undefined'?user:{name:'User',role:'Operator'}) %>;
+var SMS_CURRENCY = (typeof SMS_CURRENCY !== 'undefined') ? SMS_CURRENCY : '<%- (typeof settings!=='undefined' && settings && settings.currency_symbol) ? settings.currency_symbol : '₹' %>';
+var SMS_ORG_NAME = '<%- (typeof settings!=='undefined' && settings && (settings.organization_name || settings.company_name)) ? (settings.organization_name || settings.company_name) : "Scrap Management" %>';
 toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2000};
 if (typeof window.H === 'undefined') window.H = {
   esc: function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); },
@@ -665,10 +1141,20 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
   var openAc = null;
 
   function close(ac){ if (!ac) return; ac.$wrap.removeClass('open'); ac.$drop.removeClass('open'); if (openAc === ac) openAc = null; }
+  /* Grace window — ignore scroll/resize close requests for the first 600ms
+     after open. On mobile, focusing the search input opens the soft keyboard
+     which fires a viewport `resize` and would otherwise immediately close
+     the dropdown the user just tapped. */
+  function closeAnyExternal(){
+    if (!openAc) return;
+    if (openAc._openedAt && (Date.now() - openAc._openedAt) < 600) return;
+    close(openAc);
+  }
   function closeAny(){ if (openAc) close(openAc); }
 
   function open(ac){
     closeAny();
+    ac._openedAt = Date.now();
     var rect = ac.$wrap[0].getBoundingClientRect();
     /* Position drop-down absolutely below the trigger, accounting for edges */
     var dropTop = rect.bottom + 4;
@@ -686,7 +1172,12 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
     if (dropLeft < 8) dropLeft = 8;
     ac.$drop.css({ position:'fixed', top:dropTop+'px', left:dropLeft+'px', width:dropWidth+'px' }).addClass('open');
     ac.$wrap.addClass('open');
-    ac.$search.val('').trigger('input').focus();
+    /* Refresh the option list, but only auto-focus the search box on desktop —
+       on touch devices the focus instantly opens the soft keyboard which is
+       jarring when the list is short. */
+    ac.$search.val('').trigger('input');
+    var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia('(max-width: 767px)').matches;
+    if (!isTouch) ac.$search.focus();
     openAc = ac;
   }
 
@@ -740,6 +1231,11 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
 
       /* Build wrapper */
       var $wrap = $('<div class="ps-sel"></div>');
+      /* Tag the wrapper with the select's id (as data + class) so CSS / JS can
+         target a specific dropdown by name (e.g. ps-sel-fWarehouse). */
+      if (this.id) {
+        $wrap.attr('data-for', this.id).addClass('ps-sel-' + this.id);
+      }
       var width = $sel[0].style.width || (($sel.attr('style')||'').match(/width:\s*([^;]+)/)||[])[1] || '';
       if (width) $wrap.css('width', width);
       /* Copy tooltip attrs so existing data-tip tooltips still work */
@@ -761,10 +1257,32 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
       var ac = { $select:$sel, $wrap:$wrap, $trigger:$trigger, $drop:$drop, $search:$search, $list:$list, options:options };
       $sel.data('posAc', ac);
 
-      /* Events */
-      $trigger.on('click', function(e){ e.preventDefault(); e.stopPropagation(); if (openAc === ac) close(ac); else open(ac); });
+      /* Events — `click` works on every device. We just guard against the
+         synthetic 300ms-delayed click on older iOS by tracking touchend. */
+      var _lastTouch = 0;
+      var _toggle = function(e){ e.preventDefault(); e.stopPropagation(); if (openAc === ac) close(ac); else open(ac); };
+      $trigger.on('touchend', function(e){
+        _lastTouch = Date.now();
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        if (openAc === ac) close(ac); else open(ac);
+      });
+      $trigger.on('click', function(e){
+        // If touchend already handled this tap, swallow the synthetic click.
+        if (Date.now() - _lastTouch < 500) { e.preventDefault(); e.stopPropagation(); return; }
+        _toggle(e);
+      });
       $trigger.on('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown'){ e.preventDefault(); open(ac); } });
-      $arrow.on('click', function(e){ e.preventDefault(); e.stopPropagation(); $trigger.click(); });
+      $arrow.on('click', function(e){
+        if (Date.now() - _lastTouch < 500) { e.preventDefault(); e.stopPropagation(); return; }
+        _toggle(e);
+      });
+      $arrow.on('touchend', function(e){
+        _lastTouch = Date.now();
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        if (openAc === ac) close(ac); else open(ac);
+      });
 
       $search.on('input', function(){ render(ac, $(this).val()); });
       $search.on('keydown', function(e){
@@ -811,19 +1329,27 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
     if ($(e.target).closest(openAc.$wrap).length || $(e.target).closest(openAc.$drop).length) return;
     close(openAc);
   });
-  window.addEventListener('scroll', closeAny, true);
-  window.addEventListener('resize', closeAny);
+  window.addEventListener('scroll', closeAnyExternal, true);
+  window.addEventListener('resize', closeAnyExternal);
   $(document).on('keydown', function(e){ if (e.key === 'Escape') closeAny(); });
 
-  /* Enhance known POS dropdowns once pos.js has settled */
+  /* Enhance every native <select> on POS pages with the same premium
+     posAutocomplete look as the Warehouse dropdown — except ones owned by
+     other widgets (select2-hidden-accessible) or explicitly opted out. */
   function enhance(){
-    posAutocomplete('#fWarehouse');
-    posAutocomplete('#fPerPage');
-    posAutocomplete('#fSort');
+    posAutocomplete(
+      'body.pos-mode select:not(.select2-hidden-accessible):not(.no-pos-ac):not([data-no-pos-ac])'
+    );
   }
   setTimeout(enhance, 350);
-  /* Also re-enhance if the SPA brings new selects into view */
   $(document).on('spa:ready', enhance);
+  /* Also re-run when SPA partials swap into view. */
+  if (typeof MutationObserver === 'function'){
+    new MutationObserver(function(){
+      clearTimeout(window._posAcDeb);
+      window._posAcDeb = setTimeout(enhance, 200);
+    }).observe(document.body, { childList:true, subtree:true });
+  }
 })();
 </script>
 

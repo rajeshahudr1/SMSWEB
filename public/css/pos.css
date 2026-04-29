@@ -188,13 +188,23 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
   content:'F2';position:absolute;right:10px;top:50%;transform:translateY(-50%);
   font-size:10.5px;color:var(--pv2-subtle);font-family:var(--pv2-font-mono);pointer-events:none;
 }
-.ph-filters{display:flex;gap:6px;margin-left:auto;align-items:center;}
+.ph-filters{display:flex;gap:8px;margin-left:auto;align-items:center;}
+/* Unified dropdown look — matches the Warehouse / select2 styling that the
+   user said felt "premium". Custom chevron, bigger tap target, focus ring. */
 .ph-sel{
-  padding:6px 10px;border:1px solid var(--pv2-border);border-radius:6px;
-  background:var(--pv2-surface);font-size:12px;font-weight:500;
-  color:var(--pv2-text);outline:none;
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  padding:7px 32px 7px 12px;
+  border:1px solid var(--pv2-border); border-radius:8px;
+  background:var(--pv2-surface)
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%23475569' d='M3.5 6L8 10.5 12.5 6z'/></svg>")
+    no-repeat right 8px center;
+  font-size:13px; font-weight:500; color:var(--pv2-text);
+  outline:none; cursor:pointer; min-height:32px;
+  transition:border-color .12s, box-shadow .12s;
 }
-.ph-sel:focus{border-color:var(--pv2-brand);}
+.ph-sel:hover{ border-color:#9ca3af; }
+.ph-sel:focus{ border-color:var(--pv2-brand); box-shadow:0 0 0 3px rgba(0,128,96,.14); }
+.ph-sel option{ font-size:13px; }
 .ph-pg{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--pv2-muted);font-weight:600;font-family:var(--pv2-font-mono);}
 .ph-pg button{
   width:28px;height:28px;border-radius:6px;
@@ -491,7 +501,22 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
 }
 .dv-unit-loc{font-size:11px;color:var(--pv2-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .dv-unit-badge{font-size:10px;color:var(--pv2-success);font-weight:700;white-space:nowrap;}
-.dv-foot{padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--pv2-border);background:var(--pv2-surface);flex-shrink:0;display:flex;gap:8px;}
+.dv-foot{
+  padding:12px 14px;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid var(--pv2-border);background:var(--pv2-surface);
+  flex-shrink:0; display:flex; gap:8px;
+  position:sticky; bottom:0; z-index:5;
+}
+/* Don't let touch long-press fire the OS callout / scroll-as-text on the
+   action buttons — keep tap & swipe gestures snappy. */
+.dv-foot button,
+.dv-add-btn,.dv-info-btn,
+.cf-pay,.cf-print{
+  -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
 .dv-add-btn{
   flex:1;padding:11px;border:none;border-radius:7px;
   background:var(--pv2-brand);color:#fff;font-size:13.5px;font-weight:700;letter-spacing:-0.1px;
@@ -517,10 +542,8 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
   display:flex;align-items:center;justify-content:center;font-size:13px!important;font-weight:700!important;
   letter-spacing:-0.3px;padding:0;gap:0!important;flex-shrink:0;
 }
-.mob-topbar a[href="/dashboard"] i{display:none;}
-.mob-topbar a[href="/dashboard"]::after{content:'S';}
-.mob-topbar > div[style*="flex:1"]{color:#fff;font-size:14px;font-weight:700;letter-spacing:-0.2px;flex:1!important;}
-.mob-topbar > div[style*="flex:1"]::before{content:'POS';}
+/* Legacy "S" override removed — the dashboard link now renders its real icon. */
+.mob-topbar a[href="/dashboard"] i{display:inline-block;}
 .mob-topbar .ps-btn{
   width:30px!important;height:30px!important;
   background:rgba(255,255,255,.1)!important;color:#fff!important;
@@ -699,8 +722,287 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
 .co-input:focus{border-color:var(--pv2-brand);box-shadow:0 0 0 3px rgba(0,84,166,.12);}
 
 /* ═══════════════════════════════════════════════════════════════
-   Checkout — modern card layout, mobile-first, touch-friendly
+   Checkout — 2-step wizard, mobile-first, touch-friendly
    ─────────────────────────────────────────────────────────────── */
+/* NOTE: do NOT set `display` on `.co-wizard` here. The shared `.info-page`
+   rule sets `display: none` (closed) → `display: flex` (when `.open` is
+   added). Overriding it here would force the panel visible on page load. */
+.co-wizard.info-page.open { flex-direction: column; }
+.co-wizard .ip-hdr {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--pv2-surface); border-bottom: 1px solid var(--pv2-border);
+  padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+}
+.co-wizard .ip-hdr .ip-title { font-size: 17px; font-weight: 700; color: var(--pv2-text); flex: 1; }
+.co-wizard .co-hdr-meta { font-size: 13px; color: var(--pv2-muted); font-weight: 600; }
+
+/* Step indicator strip */
+.co-stepbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px;
+  background: var(--pv2-surface);
+  border-bottom: 1px solid var(--pv2-border);
+}
+.co-step-dot {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  color: var(--pv2-muted);
+  transition: color .15s;
+}
+.co-step-dot:hover { color: var(--pv2-text); }
+.co-step-dot .co-step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--pv2-border); color: var(--pv2-muted);
+  font-weight: 700; font-size: 13px;
+}
+.co-step-dot .co-step-lbl { font-size: 13px; font-weight: 600; }
+.co-step-dot.active { color: var(--pv2-brand-dark); }
+.co-step-dot.active .co-step-num { background: var(--pv2-brand); color: #fff; }
+.co-step-line { flex: 1; height: 2px; background: var(--pv2-border); border-radius: 2px; }
+.co-wizard[data-step="2"] .co-step-line { background: var(--pv2-brand); }
+.co-wizard[data-step="2"] .co-step-dot[data-step="1"] .co-step-num {
+  background: var(--pv2-brand-light); color: var(--pv2-brand-dark);
+}
+
+/* Body — single step at a time, smooth slide between */
+.co-body-stepped {
+  flex: 1; padding: 0; overflow: hidden;
+  display: grid; grid-template-columns: 100%;
+  position: relative;
+}
+.co-step {
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--pv2-surface-sunken);
+  padding: 18px 20px 90px;          /* room for sticky footer */
+  height: 100%;
+}
+.co-step[hidden] { display: none; }
+.co-stage { max-width: 760px; margin: 0 auto; }
+
+/* Hero "total" card on step 1 */
+.co-total-box {
+  background: linear-gradient(135deg, var(--pv2-brand) 0%, var(--pv2-brand-dark) 100%);
+  color: #fff; border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 24px rgba(0,128,96,.20);
+  text-align: center;
+}
+.co-total-box-compact { padding: 14px 18px; margin-bottom: 12px; }
+.co-total-lbl {
+  color: rgba(255,255,255,.85);
+  font-size: 11.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.2px;
+}
+.co-total-num {
+  color: #fff;
+  font-family: var(--pv2-font-sans);
+  font-size: 44px; font-weight: 800; line-height: 1;
+  margin: 6px 0 0; letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.co-total-box-compact .co-total-num { font-size: 32px; }
+.co-total-sub { color: rgba(255,255,255,.85); font-size: 12px; margin-top: 4px; }
+
+/* Section cards */
+.co-section {
+  background: var(--pv2-surface);
+  border: 1px solid var(--pv2-border); border-radius: 14px;
+  padding: 16px 18px; margin-bottom: 12px;
+  box-shadow: var(--pv2-shadow-sm);
+}
+.co-section-tight { padding: 14px 18px; }
+.co-sec-title {
+  font-size: 11.5px; font-weight: 700; color: var(--pv2-subtle);
+  display: flex; align-items: center; gap: 8px;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  margin-bottom: 12px;
+}
+.co-sec-title i { color: var(--pv2-brand); font-size: 15px; }
+
+.co-form-label { font-size: 12px; font-weight: 700; color: var(--pv2-subtle); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+
+/* Generic touch-friendly inputs */
+.co-input, input.co-input, select.co-input, textarea.co-input {
+  border-radius: 10px !important; border: 1px solid var(--pv2-border) !important;
+  padding: 12px 14px !important; font-size: 14px !important;
+  background: var(--pv2-surface) !important; color: var(--pv2-text);
+  width: 100%;
+}
+.co-input:focus, input.co-input:focus, select.co-input:focus, textarea.co-input:focus {
+  border-color: var(--pv2-brand) !important;
+  box-shadow: 0 0 0 3px rgba(0,128,96,.14) !important;
+  outline: none;
+}
+.co-input-narrow { max-width: 200px; }
+.co-textarea { min-height: 100px; resize: vertical; line-height: 1.55; }
+
+.co-cust-row {
+  display: flex; gap: 8px; align-items: stretch;
+}
+.co-btn-md {
+  padding: 0 16px !important; font-size: 13px !important; font-weight: 700 !important;
+  border-radius: 10px !important; min-width: 80px;
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+
+.co-cust-chip {
+  margin-top: 10px; padding: 10px 14px; border-radius: 10px;
+  background: var(--pv2-surface-alt); border: 1px solid var(--pv2-border);
+  font-size: 13px; color: var(--pv2-text); font-weight: 600;
+}
+.co-cust-chip.has-cust { background: var(--pv2-brand-ghost); border-color: var(--pv2-brand-light); color: var(--pv2-brand-dark); }
+
+/* Order summary lines (filled by JS) */
+#coSummary { font-size: 14px; }
+#coSummary .co-summary-row { display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px dashed var(--pv2-border); gap: 10px; }
+#coSummary .co-summary-row:last-child { border-bottom: none; }
+#coSummary .co-summary-name { font-weight: 600; color: var(--pv2-text); flex: 1; }
+#coSummary .co-summary-meta { font-size: 12px; color: var(--pv2-muted); }
+#coSummary .co-summary-amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Totals card on step 1 (between summary and customer) */
+#coTotals .cf-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+#coTotals .cf-row.tot { font-size: 15px; font-weight: 800; padding-top: 8px; border-top: 1px solid var(--pv2-border); margin-top: 4px; }
+
+/* Payment method tiles — bigger, more obvious */
+.co-pay-methods {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.co-pay-btn {
+  padding: 18px 8px; text-align: center;
+  border: 2px solid var(--pv2-border); border-radius: 12px;
+  background: var(--pv2-surface); color: var(--pv2-text);
+  font-weight: 700; font-size: 13px; cursor: pointer;
+  transition: all .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-height: 84px; box-shadow: var(--pv2-shadow-sm);
+}
+.co-pay-btn i {
+  font-size: 26px !important; color: var(--pv2-muted);
+  margin: 0; background: none; width: auto; height: auto;
+}
+.co-pay-btn span { font-size: 13px; }
+.co-pay-btn:hover {
+  border-color: var(--pv2-brand); color: var(--pv2-brand-dark);
+  transform: translateY(-1px); box-shadow: var(--pv2-shadow-md);
+}
+.co-pay-btn:hover i { color: var(--pv2-brand); }
+.co-pay-btn.active {
+  background: var(--pv2-brand); color: #fff; border-color: var(--pv2-brand);
+  transform: translateY(-1px); box-shadow: var(--pv2-shadow-md);
+}
+.co-pay-btn.active i { color: #fff !important; }
+
+/* Card type pills */
+.co-card-types { display: flex; gap: 8px; flex-wrap: wrap; }
+.co-card-btn {
+  padding: 10px 16px; border: 1px solid var(--pv2-border); border-radius: 8px;
+  background: var(--pv2-surface); color: var(--pv2-text);
+  font-weight: 700; font-size: 13px; cursor: pointer;
+}
+.co-card-btn:hover { border-color: var(--pv2-brand); }
+.co-card-btn.active { background: var(--pv2-brand); color: #fff; border-color: var(--pv2-brand); }
+
+/* Amount input — huge, hero */
+.co-amt-input {
+  font-size: 36px !important; font-weight: 800 !important;
+  letter-spacing: -0.6px !important; font-variant-numeric: tabular-nums;
+  text-align: center; padding: 20px !important;
+  border-radius: 14px !important; border: 2px solid var(--pv2-brand) !important;
+  background: var(--pv2-brand-ghost) !important; color: var(--pv2-text);
+  width: 100%;
+}
+.co-amt-input:focus { box-shadow: 0 0 0 4px rgba(0,128,96,.18) !important; outline: none; }
+
+/* Quick amount chips */
+.co-quick-amounts { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.co-quick-amounts button {
+  flex: 1; min-width: 72px; padding: 12px 6px;
+  border: 1px solid var(--pv2-border); border-radius: 10px;
+  background: var(--pv2-surface); color: var(--pv2-text);
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  font-variant-numeric: tabular-nums; transition: all .12s;
+}
+.co-quick-amounts button:hover {
+  background: var(--pv2-brand-ghost); border-color: var(--pv2-brand); color: var(--pv2-brand-dark);
+  transform: translateY(-1px);
+}
+.co-quick-amounts button.exact {
+  border-color: var(--pv2-success); color: var(--pv2-success); background: var(--pv2-success-bg);
+}
+
+/* Change display */
+.co-change-box {
+  text-align: center; margin-top: 14px; padding: 14px 18px; border-radius: 12px;
+  font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.co-change-box.change-pos { background: var(--pv2-success-bg); color: var(--pv2-success); }
+.co-change-box.change-neg { background: var(--pv2-danger-bg); color: var(--pv2-danger); }
+
+/* Info banner inside payment options */
+.co-info-banner {
+  margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+  background: rgba(37,99,235,.06); color: #1d4ed8;
+  font-size: 13px; line-height: 1.5;
+}
+
+/* Sticky wizard footer */
+.co-wizard .ip-foot {
+  position: sticky; bottom: 0; z-index: 5;
+  background: var(--pv2-surface); border-top: 1px solid var(--pv2-border);
+  padding: 14px 22px; display: flex; gap: 10px; align-items: stretch;
+  box-shadow: 0 -2px 0 rgba(11,18,32,.04);
+}
+.co-btn-foot {
+  border-radius: 12px !important; min-height: 56px;
+  font-weight: 700; font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.co-btn-cancel { flex: 1; }
+.co-btn-print  { flex: 1.4; border-color: var(--pv2-brand) !important; color: var(--pv2-brand) !important; background: var(--pv2-brand-ghost) !important; }
+.co-btn-print:hover { background: var(--pv2-brand-light) !important; }
+.co-btn-next   { flex: 2; font-weight: 800 !important; font-size: 16px !important; }
+.co-pay-total { margin-left: 6px; opacity: .85; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── Step visibility — driven by data-step on the wizard root ── */
+.co-wizard[data-step="1"] .co-step-1-only { display: flex !important; }
+.co-wizard[data-step="1"] .co-step-2-only { display: none !important; }
+.co-wizard[data-step="2"] .co-step-1-only { display: none !important; }
+.co-wizard[data-step="2"] .co-step-2-only { display: flex !important; }
+.co-wizard[data-step="1"] .co-step.co-step-2 { display: none; }
+.co-wizard[data-step="2"] .co-step.co-step-1 { display: none; }
+
+/* ── Tablet (≤1024) ── */
+@media (max-width: 1024px) {
+  .co-stage { max-width: 640px; }
+  .co-step { padding: 16px 18px 90px; }
+  .co-total-num { font-size: 38px; }
+  .co-total-box-compact .co-total-num { font-size: 28px; }
+}
+/* ── Phone (≤640) ── */
+@media (max-width: 640px) {
+  .co-stepbar { padding: 10px 16px; gap: 10px; }
+  .co-step-dot .co-step-lbl { display: none; }
+  .co-step { padding: 12px 12px 100px; }
+  .co-stage { max-width: 100%; }
+  .co-total-box { padding: 16px 16px; border-radius: 14px; margin-bottom: 10px; }
+  .co-total-num { font-size: 34px; }
+  .co-total-box-compact .co-total-num { font-size: 26px; }
+  .co-section { padding: 14px 14px; border-radius: 12px; margin-bottom: 10px; }
+  .co-pay-methods { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .co-pay-btn { min-height: 76px; padding: 14px 8px; }
+  .co-pay-btn i { font-size: 24px !important; }
+  .co-amt-input { font-size: 28px !important; padding: 16px !important; }
+  .co-quick-amounts button { font-size: 13px; padding: 10px 4px; min-width: 64px; }
+  .co-wizard .ip-foot {
+    padding: 12px; gap: 8px;
+    flex-direction: column-reverse;     /* primary action on top */
+  }
+  .co-btn-foot { width: 100%; min-height: 52px; font-size: 14px; }
+}
+
+/* ═══ Existing checkout-card layout (now legacy, kept until other places clean up) ═══ */
 #coPage{ background:var(--pv2-surface-sunken); }
 #coPage .ip-hdr{
   position:sticky; top:0; z-index:5;
@@ -770,6 +1072,53 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
 .co-totals-row.grand .co-l{ color:var(--pv2-brand-dark); font-weight:700; text-transform:uppercase; letter-spacing:.6px; font-size:11px; }
 .co-totals-row.grand .co-r{ color:var(--pv2-brand-dark); font-weight:800; font-size:20px; }
 
+/* "View order items" trigger button (replaces direct summary on step 1) */
+.co-items-trigger{
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; margin-bottom:12px; padding:14px 18px;
+  background:var(--pv2-surface); border:1px solid var(--pv2-border);
+  border-radius:14px; box-shadow:var(--pv2-shadow-sm);
+  font-size:14px; font-weight:700; color:var(--pv2-text);
+  cursor:pointer; transition:all .15s;
+}
+.co-items-trigger:hover{
+  border-color:var(--pv2-brand); color:var(--pv2-brand-dark);
+  background:var(--pv2-brand-ghost); transform:translateY(-1px);
+  box-shadow:var(--pv2-shadow-md);
+}
+.co-items-trigger > span:first-child{ display:flex; align-items:center; gap:6px; }
+.co-items-trigger i.bi-arrow-up-right-square{ font-size:16px; color:var(--pv2-muted); }
+.co-items-trigger:hover i.bi-arrow-up-right-square{ color:var(--pv2-brand); }
+.co-items-count{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:22px; height:22px; padding:0 7px; margin-left:6px;
+  border-radius:999px; background:var(--pv2-brand); color:#fff;
+  font-size:11px; font-weight:800; line-height:1;
+}
+
+/* Step-2 confirm grid (rows of label/value, grand total emphasised) */
+.co-confirm-grid{ display:flex; flex-direction:column; gap:0; }
+.co-confirm-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1px dashed var(--pv2-border);
+  font-size:13.5px;
+}
+.co-confirm-row:last-child{ border-bottom:none; }
+.co-confirm-row .l{ color:var(--pv2-muted); font-weight:600; }
+.co-confirm-row .r{ color:var(--pv2-text); font-weight:700; text-align:right; }
+.co-confirm-row .r.num{ font-variant-numeric:tabular-nums; font-family:var(--pv2-font-mono, monospace); }
+.co-confirm-row.co-confirm-grand{
+  margin-top:6px; padding-top:14px;
+  border-top:2px solid var(--pv2-brand-light); border-bottom:none;
+}
+.co-confirm-row.co-confirm-grand .l{
+  color:var(--pv2-brand-dark); font-weight:800;
+  text-transform:uppercase; letter-spacing:.6px; font-size:12px;
+}
+.co-confirm-row.co-confirm-grand .r{
+  color:var(--pv2-brand-dark); font-weight:800; font-size:20px;
+}
+
 /* Customer search — clean rounded input + chip */
 #custSearch{
   border-radius:8px !important; border:1px solid var(--pv2-border);
@@ -777,17 +1126,6 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
   transition:border-color .15s, box-shadow .15s;
 }
 #custSearch:focus{ border-color:var(--pv2-brand); box-shadow:0 0 0 3px rgba(0,128,96,.12); outline:none; }
-#custResult{
-  margin-top:8px; padding:8px 10px; border-radius:8px;
-  background:var(--pv2-surface-alt); border:1px solid var(--pv2-border);
-  display:flex; align-items:center; gap:8px; font-size:12px; color:var(--pv2-text);
-}
-#custResult.has-cust{ background:var(--pv2-brand-ghost); border-color:var(--pv2-brand-light); color:var(--pv2-brand-dark); font-weight:600; }
-#custResult .co-cust-clear{
-  margin-left:auto; cursor:pointer; padding:2px 6px; border-radius:4px;
-  color:var(--pv2-muted); font-size:14px; line-height:1;
-}
-#custResult .co-cust-clear:hover{ background:rgba(220,38,38,.1); color:var(--pv2-danger); }
 
 /* Discount fields */
 #dType,#dVal{ border-radius:8px !important; padding:10px !important; font-size:13px !important; border:1px solid var(--pv2-border); }
@@ -1097,20 +1435,184 @@ body.pos-mode .btn-close:hover{opacity:1;}
 
 .adv-pane{display:none;}.adv-pane.active{display:block;}
 
-/* Select2 inside POS */
-.info-page .select2-container{width:100%!important;}
-.info-page .select2-container--bootstrap-5 .select2-selection,
-body.pos-mode .select2-container--bootstrap-5 .select2-selection{
-  border:1px solid var(--pv2-border);border-radius:6px;font-size:12px;min-height:34px;padding:4px 9px;background:var(--pv2-surface);
+/* ═══ Select2 inside POS — restyled to match the .ps-sel "Warehouse" dropdown ═══
+   Targets BOTH the default theme (`--default`) and the `--bootstrap-5` theme.
+   Same light border, custom chevron, same focus ring, lighter dropdown panel. */
+.info-page .select2-container{width:100% !important;}
+
+/* The trigger ("selection") itself */
+body.pos-mode .select2-container .select2-selection,
+.info-page .select2-container .select2-selection,
+body.pos-mode .select2-container--default .select2-selection,
+.info-page .select2-container--default .select2-selection,
+body.pos-mode .select2-container--bootstrap-5 .select2-selection,
+.info-page .select2-container--bootstrap-5 .select2-selection{
+  border:1px solid var(--pv2-border) !important;
+  border-radius:8px !important;
+  min-height:34px !important;
+  padding:5px 32px 5px 10px !important;
+  background:var(--pv2-surface) !important;
+  font-size:13px !important; font-weight:500 !important;
+  color:var(--pv2-text) !important;
+  cursor:pointer;
+  transition:border-color .12s, box-shadow .12s;
+  outline:none !important;
+  /* Custom chevron — same SVG arrow as .ph-sel uses */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%23475569' d='M3.5 6L8 10.5 12.5 6z'/></svg>") !important;
+  background-repeat:no-repeat !important;
+  background-position:right 10px center !important;
 }
-body.pos-mode .select2-container--bootstrap-5.select2-container--focus .select2-selection,
-body.pos-mode .select2-container--bootstrap-5.select2-container--open .select2-selection{border-color:var(--pv2-brand);box-shadow:0 0 0 3px rgba(0,84,166,.12);}
-.info-page .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered{font-size:12.5px;color:var(--pv2-text);}
-.info-page .select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder{color:var(--pv2-subtle);font-size:12.5px;}
-.select2-container--bootstrap-5 .select2-dropdown{border:1px solid var(--pv2-border-strong);border-radius:6px;box-shadow:var(--pv2-shadow-md);font-size:12px;}
-.select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field{font-size:12px;border-radius:5px;padding:7px 9px;border-color:var(--pv2-border);}
-.select2-container--bootstrap-5 .select2-results__option{font-size:12px;padding:7px 11px;}
-.select2-container--bootstrap-5 .select2-results__option--highlighted{background:var(--pv2-brand)!important;color:#fff!important;}
+
+/* Hide Select2's own arrow span — we draw our own with the SVG above */
+body.pos-mode .select2-container .select2-selection__arrow,
+.info-page  .select2-container .select2-selection__arrow{
+  display:none !important;
+}
+
+/* Hover */
+body.pos-mode .select2-container:hover .select2-selection,
+.info-page  .select2-container:hover .select2-selection{
+  border-color:#9ca3af !important;
+}
+
+/* Focus / Open ring */
+body.pos-mode .select2-container--focus .select2-selection,
+body.pos-mode .select2-container--open  .select2-selection,
+.info-page  .select2-container--focus .select2-selection,
+.info-page  .select2-container--open  .select2-selection{
+  border-color:var(--pv2-brand) !important;
+  box-shadow:0 0 0 3px rgba(0,84,166,.14) !important;
+}
+
+/* Rotate chevron when open */
+body.pos-mode .select2-container--open .select2-selection,
+.info-page  .select2-container--open .select2-selection{
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%230054a6' d='M3.5 10L8 5.5 12.5 10z'/></svg>") !important;
+}
+
+/* Rendered text + placeholder */
+body.pos-mode .select2-container .select2-selection__rendered,
+.info-page  .select2-container .select2-selection__rendered{
+  padding:0 !important; line-height:22px !important;
+  font-size:13px !important; color:var(--pv2-text) !important;
+}
+body.pos-mode .select2-container .select2-selection__placeholder,
+.info-page  .select2-container .select2-selection__placeholder{
+  color:var(--pv2-subtle) !important; font-size:13px !important; font-weight:400 !important;
+}
+/* Make the selection a positioning context so the clear-x can sit absolutely */
+body.pos-mode .select2-container .select2-selection,
+.info-page  .select2-container .select2-selection{ position:relative !important; }
+
+/* Clear "×" button — circular pill, sits just to the LEFT of the chevron,
+   readable on web and tap-friendly on mobile.  Replaces the "×" character
+   with a proper Bootstrap-icon × so it never clashes with browser fonts. */
+body.pos-mode .select2-container .select2-selection__clear,
+.info-page  .select2-container .select2-selection__clear{
+  position:absolute !important;
+  right:32px !important; top:50% !important;
+  transform:translateY(-50%) !important;
+  width:22px !important; height:22px !important;
+  margin:0 !important; padding:0 !important;
+  display:inline-flex !important; align-items:center; justify-content:center;
+  border-radius:50% !important;
+  background:var(--pv2-surface-sunken) !important;
+  color:var(--pv2-muted) !important;
+  font-size:0 !important;            /* hide the original "×" glyph */
+  line-height:1 !important;
+  cursor:pointer; z-index:3;
+  transition:background .12s, color .12s, transform .12s;
+  border:none !important;
+}
+body.pos-mode .select2-container .select2-selection__clear::before,
+.info-page  .select2-container .select2-selection__clear::before{
+  content:'\F62A';                   /* bi-x-lg */
+  font-family:'bootstrap-icons';
+  font-size:14px; line-height:1;
+  display:inline-block;
+}
+body.pos-mode .select2-container .select2-selection__clear:hover,
+.info-page  .select2-container .select2-selection__clear:hover{
+  background:var(--pv2-danger-bg) !important;
+  color:var(--pv2-danger) !important;
+  transform:translateY(-50%) scale(1.06) !important;
+}
+/* Make the selection's right padding wider so the clear-pill never crashes
+   into the chosen value's text. */
+body.pos-mode .select2-container .select2-selection,
+.info-page  .select2-container .select2-selection{
+  padding-right:60px !important;     /* 32 (chevron) + 22 (clear) + 6 gap */
+}
+/* When the field is empty there's no clear-x — give back the right padding */
+body.pos-mode .select2-container--default:not(.select2-container--has-clear) .select2-selection,
+.info-page  .select2-container--default:not(.select2-container--has-clear) .select2-selection{
+  padding-right:32px !important;
+}
+
+/* Touch tap target on mobile (≥30px hit area) */
+@media (max-width:767px){
+  body.pos-mode .select2-container .select2-selection__clear,
+  .info-page  .select2-container .select2-selection__clear{
+    width:26px !important; height:26px !important;
+    right:34px !important;
+  }
+  body.pos-mode .select2-container .select2-selection__clear::before,
+  .info-page  .select2-container .select2-selection__clear::before{
+    font-size:13px;
+  }
+}
+
+/* Floating dropdown panel — matches .ps-sel-drop */
+.select2-container--default .select2-dropdown,
+.select2-container--bootstrap-5 .select2-dropdown,
+.select2-dropdown{
+  border:1px solid var(--pv2-border-strong) !important;
+  border-radius:8px !important;
+  box-shadow:0 8px 24px rgba(11,18,32,.12), 0 2px 6px rgba(11,18,32,.06) !important;
+  overflow:hidden !important;
+}
+
+/* Search box at top of dropdown */
+.select2-container--default .select2-search--dropdown .select2-search__field,
+.select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field,
+.select2-search--dropdown .select2-search__field{
+  font-size:12.5px !important;
+  border:1px solid var(--pv2-border) !important;
+  border-radius:6px !important;
+  padding:7px 10px !important;
+  outline:none !important;
+}
+.select2-search--dropdown .select2-search__field:focus{
+  border-color:var(--pv2-brand) !important;
+  box-shadow:0 0 0 3px rgba(0,84,166,.12) !important;
+}
+
+/* Result options */
+.select2-container--default .select2-results__option,
+.select2-container--bootstrap-5 .select2-results__option,
+.select2-results__option{
+  font-size:12.5px !important;
+  padding:8px 12px !important;
+  color:var(--pv2-text) !important;
+  font-weight:500;
+}
+.select2-container--default .select2-results__option--highlighted,
+.select2-container--bootstrap-5 .select2-results__option--highlighted,
+.select2-results__option--highlighted[aria-selected]{
+  background:var(--pv2-brand-ghost) !important;
+  color:var(--pv2-brand) !important;
+}
+.select2-container--default .select2-results__option[aria-selected="true"],
+.select2-container--bootstrap-5 .select2-results__option[aria-selected="true"],
+.select2-results__option--selected{
+  background:var(--pv2-brand-light) !important;
+  color:var(--pv2-brand) !important;
+  font-weight:600;
+}
+.select2-results__option--selected::after{
+  content:'\F26E'; font-family:'bootstrap-icons';
+  float:right; font-size:12px;
+}
 
 /* ═══ POS Autocomplete dropdown (posAutocomplete helper) ═══ */
 .ps-sel{position:relative;display:inline-flex;align-items:center;min-width:120px;vertical-align:middle;}
@@ -1122,6 +1624,11 @@ body.pos-mode .select2-container--bootstrap-5.select2-container--open .select2-s
   display:block;min-height:30px;line-height:18px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   transition:border-color .12s, box-shadow .12s;
+  /* iOS / Android: stop the long-press text-selection that swallows taps,
+     and prevent double-tap zoom delaying the click event. */
+  -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
 }
 .ps-sel-input.is-placeholder{color:var(--pv2-subtle);font-weight:400;}
 .ps-sel-input:hover{border-color:var(--pv2-border-strong);}
@@ -1295,14 +1802,16 @@ body.pos-mode .select2-container--bootstrap-5.select2-container--open .select2-s
   .pdt-head-price{text-align:left;}
   .pdt-price-big{font-size:22px;}
   .info-page#infoPage .ip-tabs{
-    padding:10px 12px 0; gap:5px; overflow-x:auto;
+    padding:12px 12px 12px; gap:6px; overflow-x:auto;     /* equal top + bottom space */
     position:sticky; top:0; z-index:3; background:var(--pv2-surface);
+    border-bottom:1px solid var(--pv2-border);
   }
   .info-page#infoPage .ip-tabs::-webkit-scrollbar{display:none;}
   .info-page#infoPage .ip-tab{
-    padding:7px 11px; border-radius:999px; font-size:12px; font-weight:600;
+    padding:8px 13px; border-radius:999px; font-size:12.5px; font-weight:600;
     background:var(--pv2-surface-sunken); color:var(--pv2-text);
     border:none; border-bottom:none!important; margin:0;
+    line-height:1.2;
   }
   .info-page#infoPage .ip-tab.active{background:var(--pv2-ink); color:#fff;}
   .info-page#infoPage .ip-tab.active .ip-cnt{background:rgba(255,255,255,.2);color:#fff;}
@@ -1690,16 +2199,40 @@ body.pos-mode .select2-container--bootstrap-5.select2-container--open .select2-s
   }
   .pos-right.open{display:flex;animation:pv2-fadeUp .2s ease-out both;}
   .mob-close-bar{display:block;}
-  .pos-header{padding:0 12px;}
-  .ph-search{padding:6px 10px;}
+  /* Header wraps so the filter row can sit beneath the search bar */
+  .pos-header{
+    padding:8px 12px; min-height:0; height:auto;
+    flex-wrap:wrap; row-gap:8px;
+  }
+  .ph-heading{display:none;}                            /* "POS" heading is redundant on mobile */
+  .ph-search{padding:6px 10px; flex:1 1 60%; max-width:none;}
   .ph-search::after{display:none;}
+  #advSearchBtn{flex-shrink:0;}
   .ph-subtitle,.ph-status-pill{display:none;}
-  .ph-filters .ph-sel:not(#fPerPage){display:none;}
-  .pos-cats{padding:8px 12px 0;gap:4px;}
-  .pcat{padding:7px 11px;font-size:12px;border-radius:999px;border-bottom:none!important;margin-bottom:0;background:var(--pv2-surface-sunken);}
-  .pcat.active{background:var(--pv2-brand);color:#fff;}
-  .pos-catrail{padding:8px 12px;gap:5px;}
-  .pcr-item{padding:5px 11px;font-size:11.5px;border-radius:16px;}
+  /* All filters visible on mobile — warehouse (flex), per-page (narrow), pagination */
+  .ph-filters{
+    display:flex !important; flex-wrap:wrap; gap:6px; width:100%;
+    margin-left:0; order:2; align-items:center;
+  }
+  /* Size the visible posAutocomplete wrappers (.ps-sel), not the hidden raw selects */
+  .ph-filters > .ps-sel,
+  .ph-filters > .ps-sel-fWarehouse{ flex:1 1 140px; min-width:0; }
+  .ph-filters > .ps-sel-fPerPage{ flex:0 0 84px; min-width:84px; }
+  .ph-filters .ps-sel-input{ font-size:13px; min-height:34px; padding:7px 26px 7px 10px; }
+  /* Pagination always visible — arrows + counter */
+  .ph-pg{
+    display:flex !important; flex:0 0 auto; min-width:0;
+    justify-content:center; align-items:center; gap:4px;
+    margin-left:auto;
+  }
+  .ph-pg button{ width:32px; height:32px; flex-shrink:0; }
+  .ph-pg button i{ font-size:13px; }
+  .ph-pg #pgInfo{ font-size:11.5px; padding:0 4px; white-space:nowrap; }
+  .pos-cats{padding:10px 12px 10px; gap:6px;}        /* breathing room top + bottom */
+  .pcat{padding:8px 14px; font-size:12.5px; border-radius:999px; border-bottom:none!important; margin-bottom:0; background:var(--pv2-surface-sunken); line-height:1.2;}
+  .pcat.active{background:var(--pv2-brand); color:#fff;}
+  .pos-catrail{padding:10px 12px; gap:6px;}          /* same vertical room */
+  .pcr-item{padding:6px 12px; font-size:12px; border-radius:16px;}
   .pos-grid{padding:6px 12px 12px;gap:8px;}
   .pos-grid.g-parts,.pos-grid.g-vehicles{grid-template-columns:repeat(2,1fr);}
   .pos-grid-bar{padding:8px 12px 2px;}
@@ -1712,6 +2245,13 @@ body.pos-mode .select2-container--bootstrap-5.select2-container--open .select2-s
   .pc-stock{top:12px;right:12px;font-size:9px;padding:1px 4px;}
   /* Mobile sticky bottom cart bar — show automatically when cart has items and cart panel is closed */
   body.pos-mode:not(.pos-cart-empty) .pos-mobile-cart-bar{display:flex;}
+  /* …but hide it when the cart panel itself is open (it covers the bar) */
+  body.pos-mode.pos-cart-open .pos-mobile-cart-bar{display:none !important;}
+  /* Reserve space at the bottom of the cart panel so the safe-area / iOS
+     home-indicator doesn't crop the action buttons. */
+  body.pos-mode .pos-right.open .detail-view{
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
   /* Modal bottom sheets on mobile */
   .co-box{max-width:100%;border-radius:16px 16px 0 0;margin:auto 0 0 0;align-self:flex-end;}
   .co-overlay{align-items:flex-end;padding:0;}
@@ -1725,4 +2265,930 @@ body.pos-mode .select2-container--bootstrap-5.select2-container--open .select2-s
   .pos-vback .pvb-btn{order:0;}
   .pos-vback .ph-search{flex:1 1 auto!important;max-width:none!important;order:2;}
   .pos-vback .pvb-all{order:3;}
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   CPS — Checkout Payment Screen (single-screen 3-column layout, web-first).
+   Scoped under #coPage.cps-screen so it overrides the older wizard styles
+   that are still defined above. Keep `info-page { display:none }` semantics:
+   the screen is hidden by default and shown when JS adds the `.open` class.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root{
+  --cps-navy:        #1d2747;
+  --cps-navy-2:      #232f54;
+  --cps-blue:        #2c5fd5;
+  --cps-blue-soft:   #e8efff;
+  --cps-green:       #16a34a;
+  --cps-green-soft:  #e8f7ee;
+  --cps-red:         #dc2626;
+  --cps-amber:       #f59e0b;
+  --cps-bg:          #f3f6fb;
+  --cps-card:        #ffffff;
+  --cps-line:        #e5e9f2;
+  --cps-text:        #1d2747;
+  --cps-muted:       #6b7280;
+  --cps-subtle:      #94a3b8;
+}
+
+.cps-screen.info-page.open{
+  display:flex !important; flex-direction:column;
+  inset:0; background:var(--cps-bg);
+  font-family: var(--pv2-font-sans, 'Inter', system-ui, sans-serif);
+  color:var(--cps-text);
+}
+
+/* Floating "back to cart" close button — desktop only.
+   On tablet/mobile the navy header has its own back/menu button. */
+.cps-close-fab{
+  position:absolute; top:14px; right:18px; z-index:20;
+  width:42px; height:42px; border-radius:50%;
+  border:1px solid var(--cps-line); background:#fff; color:var(--cps-text);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; cursor:pointer; box-shadow:0 2px 6px rgba(11,18,32,.08);
+  transition:background .15s, border-color .15s, transform .12s;
+}
+.cps-close-fab:hover{ background:var(--cps-blue); color:#fff; border-color:var(--cps-blue); transform:scale(1.05); }
+
+/* Default visibility helpers for breakpoint-specific elements. */
+.cps-mobile-only{ display:none !important; }
+.cps-header-mobile{ display:none !important; }
+.cps-header{ display:none; }  /* shown on tablet+mobile via media queries */
+
+/* ── Header (navy bar) — shared CSS, visible on tablet & mobile ─ */
+.cps-header-back,
+.cps-header-icon{
+  width:38px; height:38px; border-radius:8px; border:none;
+  background:rgba(255,255,255,.08); color:#fff; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:18px; transition:background .15s; flex-shrink:0;
+}
+.cps-header-back:hover,.cps-header-icon:hover{ background:rgba(255,255,255,.18); }
+
+.cps-brand{ display:flex; align-items:center; gap:12px; min-width:0; flex-shrink:0; }
+.cps-brand-icon{
+  width:44px; height:44px; border-radius:10px;
+  background:rgba(255,255,255,.10); display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex-shrink:0;
+}
+.cps-brand-txt{ min-width:0; }
+.cps-brand-title{ font-size:18px; font-weight:800; letter-spacing:.3px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cps-brand-sub{ font-size:11.5px; color:#7f9cdf; letter-spacing:.4px; margin-top:2px; }
+
+.cps-search{
+  flex:1; min-width:0; position:relative;
+  display:flex; align-items:center;
+  background:#fff; border-radius:8px; padding:0 12px;
+}
+.cps-search input{
+  flex:1; min-width:0; border:none; outline:none; padding:11px 8px;
+  font-size:14px; color:var(--cps-text); background:transparent;
+}
+.cps-search kbd{
+  font-size:10.5px; font-weight:700; color:#475569;
+  background:#f1f5f9; border:1px solid #cbd5e1; border-radius:5px;
+  padding:2px 7px; margin:0 8px;
+}
+.cps-search > i.bi-search{ color:#64748b; font-size:15px; }
+
+.cps-meta{
+  display:flex; align-items:center; gap:10px;
+  padding:0 12px; border-left:1px solid rgba(255,255,255,.14); border-right:1px solid rgba(255,255,255,.14);
+  height:48px; flex-shrink:0;
+}
+.cps-meta i{ font-size:18px; color:rgba(255,255,255,.7); }
+.cps-meta-d{ font-size:13px; font-weight:700; line-height:1.1; white-space:nowrap; }
+.cps-meta-t{ font-size:11.5px; color:rgba(255,255,255,.7); margin-top:2px; white-space:nowrap; }
+
+.cps-user{
+  display:flex; align-items:center; gap:10px;
+  padding:4px 12px 4px 4px; border-radius:8px; cursor:default; flex-shrink:0;
+}
+.cps-user-av{
+  width:38px; height:38px; border-radius:50%;
+  background:rgba(255,255,255,.10); display:flex; align-items:center; justify-content:center;
+  font-size:18px; flex-shrink:0;
+}
+.cps-user-txt{ min-width:0; }
+.cps-user-n{ font-size:13.5px; font-weight:700; line-height:1.1; white-space:nowrap; }
+.cps-user-r{ font-size:11px; color:rgba(255,255,255,.7); margin-top:2px; white-space:nowrap; }
+.cps-user-chev{ color:rgba(255,255,255,.6); font-size:13px; }
+
+/* ── Mobile-only Amount to Pay card (single-line layout) ── */
+.cps-amt-card{
+  background:#fff; border:1px solid var(--cps-line); border-radius:10px;
+  padding:14px 16px; box-shadow:var(--pv2-shadow-sm, 0 1px 2px rgba(11,18,32,.04));
+}
+.cps-amt-l-row{ display:flex; align-items:center; gap:10px; }
+.cps-amt-l-row > i{ font-size:18px; color:var(--cps-blue); }
+.cps-amt-l{ flex:1; font-size:13.5px; color:var(--cps-blue); font-weight:700; }
+.cps-amt-v{ font-size:22px; font-weight:800; color:var(--cps-green); font-variant-numeric:tabular-nums; }
+.cps-amt-words{ font-size:11.5px; color:var(--cps-muted); margin-top:6px; padding-top:8px; border-top:1px dashed var(--cps-line); }
+
+/* ── Mobile-only collapsible bar (Order Items / Payment Details) ── */
+.cps-collapse-bar{
+  display:none; align-items:center; gap:10px; width:100%;
+  padding:14px 16px; border:none; border-top:1px solid var(--cps-line);
+  background:#fafbfc; color:var(--cps-blue);
+  font-size:14px; font-weight:700; cursor:pointer; text-align:left;
+}
+.cps-collapse-bar i:first-child{ font-size:18px; }
+.cps-collapse-bar > span{ flex:1; color:var(--cps-text); }
+.cps-collapse-bar > span > span{ color:var(--cps-blue); margin-left:4px; }
+.cps-collapse-bar:hover{ background:var(--cps-blue-soft); }
+.cps-collapse-chev{ transition:transform .18s; font-size:14px; color:var(--cps-muted); }
+.cps-collapse-bar.open .cps-collapse-chev,
+.cps-collapse-chev.open{ transform:rotate(180deg); }
+.cps-card-h-toggle{
+  background:none; border:none; width:100%; cursor:pointer;
+  font-family:inherit; font-weight:800; font-size:12.5px; letter-spacing:.6px;
+}
+
+/* ── 3-column body ─────────────────────────────────────────── */
+.cps-body{
+  flex:1; min-height:0;
+  display:grid; grid-template-columns: minmax(0,1.05fr) minmax(0,1.2fr) minmax(0,1fr);
+  gap:18px; padding:22px 22px 18px; overflow-y:auto;
+  align-content:start;
+  padding-right:74px; /* leave room for the absolute close-fab */
+}
+.cps-col{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+
+/* ── Cards (white surfaces with soft shadow) ────────────────── */
+.cps-card{
+  background:var(--cps-card); border:1px solid var(--cps-line);
+  border-radius:10px; box-shadow:0 1px 2px rgba(11,18,32,.04);
+  display:flex; flex-direction:column; min-width:0;
+}
+.cps-card-h{
+  display:flex; align-items:center; gap:8px;
+  padding:14px 18px 10px; font-size:12.5px; font-weight:800;
+  color:var(--cps-blue); letter-spacing:.6px;
+}
+.cps-card-h i{ font-size:14px; }
+.cps-card-b{ padding:0 18px 16px; }
+.cps-card-b-flush{ padding:0; }
+
+/* ── LEFT — Order details ──────────────────────────────────── */
+.cps-order-hero{
+  display:flex; gap:14px; padding:0 18px 14px;
+}
+.cps-hero-img{
+  width:120px; height:90px; border-radius:8px;
+  background:var(--cps-blue-soft); display:flex; align-items:center; justify-content:center;
+  font-size:32px; color:var(--cps-blue);
+  background-size:cover; background-position:center;
+}
+.cps-hero-meta{ flex:1; min-width:0; }
+.cps-hero-id{ font-size:14px; font-weight:800; color:var(--cps-blue); }
+.cps-hero-d1{ font-size:13px; color:var(--cps-text); margin-top:2px; font-weight:600; }
+.cps-hero-d2,.cps-hero-d3{ font-size:11.5px; color:var(--cps-muted); margin-top:2px; }
+.cps-pill{
+  display:inline-block; margin-top:6px; padding:3px 10px;
+  border-radius:999px; font-size:10.5px; font-weight:700; letter-spacing:.3px;
+}
+.cps-pill-green{ background:var(--cps-green-soft); color:var(--cps-green); }
+
+.cps-items-wrap{ overflow-x:auto; border-top:1px solid var(--cps-line); }
+.cps-items{ width:100%; border-collapse:collapse; font-size:12.5px; }
+.cps-items thead th{
+  padding:10px 12px; text-align:left; font-weight:700;
+  color:var(--cps-subtle); letter-spacing:.5px; font-size:10.5px;
+  background:#fafbfc; border-bottom:1px solid var(--cps-line);
+}
+.cps-items thead th.num{ text-align:right; }
+.cps-items tbody td{
+  padding:10px 12px; border-bottom:1px solid #f1f3f8;
+  color:var(--cps-text); vertical-align:top;
+}
+.cps-items tbody td.num{ text-align:right; font-variant-numeric:tabular-nums; }
+.cps-items tbody tr:last-child td{ border-bottom:none; }
+.cps-items .cps-row-name{ font-weight:600; }
+.cps-items .cps-row-sub{ font-size:11px; color:var(--cps-muted); margin-top:1px; }
+.cps-items .cps-row{ cursor:pointer; transition:background .12s; }
+.cps-items .cps-row:hover{ background:#fafbfc; }
+.cps-items .cps-row-chev{
+  display:inline-block; transition:transform .15s; color:var(--cps-subtle); font-size:12px;
+}
+.cps-items .cps-row-chev.open{ transform:rotate(90deg); color:var(--cps-blue); }
+
+.cps-items .cps-row-detail td{
+  padding:14px 16px; background:#fafbfc;
+  border-top:none; border-bottom:1px solid var(--cps-line);
+}
+.cps-rd-grid,.cps-rd-summary{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:12px 18px;
+}
+.cps-rd-l{ font-size:10.5px; color:var(--cps-muted); letter-spacing:.4px; text-transform:uppercase; margin-bottom:3px; font-weight:600; }
+.cps-rd-v{ font-size:13px; font-weight:700; color:var(--cps-text); font-variant-numeric:tabular-nums; }
+.cps-rd-v.cps-rd-blue{ color:var(--cps-blue); }
+
+/* Per-unit list inside the expanded item row */
+.cps-units-h{
+  font-size:10.5px; font-weight:700; color:var(--cps-blue);
+  letter-spacing:.4px; text-transform:uppercase;
+  margin-top:14px; margin-bottom:6px;
+}
+.cps-units{
+  display:flex; flex-direction:column; gap:4px;
+  background:#fff; border:1px solid var(--cps-line); border-radius:8px;
+  padding:6px;
+}
+.cps-unit-row{
+  display:flex; align-items:center; gap:10px;
+  padding:7px 10px; border-radius:6px;
+  font-size:12.5px;
+  background:#fafbfc;
+}
+.cps-unit-row + .cps-unit-row{ border-top:none; }
+.cps-unit-no{
+  display:inline-block; min-width:38px;
+  font-weight:800; color:var(--cps-blue);
+  font-variant-numeric:tabular-nums;
+}
+.cps-unit-lbl{ flex:1; color:var(--cps-muted); font-size:12px; }
+.cps-unit-price{
+  font-weight:700; color:var(--cps-text);
+  font-variant-numeric:tabular-nums;
+}
+
+.cps-totals{
+  border-top:1px solid var(--cps-line); padding:12px 18px 4px;
+  background:#fafbfc;
+}
+.cps-trow{
+  display:flex; justify-content:space-between; padding:6px 0;
+  font-size:13px; color:var(--cps-text);
+  font-variant-numeric:tabular-nums;
+}
+.cps-trow .cps-tl{ color:var(--cps-muted); }
+.cps-trow .cps-tr{ font-weight:600; }
+.cps-trow.minus .cps-tr{ color:var(--cps-red); }
+
+.cps-grand{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 18px; background:var(--cps-card);
+  border-top:1px solid var(--cps-line);
+  font-size:18px; font-weight:800; color:var(--cps-blue);
+  border-radius:0 0 10px 10px;
+}
+.cps-grand > span:last-child{
+  font-size:22px; font-variant-numeric:tabular-nums;
+}
+
+/* ── CENTER — Customer / Discount / Notes / Payment Details ── */
+.cps-input,
+.cps-pd-row input.cps-input,
+select.cps-input,
+textarea.cps-input{
+  width:100%; padding:11px 14px; border-radius:8px;
+  border:1px solid var(--cps-line); background:#fff;
+  font-size:13.5px; color:var(--cps-text); font-family:inherit;
+  transition:border-color .12s, box-shadow .12s;
+  appearance:none; -webkit-appearance:none;
+}
+.cps-input:focus{
+  outline:none; border-color:var(--cps-blue);
+  box-shadow:0 0 0 3px rgba(44,95,213,.14);
+}
+select.cps-input{
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%23475569' d='M3.5 6l4.5 4.5L12.5 6'/></svg>");
+  background-repeat:no-repeat; background-position:right 12px center;
+  padding-right:32px;
+}
+.cps-input-readonly{ background:#f8fafc !important; color:var(--cps-text); }
+.cps-textarea{ resize:vertical; min-height:80px; line-height:1.55; }
+.cps-counter{
+  text-align:right; font-size:11px; color:var(--cps-subtle); margin-top:4px;
+}
+
+.cps-cust-row{ display:flex; gap:8px; }
+.cps-cust-row .cps-input{ flex:1; }
+.cps-btn-primary{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  padding:0 16px; border-radius:8px; border:none;
+  background:var(--cps-blue); color:#fff;
+  font-size:13px; font-weight:700; cursor:pointer;
+  transition:background .12s, transform .12s;
+}
+.cps-btn-primary:hover{ background:#1f4cb8; transform:translateY(-1px); }
+
+/* Customer search results — proper floating dropdown panel.
+   Positioned absolutely directly under the search input. Default hidden;
+   becomes visible only when the JS populates it via .show class. */
+.cps-cust-row{ position:relative; }
+.cps-cust-results{
+  display:none;
+  position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:30;
+  background:#fff; border:1px solid var(--cps-line); border-radius:10px;
+  box-shadow:0 8px 24px rgba(11,18,32,.10);
+  max-height:280px; overflow-y:auto;
+}
+.cps-cust-results.show{ display:block; }
+.cps-cust-results a{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; font-size:13px;
+  color:var(--cps-text) !important; text-decoration:none !important;
+  border:none !important; border-radius:0 !important;
+  background:#fff; border-bottom:1px solid #f1f3f8 !important;
+  transition:background .12s;
+}
+.cps-cust-results a:last-child{ border-bottom:none !important; }
+.cps-cust-results a:hover{ background:var(--cps-blue-soft); }
+.cps-cust-results a::before{
+  content:""; flex-shrink:0; width:32px; height:32px; border-radius:50%;
+  background:var(--cps-blue-soft) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='%232c5fd5' viewBox='0 0 16 16'><path d='M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2 1H6a4 4 0 0 0-4 4v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1a4 4 0 0 0-4-4Z'/></svg>") center / 18px no-repeat;
+}
+.cps-cust-row .cps-cust-no-result{
+  position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:30;
+  padding:10px 14px; font-size:12.5px; color:var(--cps-muted);
+  background:#fff; border:1px solid var(--cps-line); border-radius:8px;
+  box-shadow:0 4px 12px rgba(11,18,32,.06);
+}
+
+.cps-cust-info{
+  display:grid; grid-template-columns: minmax(180px,1.2fr) minmax(110px,0.8fr) minmax(180px,1.6fr);
+  gap:14px; margin-top:10px; padding:14px; border-radius:8px;
+  background:#fafbfc; border:1px solid var(--cps-line);
+}
+.cps-cust-info .ci-l{ display:flex; align-items:center; gap:10px; min-width:0; }
+.cps-cust-info .ci-l > i{ font-size:30px; color:var(--cps-blue); flex-shrink:0; }
+.cps-cust-info .ci-l .ci-name{ font-size:13.5px; font-weight:700; color:var(--cps-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cps-cust-info .ci-l .ci-sub{ font-size:11.5px; color:var(--cps-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cps-cust-info .ci-r{ min-width:0; }
+.cps-cust-info .ci-lbl{ font-size:11px; color:var(--cps-muted); margin-bottom:2px; }
+.cps-cust-info .ci-val{ font-size:13px; color:var(--cps-text); font-weight:600; word-break:break-word; line-height:1.35; }
+
+.cps-disc-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.cps-fld label{ display:block; font-size:11.5px; color:var(--cps-muted); margin-bottom:6px; font-weight:600; }
+.cps-3box{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px;
+}
+.cps-box{
+  border:1px solid var(--cps-line); border-radius:8px; padding:12px;
+  background:#fafbfc; text-align:center;
+}
+.cps-box-l{ font-size:11.5px; color:var(--cps-muted); margin-bottom:6px; }
+.cps-box-v{
+  font-size:18px; font-weight:800; color:var(--cps-text);
+  font-variant-numeric:tabular-nums;
+}
+.cps-box-blue{ color:var(--cps-blue); }
+.cps-box-green{ color:var(--cps-green); }
+
+.cps-pd-row{
+  display:grid; grid-template-columns: 130px 1fr;
+  gap:10px; align-items:center; margin-bottom:10px;
+}
+.cps-pd-row:last-child{ margin-bottom:0; }
+.cps-pd-row label{ font-size:12.5px; color:var(--cps-text); font-weight:600; }
+
+/* ── RIGHT — Payment modes (very compact, single-line rows) ─
+   The selectors are scoped under `.cps-screen` so the row layout wins
+   over the older `.co-pay-btn` flex-column rules from the legacy wizard. */
+.cps-pmodes{ display:flex; flex-direction:column; gap:4px; padding-top:2px; padding-bottom:6px; }
+.cps-screen .cps-pmode,
+.cps-pmode.cps-pmode{
+  display:flex !important; flex-direction:row !important; align-items:center;
+  gap:8px; padding:6px 10px;
+  border:1.5px solid var(--cps-line);
+  border-radius:6px; background:#fff; cursor:pointer;
+  transition:border-color .15s, background .15s, box-shadow .15s;
+  position:relative; min-height:36px;
+  text-align:left; font-weight:400; box-shadow:none;
+}
+.cps-screen .cps-pmode i.cps-pmode-icon{
+  display:inline-block; width:auto; height:auto; margin:0; background:none;
+}
+.cps-pmode:hover{ border-color:#cbd5e1; }
+.cps-pmode.active{
+  border-color:var(--cps-blue); background:var(--cps-blue-soft);
+  box-shadow:0 0 0 1px var(--cps-blue) inset;
+}
+.cps-pmode-radio{
+  width:14px; height:14px; border-radius:50%;
+  border:2px solid #cbd5e1; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.cps-pmode.active .cps-pmode-radio{ border-color:var(--cps-blue); }
+.cps-pmode-radio > span{
+  width:6px; height:6px; border-radius:50%; background:transparent;
+  transition:background .12s;
+}
+.cps-pmode.active .cps-pmode-radio > span{ background:var(--cps-blue); }
+.cps-pmode-l{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; }
+.cps-pmode-t{ font-size:12px; font-weight:700; color:var(--cps-text); line-height:1.2; white-space:nowrap; }
+.cps-pmode-s{
+  font-size:10.5px; color:var(--cps-muted); line-height:1.2;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  flex:1; min-width:0;
+}
+.cps-pmode-icon{
+  font-size:16px; color:var(--cps-muted); flex-shrink:0;
+}
+.cps-pmode.active .cps-pmode-icon{ color:var(--cps-blue); }
+
+/* Walk-in fallback fields (visible when no registered customer is picked). */
+.cps-walkin{
+  margin-top:10px; padding:14px 14px 12px; border-radius:10px;
+  background:#fffbeb; border:1px dashed #f6c648;
+}
+.cps-walkin-l{
+  display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;
+  font-size:12.5px; color:#92400e; font-weight:700;
+  margin-bottom:10px; line-height:1.3;
+}
+.cps-walkin-l i{ font-size:14px; flex-shrink:0; color:#d97706; align-self:center; }
+.cps-walkin-hint{ font-size:11.5px; color:#a16207; font-weight:500; }
+.cps-walkin-row{ display:flex; gap:10px; }
+.cps-walkin-row .cps-input-wrap{ flex:1; min-width:0; }
+.cps-walkin-row .cps-input{
+  background:#fff !important; border-color:#fde68a !important;
+  font-size:13.5px !important;
+}
+.cps-walkin-row .cps-input:focus{
+  border-color:var(--cps-blue) !important;
+  box-shadow:0 0 0 3px rgba(44,95,213,.14) !important;
+}
+
+.cps-amt-input{
+  font-size:24px !important; font-weight:800 !important;
+  text-align:center; font-variant-numeric:tabular-nums;
+  border-color:var(--cps-blue) !important; background:#f8faff !important;
+}
+.cps-quick{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+.cps-quick button{
+  flex:1; min-width:64px; padding:9px 4px; border:1px solid var(--cps-line);
+  border-radius:6px; background:#fff; color:var(--cps-text);
+  font-weight:700; font-size:13px; cursor:pointer;
+  font-variant-numeric:tabular-nums;
+}
+.cps-quick button:hover{ border-color:var(--cps-blue); color:var(--cps-blue); background:var(--cps-blue-soft); }
+.cps-quick button.exact{ border-color:var(--cps-green); color:var(--cps-green); background:var(--cps-green-soft); }
+.cps-change{
+  margin-top:10px; padding:10px 12px; border-radius:8px;
+  font-size:14px; font-weight:700; text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.cps-change.change-pos{ background:var(--cps-green-soft); color:var(--cps-green); }
+.cps-change.change-neg{ background:#fee2e2; color:var(--cps-red); }
+
+/* ── Sticky 4-button footer ────────────────────────────────── */
+.cps-footer{
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:1px;
+  background:var(--cps-line); flex-shrink:0;
+  border-top:1px solid var(--cps-line);
+}
+.cps-fbtn{
+  display:flex; align-items:center; justify-content:center; gap:14px;
+  padding:18px 12px; border:none; cursor:pointer;
+  color:#fff; font-family:inherit; transition:filter .12s, transform .04s;
+}
+.cps-fbtn:hover{ filter:brightness(1.08); }
+.cps-fbtn:active{ transform:translateY(1px); }
+.cps-fbtn-i{ font-size:22px; opacity:.95; }
+.cps-fbtn-l{ text-align:left; line-height:1.1; }
+.cps-fbtn-t{ font-size:14.5px; font-weight:800; letter-spacing:.4px; }
+.cps-fbtn-k{ font-size:11px; opacity:.85; margin-top:2px; }
+.cps-fbtn-cancel{ background:var(--cps-red); }
+.cps-fbtn-print { background:var(--cps-amber); }
+.cps-fbtn-save  { background:var(--cps-blue); }
+.cps-fbtn-pay   { background:var(--cps-green); }
+
+/* ═════════════════ Responsive ═════════════════
+   Web   ≥ 1100px — 3 columns, no header, close-FAB shown
+   Tablet 768–1099 — header visible, 3-col body, tighter
+   Mobile  < 768   — header compact, single column, collapsibles, horizontal mode chips
+   ═══════════════════════════════════════════════ */
+
+/* TABLET (768–1099) */
+@media (min-width:768px) and (max-width:1099px){
+  .cps-close-fab{ display:none !important; }
+  /* Hide on-screen keyboard icons — physical keyboards / tablet keyboards
+     are usually attached, and the screen is too narrow for the icon clutter. */
+  .cps-kb-trigger{ display:none !important; }
+  .cps-input-wrap > .cps-input,
+  .cps-input-wrap > input,
+  .cps-input-wrap > textarea,
+  .cps-input-wrap > select{ padding-right:14px !important; }
+  .cps-header{
+    display:flex; align-items:center; gap:14px;
+    padding:12px 18px; background:var(--cps-navy); color:#fff;
+    flex-shrink:0; box-shadow:0 2px 6px rgba(11,18,32,.18);
+  }
+  .cps-header-tablet{ display:flex !important; }
+  .cps-header .cps-brand-title{ font-size:16px; }
+  .cps-search{ max-width:340px; }
+  .cps-body{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);
+    padding:14px; padding-right:14px; gap:14px;
+  }
+  .cps-card-h{ padding:12px 14px 8px; font-size:11.5px; }
+  .cps-card-b{ padding:0 14px 14px; }
+  .cps-cust-info{ grid-template-columns:1fr; gap:10px; }
+}
+
+/* MOBILE (<768) */
+@media (max-width:767px){
+  /* `revert` so each .cps-mobile-only element falls back to its own default
+     display value (block for cards, flex for collapse bars). */
+  .cps-mobile-only{ display:revert !important; }
+  .cps-collapse-bar.cps-mobile-only{ display:flex !important; }
+  /* Hide on-screen keyboard icons — phones already have their own. */
+  .cps-kb-trigger{ display:none !important; }
+  .cps-input-wrap > .cps-input,
+  .cps-input-wrap > input,
+  .cps-input-wrap > textarea,
+  .cps-input-wrap > select{ padding-right:14px !important; }
+
+  /* No top header on mobile — same as desktop. The floating close-FAB
+     replaces it (sticky in the top-right corner). */
+  .cps-header{ display:none !important; }
+  .cps-close-fab{
+    display:flex !important;
+    top:8px; right:8px; width:38px; height:38px;
+  }
+
+  /* Single-column body — `display:contents` on .cps-col flattens the columns
+     so the cards can be reordered globally via the `order` property below. */
+  .cps-body{
+    display:flex !important; flex-direction:column;
+    padding:12px 12px 14px; gap:10px; overflow-y:auto;
+  }
+  .cps-col{ display:contents; }
+
+  /* Mobile card order (matches the mobile mockup) */
+  [data-mob="order"]    { order:1; }
+  [data-mob="customer"] { order:2; }
+  [data-mob="amount"]   { order:3; }
+  [data-mob="discount"] { order:4; }
+  [data-mob="modes"]    { order:5; }
+  [data-mob="ref"]      { order:6; }
+  [data-mob="rcv"]      { order:6; }
+  [data-mob="notes"]    { order:7; }
+  [data-mob="pd"]       { order:8; }
+
+  /* Order details */
+  .cps-card-h{ padding:12px 14px 8px; font-size:11px; }
+  .cps-card-b{ padding:0 14px 14px; }
+  .cps-order-hero{ padding:0 14px 12px; gap:10px; }
+  .cps-hero-img{ width:90px; height:68px; font-size:24px; }
+  .cps-hero-id{ font-size:13px; }
+  .cps-hero-d1{ font-size:12px; }
+  .cps-items{ font-size:11.5px; }
+  .cps-items thead th{ padding:8px 8px; font-size:10px; }
+  .cps-items tbody td{ padding:8px 8px; }
+  .cps-grand{ padding:12px 14px; font-size:15px; }
+  .cps-grand > span:last-child{ font-size:18px; }
+  .cps-totals{ padding:10px 14px; }
+
+  /* Customer card */
+  .cps-cust-row{ flex-direction:column; gap:8px; }
+  .cps-cust-row .cps-input-wrap{ width:100%; }
+  .cps-cust-row .cps-btn-primary{ width:100%; justify-content:center; padding:10px; }
+  .cps-cust-info{ grid-template-columns:1fr; gap:8px; padding:10px; }
+  .cps-cust-info .ci-r{ display:flex; gap:8px; align-items:center; }
+  .cps-cust-info .ci-lbl{ min-width:60px; margin-bottom:0; }
+
+  /* Discount */
+  .cps-disc-row{ grid-template-columns:1fr 1fr; gap:8px; }
+  .cps-3box{ grid-template-columns:repeat(3,1fr); gap:6px; }
+  .cps-box{ padding:8px 6px; }
+  .cps-box-l{ font-size:10px; }
+  .cps-box-v{ font-size:14px; }
+
+  /* Payment Modes — HORIZONTAL chip row */
+  .cps-screen .cps-pmode,
+  .cps-pmode.cps-pmode{
+    flex-direction:column !important;
+    text-align:center; padding:8px 6px; gap:4px;
+    min-height:auto;
+  }
+  .cps-pmodes{ flex-direction:row !important; gap:6px; overflow-x:auto; padding-bottom:4px; }
+  .cps-pmodes > .cps-pmode{ flex:1; min-width:80px; }
+  .cps-pmode-radio{ display:none; }
+  .cps-pmode-l{ display:block; flex:none; }
+  .cps-pmode-t{ font-size:10.5px; line-height:1.1; white-space:normal; }
+  .cps-pmode-s{ display:none; }
+  .cps-pmode-icon{ font-size:18px; order:-1; }
+
+  /* Conditional cards */
+  .cps-amt-input{ font-size:22px !important; padding:14px !important; }
+  .cps-textarea{ min-height:60px; }
+
+  /* Payment Details: collapsible */
+  .cps-pd-card .cps-card-h{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .cps-pd-card .cps-card-h > span{ flex:1; text-align:left; }
+  .cps-pd-row{ grid-template-columns:1fr; gap:4px; }
+  .cps-pd-row label{ font-size:11.5px; color:var(--cps-muted); }
+
+  /* Walk-in */
+  .cps-walkin-row{ flex-direction:column; gap:8px; }
+
+  /* Footer (4 buttons, 2×2) */
+  .cps-footer{ grid-template-columns:repeat(2,1fr); gap:1px; }
+  .cps-fbtn{ padding:12px 8px; gap:8px; min-height:60px; }
+  .cps-fbtn-i{ font-size:18px; }
+  .cps-fbtn-t{ font-size:12px; }
+  .cps-fbtn-k{ font-size:10px; }
+}
+
+/* Very small phones */
+@media (max-width:359px){
+  .cps-3box{ grid-template-columns:1fr 1fr; }
+  .cps-3box > div:nth-child(3){ grid-column:1 / -1; }
+  .cps-pmodes > .cps-pmode{ min-width:70px; }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Hide scrollbars on mobile (≤767px) for ALL scrollable elements inside the
+   POS app and the checkout screen — scrolling still works, the bar is just
+   invisible.  Covers horizontal scrollers (category tabs, payment chips,
+   filter chips) and vertical scrollers (cart, items list, totals panel, etc.)
+   ═════════════════════════════════════════════════════════════════════════ */
+@media (max-width:767px){
+  body.pos-mode,
+  body.pos-mode *,
+  .cps-screen,
+  .cps-screen *{
+    scrollbar-width: none !important;          /* Firefox */
+    -ms-overflow-style: none !important;       /* IE / old Edge */
+  }
+  body.pos-mode::-webkit-scrollbar,
+  body.pos-mode *::-webkit-scrollbar,
+  .cps-screen::-webkit-scrollbar,
+  .cps-screen *::-webkit-scrollbar{
+    width:0 !important; height:0 !important;
+    display:none !important;
+    background:transparent !important;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   CPS — Cash Confirm modal. Opens when the cashier clicks "Collect Cash"
+   so they can verify the totals once before the order is actually saved.
+   ═════════════════════════════════════════════════════════════════════════ */
+.cps-confirm-ov{
+  position:fixed; inset:0; z-index:99998;
+  background:rgba(11,18,32,.5); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center; padding:20px;
+}
+.cps-confirm-box{
+  background:#fff; border-radius:14px;
+  width:100%; max-width:520px; overflow:hidden;
+  box-shadow:0 24px 60px rgba(11,18,32,.30);
+  animation:vk-pop .18s ease-out both;
+}
+.cps-confirm-h{
+  display:flex; align-items:center; gap:10px;
+  padding:16px 20px; border-bottom:1px solid var(--cps-line);
+  background:#fafbfc;
+}
+.cps-confirm-h i{ font-size:22px; color:var(--cps-green); }
+.cps-confirm-h h3{ flex:1; font-size:15px; font-weight:800; color:var(--cps-text); margin:0; }
+.cps-confirm-x{
+  width:30px; height:30px; border-radius:8px;
+  border:1px solid var(--cps-line); background:#fff; color:var(--cps-muted);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.cps-confirm-x:hover{ background:#fee2e2; color:var(--cps-red); border-color:#fca5a5; }
+.cps-confirm-b{ padding:18px 20px; }
+.cps-confirm-grid{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;
+}
+.cps-confirm-grid > div{
+  border:1px solid var(--cps-line); border-radius:8px;
+  padding:12px; background:#fafbfc; text-align:center;
+}
+.cps-confirm-l{ font-size:11px; color:var(--cps-muted); margin-bottom:4px; font-weight:600; }
+.cps-confirm-v{ font-size:18px; font-weight:800; color:var(--cps-text); font-variant-numeric:tabular-nums; }
+.cps-confirm-blue{ color:var(--cps-blue) !important; }
+.cps-confirm-green{ color:var(--cps-green) !important; }
+.cps-confirm-list{
+  display:flex; flex-direction:column; gap:0;
+  border-top:1px dashed var(--cps-line); padding-top:10px;
+}
+.cps-confirm-list > div{
+  display:flex; justify-content:space-between; padding:7px 0;
+  font-size:13px;
+}
+.cps-confirm-list > div + div{ border-top:1px dashed var(--cps-line); }
+.cps-confirm-list span{ color:var(--cps-muted); }
+.cps-confirm-list strong{ color:var(--cps-text); font-weight:700; }
+.cps-confirm-warn{
+  margin-top:14px; padding:10px 12px; border-radius:8px;
+  background:#fee2e2; border:1px solid #fca5a5;
+  display:flex; align-items:flex-start; gap:8px;
+  font-size:12.5px; color:#991b1b;
+}
+.cps-confirm-warn i{ font-size:16px; flex-shrink:0; margin-top:1px; color:var(--cps-red); }
+.cps-confirm-f{
+  display:flex; gap:10px; padding:14px 20px;
+  border-top:1px solid var(--cps-line); background:#fafbfc;
+}
+.cps-confirm-btn{
+  flex:1; padding:13px 12px; border-radius:8px; border:none;
+  font-size:14px; font-weight:800; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  transition:filter .12s, transform .04s;
+}
+.cps-confirm-btn:hover{ filter:brightness(1.08); }
+.cps-confirm-btn:active{ transform:translateY(1px); }
+.cps-confirm-btn:disabled{ opacity:.5; cursor:not-allowed; filter:none; transform:none; }
+.cps-confirm-cancel{ background:#fff; color:var(--cps-text); border:1.5px solid var(--cps-line); }
+.cps-confirm-cancel:hover{ background:#f8fafc; }
+.cps-confirm-ok{ background:var(--cps-green); color:#fff; flex:1.5; }
+
+/* New-customer grid (inside the cps-confirm-box reused as a form modal). */
+.cps-nc-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:12px 14px;
+}
+.cps-nc-full{ grid-column:1 / -1; }
+.cps-nc-grid .cps-fld label{
+  display:block; font-size:11.5px; color:var(--cps-muted);
+  margin-bottom:6px; font-weight:600;
+}
+.cps-req{ color:var(--cps-red); margin-left:2px; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   VK — Virtual Keyboard popup. Opens when the user clicks a `.cps-kb-trigger`
+   icon next to a text/number input. Active Input panel + numeric keypad on
+   top, optional QWERTY below for text inputs, optional quick-amount chips
+   for amount inputs.
+   ═════════════════════════════════════════════════════════════════════════ */
+.cps-input-wrap{
+  position:relative; display:block;
+}
+.cps-input-wrap > .cps-input,
+.cps-input-wrap > input,
+.cps-input-wrap > textarea,
+.cps-input-wrap > select{
+  padding-right:42px !important;
+  width:100%;
+}
+.cps-kb-trigger{
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  width:30px; height:30px; border-radius:6px;
+  border:1px solid var(--cps-line); background:#f8fafc; color:var(--cps-blue);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:14px;
+  transition:background .12s, border-color .12s;
+  z-index:2;
+}
+.cps-kb-trigger:hover{ background:var(--cps-blue-soft); border-color:var(--cps-blue); }
+.cps-kb-trigger:disabled,
+.cps-kb-trigger[disabled]{
+  opacity:.45; cursor:not-allowed;
+  background:#f1f5f9 !important; border-color:var(--cps-line) !important; color:var(--cps-subtle) !important;
+}
+.cps-input-wrap-textarea{ display:block; }
+.cps-input-wrap-textarea > .cps-input{ padding-right:14px !important; }
+.cps-kb-trigger-tarea{ position:absolute; right:6px; top:6px; transform:none; }
+
+/* Overlay (covers full screen) */
+.vk-overlay{
+  position:fixed; inset:0; z-index:99999;
+  background:rgba(11,18,32,.55); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center; padding:18px;
+  font-family: var(--pv2-font-sans, 'Inter', system-ui, sans-serif);
+}
+
+/* Panel (≈ 1100×720 max) */
+.vk-panel{
+  background:#f6f8fc; border-radius:16px;
+  width:100%; max-width:1100px;
+  max-height:calc(100vh - 32px); overflow:auto;
+  box-shadow:0 30px 80px rgba(11,18,32,.35);
+  padding:18px;
+  display:flex; flex-direction:column; gap:14px;
+  animation:vk-pop .18s ease-out both;
+}
+@keyframes vk-pop{ from{ transform:scale(.96); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+/* Top row: Active Input + Numpad */
+.vk-top{
+  display:grid; grid-template-columns:1fr 360px; gap:14px;
+}
+.vk-active{
+  background:#fff; border:1px solid var(--cps-line); border-radius:12px;
+  padding:16px 18px;
+}
+.vk-active-h{ display:flex; align-items:center; justify-content:space-between; }
+.vk-lbl{ font-size:11.5px; font-weight:700; color:var(--cps-muted); letter-spacing:.5px; }
+.vk-close{
+  width:32px; height:32px; border-radius:8px;
+  border:1px solid var(--cps-line); background:#fff; color:var(--cps-muted);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:14px; transition:background .12s;
+}
+.vk-close:hover{ background:#fee2e2; color:var(--cps-red); border-color:#fca5a5; }
+.vk-display{
+  margin-top:10px; padding:18px 16px;
+  border:1px solid var(--cps-blue); border-radius:10px;
+  background:#fff; color:var(--cps-text);
+  font-size:30px; font-weight:800; min-height:64px;
+  font-variant-numeric:tabular-nums; word-break:break-all;
+  white-space:pre-wrap;
+}
+.vk-meta-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+.vk-meta label{ display:block; font-size:11px; color:var(--cps-muted); margin-bottom:4px; font-weight:600; }
+.vk-meta-v{
+  padding:10px 12px; border:1px solid var(--cps-line); border-radius:8px;
+  background:#fafbfc; font-size:13px; font-weight:600; color:var(--cps-text);
+}
+
+/* Numpad */
+.vk-numpad{
+  background:#fff; border:1px solid var(--cps-line); border-radius:12px;
+  padding:14px; display:flex; flex-direction:column;
+}
+.vk-numpad-h{
+  display:flex; align-items:center; gap:8px;
+  font-size:11.5px; font-weight:800; color:var(--cps-blue);
+  letter-spacing:.6px; margin-bottom:10px;
+}
+.vk-numpad-h i{ font-size:13px; }
+.vk-numpad-grid{
+  flex:1; display:grid; grid-template-columns:repeat(4,1fr);
+  grid-auto-rows:minmax(54px, 1fr); gap:6px;
+}
+
+/* Generic key button */
+.vk-key{
+  border:1px solid var(--cps-line); border-radius:8px;
+  background:#fff; color:var(--cps-text);
+  font-size:18px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  user-select:none; transition:background .08s, transform .04s;
+}
+.vk-key:hover{ background:#f1f5f9; }
+.vk-key:active{ transform:translateY(1px); }
+.vk-key:disabled{ opacity:.5; cursor:not-allowed; }
+
+/* Numpad-specific keys */
+.vk-num{ font-size:20px; }
+.vk-back{ background:#fee2e2; color:var(--cps-red); border-color:#fecaca; }
+.vk-back:hover{ background:#fecaca; }
+.vk-clr{ background:#ffedd5; color:var(--cps-amber); border-color:#fed7aa; }
+.vk-clr:hover{ background:#fed7aa; }
+.vk-ok{
+  grid-row: span 2;
+  background:var(--cps-green); color:#fff; border-color:var(--cps-green);
+  font-size:18px; font-weight:800;
+}
+.vk-ok:hover{ background:#15803d; }
+
+/* Quick amounts row */
+.vk-quick{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  background:#fff; border:1px solid var(--cps-line); border-radius:12px;
+  padding:10px 14px;
+}
+.vk-quick-l{ font-size:12px; font-weight:700; color:var(--cps-blue); margin-right:6px; }
+.vk-quick button{
+  flex:1; min-width:80px; padding:10px 14px;
+  border:1px solid var(--cps-line); border-radius:8px;
+  background:#fff; color:var(--cps-text); font-weight:700; font-size:13px;
+  cursor:pointer; font-variant-numeric:tabular-nums;
+  transition:border-color .12s, background .12s;
+}
+.vk-quick button:hover{ border-color:var(--cps-blue); color:var(--cps-blue); background:var(--cps-blue-soft); }
+.vk-clear-all{ color:var(--cps-red) !important; border-color:#fecaca !important; }
+.vk-clear-all:hover{ background:#fee2e2 !important; }
+
+/* QWERTY */
+.vk-qwerty{
+  background:#fff; border:1px solid var(--cps-line); border-radius:12px;
+  padding:10px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.vk-row{ display:flex; gap:6px; }
+.vk-row .vk-key{ flex:1; min-height:48px; font-size:14px; font-weight:600; }
+.vk-mod{
+  background:#eef2ff !important; color:var(--cps-blue) !important;
+  border-color:#c7d2fe !important; font-weight:700;
+  flex:1.5 !important;
+}
+.vk-mod:hover{ background:#e0e7ff !important; }
+.vk-back-sm{ background:#eef2ff !important; color:var(--cps-text) !important; flex:1.5 !important; }
+.vk-space{ flex:6 !important; background:#fff; }
+.vk-caps-led{
+  display:inline-block; width:8px; height:8px; border-radius:50%;
+  background:#cbd5e1; margin-right:4px;
+}
+#vkCaps.on .vk-caps-led{ background:var(--cps-green); }
+#vkShift.on{ background:var(--cps-blue) !important; color:#fff !important; }
+
+/* Responsive — collapse to single column on tablet/phone */
+@media(max-width:900px){
+  .vk-top{ grid-template-columns:1fr; }
+  .vk-numpad{ order:-1; }
+  .vk-numpad-grid{ grid-auto-rows:54px; }
+}
+@media(max-width:640px){
+  .vk-display{ font-size:24px; padding:14px 12px; }
+  .vk-quick button{ min-width:60px; font-size:12px; padding:8px 6px; }
+  .vk-row .vk-key{ min-height:40px; font-size:13px; }
+  .vk-key{ font-size:16px; }
+  .vk-num{ font-size:18px; }
+  .vk-panel{ padding:12px; }
 }
