@@ -114,12 +114,12 @@ function hidePcTip(){if($pcTip)$pcTip.removeClass('show');}
    SPA NAVIGATION — no page refresh, fullscreen stays
    ══════════════════════════════════════════ */
 var _spaPage='pos';
-var _spaUrls={orders:'/sales/orders',customers:'/sales/customers',returns:'/sales/returns',settings:'/sales/settings'};
+var _spaUrls={orders:'/sales/orders',customers:'/sales/customers',returns:'/sales/returns',drafts:'/sales/drafts',settings:'/sales/settings'};
 
 function spaNav(page){
     // Update sidebar active state
     $('.ps-nav .ps-btn').removeClass('active');
-    $('.ps-nav .ps-btn').eq({pos:0,orders:1,customers:2,returns:3,settings:4}[page]||0).addClass('active');
+    $('.ps-nav .ps-btn').eq({pos:0,orders:1,customers:2,returns:3,drafts:4,settings:5}[page]||0).addClass('active');
     _spaPage=page;
 
     if(page==='pos'){
@@ -143,7 +143,7 @@ function spaNav(page){
     $.ajax({url:_spaUrls[page],headers:{'X-SPA':'1','X-Requested-With':'XMLHttpRequest'},success:function(html){
         var h='<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">';
         h+='<button onclick="spaNav(\'pos\')" style="width:34px;height:34px;border-radius:var(--rs);border:1.5px solid var(--border);background:none;cursor:pointer;font-size:15px;color:var(--text2);display:flex;align-items:center;justify-content:center;" data-tip="Back to POS"><i class="bi bi-arrow-left"></i></button>';
-        h+='<h2 style="font-size:20px;font-weight:800;margin:0;">'+({orders:'Sales Orders',customers:'Customers',returns:'Returns',settings:'POS Settings'}[page]||page)+'</h2>';
+        h+='<h2 style="font-size:20px;font-weight:800;margin:0;">'+({orders:'Sales Orders',customers:'Customers',returns:'Returns',drafts:'Saved Drafts',settings:'POS Settings'}[page]||page)+'</h2>';
         h+='</div><div id="spaInner"></div>';
         $spa.html(h);
         // Use jQuery .html() on #spaInner — it automatically executes <script> tags
@@ -181,126 +181,192 @@ function buildAdvTabs(mode){
     var $tabs=$('#advTabs'),$body=$('#advBody');
     $tabs.html('');$body.html('');
 
+    /* Tab button helper — modern pill-underline style (no inline style overrides) */
+    function _advTabBtn(id, icon, label, active){
+        return '<button class="pcat'+(active?' active':'')+'" onclick="advTab(this,\''+id+'\')"><i class="bi bi-'+icon+'"></i> '+label+'</button>';
+    }
+    /* Section heading inside a pane */
+    function _advSection(title){ return '<div class="adv-section-title">'+title+'</div>'; }
+    /* Field grid wrapper */
+    function _advG(content){ return '<div class="adv-grid">'+content+'</div>'; }
+    /* Collapsible card ("Additional Filters" / "Advanced Options") */
+    function _advCollapse(id, title, sub, content){
+        return '<div class="adv-collapse" id="'+id+'">'
+             +   '<button type="button" class="adv-collapse-h" onclick="advToggleCollapse(this)">'
+             +     '<span class="adv-collapse-icon"><i class="bi bi-chevron-down"></i></span>'
+             +     '<div class="adv-collapse-h-text">'
+             +       '<div class="adv-collapse-h-title">'+title+'</div>'
+             +       (sub ? '<div class="adv-collapse-h-sub">'+sub+'</div>' : '')
+             +     '</div>'
+             +     '<i class="bi bi-chevron-down adv-collapse-chev"></i>'
+             +   '</button>'
+             +   '<div class="adv-collapse-b">' + content + '</div>'
+             + '</div>';
+    }
+
     if(mode==='parts'){
-        // Part inventory filters: Vehicle, Part, Status, Dates, Location
         $tabs.html(
-            '<button class="pcat active" onclick="advTab(this,\'avVeh\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-truck-front"></i> Vehicle</button>'+
-            '<button class="pcat" onclick="advTab(this,\'avPart\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-gear"></i> Part</button>'+
-            '<button class="pcat" onclick="advTab(this,\'avStat\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-flag"></i> Status</button>'+
-            '<button class="pcat" onclick="advTab(this,\'avDate\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-calendar"></i> Dates</button>'+
-            '<button class="pcat" onclick="advTab(this,\'avLoc\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-geo-alt"></i> Location</button>'
+            _advTabBtn('avVeh','truck-front','Vehicle',true) +
+            _advTabBtn('avPart','gear','Part') +
+            _advTabBtn('avStat','flag','Status') +
+            _advTabBtn('avDate','calendar3','Dates') +
+            _advTabBtn('avLoc','geo-alt','Location')
         );
-        var g='display:grid;grid-template-columns:1fr 1fr;gap:10px;';
         var h='';
-        // Vehicle tab
-        h+='<div class="adv-pane active" id="avVeh"><div style="'+g+'">';
-        h+=_afSel('afVehType','Vehicle Type');
-        h+=_afSel('afVehYear','Vehicle Year');
-        h+=_afSel('afVehMake','Vehicle Make');
-        h+=_afSel('afVehModel','Vehicle Model');
-        h+=_afSel('afVehVariant','Vehicle Variant');
-        h+=_afSel('afVehEngine','Vehicle Engine');
-        h+=_afSel('afVehFuel','Vehicle Fuel');
-        h+=_afInp('afMotorization','Motorization','text');
-        h+=_afInp('afCC','CC','text');
-        h+=_afInp('afCV','CV','text');
-        h+=_afInp('afKW','KW','text');
-        h+=_afInp('afVehIntId','Vehicle Internal ID','text');
-        h+='</div></div>';
-        // Part tab
-        h+='<div class="adv-pane" id="avPart" style="display:none;"><div style="'+g+'">';
-        h+=_afInp('afPartCode','Part Code','text');
-        h+=_afInp('afPartIntId','Part Internal ID','text');
-        h+=_afSel('afPartBrand','Part Brand');
-        h+=_afSel('afPartCatalog','Part Catalog');
-        h+=_afInp('afRegNum','Reg No Dismantler','text');
-        h+=_afInp('afQtyMin','Qty Min','number');
-        h+=_afInp('afQtyMax','Qty Max','number');
-        h+=_afInp('afPriceMin','Price Min','number');
-        h+=_afInp('afPriceMax','Price Max','number');
-        h+=_afInp('afCostMin','Cost Min','number');
-        h+=_afInp('afCostMax','Cost Max','number');
-        h+=_afInp('afRatingMin','Rating Min','number');
-        h+=_afInp('afRatingMax','Rating Max','number');
-        h+=_afOpt('afIsMaster','Is Master Part',['','Any'],['1','Yes'],['0','No']);
-        h+=_afOpt('afPrintLabel','Print Label',['','Any'],['1','Yes'],['0','No']);
-        h+=_afOpt('afVatIncluded','Tax Included',['','Any'],['1','Yes'],['0','No']);
-        h+=_afOpt('afCustomSize','Custom Size',['','Any'],['1','Yes'],['0','No']);
-        h+='</div></div>';
-        // Status tab
-        h+='<div class="adv-pane" id="avStat" style="display:none;"><div style="'+g+'">';
-        h+=_afOpt('afInvStatus','Inventory Status',['','All'],['1','In Stock'],['2','Out of Stock'],['3','Reserved'],['4','Sold']);
-        h+=_afOpt('afCondition','Condition',['','All'],['1','OEM'],['2','Aftermarket']);
-        h+=_afOpt('afPartState','Part State',['','All'],['1','New'],['2','Used'],['3','Remanufactured'],['4','Not Working']);
-        h+='</div></div>';
-        // Dates tab
-        h+='<div class="adv-pane" id="avDate" style="display:none;"><div style="'+g+'">';
-        h+=_afInp('afCreatedFrom','Created From','date');
-        h+=_afInp('afCreatedTo','Created To','date');
-        h+=_afInp('afUpdatedFrom','Updated From','date');
-        h+=_afInp('afUpdatedTo','Updated To','date');
-        h+='<div style="grid-column:1/-1;">'+_afInp('afNotes','Notes Search','text')+'</div>';
-        h+='</div></div>';
-        // Location tab
-        h+='<div class="adv-pane" id="avLoc" style="display:none;"><div style="'+g+'">';
-        h+=_afSel('afWarehouse','Warehouse');
-        h+=_afSel('afZone','Zone');
-        h+=_afSel('afShelf','Shelf');
-        h+=_afSel('afRack','Rack');
-        h+=_afSel('afBin','Bin');
-        h+='</div></div>';
+        // ── Vehicle tab ──
+        h+='<div class="adv-pane active" id="avVeh">';
+        h+=  _advSection('Vehicle Information');
+        h+=  _advG(
+                _afSel('afVehType','Vehicle Type') +
+                _afSel('afVehYear','Vehicle Year') +
+                _afSel('afVehMake','Vehicle Make') +
+                _afSel('afVehModel','Vehicle Model') +
+                _afSel('afVehVariant','Vehicle Variant') +
+                _afSel('afVehEngine','Vehicle Engine') +
+                _afSel('afVehFuel','Vehicle Fuel') +
+                _afInp('afMotorization','Motorization','text')
+             );
+        h+=  _advCollapse('advVehMore','Additional Filters','More vehicle details',
+                _advG(
+                    _afInp('afCC','CC','text') +
+                    _afInp('afCV','CV','text') +
+                    _afInp('afKW','KW','text') +
+                    _afInp('afVehIntId','Vehicle Internal ID','text')
+                )
+             );
+        h+='</div>';
+        // ── Part tab ──
+        h+='<div class="adv-pane" id="avPart" style="display:none;">';
+        h+=  _advSection('Part Information');
+        h+=  _advG(
+                _afInp('afPartCode','Part Code','text') +
+                _afInp('afPartIntId','Part Internal ID','text') +
+                _afSel('afPartBrand','Part Brand') +
+                _afSel('afPartCatalog','Part Catalog') +
+                _afInp('afRegNum','Reg No Dismantler','text') +
+                _afOpt('afIsMaster','Is Master Part',['','Any'],['1','Yes'],['0','No']) +
+                _afOpt('afPrintLabel','Print Label',['','Any'],['1','Yes'],['0','No']) +
+                _afOpt('afVatIncluded','Tax Included',['','Any'],['1','Yes'],['0','No']) +
+                _afOpt('afCustomSize','Custom Size',['','Any'],['1','Yes'],['0','No'])
+             );
+        h+=  _advCollapse('advPartMore','Advanced Options','Quantity, price, cost & rating ranges',
+                _advG(
+                    _afInp('afQtyMin','Qty Min','number') +
+                    _afInp('afQtyMax','Qty Max','number') +
+                    _afInp('afPriceMin','Price Min','number') +
+                    _afInp('afPriceMax','Price Max','number') +
+                    _afInp('afCostMin','Cost Min','number') +
+                    _afInp('afCostMax','Cost Max','number') +
+                    _afInp('afRatingMin','Rating Min','number') +
+                    _afInp('afRatingMax','Rating Max','number')
+                )
+             );
+        h+='</div>';
+        // ── Status ──
+        h+='<div class="adv-pane" id="avStat" style="display:none;">';
+        h+=  _advSection('Status Filters');
+        h+=  _advG(
+                _afOpt('afInvStatus','Inventory Status',['','All'],['1','In Stock'],['2','Out of Stock'],['3','Reserved'],['4','Sold']) +
+                _afOpt('afCondition','Condition',['','All'],['1','OEM'],['2','Aftermarket']) +
+                _afOpt('afPartState','Part State',['','All'],['1','New'],['2','Used'],['3','Remanufactured'],['4','Not Working'])
+             );
+        h+='</div>';
+        // ── Dates ──
+        h+='<div class="adv-pane" id="avDate" style="display:none;">';
+        h+=  _advSection('Date Range');
+        h+=  _advG(
+                _afInp('afCreatedFrom','Created From','date') +
+                _afInp('afCreatedTo','Created To','date') +
+                _afInp('afUpdatedFrom','Updated From','date') +
+                _afInp('afUpdatedTo','Updated To','date')
+             );
+        h+=  _advSection('Search Inside Notes');
+        h+=  _advG(_afInp('afNotes','Notes Search','text'));
+        h+='</div>';
+        // ── Location ──
+        h+='<div class="adv-pane" id="avLoc" style="display:none;">';
+        h+=  _advSection('Warehouse Location');
+        h+=  _advG(
+                _afSel('afWarehouse','Warehouse') +
+                _afSel('afZone','Zone') +
+                _afSel('afShelf','Shelf') +
+                _afSel('afRack','Rack') +
+                _afSel('afBin','Bin')
+             );
+        h+='</div>';
         $body.html(h);
         _loadPartDropdowns();
     } else {
-        // Vehicle inventory filters: Vehicle, Status, Dates, Other
         $tabs.html(
-            '<button class="pcat active" onclick="advTab(this,\'avVeh\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-truck-front"></i> Vehicle</button>'+
-            '<button class="pcat" onclick="advTab(this,\'avStat\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-flag"></i> Status</button>'+
-            '<button class="pcat" onclick="advTab(this,\'avDate\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-calendar"></i> Dates</button>'+
-            '<button class="pcat" onclick="advTab(this,\'avOther\')" style="padding:6px 14px;font-size:11px;"><i class="bi bi-three-dots"></i> Other</button>'
+            _advTabBtn('avVeh','truck-front','Vehicle',true) +
+            _advTabBtn('avStat','flag','Status') +
+            _advTabBtn('avDate','calendar3','Dates') +
+            _advTabBtn('avOther','three-dots','Other')
         );
-        var g='display:grid;grid-template-columns:1fr 1fr;gap:10px;';
         var h='';
-        // Vehicle tab
-        h+='<div class="adv-pane active" id="avVeh"><div style="'+g+'">';
-        h+=_afSel('afVehType','Vehicle Type');
-        h+=_afSel('afVehYear','Vehicle Year');
-        h+=_afSel('afVehMake','Vehicle Make');
-        h+=_afSel('afVehModel','Vehicle Model');
-        h+=_afSel('afVehVariant','Vehicle Variant');
-        h+=_afSel('afVehFuel','Vehicle Fuel');
-        h+=_afSel('afVehCategory','Vehicle Category');
-        h+='</div></div>';
-        // Status tab
-        h+='<div class="adv-pane" id="avStat" style="display:none;"><div style="'+g+'">';
-        h+=_afOpt('afInvStatus','Inventory Status',['','All'],['1','In Stock'],['2','Out of Stock'],['3','Sent to Wastage']);
-        h+=_afOpt('afDepStatus','Depollution Status',['','All'],['1','Pending'],['2','In Depollution'],['3','Depolluted']);
-        h+=_afOpt('afDisStatus','Dismantle Status',['','All'],['1','Pending'],['2','In Dismantling'],['3','Dismantled']);
-        h+=_afOpt('afStateParking','State Parking',['','All'],['1','With Declaration'],['2','With Certificate'],['3','Pending to Accept']);
-        h+=_afOpt('afSteering','Steering Side',['','All'],['1','Left'],['2','Right'],['3','Not Applicable']);
-        h+='</div></div>';
-        // Dates tab
-        h+='<div class="adv-pane" id="avDate" style="display:none;"><div style="'+g+'">';
-        h+=_afInp('afArrivalFrom','Arrival From','date');
-        h+=_afInp('afArrivalTo','Arrival To','date');
-        h+=_afInp('afProcessFrom','Process Start From','date');
-        h+=_afInp('afProcessTo','Process Start To','date');
-        h+=_afInp('afCreatedFrom','Created From','date');
-        h+=_afInp('afCreatedTo','Created To','date');
-        h+='</div></div>';
-        // Other tab
-        h+='<div class="adv-pane" id="avOther" style="display:none;"><div style="'+g+'">';
-        h+=_afInp('afVin','VIN','text');
-        h+=_afInp('afColor','Color','text');
-        h+=_afInp('afBrand','Brand','text');
-        h+=_afInp('afOwner','Owner Name','text');
-        h+=_afInp('afPlate','Registration Plate','text');
-        h+='</div></div>';
+        // ── Vehicle tab ──
+        h+='<div class="adv-pane active" id="avVeh">';
+        h+=  _advSection('Vehicle Information');
+        h+=  _advG(
+                _afSel('afVehType','Vehicle Type') +
+                _afSel('afVehYear','Vehicle Year') +
+                _afSel('afVehMake','Vehicle Make') +
+                _afSel('afVehModel','Vehicle Model') +
+                _afSel('afVehVariant','Vehicle Variant') +
+                _afSel('afVehFuel','Vehicle Fuel') +
+                _afSel('afVehCategory','Vehicle Category')
+             );
+        h+='</div>';
+        // ── Status ──
+        h+='<div class="adv-pane" id="avStat" style="display:none;">';
+        h+=  _advSection('Status Filters');
+        h+=  _advG(
+                _afOpt('afInvStatus','Inventory Status',['','All'],['1','In Stock'],['2','Out of Stock'],['3','Sent to Wastage']) +
+                _afOpt('afDepStatus','Depollution Status',['','All'],['1','Pending'],['2','In Depollution'],['3','Depolluted']) +
+                _afOpt('afDisStatus','Dismantle Status',['','All'],['1','Pending'],['2','In Dismantling'],['3','Dismantled']) +
+                _afOpt('afStateParking','State Parking',['','All'],['1','With Declaration'],['2','With Certificate'],['3','Pending to Accept']) +
+                _afOpt('afSteering','Steering Side',['','All'],['1','Left'],['2','Right'],['3','Not Applicable'])
+             );
+        h+='</div>';
+        // ── Dates ──
+        h+='<div class="adv-pane" id="avDate" style="display:none;">';
+        h+=  _advSection('Date Range');
+        h+=  _advG(
+                _afInp('afArrivalFrom','Arrival From','date') +
+                _afInp('afArrivalTo','Arrival To','date') +
+                _afInp('afProcessFrom','Process Start From','date') +
+                _afInp('afProcessTo','Process Start To','date') +
+                _afInp('afCreatedFrom','Created From','date') +
+                _afInp('afCreatedTo','Created To','date')
+             );
+        h+='</div>';
+        // ── Other ──
+        h+='<div class="adv-pane" id="avOther" style="display:none;">';
+        h+=  _advSection('Identification & Owner');
+        h+=  _advG(
+                _afInp('afVin','VIN','text') +
+                _afInp('afColor','Color','text') +
+                _afInp('afBrand','Brand','text') +
+                _afInp('afOwner','Owner Name','text') +
+                _afInp('afPlate','Registration Plate','text')
+             );
+        h+='</div>';
         $body.html(h);
         _loadVehDropdowns();
     }
     _advBuilt[mode]=true;
 }
+
+/* Toggle a collapsible Additional Filters / Advanced Options section. */
+window.advToggleCollapse = function(headerEl){
+    var $box = $(headerEl).closest('.adv-collapse');
+    $box.toggleClass('open');
+};
+
+/* Stub for the Save View button — placeholder until the views feature lands. */
+window.saveAdvSearchView = function(){
+    if (typeof toastr !== 'undefined') toastr.info('Save View — coming soon.');
+};
 
 // HTML helpers
 function _afSel(id,lbl){return '<div><label class="co-label">'+lbl+'</label><select class="pos-input pos-s2" id="'+id+'"><option value=""></option></select></div>';}
@@ -309,18 +375,58 @@ function _afOpt(id,lbl){var opts=Array.prototype.slice.call(arguments,2);var h='
 
 function advTab(el,id){$('#advTabs .pcat').removeClass('active');$(el).addClass('active');$('.adv-pane').removeClass('active').hide();$('#'+id).addClass('active').show();}
 
-// Select2 AJAX autocomplete — same as part-inventories page
+// Select2 AJAX autocomplete — same as part-inventories page.
+// When the user is actively searching (term length > 0) we cap visible
+// results to the top 2 — keeps the popup short and matches the rest of the
+// POS dropdowns. Idle (no term) shows the full list.
 function _s2(sel,url,ph,extraData){
     var $p=$('#advSearchPage');
+    /* Stash the AJAX endpoint + extraData on each <select> so the keyboard
+       popup can fetch the same dataset later. */
+    $(sel).each(function(){
+        $(this).data('vk-ajax-url', url);
+        if (extraData) $(this).data('vk-ajax-extra', extraData);
+    });
     $(sel).select2({
         placeholder:ph||'All',allowClear:true,width:'100%',
         dropdownParent:$p,
         ajax:{url:BASE_URL+url,dataType:'json',delay:300,
             data:function(p){var d={search:p.term||'',limit:50};if(extraData)$.extend(d,extraData());return d;},
-            processResults:function(r){return{results:(r.data||[]).map(function(v){return{id:v.id,text:v.name||String(v.year||'')||v.manufacturer_engine||''};})};},
+            processResults:function(r, p){
+                var rows = (r.data||[]).map(function(v){
+                    return { id:v.id, text:v.name||String(v.year||'')||v.manufacturer_engine||'' };
+                });
+                var term = (p && p.term) ? String(p.term).trim() : '';
+                if (term && rows.length > 2){
+                    var more = rows.length - 2;
+                    rows = rows.slice(0, 2);
+                    rows.push({ id:'__more__', text:'+' + more + ' more — refine your search', disabled:true });
+                }
+                return { results: rows };
+            },
             cache:false
         },
         minimumInputLength:0
+    });
+
+    /* Drop a kb pill INSIDE the .select2-container so it's vertically centered
+       on the dropdown trigger (not on the label-plus-trigger column).  Web only. */
+    $(sel).each(function(){
+        var $s = $(this);
+        var sid = $s.attr('id'); if (!sid) return;
+        setTimeout(function(){
+            var $container = $s.next('.select2-container');
+            if (!$container.length) return;
+            if ($container.find('> .ps-s2-kb-trigger').length) return;
+            // Make the container a positioning context for the absolute icon
+            $container.css('position','relative');
+            var $btn = $('<button type="button" class="ps-s2-kb-trigger" tabindex="-1" data-tip="Search options on the on-screen keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>');
+            $btn.on('mousedown click', function(e){
+                e.preventDefault(); e.stopPropagation();
+                openVKForSelect2(sid);
+            });
+            $container.append($btn);
+        }, 30);
     });
 }
 function _s2Clear(ids){ids.forEach(function(id){$(id).val(null).trigger('change.select2');});}
@@ -450,6 +556,62 @@ function toggleFS(){
 /* ══════════════════════════════════════════
    PRODUCTS
    ══════════════════════════════════════════ */
+/* Manual refresh — re-pulls warehouses + catalogs + the current product page,
+   AND re-validates every line currently in the cart against live stock. Any
+   line that is no longer available (sold by another cashier, marked
+   unavailable, or reduced below the held qty) is removed individually — the
+   rest of the cart stays put. The user is told what was dropped. */
+window.posRefresh = function(btn){
+    var $btn = btn ? $(btn) : $('#posRefreshBtn');
+    var $i   = $btn.find('i');
+    if ($btn.data('busy')) return;
+    $btn.data('busy', true).addClass('is-spinning').prop('disabled', true);
+    $i.addClass('spinning');
+    var done = function(){
+        $btn.data('busy', false).removeClass('is-spinning').prop('disabled', false);
+        $i.removeClass('spinning');
+    };
+    var pending = 0, finished = function(){ if (--pending <= 0) done(); };
+
+    // Refresh warehouses dropdown
+    pending++;
+    $.get(BASE_URL + '/sales/warehouses', function(r){
+        if (r && r.status === 200 && r.data) {
+            var cur = $('#fWarehouse').val();
+            $('#fWarehouse').html('<option value="">All Warehouses</option>');
+            r.data.forEach(function(w){ $('#fWarehouse').append('<option value="'+w.id+'">'+esc(w.name)+'</option>'); });
+            if (cur) $('#fWarehouse').val(cur);
+            $('#fWarehouse').trigger('change.posAc');
+        }
+    }).always(finished);
+
+    // Refresh catalog rail counts (if helper exists)
+    if (typeof loadCatalogCounts === 'function') {
+        pending++;
+        try { loadCatalogCounts(); } catch(_){}
+        setTimeout(finished, 600);
+    }
+
+    // Refresh tax configs
+    pending++;
+    $.get(BASE_URL + '/sales/taxes', function(r){
+        if (r && r.status === 200 && r.data) _taxes = r.data;
+    }).always(finished);
+
+    // Reload current product list
+    pending++;
+    try { loadProducts(); } catch(_){}
+    setTimeout(finished, 400);
+
+    // ── Re-validate the cart against live stock — same helper used by Pay ──
+    if (_cart.length){
+        pending++;
+        cpsValidateAndPruneCart().then(finished, finished);
+    }
+
+    if (typeof toastr !== 'undefined') toastr.info('Refreshing…', null, { timeOut: 1200 });
+};
+
 function loadProducts(){
     var $g=$('#prodGrid');
     $g.html('<div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--muted);"><div class="spinner-border spinner-border-sm" style="color:var(--primary);"></div></div>');
@@ -719,6 +881,30 @@ function addToCart(type,id,name,price,mq,code,wh,unit,vatIncluded){
     renderCart();
 }
 function removeFromCart(i){_cart.splice(i,1);renderCart();}
+
+/* Remove every cart line that belongs to a single (type,id) part group —
+   used by the trash icon on the group header + the swipe-left "Delete part"
+   pill on touch devices. */
+window.removeGroup = function(type, id){
+    if (!type || id == null) return;
+    var idStr = String(id);
+    _cart = _cart.filter(function(c){
+        return !(c.item_type === type && String(c.id) === idStr);
+    });
+    renderCart();
+};
+
+/* Toggle the units block under a group header (replaces the inline jQuery
+   toggle that used .next() — needed because the units block now lives at
+   `.ci-group-wrap + .ci-units` (one level higher in the DOM after we wrapped
+   the header in .ci-wrap). */
+window.cartToggleGroup = function(headerEl){
+    var $w = $(headerEl).closest('.ci-group-wrap');
+    var $u = $w.next('.ci-units');
+    if (!$u.length) return;
+    $u.toggle();
+    $w.find('.ci-arrow i').toggleClass('bi-chevron-down bi-chevron-up');
+};
 function renderCart(){
     var $i=$('#cItems'),$c=$('#cCnt'),$m=$('#mobCartCnt');
     if(!_cart.length){$i.html('<div class="ci-empty"><i class="bi bi-receipt"></i><p>No items yet</p></div>');updTotals(0);$c.text('0');$m.text('0');return;}
@@ -739,27 +925,33 @@ function renderCart(){
         // Check if this group has VAT included (no tax)
         var isVatFree=g.units.length>0&&_cart[g.units[0].idx]&&_cart[g.units[0].idx].vat_included;
         var borderColor=isVatFree?'var(--green)':'var(--primary)';
-        // Group header (clickable to expand)
-        h+='<div class="ci-group" onclick="$(this).next().toggle();$(this).find(\'.ci-arrow i\').toggleClass(\'bi-chevron-down bi-chevron-up\');" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-radius:var(--rs);border-left:3px solid '+borderColor+';margin-bottom:2px;cursor:pointer;">';
-        h+='<div class="ci-ico"><i class="bi '+ico+'"></i></div>';
-        h+='<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(g.name)+'</div>';
-        h+='<div style="font-size:10px;color:var(--muted);">'+esc(g.code)+' \u00B7 '+F(g.price)+' ea</div></div>';
-        h+='<span style="background:'+borderColor+';color:#fff;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">'+unitCnt+'</span>';
-        if(isVatFree)h+='<span style="font-size:8px;color:var(--green);font-weight:700;white-space:nowrap;">Tax Inc</span>';
-        h+='<div style="font-size:13px;font-weight:700;color:var(--primary);min-width:50px;text-align:right;">'+F(g.total)+'</div>';
-        h+='<span class="ci-arrow"><i class="bi bi-chevron-down" style="font-size:12px;color:var(--muted);"></i></span>';
+        // Group header \u2014 wrapped in `.ci-wrap` so it's swipeable on touch.
+        // Tap header (anywhere except delete pill) \u2192 expand/collapse units.
+        // Tap delete pill (web) or swipe-left (mobile) \u2192 remove the whole group.
+        h+='<div class="ci-wrap ci-group-wrap" data-group="'+esc(g.type+':'+g.id)+'">';
+        h+= '<div class="ci ci-group" onclick="cartToggleGroup(this)" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-radius:var(--rs);border-left:3px solid '+borderColor+';margin-bottom:2px;cursor:pointer;">';
+        h+=  '<div class="ci-ico"><i class="bi '+ico+'"></i></div>';
+        h+=  '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(g.name)+'</div>';
+        h+=  '<div style="font-size:10px;color:var(--muted);">'+esc(g.code)+' \u00B7 '+F(g.price)+' ea</div></div>';
+        h+=  '<span style="background:'+borderColor+';color:#fff;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">'+unitCnt+'</span>';
+        if(isVatFree) h+= '<span style="font-size:8px;color:var(--green);font-weight:700;white-space:nowrap;">Tax Inc</span>';
+        h+=  '<div style="font-size:13px;font-weight:700;color:var(--primary);min-width:50px;text-align:right;">'+F(g.total)+'</div>';
+        h+=  '<button class="ci-del-btn ci-del-btn-group" onclick="event.stopPropagation();removeGroup(\''+esc(g.type)+'\','+g.id+')" data-tip="Remove this part &amp; all its units" data-tip-pos="left" data-tip-color="red"><i class="bi bi-trash3"></i></button>';
+        h+=  '<span class="ci-arrow"><i class="bi bi-chevron-down" style="font-size:12px;color:var(--muted);"></i></span>';
+        h+= '</div>';
+        h+= '<div class="ci-del-bg" onclick="removeGroup(\''+esc(g.type)+'\','+g.id+')"><i class="bi bi-trash3"></i> Delete part</div>';
         h+='</div>';
         // Unit rows (collapsed by default if >1 unit)
-        h+='<div style="margin-bottom:6px;margin-left:16px;'+(unitCnt>1?'display:none;':'')+'">';
+        h+='<div class="ci-units" style="margin-bottom:6px;margin-left:16px;'+(unitCnt>1?'display:none;':'')+'">';
         g.units.forEach(function(u){
             h+='<div class="ci-wrap" data-idx="'+u.idx+'">';
             h+='<div class="ci" style="border-left:2px solid var(--border);margin-left:4px;padding:6px 10px;">';
             h+='<span style="font-size:11px;color:var(--primary);font-weight:700;min-width:36px;">#'+u.unit+'</span>';
             h+='<span style="flex:1;font-size:11px;color:var(--muted);">Unit</span>';
             h+='<span style="font-size:11px;font-weight:600;">'+F(u.price)+'</span>';
-            h+='<button class="ci-del-btn" onclick="event.stopPropagation();removeFromCart('+u.idx+')" style="width:24px;height:24px;font-size:11px;"><i class="bi bi-trash3"></i></button>';
+            h+='<button class="ci-del-btn" onclick="event.stopPropagation();removeFromCart('+u.idx+')" data-tip="Remove this unit" data-tip-pos="left" data-tip-color="red"><i class="bi bi-trash3"></i></button>';
             h+='</div>';
-            h+='<div class="ci-del-bg" onclick="removeFromCart('+u.idx+')"><i class="bi bi-trash3"></i> Delete</div>';
+            h+='<div class="ci-del-bg" onclick="removeFromCart('+u.idx+')"><i class="bi bi-trash3"></i> Delete unit</div>';
             h+='</div>';
         });
         h+='</div>';
@@ -811,8 +1003,112 @@ function updTotals(sub){
    ══════════════════════════════════════════ */
 var _coData={sub:0,discount:0,taxable:0,taxes:[],taxTotal:0,total:0};
 
+/* Shared cart-pruning helper used by BOTH the refresh button and the Pay
+   button.  POSTs current cart to /sales/validate-stock; if any line is no
+   longer available it removes only those specific lines (matching by id +
+   unit_number), shows a toast, and returns Promise<{ ok, removed }>.
+   ok===true  → cart is fully valid, caller can proceed
+   ok===false → some lines were pruned (or cart is now empty), caller should stop */
+window.cpsValidateAndPruneCart = function(){
+    return new Promise(function(resolve){
+        if (!_cart.length) { resolve({ ok: false, removed: [], reason: 'empty' }); return; }
+        var items = _cart.map(function(c){
+            return {
+                item_type: c.item_type,
+                part_inventory_id: c.part_inventory_id,
+                vehicle_inventory_id: c.vehicle_inventory_id,
+                quantity: c.quantity || 1,
+                unit_number: c.unit_number || null,
+                item_name: c.item_name
+            };
+        });
+        $.ajax({
+            url: BASE_URL + '/sales/validate-stock',
+            type: 'POST', contentType: 'application/json',
+            data: JSON.stringify({ items: items }),
+            success: function(r){
+                if (!r || !r.data) { resolve({ ok: true, removed: [] }); return; }
+                if (r.data.valid) { resolve({ ok: true, removed: [] }); return; }
+                var errs = r.data.errors || [];
+                if (!errs.length) { resolve({ ok: true, removed: [] }); return; }
+                var removed = [];
+                errs.forEach(function(e){
+                    var eid = String(e.id);
+                    var allowedQty = null;
+                    if (typeof e.error === 'string'){
+                        var m = e.error.match(/Only\s+(\d+)\s+available/i);
+                        if (m) allowedQty = parseInt(m[1], 10);
+                    }
+                    if (allowedQty != null){
+                        var matched = [];
+                        for (var i = 0; i < _cart.length; i++){
+                            var c = _cart[i];
+                            if (String(c.part_inventory_id) === eid || String(c.vehicle_inventory_id) === eid){
+                                matched.push(i);
+                            }
+                        }
+                        for (var j = matched.length - 1; j >= allowedQty; j--){
+                            var ix = matched[j];
+                            removed.push((_cart[ix].item_name || 'Item') + (_cart[ix].unit_number ? ' #' + _cart[ix].unit_number : ''));
+                            _cart.splice(ix, 1);
+                        }
+                    } else {
+                        for (var k = _cart.length - 1; k >= 0; k--){
+                            var cc = _cart[k];
+                            var idMatch = String(cc.part_inventory_id) === eid || String(cc.vehicle_inventory_id) === eid;
+                            var unitMatch = (e.unit_number == null && e.unit == null) ||
+                                            String(cc.unit_number) === String(e.unit_number || e.unit);
+                            if (idMatch && unitMatch){
+                                removed.push((cc.item_name || 'Item') + (cc.unit_number ? ' #' + cc.unit_number : ''));
+                                _cart.splice(k, 1);
+                            }
+                        }
+                    }
+                });
+                if (removed.length){
+                    renderCart();
+                    var label = removed.length === 1 ? 'item' : 'items';
+                    var preview = removed.slice(0, 3).join(', ') + (removed.length > 3 ? ' +' + (removed.length - 3) + ' more' : '');
+                    if (typeof toastr !== 'undefined'){
+                        toastr.warning(
+                            'Removed ' + removed.length + ' ' + label + ' no longer in stock:<br/>' + esc(preview)
+                          + '<br/><small style="opacity:.85;">Please review your cart and try again.</small>',
+                            'Cart updated',
+                            { timeOut: 7000, escapeHtml: false }
+                        );
+                    }
+                    resolve({ ok: false, removed: removed, reason: 'pruned' });
+                } else {
+                    resolve({ ok: true, removed: [] });
+                }
+            },
+            error: function(){
+                // On network / 500 errors, don't block the user — let them try to pay.
+                resolve({ ok: true, removed: [], reason: 'validate_failed' });
+            }
+        });
+    });
+};
+
 function openCheckout(){
     if(!_cart.length)return;
+
+    // ── Pre-flight stock validation: drop sold/held units BEFORE opening the
+    //    checkout screen.  If anything was pruned the cashier stays on the
+    //    cart with a toast explaining what changed. */
+    if (!window._cpsCheckoutBypassValidate){
+        var $payBtn = $('#payBtn');
+        var origHtml = $payBtn.html();
+        $payBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Checking…');
+        cpsValidateAndPruneCart().then(function(r){
+            $payBtn.prop('disabled', false).html(origHtml);
+            if (!r.ok) return;                         // pruned → stay on cart
+            if (!_cart.length) return;                  // cart emptied entirely
+            window._cpsCheckoutBypassValidate = true;   // skip on the recursive call
+            try { openCheckout(); } finally { window._cpsCheckoutBypassValidate = false; }
+        });
+        return;
+    }
 
     // ── Subtotal + grouped lines for the cps-items table ──
     var sub = 0;
@@ -855,8 +1151,11 @@ function openCheckout(){
         });
 
         itemsRows += '<tr class="cps-row" onclick="cpsToggleRow(\''+rid+'\')">'
-                  +   '<td><i class="bi bi-chevron-right cps-row-chev" id="'+rid+'_chev"></i></td>'
-                  +   '<td><div class="cps-row-name">' + esc(g.name) + '</div>'
+                  +   '<td>'
+                  +     '<div class="cps-row-name-line">'
+                  +       '<i class="bi bi-chevron-right cps-row-chev" id="'+rid+'_chev"></i>'
+                  +       '<span class="cps-row-name">' + esc(g.name) + '</span>'
+                  +     '</div>'
                   +     (g.code ? '<div class="cps-row-sub">' + esc(g.code) + (g.vat ? ' · <span style="color:var(--cps-green);">Tax Inc</span>' : '') + '</div>' : '')
                   +   '</td>'
                   +   '<td>' + typeLabel + '</td>'
@@ -864,7 +1163,7 @@ function openCheckout(){
                   +   '<td class="num">' + F(g.unit) + '</td>'
                   +   '<td class="num">' + F(g.total) + '</td>'
                   + '</tr>'
-                  + '<tr class="cps-row-detail" id="'+rid+'_d" hidden><td colspan="6">'
+                  + '<tr class="cps-row-detail" id="'+rid+'_d" hidden><td colspan="5">'
                   +   '<div class="cps-rd-summary">'
                   +     '<div><div class="cps-rd-l">Total Units</div><div class="cps-rd-v">'+g.cnt+'</div></div>'
                   +     '<div><div class="cps-rd-l">Unit Price</div><div class="cps-rd-v">'+F(g.unit)+'</div></div>'
@@ -900,7 +1199,7 @@ function openCheckout(){
 
     // ── Created By + Order Date (live clock keeps Order Date current until save) ──
     var u = window.SMS_USER || {};
-    $('#cpsCreatedBy').val(u.name || 'User');
+    $('#cpsCreatedBy').text(u.name || 'User');
     $('#cpsHdrUserName').text(u.name || 'User');
     $('#cpsHdrUserRole').text(u.role || 'Operator');
     if (window.SMS_ORG_NAME) $('#cpsBrandName').text(String(SMS_ORG_NAME).toUpperCase());
@@ -912,21 +1211,18 @@ function openCheckout(){
     if (window.matchMedia('(max-width: 767px)').matches) {
         $('#cpsItemsWrap').hide();
         $('#cpsItemsBar').removeClass('open');
-        $('#cpsPDBody').hide();
-        $('#cpsPDChev').removeClass('open');
     } else {
         $('#cpsItemsWrap').show();
-        $('#cpsPDBody').show();
     }
 
     // ── Order ID — peek next invoice number from server (DRAFT prefix until paid) ──
-    $('#cpsOrderId').val('DRAFT');
+    $('#cpsOrderId').text('DRAFT');
     $.ajax({
         url: BASE_URL + '/sales/next-invoice-number',
         type: 'GET',
         success: function(r){
             var num = (r && r.data && r.data.invoice_number) || (r && r.invoice_number) || null;
-            if (num) $('#cpsOrderId').val('DRAFT — ' + num);
+            if (num) $('#cpsOrderId').text('DRAFT — ' + num);
         },
         error: function(){ /* keep DRAFT */ }
     });
@@ -959,6 +1255,44 @@ function openCheckout(){
     var $first = $('.cps-pmode[data-method="upi"]')[0];
     if ($first) selPay($first);
 
+    /* ── Rehydrate from a resumed draft, if any ──
+       openCheckout() above resets every payment field to its default state.
+       If the cashier got here by resuming a saved draft, override those
+       defaults with whatever was saved.  This includes the customer chip,
+       walk-in name/phone, discount type+value, notes, and payment method. */
+    var dd = window._activeDraftData;
+    if (dd) {
+        if (dd.customer_id) {
+            $('#custId').val(dd.customer_id);
+            if (typeof cpsSetCustomer === 'function') cpsSetCustomer({
+                id: dd.customer_id, name: dd.customer_name,
+                phone: dd.customer_phone, email: dd.customer_email
+            });
+        } else if (dd.walkin_name || dd.walkin_phone) {
+            if (dd.walkin_name)  $('#walkInName').val(dd.walkin_name);
+            if (dd.walkin_phone) $('#walkInPhone').val(dd.walkin_phone);
+            if (typeof cpsResetCustomerInfo === 'function') cpsResetCustomerInfo();
+            if (dd.walkin_name)  $('#walkInName').val(dd.walkin_name);
+            if (dd.walkin_phone) $('#walkInPhone').val(dd.walkin_phone);
+        }
+        if (dd.discount_type) {
+            $('#dType').val(dd.discount_type);
+            if (typeof onDiscountTypeChange === 'function') onDiscountTypeChange();
+            if (dd.discount_value) $('#dVal').val(dd.discount_value);
+        }
+        if (dd.notes) {
+            $('#oNotes').val(dd.notes);
+            $('#cpsNotesCount').text(String(dd.notes).length);
+        }
+        if (dd.payment_method) {
+            var $tile = $('.cps-pmode[data-method="' + dd.payment_method + '"]')[0]
+                     || $('.co-pay-btn[data-method="'  + dd.payment_method + '"]')[0];
+            if ($tile) selPay($tile);
+        }
+        if (dd.payment_reference) $('#payRef').val(dd.payment_reference);
+        if (dd.amount_paid)        $('#amtRcv').val(dd.amount_paid);
+    }
+
     calcCheckout();
     $('#coPage').addClass('open');
 }
@@ -973,7 +1307,7 @@ function cpsTickClock(){
     var dd = d.getDate(), mm = d.getMonth() + 1, yyyy = d.getFullYear();
     var dStr = (dd<10?'0'+dd:dd) + '-' + (mm<10?'0'+mm:mm) + '-' + yyyy
              + ' ' + (h<10?'0'+h:h) + ':' + (m<10?'0'+m:m) + ' ' + ampm;
-    $('#cpsOrderDate').val(dStr);
+    $('#cpsOrderDate').text(dStr);
     // Tablet header date pill: "24 May 2025" / "02:45 PM"
     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     $('#cpsHdrDate').text(d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear());
@@ -1014,13 +1348,18 @@ window.posAttachKeyboards = function(root){
     if (!$root.length) return;
 
     /* Cleanup: any kb-trigger that ended up inside a wrap also containing a
-       <select>, .select2-container, or other dropdown-type widget — drop it. */
+       <select>, .select2-container, .ps-sel, or other dropdown-type widget. */
     $root.find('.cps-input-wrap').each(function(){
         var $wrap = $(this);
-        if ($wrap.find('> select, > .select2-container, > [role="combobox"], > [role="listbox"]').length) {
+        if ($wrap.find('> select, > .select2-container, > .ps-sel, > [role="combobox"], > [role="listbox"]').length) {
             $wrap.find('> .cps-kb-trigger').remove();
         }
     });
+    /* Also strip any kb-trigger that ended up directly next to a <select>,
+       a select2 widget, or a posAutocomplete .ps-sel wrapper.  This catches
+       the rare case where the trigger was injected as a sibling instead of
+       inside a wrap. */
+    $root.find('select + .cps-kb-trigger, .select2-container + .cps-kb-trigger, .ps-sel + .cps-kb-trigger').remove();
 
     /* Restrict to real text-typing fields. Note we EXCLUDE input[type="search"]
        on purpose — Select2 / autocomplete widgets create those internally and
@@ -1031,8 +1370,8 @@ window.posAttachKeyboards = function(root){
         if ($el.is('[data-no-keyboard], .no-vk')) return;
         if ($el.attr('readonly') !== undefined && $el.attr('readonly') !== false) return;
         // Skip widget-internal search inputs.
-        if ($el.is('.select2-search__field, .flatpickr-input, .bootstrap-select input, .ts-input input')) return;
-        if ($el.closest('.select2-container, .select2-dropdown, .select2-results, .select2-selection, .flatpickr-calendar, .ts-dropdown').length) return;
+        if ($el.is('.select2-search__field, .flatpickr-input, .bootstrap-select input, .ts-input input, .ps-sel-search, .ps-sel-input')) return;
+        if ($el.closest('.select2-container, .select2-dropdown, .select2-results, .select2-selection, .flatpickr-calendar, .ts-dropdown, .ps-sel, .ps-sel-drop').length) return;
         // ARIA combobox / searchbox / listbox children are not plain text inputs.
         var role = ($el.attr('role') || '').toLowerCase();
         if (role === 'combobox' || role === 'searchbox' || role === 'listbox') return;
@@ -1120,9 +1459,6 @@ window.openVK = function(targetId, type){
     if (!$el.length) return;
     _vkTarget = $el;
     _vkType   = type || ($el.attr('type') === 'number' ? 'amount' : 'text');
-    var cur   = window.SMS_CURRENCY || '₹';
-    $('#vkTypeLabel').text(_vkType === 'amount' ? ('Amount (' + cur + ')') : 'Text');
-    $('#vkPrecLabel').text(_vkType === 'amount' ? '2 Decimal' : '—');
     // Show / hide the QWERTY block + Quick amounts row depending on input type.
     $('#vkQwerty').toggle(_vkType !== 'amount');
     $('#vkQuickRow').toggle(_vkType === 'amount');
@@ -1132,13 +1468,276 @@ window.openVK = function(targetId, type){
     $('#vkShift').removeClass('on');
     vkRefreshAlpha();
     vkRender();
+
+    /* If the bound input has a live autocomplete (e.g. #custSearch points at
+       #custResult), mirror its results inside the keyboard popup so the user
+       can see + tap matches while typing on the on-screen keyboard. */
+    var autoSel = $el.attr('data-vk-autocomplete');
+    _vkBindAutoComplete(autoSel);
+
     $('#vkOv').css('display', 'flex');
 };
 
 window.closeVK = function(){
     $('#vkOv').hide();
     _vkTarget = null;
+    _vkUnbindAutoComplete();
 };
+
+/* ── Autocomplete mirroring ─────────────────────────────────────
+   When the keyboard is open for an input that has an autocomplete dropdown
+   somewhere on the page, reflect that dropdown's content INSIDE the keyboard
+   popup. Tapping a match closes the keyboard automatically (the inline
+   `selCust(...)` onclick handlers still fire as normal). */
+function _vkBindAutoComplete(srcId){
+    _vkUnbindAutoComplete();
+    if (!srcId) { $('#vkAutoComplete').hide(); return; }
+    var $src = $('#' + srcId);
+    if (!$src.length) return;
+    var $tgt = $('#vkAutoCompleteList');
+    var sync = function(){
+        // Only show the pane when the source dropdown has visible matches.
+        if ($src.hasClass('show') && $src.children().length){
+            $tgt.html($src.html());
+            $('#vkAutoComplete').show();
+        } else {
+            $tgt.html('');
+            $('#vkAutoComplete').hide();
+        }
+    };
+    sync();
+    if (typeof MutationObserver === 'function'){
+        window._vkAutoObs = new MutationObserver(sync);
+        window._vkAutoObs.observe($src[0], { childList:true, subtree:true, attributes:true, attributeFilter:['class'] });
+    }
+}
+function _vkUnbindAutoComplete(){
+    if (window._vkAutoObs){ try { window._vkAutoObs.disconnect(); } catch(_){} window._vkAutoObs = null; }
+    $('#vkAutoComplete').hide();
+    $('#vkAutoCompleteList').empty();
+}
+/* When the user taps a match inside the keyboard's autocomplete pane, the
+   inline `onclick="selCust(...)"` already fires (selCust runs and closes the
+   source dropdown). Right after, close the keyboard. */
+$(document).on('click', '#vkAutoCompleteList a', function(){
+    setTimeout(closeVK, 60);
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   VK in "select" mode — open the keyboard popup with a <select>'s OPTIONS
+   listed as suggestions.  Used by the kb icon next to Warehouse / Per-page /
+   any other dropdown marked with `data-vk-options`.
+
+     1. Click the kb icon → openVKForSelect('fWarehouse')
+     2. VK opens with a hidden text target so the QWERTY works for typing
+     3. The <select>'s options are rendered into the autocomplete pane
+     4. Typing filters the options live
+     5. Tap an option → underlying <select>.val() set + change event +
+        keyboard closes
+   ════════════════════════════════════════════════════════════════════════ */
+window.openVKForSelect = function(selectId){
+    var $sel = $('#' + selectId);
+    if (!$sel.length) return;
+    /* Use a hidden transient input as the VK target (so vkType / vkBack work).
+       The typed text is only a SEARCH FILTER — the user cannot enter a free
+       value; they MUST tap one of the visible options to select. */
+    var $temp = $('#_vkSelectInput');
+    if (!$temp.length){
+        $temp = $('<input type="text" id="_vkSelectInput" data-no-keyboard style="position:absolute;left:-9999px;visibility:hidden;">').appendTo('body');
+    }
+    $temp.val('');
+    openVK('_vkSelectInput', 'text');
+    /* Re-render the option list whenever the user types */
+    $temp.off('input.vkSelect').on('input.vkSelect', function(){
+        _vkRenderSelectOptions($sel, $(this).val());
+    });
+    _vkRenderSelectOptions($sel, '');
+};
+
+function _vkRenderSelectOptions($sel, filter){
+    var html = '';
+    var f = (filter || '').toLowerCase().trim();
+    var sid = $sel.attr('id');
+    var current = String($sel.val());
+    var matches = [];
+    $sel.find('option').each(function(){
+        var label = (this.textContent || '').trim();
+        if (!label) return;
+        if (f && label.toLowerCase().indexOf(f) < 0) return;
+        matches.push({ value: String(this.value || ''), label: label });
+    });
+    /* When searching, cap to 2 best matches; idle (no filter) shows all. */
+    var MAX_WHEN_SEARCHING = 2;
+    var visible = (f && matches.length > MAX_WHEN_SEARCHING) ? matches.slice(0, MAX_WHEN_SEARCHING) : matches;
+    visible.forEach(function(o){
+        var sel = (o.value === current);
+        html += '<a href="#" data-target-select="'+esc(sid)+'" data-val="'+esc(o.value)+'"'
+              + (sel ? ' class="is-current"' : '') + '>'
+              +   '<div style="flex:1;min-width:0;">'
+              +     '<div style="font-weight:700;color:var(--cps-text);">'+esc(o.label)+'</div>'
+              +   '</div>'
+              + (sel ? '<i class="bi bi-check-lg" style="color:var(--cps-blue);font-size:16px;"></i>' : '')
+              + '</a>';
+    });
+    if (f && matches.length > MAX_WHEN_SEARCHING){
+        html += '<div style="padding:10px;color:var(--cps-muted);text-align:center;font-size:11.5px;font-style:italic;">+' + (matches.length - MAX_WHEN_SEARCHING) + ' more — refine your search</div>';
+    }
+    if (!html){
+        html = '<div style="padding:14px;color:var(--cps-muted);text-align:center;font-size:12.5px;">No matches</div>';
+    }
+    $('#vkAutoCompleteList').html(html);
+    $('#vkAutoComplete').show();
+}
+
+/* Click handler for select-bound options inside the VK pane */
+$(document).on('click', '#vkAutoCompleteList a[data-target-select]', function(e){
+    e.preventDefault();
+    var targetId = $(this).attr('data-target-select');
+    var val = $(this).attr('data-val');
+    var $sel = $('#' + targetId);
+    if ($sel.length){
+        $sel.val(val).trigger('change').trigger('change.posAc');
+    }
+    setTimeout(closeVK, 80);
+});
+
+/* After every posAutocomplete enhancement, attach a kb-trigger to any select
+   marked with `data-vk-options`.  CSS keeps it hidden on tablet/mobile. */
+function _wireSelectKeyboards(root){
+    var $root = root ? $(root) : $('body');
+    $root.find('select[data-vk-options]').each(function(){
+        var $sel = $(this);
+        var sid  = $sel.attr('id');
+        if (!sid) return;
+        // posAutocomplete inserts the .ps-sel wrapper as the next sibling
+        var $wrap = $sel.next('.ps-sel');
+        if (!$wrap.length) return;
+        if ($wrap.find('> .ps-kb-trigger').length) return;   // already wired
+        var $btn = $('<button type="button" class="ps-kb-trigger" tabindex="-1" data-tip="Search options on the on-screen keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>');
+        $btn.on('click', function(e){
+            e.preventDefault(); e.stopPropagation();
+            openVKForSelect(sid);
+        });
+        $wrap.append($btn).addClass('has-vk-kb');
+    });
+}
+/* Run a few times so it catches selects that are enhanced after a delay */
+$(function(){
+    setTimeout(function(){ _wireSelectKeyboards(); }, 500);
+    setTimeout(function(){ _wireSelectKeyboards(); }, 1500);
+    $(document).on('spa:ready', function(){ _wireSelectKeyboards('#spaContent'); });
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   VK in "Select2-AJAX" mode — open the keyboard popup with a select2 widget's
+   options listed.  Used by the kb icon next to filter-page dropdowns
+   (.pos-s2 elements).  Re-uses the AJAX URL stashed on the select by `_s2`.
+   ════════════════════════════════════════════════════════════════════════ */
+window.openVKForSelect2 = function(selectId){
+    var $sel = $('#' + selectId);
+    if (!$sel.length) return;
+    var url   = $sel.data('vk-ajax-url');
+    var extra = $sel.data('vk-ajax-extra');
+    if (!url) return;
+    var $temp = $('#_vkSelectInput');
+    if (!$temp.length){
+        $temp = $('<input type="text" id="_vkSelectInput" data-no-keyboard style="position:absolute;left:-9999px;visibility:hidden;">').appendTo('body');
+    }
+    $temp.val('');
+    openVK('_vkSelectInput', 'text');
+    var fetchAndRender = function(term){
+        var data = { search: term || '', limit: 50 };
+        if (typeof extra === 'function') $.extend(data, extra());
+        $.get(BASE_URL + url, data, function(r){
+            _vkRenderS2Options($sel, (r && r.data) || [], term);
+        });
+    };
+    var deb;
+    $temp.off('input.vkS2').on('input.vkS2', function(){
+        clearTimeout(deb);
+        var v = $(this).val();
+        deb = setTimeout(function(){ fetchAndRender(v); }, 250);
+    });
+    fetchAndRender('');
+};
+
+function _vkRenderS2Options($sel, rows, filter){
+    var sid = $sel.attr('id');
+    var current = String($sel.val());
+    var html = '';
+    var MAX = 2;
+    var f = (filter || '').trim();
+    var visible = (f && rows.length > MAX) ? rows.slice(0, MAX) : rows;
+    visible.forEach(function(o){
+        var label = o.name || o.text || String(o.year || '') || o.manufacturer_engine || '';
+        if (!label) return;
+        var v = String(o.id);
+        var sel = (v === current);
+        html += '<a href="#" data-target-s2="'+esc(sid)+'" data-val="'+esc(v)+'" data-text="'+esc(label)+'"'
+              + (sel ? ' class="is-current"' : '') + '>'
+              +   '<div style="flex:1;min-width:0;">'
+              +     '<div style="font-weight:700;color:var(--cps-text);">'+esc(label)+'</div>'
+              +   '</div>'
+              + (sel ? '<i class="bi bi-check-lg" style="color:var(--cps-blue);font-size:16px;"></i>' : '')
+              + '</a>';
+    });
+    if (f && rows.length > MAX){
+        html += '<div style="padding:10px;color:var(--cps-muted);text-align:center;font-size:11.5px;font-style:italic;">+' + (rows.length - MAX) + ' more — refine your search</div>';
+    }
+    if (!html){
+        html = '<div style="padding:14px;color:var(--cps-muted);text-align:center;font-size:12.5px;">No matches</div>';
+    }
+    $('#vkAutoCompleteList').html(html);
+    $('#vkAutoComplete').show();
+}
+
+/* Click handler — sets the chosen Select2 option (creating a transient option
+   if needed since the select itself only contains the active value) and
+   closes the keyboard popup. */
+$(document).on('click', '#vkAutoCompleteList a[data-target-s2]', function(e){
+    e.preventDefault();
+    var sid = $(this).attr('data-target-s2');
+    var val = $(this).attr('data-val');
+    var text = $(this).attr('data-text');
+    var $sel = $('#' + sid);
+    if ($sel.length){
+        if (!$sel.find('option[value="'+val+'"]').length){
+            $sel.append(new Option(text, val, true, true));
+        } else {
+            $sel.val(val);
+        }
+        $sel.trigger('change');
+    }
+    setTimeout(closeVK, 80);
+});
+
+/* Wire a keyboard icon next to every Select2 widget on the filter page. */
+function _wirePosS2Keyboards(){
+    $('select.pos-s2').each(function(){
+        var $sel = $(this);
+        var sid  = $sel.attr('id');
+        if (!sid || !$sel.data('vk-ajax-url')) return;
+        var $container = $sel.next('.select2-container');
+        if (!$container.length) return;
+        var $parent = $container.parent();
+        if ($parent.find('> .ps-s2-kb-trigger').length) return;        // already wired
+        if ($parent.css('position') === 'static') $parent.css('position','relative');
+        var $btn = $('<button type="button" class="cps-kb-trigger ps-s2-kb-trigger" tabindex="-1" data-tip="Search options on the on-screen keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>');
+        $btn.on('click', function(e){
+            e.preventDefault(); e.stopPropagation();
+            openVKForSelect2(sid);
+        });
+        $parent.append($btn);
+    });
+}
+/* Re-run after each adv-search tab renders */
+$(function(){
+    setTimeout(function(){ _wirePosS2Keyboards(); }, 800);
+    setTimeout(function(){ _wirePosS2Keyboards(); }, 2000);
+});
+$(document).on('click', '#advSearchBtn, #advTabs .pcat', function(){
+    setTimeout(_wirePosS2Keyboards, 350);
+});
 
 function _vkRaw(){ return _vkTarget ? String(_vkTarget.val() || '') : ''; }
 
@@ -1251,35 +1850,179 @@ $(document).on('keydown', function(e){
     }
 });
 
-/* Open the cash-confirm dialog before actually charging. Pre-fills total /
-   received / change / customer / item count and warns if amount is short. */
+/* Open the generic Confirm Payment dialog for ANY method — cash / card /
+   upi / online / cheque / link.  Populates the order summary, totals, items
+   table, and a method-specific block on the right. */
 window.cpsOpenCashConfirm = function(){
-    var total = _coData.total || 0;
-    var rcv = parseFloat($('#amtRcv').val()) || 0;
-    var change = rcv - total;
+    var method = ($('.co-pay-btn.active,.cps-pmode.active').data('method') || 'cash');
+    cpsOpenConfirm(method);
+};
+
+window.cpsOpenConfirm = function(method){
     var cur = window.SMS_CURRENCY || '₹';
-    $('#ccTotal').text(cur + ' ' + F(total));
-    $('#ccRcv').text(cur + ' ' + F(rcv));
-    $('#ccChange').text(cur + ' ' + F(Math.max(0, change)));
+    var fmt = function(n){ return cur + ' ' + F(n); };
+    var u = window.SMS_USER || {};
+
+    var total    = _coData.total || 0;
+    var subtotal = _coData.sub   || 0;
+    var discount = _coData.discount || 0;
+    var taxList  = _coData.taxes || [];
+    var taxTotal = _coData.taxTotal || 0;
+
+    /* Customer + items + sales person */
     var custName = ($('#custId').val()
-        ? $('#ciName').text()
-        : ($('#walkInName').val() || 'Walk-in Customer')).trim();
+        ? ($('#ciName').text() || '')
+        : ($('#walkInName').val() || 'Walk-in Customer')).trim() || 'Walk-in Customer';
     $('#ccCust').text(custName);
     $('#ccItems').text(_cart.length + ' item' + (_cart.length > 1 ? 's' : ''));
-    var short = rcv < total;
-    $('#ccWarn').toggle(short);
-    $('#ccConfirmBtn').prop('disabled', short);
+    $('#ccItemsCount').text('(' + _cart.length + ')');
+    $('#ccSalesPerson').contents().filter(function(){ return this.nodeType === 3; }).remove();
+    $('#ccSalesPerson').append(document.createTextNode(' ' + (u.name || 'User')));
+
+    /* Method icon + label */
+    var methodMap = {
+        cash:   { label: 'Cash',           icon: 'bi-cash-stack',         confirmLbl: 'Confirm & Collect Cash' },
+        card:   { label: 'Card Payment',   icon: 'bi-credit-card-2-front',confirmLbl: 'Confirm Card Payment' },
+        upi:    { label: 'UPI',            icon: 'bi-qr-code',            confirmLbl: 'Confirm UPI Payment' },
+        online: { label: 'Online Gateway', icon: 'bi-globe',              confirmLbl: 'Pay & Open Gateway' },
+        cheque: { label: 'Cheque',         icon: 'bi-receipt-cutoff',     confirmLbl: 'Confirm Cheque' },
+        link:   { label: 'Payment Link',   icon: 'bi-link-45deg',         confirmLbl: 'Send Payment Link' }
+    };
+    var mm2 = methodMap[method] || methodMap.cash;
+    $('#ccMethod').text(mm2.label);
+    $('#ccMethodIcon').attr('class', 'bi ' + mm2.icon);
+    $('#ccMethodBlockIcon').attr('class', 'bi ' + mm2.icon);
+    $('#ccMethodBlockTitle').text(mm2.label + ' Details');
+    $('#ccConfirmLbl').text(mm2.confirmLbl);
+
+    /* Right column method-specific body */
+    var bodyHtml = '';
+    if (method === 'cash') {
+        var rcv = parseFloat($('#amtRcv').val()) || 0;
+        var change = rcv - total;
+        bodyHtml = '<div class="pc-cash-row">'
+                +   '<div class="pc-row"><span>Amount Received</span><span class="sc-blue">' + fmt(rcv) + '</span></div>'
+                +   '<div class="pc-row"><span>Change Due</span><span class="sc-green">' + fmt(Math.max(0, change)) + '</span></div>'
+                + '</div>';
+    } else if (method === 'card' || method === 'upi' || method === 'cheque') {
+        var ref = ($('#payRef').val() || '').trim();
+        var refLbl = method === 'cheque' ? 'Cheque Number' : (method === 'upi' ? 'UPI Reference' : 'Card Reference');
+        bodyHtml = '<div class="pc-ref-row">'
+                +   '<div class="pc-row"><span>' + refLbl + '</span><span>' + (ref ? esc(ref) : '<em style="color:var(--cps-muted);font-weight:500;">Not provided</em>') + '</span></div>'
+                +   '<div class="pc-banner"><i class="bi bi-info-circle"></i><span>Confirm only after the customer\'s payment has been verified.</span></div>'
+                + '</div>';
+    } else if (method === 'online') {
+        bodyHtml = '<div class="pc-banner"><i class="bi bi-info-circle"></i><span>Clicking <strong>Pay</strong> will open the online gateway. Stock is held for 5 minutes while the customer pays.</span></div>';
+    } else if (method === 'link') {
+        var sms = $('#linkNotifySms').is(':checked'), email = $('#linkNotifyEmail').is(':checked');
+        bodyHtml = '<div class="pc-ref-row">'
+                +   '<div class="pc-row"><span>Send via</span><span>' + ((sms?'SMS':'') + (sms&&email?' + ':'') + (email?'Email':'')) + '</span></div>'
+                +   '<div class="pc-banner"><i class="bi bi-info-circle"></i><span>A payment link will be sent to the customer. The order is saved as Pending until they pay.</span></div>'
+                + '</div>';
+    }
+    $('#ccMethodBlockBody').html(bodyHtml);
+
+    /* Totals box */
+    $('#ccTotal').text(fmt(total));
+    $('#ccGrand').text(fmt(total));
+    var rowsHtml = '';
+    rowsHtml += '<div class="sc-trow"><span>Sub Total</span><span>' + fmt(subtotal) + '</span></div>';
+    if (discount > 0) {
+        rowsHtml += '<div class="sc-trow" style="color:var(--cps-red);"><span>Discount</span><span>-' + fmt(discount) + '</span></div>';
+    }
+    taxList.forEach(function(t){
+        var amt = parseFloat(t.amount || 0);
+        if (amt <= 0) return;
+        rowsHtml += '<div class="sc-trow"><span>Tax (' + esc(t.name) + ' ' + t.pct + '%)</span><span>' + fmt(amt) + '</span></div>';
+    });
+    $('#ccTotalsRows').html(rowsHtml);
+
+    /* Big amount cells */
+    $('#ccAmtTotal').text(fmt(total));
+    var rcv2 = parseFloat($('#amtRcv').val()) || (method === 'cash' ? 0 : total);
+    var ch2 = method === 'cash' ? Math.max(0, rcv2 - total) : 0;
+    $('#ccAmtRcv').text(fmt(rcv2));
+    $('#ccAmtChange').text(fmt(ch2));
+
+    /* Items mini table */
+    var itemsHtml = '';
+    var groups = {};
+    _cart.forEach(function(c){
+        var k = c.item_type + '_' + c.id;
+        if (!groups[k]) groups[k] = { name: c.item_name, code: c.item_code, cnt: 0, total: 0, unit: c.unit_price };
+        groups[k].cnt++;
+        groups[k].total += c.total_price;
+    });
+    var idx = 0;
+    Object.values(groups).forEach(function(g){
+        idx++;
+        itemsHtml += '<tr>'
+                  +   '<td>' + idx + '</td>'
+                  +   '<td>' + esc(g.name) + '</td>'
+                  +   '<td style="font-family:var(--pv2-font-mono);font-size:11.5px;color:var(--cps-muted);">' + esc(g.code || '—') + '</td>'
+                  +   '<td class="num">' + g.cnt + '</td>'
+                  +   '<td class="num">' + fmt(g.unit) + '</td>'
+                  +   '<td class="num">' + fmt(g.total) + '</td>'
+                  + '</tr>';
+    });
+    if (!itemsHtml) itemsHtml = '<tr><td colspan="6" style="text-align:center;color:var(--cps-muted);padding:14px;">No items</td></tr>';
+    $('#ccItemsBody').html(itemsHtml);
+
+    /* Warning when cash short */
+    if (method === 'cash') {
+        var rcv3 = parseFloat($('#amtRcv').val()) || 0;
+        var short = rcv3 < total;
+        $('#ccWarnMsg').text('Amount received (' + fmt(rcv3) + ') is less than the total. Please collect the full amount before confirming.');
+        $('#ccWarn').toggle(short);
+        $('#ccConfirmBtn').prop('disabled', short);
+    } else {
+        $('#ccWarn').hide();
+        $('#ccConfirmBtn').prop('disabled', false);
+    }
+
     $('#cashConfirmOv').css('display', 'flex');
 };
 
-/* User confirmed the cash payment in the dialog → re-enter doCheckout with
-   the bypass flag set so the second call goes straight through to /checkout. */
+/* User pressed "Confirm & Pay" in the dialog. Before processing the
+   payment we re-validate stock one last time — the user may have had the
+   confirm dialog open while another cashier sold one of the units.  If
+   anything is now unavailable we DROP just those cart lines, close the
+   confirm + checkout screens, and return the user to the cart so they
+   can review what's left.  Otherwise we proceed to the real /checkout. */
 window.cpsCashConfirm = function(){
-    $('#cashConfirmOv').hide();
-    window._cashConfirmed = true;
-    var ap = !!window._cashPendingAutoPrint;
-    window._cashPendingAutoPrint = false;
-    doCheckout(ap);
+    var $btn = $('#ccConfirmBtn');
+    var origLabel = $btn.html();
+    $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Verifying stock…');
+
+    cpsValidateAndPruneCart().then(function(r){
+        $btn.prop('disabled', false).html(origLabel);
+
+        if (!r.ok){
+            /* Some line is no longer available — bail out of payment, the
+               toast from cpsValidateAndPruneCart already explains what was
+               removed.  Bring the cashier back to the cart so they can
+               review + retry. */
+            $('#cashConfirmOv').hide();
+            $('#coPage').removeClass('open');
+            window._cashConfirmed = false;
+            window._cashPendingAutoPrint = false;
+            return;
+        }
+        if (!_cart.length){
+            /* Cart was emptied entirely by the prune — nothing left to charge. */
+            $('#cashConfirmOv').hide();
+            $('#coPage').removeClass('open');
+            window._cashConfirmed = false;
+            window._cashPendingAutoPrint = false;
+            return;
+        }
+        /* All good — proceed. */
+        $('#cashConfirmOv').hide();
+        window._cashConfirmed = true;
+        var ap = !!window._cashPendingAutoPrint;
+        window._cashPendingAutoPrint = false;
+        doCheckout(ap);
+    });
 };
 
 /* Expand / collapse a row in the order-items table.
@@ -1373,15 +2116,55 @@ function onDiscountTypeChange(){
     var $v = $('#dVal');
     var $kb = $v.closest('.cps-input-wrap').find('.cps-kb-trigger');
     if (!t) {
-        $v.val('').prop('disabled', true).attr('placeholder', '0.00');
+        $v.val('').prop('disabled', true).attr('placeholder', '0.00').removeAttr('max');
         $kb.prop('disabled', true);
     } else {
         $v.prop('disabled', false);
         $kb.prop('disabled', false);
-        var ph = (t === 'percent') ? 'e.g. 10  (= 10%)' : 'e.g. 50  (flat)';
+        var ph;
+        if (t === 'percent') {
+            ph = 'e.g. 10  (= 10%)';
+            $v.attr('max', 100);
+        } else {
+            ph = 'e.g. 50  (flat)';
+            $v.attr('max', _coData.sub || '');
+        }
         $v.attr('placeholder', ph).trigger('focus');
+        validateDiscount();
     }
 }
+
+/* Clamp the Discount Amount input based on the selected discount type:
+   - "percent" → 0–100 (no values above 100, no text — input type=number handles
+                       the text guard, the VK has its own /^[0-9.]$/ guard)
+   - "fixed"   → 0–subtotal (can't discount more than the cart's pre-tax total)
+   Runs on every keystroke (typed OR via on-screen keyboard). */
+window.validateDiscount = function(){
+    var t = $('#dType').val();
+    var $v = $('#dVal');
+    var raw = $v.val();
+    if (raw === '' || raw == null) return;
+    var n = parseFloat(raw);
+    if (isNaN(n)) { $v.val(''); return; }
+    if (n < 0) n = 0;
+    var max = null;
+    if (t === 'percent')        max = 100;
+    else if (t === 'fixed')     max = parseFloat(_coData.sub) || 0;
+    if (max != null && n > max) n = max;
+    // Only rewrite when actually clamped, to keep the cursor where the user is
+    if (parseFloat(raw) !== n) {
+        var pretty = Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '');
+        $v.val(pretty);
+        if (typeof toastr !== 'undefined' && max != null && parseFloat(raw) > max) {
+            toastr.warning(
+                t === 'percent'
+                    ? 'Discount can\'t exceed 100%.'
+                    : ('Discount can\'t exceed the order subtotal (' + (window.SMS_CURRENCY||'₹') + ' ' + F(max) + ').'),
+                null, { timeOut: 2200 }
+            );
+        }
+    }
+};
 
 /**
  * Open the "Order items" popup from step 1 — renders the cart lines into
@@ -1516,6 +2299,9 @@ function calcCheckout(){
     }
     if (taxes.length) {
         taxes.forEach(function(t){
+            // Skip taxes that compute to 0 (no taxable items, or VAT-included only,
+            // or 0% rate) — clutter, not information.
+            if (parseFloat(t.amount) <= 0) return;
             cpsHtml += '<div class="cps-trow"><span class="cps-tl">'+esc(t.name)+' ('+t.pct+'%)</span><span class="cps-tr">'+F(t.amount)+'</span></div>';
         });
     }
@@ -1613,26 +2399,61 @@ function calcChange(){
 }
 function doCheckout(autoPrint){
     if(!_cart.length)return;
-    var payMethod=$('.co-pay-btn.active').data('method')||'cash';
-    // Online gateway and pay-by-link branch off here — they don't use the offline flow
+    var payMethod=$('.co-pay-btn.active,.cps-pmode.active').data('method')||'cash';
+
+    /* Generic Confirm Payment screen — runs for EVERY payment mode (cash, card,
+       upi, online, cheque, link).  The dialog's primary button calls
+       cpsCashConfirm() which sets _cashConfirmed and re-enters this function. */
+    if (!window._cashConfirmed) {
+        // For cash: enforce amount-received >= total before opening confirm
+        if (payMethod === 'cash') {
+            var rcvA = parseFloat($('#amtRcv').val()) || 0;
+            if (rcvA < _coData.total) {
+                toastr.warning('Amount received ('+F(rcvA)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');
+                return;
+            }
+        }
+
+        /* Stock revalidation BEFORE the confirm popup opens — the user may
+           have had the checkout screen open while another cashier sold one
+           of the units.  Drop just those lines, send the user back to cart,
+           and don't open the confirm dialog. */
+        var $payBtn = $('#coComplete');
+        var origPayLabel = $payBtn.html();
+        $payBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Verifying stock…');
+
+        cpsValidateAndPruneCart().then(function(r){
+            $payBtn.prop('disabled', false).html(origPayLabel);
+
+            if (!r.ok){
+                /* Some line is no longer available — bail out + close checkout.
+                   Toast already shown by cpsValidateAndPruneCart. */
+                $('#coPage').removeClass('open');
+                window._cashConfirmed = false;
+                window._cashPendingAutoPrint = false;
+                return;
+            }
+            if (!_cart.length){
+                /* Cart was emptied entirely. */
+                $('#coPage').removeClass('open');
+                window._cashPendingAutoPrint = false;
+                return;
+            }
+            /* Stock is fine → open the Confirm Payment popup as before. */
+            window._cashPendingAutoPrint = !!autoPrint;
+            cpsOpenConfirm(payMethod);
+        });
+        return;
+    }
+    window._cashConfirmed = false;   // reset for next round
+    $('#cashConfirmOv').hide();
+
+    /* After confirmation: route to the right backend. */
     if(payMethod==='online'){ return doOnlinePayment(); }
     if(payMethod==='link'){ return doPaymentLink(); }
 
     var rcvAmt=parseFloat($('#amtRcv').val())||0;
-    // Cash flow → open the confirm dialog instead of processing immediately.
-    // The dialog's "Confirm & Collect" button calls cpsCashConfirm() which
-    // sets _pendingAutoPrint and re-enters this function with __confirmed=true.
-    if (payMethod === 'cash' && !window._cashConfirmed) {
-        if (rcvAmt < _coData.total) {
-            toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');
-            return;
-        }
-        window._cashPendingAutoPrint = !!autoPrint;
-        cpsOpenCashConfirm();
-        return;
-    }
-    window._cashConfirmed = false; // reset for next round
-    if(rcvAmt<_coData.total){toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');return;}
+    if(payMethod==='cash' && rcvAmt<_coData.total){toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');return;}
     var $b = autoPrint ? $('#coPrint') : $('#coComplete');
     $b.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Processing...');
     var items=_cart.map(function(c){return{item_type:c.item_type,part_inventory_id:c.part_inventory_id,vehicle_inventory_id:c.vehicle_inventory_id,warehouse_id:c.warehouse_id,item_name:c.item_name,item_code:c.item_code,quantity:c.quantity,unit_price:c.unit_price,discount_amount:c.discount_amount,unit_number:c.unit_number||null};});
@@ -1650,9 +2471,16 @@ function doCheckout(autoPrint){
             $('#coPrint').prop('disabled',false).html('<i class="bi bi-printer me-1"></i>Print');
             if(r.status===201||r.status===200){
                 $('#coPage').removeClass('open');
-                $('#successInfo').html('Order <strong>'+esc(r.data.order_number)+'</strong> \u2014 '+F(r.data.total_amount));
-                $('#successOv').css('display','flex');
-                window._smsLastOrder = { uuid: r.data.uuid || r.data.order_uuid, number: r.data.order_number };
+                window._smsLastOrder = { uuid: r.data.uuid || r.data.order_uuid, number: r.data.order_number, full: r.data, payment_method: payMethod, amount_paid: parseFloat($('#amtRcv').val())||r.data.total_amount, items: _cart.slice(), customer_name: ($('#custResult').text() || $('#walkInName').val() || '').trim() || null };
+                /* If this sale was opened from a saved draft, delete that
+                   draft now that the payment has actually completed. */
+                if (window._activeDraftUuid){
+                    $.ajax({ url: BASE_URL + '/sales/drafts/' + encodeURIComponent(window._activeDraftUuid), type: 'DELETE' });
+                    window._activeDraftUuid = null;
+                    window._activeDraftData = null;
+                    if (typeof refreshDraftBadge === 'function') refreshDraftBadge();
+                }
+                showSaleCompleted(r.data, { payMethod: payMethod, items: _cart.slice() });
                 // \u2605 Save & Print path: silent-print to the printer assigned to
                 //   the "receipt" role in /sales/printer-settings. Falls back
                 //   to opening the receipt-preview page in a new tab if no
@@ -1860,11 +2688,172 @@ function _pollPaymentStatus(txUuid){
 // buttons know which receipt to render.
 window._smsLastOrder = null;
 
+/* ════════════════════════════════════════════════════════════════════════
+   Sale Completed screen — populates the redesigned #successOv with order
+   data (invoice no, date, sales person, payment status, items table,
+   stats tiles, totals breakdown, etc.) and shows it.
+   ════════════════════════════════════════════════════════════════════════ */
+window.showSaleCompleted = function(order, ctx){
+    order = order || {};
+    ctx   = ctx   || {};
+    var cur = window.SMS_CURRENCY || '₹';
+    var u   = window.SMS_USER || {};
+    var fmt = function(n){ return cur + ' ' + F(n); };
+
+    /* Invoice no + status pill */
+    $('#scInvNo').contents().filter(function(){ return this.nodeType === 3; }).remove();
+    $('#scInvNo').prepend(document.createTextNode((order.order_number || '—') + ' '));
+    var status = (order.payment_status || 'paid').toLowerCase();
+    var $pill = $('#scStatusPill');
+    $pill.removeClass('sc-pill-paid sc-pill-pending sc-pill-partial');
+    if (status === 'paid' || status === 'completed') {
+        $pill.text('Paid').addClass('sc-pill-paid');
+        $('#scPayStatus').text('Completed');
+    } else if (status === 'partial') {
+        $pill.text('Partial').addClass('sc-pill-partial');
+        $('#scPayStatus').text('Partially paid');
+    } else {
+        $pill.text('Unpaid').addClass('sc-pill-pending');
+        $('#scPayStatus').text('Pending');
+    }
+
+    /* Order date */
+    var d = order.created_at ? new Date(order.created_at) : new Date();
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var hh = d.getHours(), mm = d.getMinutes(), ampm = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12; if (hh === 0) hh = 12;
+    var dateStr = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear()
+                + ', ' + (hh<10?'0'+hh:hh) + ':' + (mm<10?'0'+mm:mm) + ' ' + ampm;
+    $('#scOrderDate').contents().filter(function(){ return this.nodeType === 3; }).remove();
+    $('#scOrderDate').append(document.createTextNode(' ' + dateStr));
+
+    /* Order type — walk-in vs registered */
+    var isWalkin = !order.customer_id;
+    $('#scOrderType').text(isWalkin ? 'Walk-in Sale' : 'Customer Sale');
+    $('#scSalesPerson').text(u.name || 'User');
+
+    /* Payment method label + icon */
+    var method = (ctx.payMethod || order.payment_method || 'cash').toLowerCase();
+    var methodMap = {
+        cash:   { label: 'Cash',          icon: 'bi-cash-stack' },
+        card:   { label: 'Card Payment',  icon: 'bi-credit-card-2-front' },
+        upi:    { label: 'UPI',           icon: 'bi-qr-code' },
+        online: { label: 'Online Gateway',icon: 'bi-globe' },
+        cheque: { label: 'Cheque',        icon: 'bi-receipt-cutoff' },
+        link:   { label: 'Payment Link',  icon: 'bi-link-45deg' }
+    };
+    var mm2 = methodMap[method] || methodMap.cash;
+    $('#scPayMethod').text(mm2.label);
+    $('#scPayMethodIcon').attr('class', 'bi ' + mm2.icon);
+    $('#scStatMethod').text(mm2.label);
+
+    /* Right-side totals box */
+    var total    = parseFloat(order.total_amount    || 0);
+    var subtotal = parseFloat(order.subtotal        || 0);
+    var discount = parseFloat(order.discount_amount || 0);
+    var taxTotal = parseFloat(order.tax_total       || 0);
+    var taxBreakdown = [];
+    try { taxBreakdown = (typeof order.tax_breakdown === 'string') ? JSON.parse(order.tax_breakdown) : (order.tax_breakdown || []); } catch(_){ taxBreakdown = []; }
+    $('#scTotalAmt').text(fmt(total));
+    $('#scGrand').text(fmt(total));
+    var rowsHtml = '';
+    rowsHtml += '<div class="sc-trow"><span>Sub Total</span><span>' + fmt(subtotal) + '</span></div>';
+    if (discount > 0) {
+        rowsHtml += '<div class="sc-trow" style="color:var(--cps-red);"><span>Discount</span><span>-' + fmt(discount) + '</span></div>';
+    }
+    taxBreakdown.forEach(function(t){
+        var amt = parseFloat(t.amount || 0);
+        if (amt <= 0) return;
+        var pct = parseFloat(t.percentage || 0);
+        rowsHtml += '<div class="sc-trow"><span>Tax (' + esc(t.tax_name || 'Tax') + (pct ? ' ' + pct + '%' : '') + ')</span><span>' + fmt(amt) + '</span></div>';
+    });
+    /* Rounding row — derive rounding diff if any */
+    var rounding = parseFloat((total - (subtotal - discount + taxTotal)).toFixed(2));
+    if (Math.abs(rounding) >= 0.01) {
+        rowsHtml += '<div class="sc-trow"><span>Rounding</span><span>' + (rounding>=0?'+':'') + fmt(Math.abs(rounding)) + '</span></div>';
+    }
+    $('#scTotalsRows').html(rowsHtml);
+
+    /* Items table */
+    var items = order.items || ctx.items || [];
+    var itemsHtml = '';
+    var totalQty = 0, totalLines = 0;
+    items.forEach(function(it, i){
+        var name = it.item_name || '';
+        var sku  = it.item_code || it.sku || '';
+        var qty  = parseInt(it.quantity || 1);
+        var rate = parseFloat(it.unit_price || it.rate || 0);
+        var taxA = parseFloat(it.tax_amount || 0);
+        var amt  = parseFloat(it.total_price || (rate * qty));
+        totalQty   += qty;
+        totalLines += 1;
+        itemsHtml += '<tr>'
+                  +   '<td>' + (i+1) + '</td>'
+                  +   '<td>' + esc(name) + '</td>'
+                  +   '<td style="font-family:var(--pv2-font-mono);font-size:11.5px;color:var(--cps-muted);">' + esc(sku) + '</td>'
+                  +   '<td class="num">' + qty + '</td>'
+                  +   '<td class="num">' + fmt(rate) + '</td>'
+                  +   '<td class="num">' + fmt(taxA) + '</td>'
+                  +   '<td class="num">' + fmt(amt) + '</td>'
+                  + '</tr>';
+    });
+    if (!items.length) itemsHtml = '<tr><td colspan="7" style="text-align:center;color:var(--cps-muted);padding:18px;">No items</td></tr>';
+    $('#scItemsBody').html(itemsHtml);
+    $('#scItemsCount').text('(' + totalLines + ')');
+
+    /* Stat tiles */
+    $('#scStatItems').text(totalLines);
+    $('#scStatQty').text(totalQty);
+    $('#scStatPaid').text(fmt(parseFloat(order.amount_paid || total)));
+    $('#scStatSaved').text(fmt(discount));
+
+    $('#successOv').css('display', 'flex');
+};
+
+/* Action stubs for the right column / more-actions list. */
+window.successEmailInvoice = function(){
+    var d = window._smsLastOrder; if (!d || !d.uuid) { toastr.warning('Order info missing.'); return; }
+    if (typeof toastr !== 'undefined') toastr.info('Email Invoice — feature coming soon.');
+};
+window.successWhatsAppInvoice = function(){
+    var d = window._smsLastOrder; if (!d || !d.uuid) { toastr.warning('Order info missing.'); return; }
+    if (typeof toastr !== 'undefined') toastr.info('WhatsApp Invoice — feature coming soon.');
+};
+window.successDownloadPDF = function(){
+    var d = window._smsLastOrder; if (!d || !d.uuid) { toastr.warning('Order info missing.'); return; }
+    var url = '/sales/receipt-preview?order=' + encodeURIComponent(d.uuid) + '&print_type=original&download=1';
+    window.open(url, '_blank');
+};
+window.successDuplicateCopy = function(){
+    if (typeof window.successPrintReceipt === 'function') successPrintReceipt('duplicate');
+};
+window.successViewOrder = function(){
+    var d = window._smsLastOrder; if (!d || !d.uuid) { toastr.warning('Order info missing.'); return; }
+    window.open('/sales/orders/' + encodeURIComponent(d.uuid) + '/view', '_blank');
+};
+window.successReturnRefund = function(){
+    if (typeof toastr !== 'undefined') toastr.info('Return / Refund — open from the Returns page.');
+};
+
 function _onPaymentSuccess(d){
     $('#coPage').removeClass('open');
-    $('#successInfo').html('Order <strong>'+esc(d.order_number||'')+'</strong> — '+F(d.total_amount||_coData.total));
-    $('#successOv').css('display','flex');
-    window._smsLastOrder = { uuid: d.order_uuid || d.uuid, number: d.order_number || '' };
+    var payMethod = ($('.co-pay-btn.active,.cps-pmode.active').data('method') || 'online');
+    window._smsLastOrder = {
+        uuid: d.order_uuid || d.uuid,
+        number: d.order_number || '',
+        full: d, payment_method: payMethod,
+        amount_paid: parseFloat($('#amtRcv').val()) || (d.total_amount || _coData.total),
+        items: _cart.slice(),
+        customer_name: ($('#custResult').text() || $('#walkInName').val() || '').trim() || null
+    };
+    /* Online / link sale completed → wipe the source draft (if any). */
+    if (window._activeDraftUuid){
+        $.ajax({ url: BASE_URL + '/sales/drafts/' + encodeURIComponent(window._activeDraftUuid), type: 'DELETE' });
+        window._activeDraftUuid = null;
+        window._activeDraftData = null;
+        if (typeof refreshDraftBadge === 'function') refreshDraftBadge();
+    }
+    showSaleCompleted(d, { payMethod: payMethod, items: _cart.slice() });
     _cart=[]; renderCart();
     $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');$('#custResult').empty().removeClass('show');if(typeof cpsResetCustomerInfo==='function')cpsResetCustomerInfo();
     _currentTx = null;
@@ -1925,7 +2914,9 @@ $(document).on('input','#custSearch',function(){
                 return;
             }
             var h = '';
-            r.data.forEach(function(c){
+            // Show at most the top 2 best matches — keeps the dropdown short
+            // and predictable on tablets/phones where vertical room is tight.
+            r.data.slice(0, 2).forEach(function(c){
                 var args = [c.id, c.name, c.phone||'', c.email||'', c.customer_type||''].map(function(v){
                     return "'" + String(v).replace(/'/g,"\\'") + "'";
                 }).join(',');
@@ -2161,11 +3152,208 @@ $(function(){
         }
     });
 
-    // SAVE button — saves order + auto-prints receipt to assigned printer.
+    /* SAVE AS DRAFT — sends the current cart + customer + discount + notes
+       to /sales/drafts so the cashier can resume it later from the Drafts
+       sidebar.  Does NOT charge the customer; nothing is removed from stock.
+
+       When the cart was originally loaded FROM a draft (window._activeDraftUuid
+       is set), the same draft row is UPDATED in-place (PUT) instead of
+       inserting a new one. */
     window.cpsSaveOrder = function(){
         if (!_cart.length) { toastr.warning('Cart is empty.'); return; }
-        // doCheckout(true) = process payment + auto-print receipt
-        doCheckout(true);
+        var $btn = $('#cpsSaveBtn');
+        var orig = $btn.html();
+        $btn.prop('disabled', true).find('.cps-fbtn-t').text('SAVING…');
+
+        var custId       = $('#custId').val() || null;
+        var custName     = ($('#ciName').text() || '').trim();
+        var walkinName   = ($('#walkInName').val() || '').trim() || null;
+        var walkinPhone  = ($('#walkInPhone').val() || '').trim() || null;
+        var dType        = $('#dType').val() || null;
+        var dVal         = parseFloat($('#dVal').val()) || 0;
+        var notes        = $('#oNotes').val() || null;
+        var payMethod    = ($('.co-pay-btn.active,.cps-pmode.active').data('method') || null);
+
+        var items = _cart.map(function(c){
+            return {
+                item_type: c.item_type,
+                part_inventory_id: c.part_inventory_id,
+                vehicle_inventory_id: c.vehicle_inventory_id,
+                warehouse_id: c.warehouse_id || null,
+                item_name: c.item_name,
+                item_code: c.item_code,
+                quantity: c.quantity || 1,
+                unit_price: c.unit_price,
+                discount_amount: c.discount_amount || 0,
+                unit_number: c.unit_number || null,
+                vat_included: !!c.vat_included
+            };
+        });
+
+        var payload = {
+            items: items,
+            customer_id: custId, customer_name: custId ? custName : null,
+            walkin_name: walkinName, walkin_phone: walkinPhone,
+            discount_type: dType, discount_value: dVal,
+            payment_method: payMethod, notes: notes
+        };
+
+        var resumingUuid = window._activeDraftUuid;
+        var url = resumingUuid
+            ? (BASE_URL + '/sales/drafts/' + encodeURIComponent(resumingUuid))
+            : (BASE_URL + '/sales/drafts');
+        var method = resumingUuid ? 'PUT' : 'POST';
+
+        $.ajax({
+            url: url, type: method, contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function(r){
+                $btn.prop('disabled', false).html(orig);
+                if (r && (r.status === 200 || r.status === 201)){
+                    if (window.toastr){
+                        toastr.success(resumingUuid
+                            ? 'Draft updated. Open Drafts in the sidebar to resume.'
+                            : 'Saved as draft. Open Drafts in the sidebar to resume.');
+                    }
+                    /* Clear the cart + checkout so the cashier can start a new sale. */
+                    _cart = []; renderCart();
+                    $('#coPage').removeClass('open');
+                    $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes,#walkInName,#walkInPhone').val('');
+                    $('#custResult').empty().removeClass('show');
+                    if (typeof cpsResetCustomerInfo === 'function') cpsResetCustomerInfo();
+                    /* This sale didn't actually happen — the user just re-saved
+                       the draft.  Keep _activeDraftUuid clear since the cart
+                       is now empty; the next "Save as Draft" without a
+                       resume will create a new row again. */
+                    window._activeDraftUuid = null;
+                    window._activeDraftData = null;
+                    if (typeof refreshDraftBadge === 'function') refreshDraftBadge();
+                } else {
+                    if (window.toastr) toastr.error((r && r.message) || 'Failed to save draft.');
+                }
+            },
+            error: function(){
+                $btn.prop('disabled', false).html(orig);
+                if (window.toastr) toastr.error('Failed to save draft.');
+            }
+        });
+    };
+
+    /* Refresh the small badge on the sidebar Drafts icon. */
+    window.refreshDraftBadge = function(){
+        $.get(BASE_URL + '/sales/drafts/list', function(r){
+            var n = (r && r.data && r.data.data ? r.data.data.length : 0);
+            var $b = $('#draftSidebarCnt');
+            if (n > 0){ $b.text(n).css('display', 'flex'); } else { $b.hide(); }
+        });
+    };
+    /* Refresh once on POS load and every time the success / cart changes. */
+    setTimeout(refreshDraftBadge, 800);
+
+    /* Load a draft → validate stock → push available items into _cart. */
+    window.cpsLoadDraft = function(uuid){
+        if (!uuid) return;
+        $.get(BASE_URL + '/sales/drafts/' + encodeURIComponent(uuid), function(r){
+            if (!r || r.status !== 200 || !r.data) {
+                if (window.toastr) toastr.error('Failed to load draft.');
+                return;
+            }
+            var draft = r.data;
+            var items = draft.items || [];
+            if (!items.length) { toastr.warning('Draft is empty.'); return; }
+            /* Validate stock for each item before merging into cart */
+            $.ajax({
+                url: BASE_URL + '/sales/validate-stock',
+                type: 'POST', contentType: 'application/json',
+                data: JSON.stringify({ items: items }),
+                success: function(vr){
+                    var errors = (vr && vr.data && vr.data.errors) || [];
+                    var unavailableIds = {};
+                    errors.forEach(function(e){
+                        var key = e.id + '_' + (e.unit_number || '');
+                        unavailableIds[key] = e.error || 'Unavailable';
+                    });
+                    var added = 0, skipped = [];
+                    items.forEach(function(it){
+                        var keyA = (it.part_inventory_id || it.vehicle_inventory_id) + '_' + (it.unit_number || '');
+                        if (unavailableIds[keyA]) {
+                            skipped.push((it.item_name || 'Item') + (it.unit_number ? ' #' + it.unit_number : ''));
+                            return;
+                        }
+                        /* Push into cart in the same shape addToCart uses */
+                        if (!_cart.some(function(c){
+                            return c.item_type === it.item_type
+                                && String(c.id) === String(it.part_inventory_id || it.vehicle_inventory_id)
+                                && c.unit_number === it.unit_number;
+                        })){
+                            _cart.push({
+                                item_type: it.item_type,
+                                id: it.part_inventory_id || it.vehicle_inventory_id,
+                                item_name: it.item_name,
+                                item_code: it.item_code,
+                                unit_price: parseFloat(it.unit_price) || 0,
+                                quantity: parseInt(it.quantity) || 1,
+                                max_qty: parseInt(it.quantity) || 1,
+                                total_price: (parseFloat(it.unit_price) || 0) * (parseInt(it.quantity) || 1),
+                                discount_amount: parseFloat(it.discount_amount) || 0,
+                                warehouse_id: it.warehouse_id || null,
+                                part_inventory_id:    it.item_type === 'part'    ? it.part_inventory_id    : null,
+                                vehicle_inventory_id: it.item_type === 'vehicle' ? it.vehicle_inventory_id : null,
+                                unit_number: it.unit_number || null,
+                                vat_included: !!it.vat_included
+                            });
+                            added++;
+                        }
+                    });
+                    renderCart();
+                    /* Restore customer / discount / notes */
+                    if (draft.customer_id){
+                        $('#custId').val(draft.customer_id);
+                        if (typeof cpsSetCustomer === 'function') cpsSetCustomer({
+                            id: draft.customer_id, name: draft.customer_name,
+                            phone: draft.customer_phone, email: draft.customer_email
+                        });
+                    }
+                    if (draft.walkin_name)  $('#walkInName').val(draft.walkin_name);
+                    if (draft.walkin_phone) $('#walkInPhone').val(draft.walkin_phone);
+                    if (draft.discount_type) {
+                        $('#dType').val(draft.discount_type);
+                        if (typeof onDiscountTypeChange === 'function') onDiscountTypeChange();
+                    }
+                    if (draft.discount_value) $('#dVal').val(draft.discount_value);
+                    if (draft.notes) $('#oNotes').val(draft.notes);
+                    /* Stash the draft for later auto-fill on Checkout — openCheckout()
+                       resets payment fields, so we re-apply these AFTER the reset
+                       runs.  Includes fields the cashier doesn't see on the cart
+                       panel (payment_method, payRef, amount_paid, etc.). */
+                    window._activeDraftUuid = uuid;
+                    window._activeDraftData = {
+                        uuid: uuid,
+                        customer_id:    draft.customer_id || null,
+                        customer_name:  draft.customer_name || null,
+                        customer_phone: draft.customer_phone || null,
+                        customer_email: draft.customer_email || null,
+                        walkin_name:    draft.walkin_name || null,
+                        walkin_phone:   draft.walkin_phone || null,
+                        discount_type:  draft.discount_type || null,
+                        discount_value: draft.discount_value || 0,
+                        notes:          draft.notes || null,
+                        payment_method: draft.payment_method || null,
+                        payment_reference: draft.payment_reference || null,
+                        amount_paid:    draft.amount_paid || null
+                    };
+                    /* Toast */
+                    if (skipped.length){
+                        var preview = skipped.slice(0, 3).join(', ') + (skipped.length > 3 ? ' +' + (skipped.length - 3) + ' more' : '');
+                        if (window.toastr) toastr.warning('Loaded draft — skipped ' + skipped.length + ' unavailable item' + (skipped.length>1?'s':'') + ':<br/>' + esc(preview), 'Draft loaded', { timeOut: 6000, escapeHtml: false });
+                    } else {
+                        if (window.toastr) toastr.success('Draft loaded — ' + added + ' item' + (added>1?'s':'') + ' added to cart.');
+                    }
+                    /* Navigate back to POS */
+                    if (typeof spaNav === 'function') spaNav('pos');
+                }
+            });
+        });
     };
 
     // Restore sidebar state
@@ -2571,6 +3759,146 @@ $(function(){
     // Complete Payment, gets the same or the next number depending on
     // whether someone else saved in between — so this print is intentionally
     // marked DRAFT so customers know it's the pre-payment estimate.
+    /* ════════════════════════════════════════════════════════════════════
+       Print helpers — handle the difference between web (desktop with the
+       local print agent on :9998) and mobile/app (no agent available).
+
+       - On mobile/app  → if the agent fails, show ONE clean toast.
+       - On web/desktop → if the agent fails, show a modal that lets the
+                          cashier retry, open Printer Settings, or pick a
+                          different configured printer.
+       ════════════════════════════════════════════════════════════════════ */
+    function _isWebDesktop(){
+        // Treat ≥1100px AND non-touch as "web/desktop", everything else as mobile/app.
+        return window.matchMedia('(min-width:1100px)').matches && !('ontouchstart' in window);
+    }
+    function _printErrorMobile(){
+        if (window.toastr) toastr.error('Printer is not connected or offline.', null, { timeOut: 3500 });
+    }
+    /* The retry handler is set per-print so the modal's Try Again button
+       actually re-runs the same print attempt. */
+    window.printRetryHandler = function(){};
+    function _showPrintErrorWeb(msg, retryFn){
+        $('#printErrorMsg').text(msg || 'The configured printer is not responding. Make sure the print agent is running and the printer is powered on.');
+        /* Populate the printer list from window._posPrinters / settings if
+           the web user has more than one printer to fall back to. */
+        var printers = (window._posPrinters && Object.values(window._posPrinters)) || [];
+        printers = printers.filter(function(p){ return p && p.kind; });
+        if (printers.length > 1) {
+            var html = '';
+            printers.forEach(function(p, i){
+                html += '<button class="cps-confirm-btn cps-confirm-cancel" style="justify-content:flex-start;text-align:left;padding:10px 14px;" data-printer-idx="'+i+'">'
+                      +   '<i class="bi bi-printer" style="margin-right:8px;color:var(--cps-blue);"></i>'
+                      +   '<span><strong>'+esc(p.name||p.kind)+'</strong>'
+                      +   '<span style="display:block;font-size:11.5px;color:var(--cps-muted);font-weight:500;">'+esc(p.kind||'')+'</span></span>'
+                      + '</button>';
+            });
+            $('#printerListWrap').show();
+            $('#printerList').html(html).off('click').on('click', '[data-printer-idx]', function(){
+                var idx = parseInt($(this).attr('data-printer-idx'),10);
+                $('#printErrorOv').hide();
+                if (typeof retryFn === 'function') retryFn(printers[idx]);
+            });
+        } else {
+            $('#printerListWrap').hide();
+            $('#printerList').empty();
+        }
+        window.printRetryHandler = function(){
+            $('#printErrorOv').hide();
+            if (typeof retryFn === 'function') retryFn();
+        };
+        $('#printErrorOv').css('display', 'flex');
+    }
+    function _handlePrintFailure(xhr, retryFn, browserFallbackFn){
+        var msg = (xhr && xhr.responseJSON && xhr.responseJSON.error)
+                || (xhr && xhr.statusText)
+                || 'Printer is not connected or offline.';
+        if (_isWebDesktop()) {
+            /* On web, instead of showing an error modal, transparently fall
+               back to the browser's native print dialog (window.print()).
+               The caller passes a `browserFallbackFn` that knows how to
+               render its content in a popup that auto-fires window.print(). */
+            if (typeof browserFallbackFn === 'function') {
+                browserFallbackFn();
+                if (window.toastr) toastr.info('Local printer offline — using browser print instead.', null, { timeOut: 2500 });
+                return;
+            }
+            // No fallback available — fall through to the modal.
+            _showPrintErrorWeb(msg, retryFn);
+        } else {
+            _printErrorMobile();
+        }
+    }
+
+    /* Build a tiny printable popup window from arbitrary HTML and trigger
+       window.print() on it.  Used as the web-only browser fallback when the
+       local agent isn't reachable. */
+    function _openBrowserPrintPopup(html, title){
+        var w = window.open('', '_blank', 'width=480,height=720,resizable=yes,scrollbars=yes');
+        if (!w){
+            if (window.toastr) toastr.error('Pop-up blocked. Please allow pop-ups for printing.');
+            return;
+        }
+        w.document.open();
+        w.document.write(
+            '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>'+esc(title||'Receipt')+'</title>'
+          + '<style>'
+          + '@page{margin:6mm;}'
+          + 'body{font-family:"Courier New",monospace;font-size:12px;color:#000;margin:0;padding:6mm;}'
+          + '.r-c{text-align:center;}'
+          + '.r-h{font-size:14px;font-weight:700;text-align:center;margin-bottom:4px;}'
+          + '.r-sub{font-size:11px;text-align:center;color:#444;margin-bottom:8px;}'
+          + '.r-sep{border-top:1px dashed #000;margin:6px 0;}'
+          + '.r-row{display:flex;justify-content:space-between;font-size:12px;line-height:1.45;}'
+          + '.r-line{display:flex;justify-content:space-between;font-size:11.5px;line-height:1.4;}'
+          + '.r-tot{font-size:13px;font-weight:700;}'
+          + '@media print{button,.no-print{display:none!important;}}'
+          + '</style></head><body>'
+          + html
+          + '<div class="no-print" style="text-align:center;padding-top:10px;"><button onclick="window.print()" style="padding:6px 14px;font-size:12px;cursor:pointer;">Print</button></div>'
+          + '<script>window.onload=function(){setTimeout(function(){try{window.print();}catch(_){}},250);};<\/script>'
+          + '</body></html>'
+        );
+        w.document.close();
+    }
+
+    /* Build a draft-receipt HTML from the current cart for the browser print
+       fallback (web only).  Mirrors the layout of the ESC/POS draft receipt
+       so the printed output is roughly equivalent. */
+    function _buildCartReceiptHtml(cart, settings, opts){
+        opts = opts || {};
+        var cur = window.SMS_CURRENCY || '₹';
+        var fmt = function(n){ return cur + ' ' + F(n); };
+        var orgName = (settings && (settings.organization_name || settings.company_name)) || (window.SMS_ORG_NAME || 'Receipt');
+        var addr  = (settings && settings.pos_receipt_address) || '';
+        var phone = (settings && settings.pos_receipt_phone) || '';
+        var html = '';
+        html += '<div class="r-h">' + esc(orgName) + '</div>';
+        if (addr)  html += '<div class="r-sub">' + esc(addr) + '</div>';
+        if (phone) html += '<div class="r-sub">Tel: ' + esc(phone) + '</div>';
+        html += '<div class="r-sep"></div>';
+        html += '<div class="r-row"><span><strong>DRAFT</strong>' + (opts.invoiceNumber ? ' ' + esc(opts.invoiceNumber) : '') + '</span><span>' + new Date().toLocaleString() + '</span></div>';
+        html += '<div class="r-sep"></div>';
+        var sub = 0;
+        var groups = {};
+        cart.forEach(function(c){
+            var k = c.item_type + '_' + c.id;
+            if (!groups[k]) groups[k] = { name: c.item_name, code: c.item_code, qty: 0, total: 0, unit: c.unit_price };
+            groups[k].qty++;
+            groups[k].total += c.total_price;
+            sub += c.total_price;
+        });
+        Object.values(groups).forEach(function(g){
+            html += '<div class="r-line"><span>' + esc(g.name) + (g.code ? ' [' + esc(g.code) + ']' : '') + '</span></div>';
+            html += '<div class="r-line"><span>&nbsp;&nbsp;' + g.qty + ' × ' + fmt(g.unit) + '</span><span>' + fmt(g.total) + '</span></div>';
+        });
+        html += '<div class="r-sep"></div>';
+        html += '<div class="r-row r-tot"><span>TOTAL</span><span>' + fmt(sub) + '</span></div>';
+        html += '<div class="r-sep"></div>';
+        html += '<div class="r-c" style="font-size:11px;margin-top:4px;">— Draft receipt — not a tax invoice —</div>';
+        return html;
+    }
+
     window.cartPrintNow = function() {
         if (!window._cart || !window._cart.length) {
             if (window.toastr) toastr.warning('Cart is empty');
@@ -2598,6 +3926,13 @@ $(function(){
                     invoiceNumber: nextInv,
                     isDraft: true,
                 });
+                /* Browser-print fallback used on web when the local agent
+                   is unreachable — opens a popup with the cart formatted as
+                   a draft receipt and triggers window.print(). */
+                var browserFallback = function(){
+                    var html = _buildCartReceiptHtml(window._cart, settings, { invoiceNumber: nextInv });
+                    _openBrowserPrintPopup(html, 'Draft Receipt — ' + (nextInv || ''));
+                };
                 $.ajax({
                     url: 'http://localhost:9998/print-to', method: 'POST',
                     contentType: 'application/json', timeout: 12000,
@@ -2607,14 +3942,17 @@ $(function(){
                     if (r && r.ok) {
                         if (window.toastr) toastr.success('Draft printed (' + (nextInv || 'no #') + ') on ' + (assigned.name || 'printer'));
                     } else {
-                        if (window.toastr) toastr.error((r && r.error) || 'Print failed');
+                        _handlePrintFailure({ responseJSON: r }, function(altPrinter){
+                            $.ajax({
+                                url: 'http://localhost:9998/print-to', method: 'POST',
+                                contentType: 'application/json', timeout: 12000,
+                                data: JSON.stringify({ target: altPrinter || assigned, data: data }),
+                            });
+                        }, browserFallback);
                     }
                 }).fail(function(xhr) {
                     reset();
-                    var msg = (xhr.responseJSON && xhr.responseJSON.error)
-                        || xhr.statusText
-                        || 'Print agent unreachable (port 9998). Is it running?';
-                    if (window.toastr) toastr.error(msg);
+                    _handlePrintFailure(xhr, function(){ cartPrintNow(); }, browserFallback);
                 });
             });
         }).fail(function() {
@@ -2630,37 +3968,52 @@ $(function(){
     // /sales/printer-settings.
     window.autoPrintReceipt = function(orderUuid) {
         if (!orderUuid) return;
+        /* Web fallback for the post-sale receipt — opens the existing
+           /sales/receipt-preview page in a new tab with ?auto=1 which
+           triggers window.print() automatically. */
+        var browserFallback = function(){
+            var url = '/sales/receipt-preview?order=' + encodeURIComponent(orderUuid) + '&print_type=original&auto=1';
+            window.open(url, '_blank');
+        };
         var assigned = (window._posPrinters || {}).receipt;
         if (!assigned || !assigned.kind) {
-            if (window.toastr) toastr.warning('No receipt printer assigned. Open Printer Settings to assign one.');
+            /* No printer configured — on web, jump straight to the browser
+               print dialog. On mobile/app, show the simple toast. */
+            if (_isWebDesktop()) {
+                browserFallback();
+                if (window.toastr) toastr.info('No printer configured — using browser print.', null, { timeOut: 2500 });
+            } else {
+                _printErrorMobile();
+            }
             return;
         }
         var label = assigned.name || (assigned.kind + ' printer');
         if (window.toastr) toastr.info('Sending receipt to ' + label + '…');
 
-        // 1. Fetch the ESC/POS payload for this order from the backend.
-        $.ajax({
-            url: '/sales/orders/' + encodeURIComponent(orderUuid) + '/receipt-escpos',
-            method: 'GET', dataType: 'text', timeout: 8000,
-        }).done(function(data) {
-            // 2. POST to the local print agent — same shape as test-print.
+        var doPrint = function(target){
             $.ajax({
-                url: 'http://localhost:9998/print-to', method: 'POST',
-                contentType: 'application/json', timeout: 10000,
-                data: JSON.stringify({ target: assigned, data: data }),
-            }).done(function(r) {
-                if (r && r.ok) {
-                    if (window.toastr) toastr.success('Printed on ' + label);
-                } else {
-                    if (window.toastr) toastr.error((r && r.error) || 'Print failed on agent');
-                }
-            }).fail(function(xhr) {
-                var msg = (xhr.responseJSON && xhr.responseJSON.error) || xhr.statusText || 'Print agent unreachable (port 9998)';
-                if (window.toastr) toastr.error(msg);
+                url: '/sales/orders/' + encodeURIComponent(orderUuid) + '/receipt-escpos',
+                method: 'GET', dataType: 'text', timeout: 8000,
+            }).done(function(data) {
+                $.ajax({
+                    url: 'http://localhost:9998/print-to', method: 'POST',
+                    contentType: 'application/json', timeout: 10000,
+                    data: JSON.stringify({ target: target, data: data }),
+                }).done(function(r) {
+                    if (r && r.ok) {
+                        if (window.toastr) toastr.success('Printed on ' + (target.name || target.kind));
+                    } else {
+                        _handlePrintFailure({ responseJSON: r }, function(alt){ doPrint(alt || target); }, browserFallback);
+                    }
+                }).fail(function(xhr) {
+                    _handlePrintFailure(xhr, function(alt){ doPrint(alt || target); }, browserFallback);
+                });
+            }).fail(function() {
+                if (_isWebDesktop()) browserFallback();
+                else if (window.toastr) toastr.error('Could not load receipt for printing.');
             });
-        }).fail(function() {
-            if (window.toastr) toastr.error('Could not load receipt for printing.');
-        });
+        };
+        doPrint(assigned);
     };
     // A4 invoice → PDF rendered server-side from the same order data.
     window.successPrintA4 = function() {

@@ -53,6 +53,14 @@ router.get('/orders/:uuid/invoice', Ctrl.orderInvoice);
 router.get('/orders/:uuid/invoice/thermal', Ctrl.orderInvoiceThermal);
 router.post('/orders/:uuid/invoice/email', Ctrl.orderInvoiceEmail);
 
+// Order Drafts ("Save as Draft" feature)
+router.get   ('/drafts',           Ctrl.draftsPage);
+router.get   ('/drafts/list',      Ctrl.draftList);
+router.post  ('/drafts',           Ctrl.draftCreate);
+router.get   ('/drafts/:uuid',     Ctrl.draftShow);
+router.put   ('/drafts/:uuid',     Ctrl.draftUpdate);
+router.delete('/drafts/:uuid',     Ctrl.draftDestroy);
+
 // Customers
 router.get('/customers', Ctrl.customersPage);
 router.post('/customers/paginate', Ctrl.customersPaginate);

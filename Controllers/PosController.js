@@ -33,7 +33,7 @@ exports.index = (req, res) => {
     const u = req.session && req.session.user || {};
     const user = {
         id: u.id || null,
-        name: u.full_name || u.name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || 'User',
+        name: u.name || u.full_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || 'User',
         role: u.role_name || u.role || (u.is_super_admin ? 'Super Admin' : 'Operator'),
         email: u.email || '',
     };
@@ -387,6 +387,18 @@ exports.settingsGet = async (req, res) => { res.json(await api.get('/pos/setting
 exports.settingsUpdate = async (req, res) => { res.json(await api.put('/pos/settings', req.body, req.session.token)); };
 // Proxy: peek the next invoice number for draft-printing in the POS UI.
 exports.nextInvoiceNumber = async (req, res) => { res.json(await api.get('/pos/next-invoice-number', req.session.token)); };
+
+// ── Order Drafts ("Save as Draft" feature) ─────────────────────
+exports.draftsPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    if (isSpa) res.render('pos/drafts', { page_title: 'Saved Drafts', activeLink: 'pos-drafts', breadcrumbs: [], layout: false, _spa: true });
+    else       res.render('pos/drafts', { page_title: 'Saved Drafts', activeLink: 'pos-drafts', breadcrumbs: [] });
+};
+exports.draftList     = async (req, res) => { res.json(await api.get('/pos/drafts', req.session.token)); };
+exports.draftCreate   = async (req, res) => { res.json(await api.post('/pos/drafts', req.body, req.session.token)); };
+exports.draftShow     = async (req, res) => { res.json(await api.get('/pos/drafts/' + req.params.uuid, req.session.token)); };
+exports.draftUpdate   = async (req, res) => { res.json(await api.put('/pos/drafts/' + req.params.uuid, req.body, req.session.token)); };
+exports.draftDestroy  = async (req, res) => { res.json(await api.del('/pos/drafts/' + req.params.uuid, req.session.token)); };
 
 // POST /sales/settings/upload/:kind  (kind = logo | qr | signature)
 // Multipart file upload. Saves to /public/uploads/settings/, then PUTs the

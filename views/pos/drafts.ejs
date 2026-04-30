@@ -1,0 +1,727 @@
+<% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
+<div class="dr-page">
+
+  <!-- Toolbar -->
+  <div class="dr-toolbar">
+    <div class="dr-toolbar-l">
+      <div class="dr-toolbar-icon"><i class="bi bi-bookmark-heart-fill"></i></div>
+      <div>
+        <div class="dr-toolbar-title">Saved Drafts</div>
+        <div class="dr-toolbar-sub" id="draftsCount">— drafts</div>
+      </div>
+    </div>
+    <div class="dr-toolbar-r">
+      <div class="dr-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="draftsSearch" placeholder="Search by customer, notes, label…" autocomplete="off"/>
+      </div>
+      <button class="pos-btn-outline pos-btn-sm" onclick="loadDrafts()" data-tip="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div id="draftsList" class="dr-list"></div>
+
+  <!-- Empty state -->
+  <div id="draftsEmpty" class="dr-empty" style="display:none;">
+    <i class="bi bi-bookmark-heart"></i>
+    <h3>No saved drafts yet</h3>
+    <p>Drafts you create from the checkout panel will appear here.<br/>You can resume one any time to continue the sale.</p>
+  </div>
+
+  <!-- View Details popup (Draft Details — matches the Figma mock) -->
+  <div class="dr-pv-ov" id="draftViewOv" onclick="if(event.target===this)$('#draftViewOv').hide();">
+    <div class="dr-pv-card">
+      <!-- Mobile drag handle -->
+      <div class="dr-pv-handle"></div>
+
+      <!-- Header -->
+      <div class="dr-pv-hdr">
+        <div class="dr-pv-hdr-icon"><i class="bi bi-bookmark-fill"></i></div>
+        <div class="dr-pv-hdr-text">
+          <h2>Draft Details</h2>
+          <p class="dr-pv-hdr-meta"><span class="dr-pv-hdr-id">Draft ID: <strong id="dvDraftId">—</strong></span><span class="dr-pv-dot">•</span><span>Created on <span id="dvDate">—</span></span></p>
+        </div>
+        <span class="dr-saved-badge"><i class="bi bi-check-circle-fill"></i> Saved</span>
+        <button class="dr-pv-close" onclick="$('#draftViewOv').hide();" data-tip="Close" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="dr-pv-body">
+
+        <!-- Customer & Order Information -->
+        <div class="dr-pv-block">
+          <div class="dr-pv-block-h-row">
+            <div class="dr-pv-block-h-l">
+              <div class="dr-pv-block-h-icon"><i class="bi bi-person-fill"></i></div>
+              <h3 class="dr-pv-block-h-t">Customer &amp; Order Information</h3>
+            </div>
+            <a class="dr-call-btn" id="dvCallBtn" data-tip="Call customer" data-tip-pos="left" href="#" onclick="return false;"><i class="bi bi-telephone-fill"></i></a>
+          </div>
+          <div class="dr-pv-fields3">
+            <div class="dr-pv-row"><div class="dr-pv-l">Customer</div><div class="dr-pv-v" id="dvCust">—</div></div>
+            <div class="dr-pv-row"><div class="dr-pv-l">Phone</div><div class="dr-pv-v" id="dvPhone">—</div></div>
+            <div class="dr-pv-row"><div class="dr-pv-l">Email</div><div class="dr-pv-v" id="dvEmail">—</div></div>
+            <div class="dr-pv-row"><div class="dr-pv-l">Saved By</div><div class="dr-pv-v" id="dvBy">—</div></div>
+            <div class="dr-pv-row"><div class="dr-pv-l">Saved On</div><div class="dr-pv-v" id="dvDate2">—</div></div>
+            <div class="dr-pv-row"><div class="dr-pv-l">Payment Method</div><div class="dr-pv-v dr-pv-method" id="dvMethod">—</div></div>
+          </div>
+        </div>
+
+        <!-- Items -->
+        <div class="dr-pv-block">
+          <div class="dr-pv-block-h-row">
+            <div class="dr-pv-block-h-l">
+              <div class="dr-pv-block-h-icon"><i class="bi bi-bag-fill"></i></div>
+              <h3 class="dr-pv-block-h-t">Items <span class="dr-pv-block-count" id="dvItemsCount">(0)</span></h3>
+            </div>
+          </div>
+          <div class="dr-pv-items-wrap">
+            <table class="dr-pv-items">
+              <thead><tr>
+                <th>#</th>
+                <th>Item Name</th>
+                <th class="dr-col-sku">SKU</th>
+                <th class="num">Qty</th>
+                <th class="num dr-col-rate">Rate</th>
+                <th class="num">Amount</th>
+              </tr></thead>
+              <tbody id="dvItems"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="dr-pv-block">
+          <div class="dr-pv-block-h-row">
+            <div class="dr-pv-block-h-l">
+              <div class="dr-pv-block-h-icon"><i class="bi bi-receipt"></i></div>
+              <h3 class="dr-pv-block-h-t">Totals</h3>
+            </div>
+          </div>
+          <div class="dr-pv-totals">
+            <div class="dr-pv-trow"><span>Sub Total</span><span id="dvSub">—</span></div>
+            <div class="dr-pv-trow" id="dvDiscRow"><span>Discount <small id="dvDiscType"></small></span><span id="dvDisc">—</span></div>
+            <div class="dr-pv-trow dr-pv-trow-grand"><span>Grand Total</span><span id="dvGrand">—</span></div>
+          </div>
+        </div>
+
+        <!-- Note banner -->
+        <div class="dr-pv-note">
+          <i class="bi bi-info-circle-fill"></i>
+          <div><strong>Note:</strong> This is a draft order. You can resume or delete it anytime.</div>
+        </div>
+
+        <!-- Notes from cashier (only when present) -->
+        <div class="dr-pv-block" id="dvNotesWrap" style="display:none;">
+          <div class="dr-pv-block-h-row">
+            <div class="dr-pv-block-h-l">
+              <div class="dr-pv-block-h-icon"><i class="bi bi-sticky-fill"></i></div>
+              <h3 class="dr-pv-block-h-t">Cashier Notes</h3>
+            </div>
+          </div>
+          <div class="dr-pv-notes-v" id="dvNotes">—</div>
+        </div>
+
+      </div>
+
+      <div class="dr-pv-foot">
+        <button class="dr-pv-fbtn dr-pv-fbtn-cancel" onclick="$('#draftViewOv').hide();"><i class="bi bi-x-lg"></i> Close</button>
+        <button class="dr-pv-fbtn dr-pv-fbtn-del" id="dvDelBtn"><i class="bi bi-trash3"></i> Delete Draft</button>
+        <button class="dr-pv-fbtn dr-pv-fbtn-ok" id="dvResumeBtn"><i class="bi bi-arrow-right-circle-fill"></i> Resume Sale</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.dr-page{ padding:0 4px 24px; min-height:60vh; }
+
+/* ── Toolbar ── */
+.dr-toolbar{
+  display:flex; align-items:center; gap:14px;
+  padding:14px 18px; margin-bottom:14px;
+  background:#fff; border:1px solid var(--pv2-border, #e5e9f2); border-radius:10px;
+  flex-wrap:wrap;
+}
+.dr-toolbar-l{ display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+.dr-toolbar-icon{
+  width:42px; height:42px; border-radius:10px;
+  background:rgba(44,95,213,.10); color:#2c5fd5;
+  display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
+}
+.dr-toolbar-title{ font-size:16px; font-weight:800; color:var(--pv2-text,#1d2747); line-height:1.1; }
+.dr-toolbar-sub{ font-size:12px; color:var(--pv2-muted,#6b7280); margin-top:2px; }
+.dr-toolbar-r{ display:flex; align-items:center; gap:10px; }
+.dr-search{
+  position:relative; min-width:240px;
+  background:#fafbfc; border:1px solid var(--pv2-border,#e5e9f2); border-radius:8px;
+  padding:0 10px; display:flex; align-items:center; gap:8px;
+}
+.dr-search i{ color:var(--pv2-subtle,#94a3b8); font-size:14px; }
+.dr-search input{
+  flex:1; padding:9px 4px; border:none; outline:none;
+  font-size:13.5px; color:var(--pv2-text,#1d2747); background:transparent;
+}
+
+/* ── Cards grid ── */
+.dr-list{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;
+}
+.dr-card{
+  background:#fff; border:1px solid var(--pv2-border, #e5e9f2); border-radius:10px;
+  padding:14px 16px; cursor:pointer;
+  transition:border-color .15s, box-shadow .15s, transform .12s;
+  display:flex; flex-direction:column; gap:10px;
+}
+.dr-card:hover{
+  border-color:#2c5fd5; box-shadow:0 6px 18px rgba(44,95,213,.12);
+  transform:translateY(-1px);
+}
+.dr-card-h{ display:flex; align-items:center; gap:10px; }
+.dr-card-h .dr-icon{
+  width:36px; height:36px; border-radius:8px;
+  background:rgba(44,95,213,.10); color:#2c5fd5;
+  display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+}
+.dr-card-h .dr-cust{ flex:1; min-width:0; }
+.dr-card-h .dr-cust-name{
+  font-size:13.5px; font-weight:700; color:var(--pv2-text,#1d2747);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.dr-card-h .dr-cust-meta{
+  font-size:11.5px; color:var(--pv2-muted,#6b7280); margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.dr-card-meta{
+  display:grid; grid-template-columns:1fr 1fr; gap:8px 14px;
+  padding-top:10px; border-top:1px dashed var(--pv2-border,#e5e9f2);
+}
+.dr-meta-l{ font-size:10.5px; color:var(--pv2-muted,#6b7280); margin-bottom:1px; text-transform:uppercase; letter-spacing:.4px; font-weight:600; }
+.dr-meta-v{ font-size:12.5px; color:var(--pv2-text,#1d2747); font-weight:600; word-break:break-word; }
+.dr-card-foot{
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+}
+.dr-amt{ font-size:18px; font-weight:800; color:#16a34a; font-variant-numeric:tabular-nums; }
+.dr-actions{ display:flex; gap:6px; }
+.dr-btn{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:7px 12px; border-radius:6px;
+  font-size:12px; font-weight:700; cursor:pointer; border:1px solid;
+  transition:filter .12s, transform .04s;
+}
+.dr-btn:active{ transform:translateY(1px); }
+.dr-btn-view{ background:#fff; color:#2c5fd5; border-color:#2c5fd5; }
+.dr-btn-view:hover{ background:rgba(44,95,213,.06); }
+.dr-btn-resume{ background:#2c5fd5; color:#fff; border-color:#2c5fd5; }
+.dr-btn-resume:hover{ background:#1f4cb8; }
+.dr-btn-del{ background:#fff; color:#dc2626; border-color:#fecaca; }
+.dr-btn-del:hover{ background:#fee2e2; }
+
+/* ── Empty state ── */
+.dr-empty{ text-align:center; padding:60px 20px; color:var(--pv2-muted,#6b7280); }
+.dr-empty i{ font-size:54px; color:#cbd5e1; display:block; margin-bottom:14px; }
+.dr-empty h3{ font-size:17px; font-weight:700; color:var(--pv2-text,#1d2747); margin:0 0 6px; }
+.dr-empty p{ font-size:13px; margin:0; line-height:1.5; }
+
+/* ═════════ View Details popup ═════════
+   Web: centered card.   Mobile: full-screen sheet with sticky header + footer. */
+.dr-pv-ov{
+  position:fixed; inset:0; z-index:9998;
+  background:rgba(11,18,32,.5); backdrop-filter:blur(3px);
+  display:none; align-items:center; justify-content:center; padding:20px;
+}
+.dr-pv-ov[style*="display:flex"],
+.dr-pv-ov[style*="display: flex"]{ display:flex !important; }
+.dr-pv-card{
+  background:#f3f6fb; border-radius:14px; width:100%; max-width:920px;
+  max-height:calc(100vh - 40px); overflow:hidden;
+  box-shadow:0 24px 60px rgba(11,18,32,.30);
+  position:relative;
+  animation:vk-pop .18s ease-out both;
+  display:flex; flex-direction:column;
+}
+.dr-pv-handle{ display:none; }
+.dr-pv-close{
+  position:absolute; top:18px; right:20px; z-index:5;
+  width:36px; height:36px; border-radius:8px;
+  border:1px solid var(--pv2-border,#e5e9f2); background:#fff; color:var(--pv2-muted,#6b7280);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.dr-pv-close:hover{ background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
+
+/* Header */
+.dr-pv-hdr{
+  display:flex; align-items:center; gap:14px;
+  padding:18px 22px;
+  background:#fff; border-bottom:1px solid var(--pv2-border,#e5e9f2);
+  flex-shrink:0;
+}
+.dr-pv-hdr-icon{
+  width:50px; height:50px; border-radius:10px;
+  background:rgba(44,95,213,.10); color:#2c5fd5;
+  display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
+}
+.dr-pv-hdr-text{ flex:1; min-width:0; }
+.dr-pv-hdr-text h2{ font-size:20px; font-weight:800; color:#1d2747; margin:0; line-height:1.15; }
+.dr-pv-hdr-meta{ font-size:12.5px; color:#6b7280; margin:4px 0 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.dr-pv-hdr-meta strong{ color:#1d2747; font-weight:700; }
+.dr-pv-dot{ color:#cbd5e1; }
+.dr-saved-badge{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 12px; border-radius:999px;
+  background:rgba(44,95,213,.10); color:#2c5fd5;
+  font-size:12px; font-weight:700;
+  margin-right:42px;     /* room for the close button on the absolute-right */
+}
+.dr-saved-badge i{ font-size:11px; }
+
+/* Body — scrolls vertically.  IMPORTANT: NOT a flex column. Flex children
+   default to `flex-shrink:1` and would crop their inner content (via the
+   blocks' `overflow:hidden`) whenever the popup ran out of vertical space.
+   Plain block layout lets each block take its natural height and the BODY
+   scrolls when the total exceeds the popup height. */
+.dr-pv-body{
+  padding:16px 20px 18px;
+  flex:1 1 auto;
+  overflow-y:auto;
+  display:block;
+}
+.dr-pv-body > .dr-pv-block,
+.dr-pv-body > .dr-pv-note{ margin-bottom:14px; }
+.dr-pv-body > :last-child{ margin-bottom:0; }
+
+/* Block / card.  No `overflow:hidden` — content is allowed to render fully. */
+.dr-pv-block{
+  background:#fff; border:1px solid var(--pv2-border,#e5e9f2); border-radius:10px;
+  flex-shrink:0;
+}
+.dr-pv-block-h-row{
+  display:flex; align-items:center; gap:12px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--pv2-border,#e5e9f2);
+  background:#fff;
+}
+.dr-pv-block-h-l{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+.dr-pv-block-h-icon{
+  width:32px; height:32px; border-radius:8px;
+  background:rgba(44,95,213,.10); color:#2c5fd5;
+  display:flex; align-items:center; justify-content:center; font-size:14px;
+  flex-shrink:0;
+}
+.dr-pv-block-h-t{ font-size:14.5px; font-weight:800; color:#1d2747; margin:0; }
+.dr-pv-block-count{ color:#6b7280; font-weight:500; font-size:13px; margin-left:4px; }
+.dr-call-btn{
+  width:42px; height:42px; border-radius:8px;
+  border:1px solid var(--pv2-border,#e5e9f2); background:#fff; color:#2c5fd5;
+  display:flex; align-items:center; justify-content:center; font-size:16px;
+  cursor:pointer; text-decoration:none;
+  transition:background .12s, border-color .12s, transform .12s;
+}
+.dr-call-btn:hover{ background:rgba(44,95,213,.06); border-color:#2c5fd5; }
+.dr-call-btn:active{ transform:scale(.96); }
+
+/* Customer fields — 3 columns on web, 1 on mobile.
+   Force all six grid children (Customer / Phone / Email / Saved By / Saved On / Method)
+   to render regardless of any cascading legacy rule. */
+.dr-pv-fields3{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:18px 24px;
+  padding:18px 18px 20px;
+}
+.dr-pv-fields3 > .dr-pv-row{ display:block !important; visibility:visible !important; min-width:0; }
+.dr-pv-l{
+  display:block;
+  font-size:12px; color:#6b7280; font-weight:500;
+  margin-bottom:4px;
+}
+.dr-pv-v{
+  display:block;
+  font-size:14px; color:#1d2747; font-weight:600;
+  word-break:break-word; line-height:1.4;
+}
+.dr-pv-method{ display:inline-flex; align-items:center; gap:6px; }
+.dr-pv-method i{ color:#2c5fd5; font-size:14px; }
+
+/* Items table */
+.dr-pv-items-wrap{ overflow-x:auto; }
+.dr-pv-items{ width:100%; border-collapse:collapse; font-size:13.5px; }
+.dr-pv-items thead th{
+  text-align:left; padding:14px 18px;
+  background:#fafbfc;
+  border-bottom:1px solid var(--pv2-border,#e5e9f2);
+  font-size:12.5px; color:#6b7280; font-weight:700;
+}
+.dr-pv-items thead th.num{ text-align:right; }
+.dr-pv-items tbody td{
+  padding:14px 18px; border-bottom:1px solid #f1f3f8; vertical-align:middle;
+  color:#1d2747;
+}
+.dr-pv-items tbody td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+.dr-pv-items tbody tr:last-child td{ border-bottom:none; }
+.dr-pv-items .pv-sku{ font-family:'Courier New',monospace; font-size:13px; color:#6b7280; }
+.dr-pv-items .pv-unit{ color:#6b7280; font-weight:400; }
+
+/* Totals — flat list of rows, last one is the Grand Total.  Use !important
+   on the visibility-critical declarations so any cascading rule from the
+   page layout can't accidentally hide a row. */
+.dr-pv-totals{
+  display:flex !important; flex-direction:column !important;
+  padding:16px 20px 18px;
+}
+.dr-pv-totals > .dr-pv-trow{
+  display:flex !important;
+  justify-content:space-between; align-items:center;
+  padding:10px 0; font-size:14px; color:#6b7280;
+  font-variant-numeric:tabular-nums;
+  border-bottom:1px solid #f1f3f8;
+  visibility:visible !important;
+}
+.dr-pv-totals > .dr-pv-trow > span:last-child{ color:#1d2747; font-weight:700; }
+.dr-pv-totals > .dr-pv-trow-grand{
+  border-top:2px solid var(--pv2-border,#e5e9f2);
+  border-bottom:none;
+  padding-top:14px; margin-top:6px;
+  font-size:16px; font-weight:800;
+}
+.dr-pv-totals > .dr-pv-trow-grand > span:first-child{ color:#1d2747; }
+.dr-pv-totals > .dr-pv-trow-grand > span:last-child{ color:#16a34a; font-size:20px; }
+
+/* Note banner */
+.dr-pv-note{
+  display:flex; align-items:flex-start; gap:10px;
+  padding:14px 18px; background:#eff6ff;
+  border:1px solid #bfdbfe; border-radius:10px;
+  font-size:13px; color:#1d2747; line-height:1.5;
+}
+.dr-pv-note > i{ font-size:18px; color:#2c5fd5; flex-shrink:0; margin-top:1px; }
+.dr-pv-note strong{ color:#2c5fd5; font-weight:700; }
+
+.dr-pv-notes-v{ font-size:13px; color:#1d2747; padding:14px 18px; line-height:1.5; white-space:pre-wrap; }
+
+/* Footer */
+.dr-pv-foot{
+  display:flex; gap:10px; padding:16px 22px;
+  background:#fff; border-top:1px solid var(--pv2-border,#e5e9f2);
+  flex-shrink:0;
+}
+.dr-pv-fbtn{
+  min-height:48px; border-radius:8px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  font-size:14px; font-weight:700; font-family:inherit; border:1.5px solid;
+  padding:0 22px;
+  transition:filter .12s, transform .04s;
+}
+.dr-pv-fbtn:active{ transform:translateY(1px); }
+.dr-pv-fbtn-cancel{
+  background:#fff; color:#1d2747; border-color:var(--pv2-border,#e5e9f2);
+  flex:0 0 auto;
+}
+.dr-pv-fbtn-cancel:hover{ background:#f8fafc; }
+.dr-pv-fbtn-del{
+  background:#fff; color:#dc2626; border-color:#fca5a5;
+  flex:0 0 auto;
+}
+.dr-pv-fbtn-del:hover{ background:#fee2e2; }
+.dr-pv-fbtn-ok{
+  background:#2c5fd5; color:#fff; border-color:#2c5fd5;
+  flex:1; min-width:180px;
+}
+.dr-pv-fbtn-ok:hover{ background:#1f4cb8; }
+
+/* ── Tablet ── */
+@media (max-width:1099px){
+  .dr-list{ grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); }
+  .dr-search{ min-width:200px; }
+}
+
+/* ── Tablet (≤1099) — keep 3-col customer info but tighter */
+@media (max-width:1099px){
+  .dr-pv-card{ max-width:none; }
+}
+
+/* ── Mobile (≤767) — full-screen sheet + single-column customer info,
+       condensed items table (hide SKU + Rate), stacked footer buttons */
+@media (max-width:767px){
+  .dr-toolbar{ padding:12px 14px; gap:10px; }
+  .dr-toolbar-l{ width:100%; }
+  .dr-toolbar-r{ width:100%; }
+  .dr-search{ flex:1; min-width:0; }
+  .dr-list{ grid-template-columns:1fr; gap:10px; }
+  .dr-card{ padding:12px 14px; }
+  .dr-card-foot{ flex-wrap:wrap; }
+  .dr-actions{ width:100%; }
+  .dr-actions .dr-btn{ flex:1; justify-content:center; }
+  .dr-amt{ font-size:16px; }
+
+  /* Detail popup — full-screen sheet rising from bottom with rounded top */
+  .dr-pv-ov{ padding:0; align-items:stretch; }
+  .dr-pv-card{
+    border-radius:16px 16px 0 0; max-width:none;
+    max-height:100vh; min-height:100vh;
+  }
+  .dr-pv-handle{
+    display:block; width:40px; height:4px; border-radius:999px;
+    background:#cbd5e1; margin:8px auto 0;
+  }
+  .dr-pv-hdr{
+    padding:14px 16px 16px; gap:12px; flex-wrap:wrap;
+  }
+  .dr-pv-hdr-icon{ width:42px; height:42px; font-size:18px; }
+  .dr-pv-hdr-text{ flex:1; min-width:0; }
+  .dr-pv-hdr-text h2{ font-size:18px; }
+  .dr-pv-hdr-meta{ display:none; }       /* hide subtitle on phone — too tight */
+  .dr-saved-badge{ margin-right:0; padding:4px 10px; font-size:11px; }
+  .dr-pv-close{ top:14px; right:14px; }
+
+  .dr-pv-body{ padding:14px 14px 18px; gap:12px; }
+
+  /* Customer info — single column on mobile (matches reference) */
+  .dr-pv-fields3{
+    grid-template-columns:1fr; gap:14px;
+    padding:14px 16px 16px;
+  }
+  .dr-pv-block-h-row{ padding:12px 16px; }
+  .dr-pv-block-h-icon{ width:30px; height:30px; font-size:13px; }
+  .dr-pv-block-h-t{ font-size:13.5px; }
+
+  /* Items table — drop SKU + Rate on small screens (matches mobile reference) */
+  .dr-col-sku, .dr-col-rate{ display:none; }
+  .dr-pv-items thead th,
+  .dr-pv-items tbody td{ padding:10px 14px; font-size:12.5px; }
+
+  .dr-pv-totals{ padding:14px 16px; }
+  .dr-pv-trow{ font-size:13px; }
+  .dr-pv-trow-grand{ font-size:14.5px; }
+  .dr-pv-trow-grand > span:last-child{ font-size:17px; }
+
+  /* Footer: vertical stack, Resume on TOP (primary CTA), then Delete, then Close */
+  .dr-pv-foot{
+    flex-direction:column; gap:8px;
+    padding:14px 16px;
+    position:sticky; bottom:0;
+    box-shadow:0 -4px 12px rgba(11,18,32,.06);
+    padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .dr-pv-fbtn{ width:100%; flex:none; min-height:46px; font-size:13.5px; }
+  .dr-pv-fbtn-ok    { order:1; min-width:0; }
+  .dr-pv-fbtn-del   { order:2; }
+  .dr-pv-fbtn-cancel{ order:3; }
+}
+</style>
+
+<script>
+(function(){
+  var _drafts = [];
+  var _filter = '';
+
+  window.loadDrafts = function(){
+    $.get('/sales/drafts/list', function(r){
+      _drafts = (r && r.data && r.data.data) || (r && r.data) || [];
+      _renderDrafts();
+    });
+  };
+
+  function _esc(s){ return (window.H && H.esc) ? H.esc(s) : String(s==null?'':s); }
+  function _money(d){
+    var sym = d.currency === 'INR' ? '₹' : (d.currency || '₹');
+    return sym + ' ' + parseFloat(d.total_amount || 0).toFixed(2);
+  }
+  function _date(s){
+    return (typeof window.smsFormatDateTime === 'function') ? smsFormatDateTime(s) : (s || '—');
+  }
+  function _methodLbl(m){
+    if (!m) return '—';
+    var map = { cash:'Cash', card:'Card Payment', upi:'UPI', online:'Online Gateway', cheque:'Cheque', link:'Payment Link' };
+    return map[m] || (m.charAt(0).toUpperCase() + m.slice(1));
+  }
+  function _methodIcon(m){
+    var map = { cash:'cash-stack', card:'credit-card-2-front', upi:'qr-code', online:'globe', cheque:'receipt-cutoff', link:'link-45deg' };
+    return 'bi-' + (map[m] || 'credit-card');
+  }
+
+  function _renderDrafts(){
+    var $list = $('#draftsList');
+    var rows = _drafts;
+    if (_filter){
+      var f = _filter.toLowerCase();
+      rows = rows.filter(function(d){
+        return ((d.customer_name || '') + ' ' + (d.walkin_name || '') + ' ' + (d.notes || '') + ' ' + (d.label || ''))
+          .toLowerCase().indexOf(f) >= 0;
+      });
+    }
+    $('#draftsCount').text(rows.length + ' draft' + (rows.length !== 1 ? 's' : ''));
+    if (!rows.length){
+      $list.empty();
+      $('#draftsEmpty').show();
+      return;
+    }
+    $('#draftsEmpty').hide();
+
+    var html = '';
+    rows.forEach(function(d){
+      var custName = d.customer_name || d.walkin_name || 'Walk-in customer';
+      var custMeta = [];
+      if (d.customer_phone || d.walkin_phone) custMeta.push(d.customer_phone || d.walkin_phone);
+      if (d.created_by_name) custMeta.push('by ' + d.created_by_name);
+
+      html += '<div class="dr-card" onclick="dvOpen(\'' + d.uuid + '\')">';
+      html +=   '<div class="dr-card-h">';
+      html +=     '<div class="dr-icon"><i class="bi bi-bookmark-heart-fill"></i></div>';
+      html +=     '<div class="dr-cust">';
+      html +=       '<div class="dr-cust-name">' + _esc(custName) + '</div>';
+      html +=       '<div class="dr-cust-meta">' + (custMeta.length ? _esc(custMeta.join(' · ')) : 'No phone') + '</div>';
+      html +=     '</div>';
+      html +=   '</div>';
+      html +=   '<div class="dr-card-meta">';
+      html +=     '<div><div class="dr-meta-l">Items</div><div class="dr-meta-v">' + (d.item_count || 0) + ' line' + ((d.item_count||0)!==1?'s':'') + '</div></div>';
+      html +=     '<div><div class="dr-meta-l">Saved</div><div class="dr-meta-v">' + _date(d.created_at) + '</div></div>';
+      html +=     '<div><div class="dr-meta-l">Method</div><div class="dr-meta-v"><i class="bi ' + _methodIcon(d.payment_method) + '" style="margin-right:4px;color:#2c5fd5;"></i>' + _methodLbl(d.payment_method) + '</div></div>';
+      html +=     '<div><div class="dr-meta-l">Discount</div><div class="dr-meta-v">' + (d.discount_value > 0 ? (d.discount_type === 'percent' ? d.discount_value + '%' : ((d.currency==='INR'?'₹':'') + ' ' + parseFloat(d.discount_value).toFixed(2))) : 'None') + '</div></div>';
+      html +=   '</div>';
+      html +=   '<div class="dr-card-foot">';
+      html +=     '<div class="dr-amt">' + _money(d) + '</div>';
+      html +=     '<div class="dr-actions">';
+      html +=       '<button class="dr-btn dr-btn-del" onclick="event.stopPropagation();dvDelete(\'' + d.uuid + '\');" data-tip="Delete draft" data-tip-color="red"><i class="bi bi-trash3"></i></button>';
+      html +=       '<button class="dr-btn dr-btn-view" onclick="event.stopPropagation();dvOpen(\'' + d.uuid + '\');"><i class="bi bi-eye"></i> View</button>';
+      html +=       '<button class="dr-btn dr-btn-resume" onclick="event.stopPropagation();cpsLoadDraft(\'' + d.uuid + '\');"><i class="bi bi-arrow-right-circle-fill"></i> Resume</button>';
+      html +=     '</div>';
+      html +=   '</div>';
+      html += '</div>';
+    });
+    $list.html(html);
+  }
+
+  /* ── View Details popup ── */
+  window.dvOpen = function(uuid){
+    /* Show the popup IMMEDIATELY so the user sees the shell while we fetch. */
+    $('#draftViewOv').css('display', 'flex');
+    $.get('/sales/drafts/' + encodeURIComponent(uuid), function(r){
+      try {
+        console.log('[Draft Details] response:', r);
+        if (!r || r.status !== 200 || !r.data) {
+          if (window.toastr) toastr.error((r && r.message) || 'Could not load draft.');
+          return;
+        }
+        var d = r.data || {};
+        console.log('[Draft Details] draft data:', d, 'items:', d.items);
+      var sym = d.currency === 'INR' ? '₹' : (d.currency || '₹');
+      var fmt = function(n){ return sym + ' ' + (parseFloat(n)||0).toFixed(2); };
+      var custName = d.customer_name || d.walkin_name || 'Walk-in customer';
+
+      /* Header: Draft ID + creation date */
+      var draftId = d.id ? ('DRF-' + String(d.id).padStart(4, '0')) : ('DRF-' + String(d.uuid||'').slice(0,8));
+      $('#dvDraftId').text(draftId);
+      $('#dvDate').text(_date(d.created_at));
+
+      /* Customer block — populate via plain .text() so all six grid cells render */
+      $('#dvCust').text(custName || '—');
+      var phone = (d.customer_phone || d.walkin_phone || '').toString().trim();
+      $('#dvPhone').text(phone || '—');
+      $('#dvEmail').text((d.customer_email || '').toString().trim() || '—');
+      $('#dvBy').text((d.created_by_name || '').toString().trim() || '—');
+      $('#dvDate2').text(_date(d.created_at));
+      var methodLbl = _methodLbl(d.payment_method);
+      var methodIco = _methodIcon(d.payment_method);
+      $('#dvMethod').html('<i class="bi ' + methodIco + '" style="margin-right:6px;color:#2c5fd5;"></i>' + _esc(methodLbl));
+      /* Phone call button */
+      if (phone){
+        $('#dvCallBtn').attr('href', 'tel:' + phone).css('display','flex');
+      } else {
+        $('#dvCallBtn').css('display','none');
+      }
+      /* Cashier notes block */
+      if (d.notes && String(d.notes).trim()){
+        $('#dvNotes').text(d.notes);
+        $('#dvNotesWrap').css('display','block');
+      } else {
+        $('#dvNotesWrap').css('display','none');
+      }
+
+      /* Items table — defensive parse + simple HTML string */
+      var items = [];
+      if (Array.isArray(d.items)) items = d.items;
+      else if (d.items && typeof d.items === 'object') items = Object.values(d.items);
+      else if (typeof d.items === 'string') {
+        try { var parsed = JSON.parse(d.items); items = Array.isArray(parsed) ? parsed : ((parsed && parsed.items) || []); }
+        catch(_){ items = []; }
+      }
+      var rowsHtml = '';
+      items.forEach(function(it, i){
+        var qty  = parseInt(it.quantity)  || 1;
+        var rate = parseFloat(it.unit_price) || 0;
+        var amt  = rate * qty;
+        var name = _esc(it.item_name || '—');
+        if (it.unit_number) name += ' <span class="pv-unit">#' + _esc(String(it.unit_number)) + '</span>';
+        rowsHtml += '<tr>'
+                 +   '<td>' + (i+1) + '</td>'
+                 +   '<td>' + name + '</td>'
+                 +   '<td class="dr-col-sku"><span class="pv-sku">' + _esc(it.item_code || '—') + '</span></td>'
+                 +   '<td class="num">' + qty + '</td>'
+                 +   '<td class="num dr-col-rate">' + _esc(fmt(rate)) + '</td>'
+                 +   '<td class="num">' + _esc(fmt(amt)) + '</td>'
+                 + '</tr>';
+      });
+      if (!rowsHtml) rowsHtml = '<tr><td colspan="6" style="text-align:center;color:#6b7280;padding:18px;">No items in this draft</td></tr>';
+      $('#dvItems').html(rowsHtml);
+      $('#dvItemsCount').text('(' + items.length + ')');
+
+      /* Totals — Grand Total ALWAYS visible */
+      var sub  = parseFloat(d.subtotal) || 0;
+      var disc = parseFloat(d.discount_value) || 0;
+      var dT   = (d.discount_type === 'percent') ? (sub * disc / 100) : Math.min(disc, sub);
+      var grand = (d.total_amount != null && !isNaN(parseFloat(d.total_amount))) ? parseFloat(d.total_amount) : (sub - dT);
+      $('#dvSub').text(fmt(sub));
+      $('#dvDisc').text(fmt(dT));
+      $('#dvDiscType').text(disc > 0 && d.discount_type === 'percent' ? '(' + disc + '%)' : (disc > 0 ? '(Fixed)' : ''));
+      $('#dvDiscRow').css('display','flex');
+      $('#dvGrand').text(fmt(grand));
+      } catch(err){
+        console.error('[Draft Details] populate failed:', err);
+        if (window.toastr) toastr.error('Failed to render draft: ' + err.message);
+      }
+      $('#dvGrand').text(fmt(d.total_amount));
+
+      /* Wire foot buttons */
+      $('#dvDelBtn').off('click').on('click', function(){ dvDelete(uuid, true); });
+      $('#dvResumeBtn').off('click').on('click', function(){
+        $('#draftViewOv').hide();
+        if (typeof cpsLoadDraft === 'function') cpsLoadDraft(uuid);
+      });
+
+      $('#draftViewOv').css('display', 'flex');
+    });
+  };
+
+  /* ── Delete with custom confirm dialog ── */
+  window.dvDelete = function(uuid, fromPopup){
+    var fn = function(){
+      $.ajax({ url: '/sales/drafts/' + encodeURIComponent(uuid), type: 'DELETE',
+        success: function(){
+          _drafts = _drafts.filter(function(d){ return d.uuid !== uuid; });
+          _renderDrafts();
+          if (fromPopup) $('#draftViewOv').hide();
+          if (window.toastr) toastr.success('Draft deleted.');
+          if (typeof refreshDraftBadge === 'function') refreshDraftBadge();
+        },
+        error: function(){ if (window.toastr) toastr.error('Failed to delete draft.'); }
+      });
+    };
+    if (typeof posConfirm === 'function') posConfirm('Delete this draft? All saved cart data will be cleared.', fn);
+    else if (confirm('Delete this draft?')) fn();
+  };
+
+  /* Live filter */
+  $(document).off('input.drafts').on('input.drafts', '#draftsSearch', function(){
+    _filter = $(this).val();
+    _renderDrafts();
+  });
+
+  loadDrafts();
+  /* Make sure the auto-keyboard helper sees the new search input even when
+     the page was loaded via SPA navigation (where DOMContentLoaded already fired). */
+  if (typeof window.posAttachKeyboards === 'function'){
+    setTimeout(function(){ posAttachKeyboards('.dr-page'); }, 80);
+  }
+})();
+</script>

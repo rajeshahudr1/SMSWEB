@@ -2,306 +2,778 @@
 <%
 const o = order || {};
 const items = Array.isArray(o.items) ? o.items : [];
+const payments = Array.isArray(o.payments) ? o.payments : [];
 const status = o.order_status || 'draft';
 const payStatus = o.payment_status || 'unpaid';
 const cust = o.customer || {};
+const customerName = cust.name || o.customer_name || 'Walk-in';
+const customerPhone = cust.phone || o.customer_phone || '';
+const customerEmail = cust.email || o.customer_email || '';
+const customerGst = cust.gst_number || o.customer_gst || '';
+const customerAddress = cust.address || o.customer_address || '';
 
 const statusBadge = {
-    draft:     { cls: 'bg-secondary-lt', label: 'Draft' },
-    confirmed: { cls: 'bg-info-lt',      label: 'Confirmed' },
-    completed: { cls: 'bg-success-lt',   label: 'Completed' },
-    cancelled: { cls: 'bg-danger-lt',    label: 'Cancelled' },
-    returned:  { cls: 'bg-warning-lt',   label: 'Returned' },
-}[status] || { cls: 'bg-secondary-lt', label: status };
+    draft:     { cls: 'od-pill-warning', label: 'Draft',     icon: 'bi-pencil' },
+    confirmed: { cls: 'od-pill-info',    label: 'Confirmed', icon: 'bi-check-circle' },
+    completed: { cls: 'od-pill-success', label: 'Completed', icon: 'bi-check-circle-fill' },
+    cancelled: { cls: 'od-pill-danger',  label: 'Cancelled', icon: 'bi-x-circle' },
+    returned:  { cls: 'od-pill-warning', label: 'Returned',  icon: 'bi-arrow-counterclockwise' },
+}[status] || { cls: 'od-pill-muted', label: status, icon: 'bi-circle' };
 
 const payBadge = {
-    unpaid:   { cls: 'bg-danger-lt',  label: 'Unpaid' },
-    partial:  { cls: 'bg-warning-lt', label: 'Partial' },
-    paid:     { cls: 'bg-success-lt', label: 'Paid' },
-    refunded: { cls: 'bg-info-lt',    label: 'Refunded' },
-}[payStatus] || { cls: 'bg-secondary-lt', label: payStatus };
+    unpaid:   { cls: 'od-pill-danger',  label: 'Unpaid',  icon: 'bi-exclamation-circle' },
+    partial:  { cls: 'od-pill-warning', label: 'Partial', icon: 'bi-clock' },
+    paid:     { cls: 'od-pill-success', label: 'Paid',    icon: 'bi-check-circle-fill' },
+    refunded: { cls: 'od-pill-info',    label: 'Refunded', icon: 'bi-arrow-counterclockwise' },
+}[payStatus] || { cls: 'od-pill-muted', label: payStatus, icon: 'bi-circle' };
 
 const currency = (settings && settings.pos_receipt_currency_symbol) || (typeof SMS_CURRENCY !== 'undefined' ? SMS_CURRENCY : '₹');
 
 function num(v) { return Number(v || 0).toFixed(2); }
 function dt(s)  { try { return new Date(s).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return s || ''; } }
+function dateOnly(s) { try { return new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return s || ''; } }
+function timeOnly(s) { try { return new Date(s).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function payIcon(method) {
+  const m = (method || '').toLowerCase();
+  if (m === 'card' || m === 'debit' || m === 'credit') return 'bi-credit-card';
+  if (m === 'upi' || m === 'qr') return 'bi-qr-code';
+  if (m === 'online' || m === 'bank' || m === 'transfer') return 'bi-bank';
+  if (m === 'cheque') return 'bi-receipt';
+  if (m === 'link' || m === 'pay-link' || m === 'paymentlink') return 'bi-link-45deg';
+  if (m === 'mixed') return 'bi-shuffle';
+  return 'bi-cash-stack';
+}
+
+// Build a simple timeline from order events
+const timeline = [];
+timeline.push({ icon: 'bi-plus-circle-fill', color: 'brand', title: 'Order Created', meta: o.created_by_name || 'System', at: o.created_at });
+if (status === 'confirmed' || status === 'completed') {
+  timeline.push({ icon: 'bi-check-circle-fill', color: 'info', title: 'Order Confirmed', meta: 'Items reserved', at: o.created_at });
+}
+payments.forEach(p => {
+  timeline.push({
+    icon: payIcon(p.payment_method),
+    color: 'success',
+    title: 'Payment Received',
+    meta: (p.payment_method || 'Cash') + ' · ' + currency + num(p.amount) + (p.reference ? ' · ' + p.reference : ''),
+    at: p.paid_at || p.created_at,
+  });
+});
+if (status === 'completed') {
+  timeline.push({ icon: 'bi-bag-check-fill', color: 'success', title: 'Order Completed', meta: 'Sale finalized', at: o.updated_at || o.created_at });
+}
+if (status === 'cancelled') {
+  timeline.push({ icon: 'bi-x-circle-fill', color: 'danger', title: 'Order Cancelled', meta: 'Stock restored', at: o.updated_at });
+}
+if (status === 'returned') {
+  timeline.push({ icon: 'bi-arrow-counterclockwise', color: 'warning', title: 'Order Returned', meta: 'Refund processed', at: o.updated_at });
+}
+timeline.sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0));
 %>
 
 <style>
-.od-shell { padding: 18px; max-width: 1200px; margin: 0 auto; }
-.od-card  { background: #fff; border: 1px solid var(--pv2-border); border-radius: 12px; box-shadow: var(--pv2-shadow-sm); margin-bottom: 14px; }
-.od-card-head { padding: 14px 18px; border-bottom: 1px solid var(--pv2-border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.od-card-head h6 { margin: 0; font-weight: 700; font-size: 14px; color: var(--pv2-text); display: flex; align-items: center; gap: 8px; }
-.od-card-head h6 i { color: var(--pv2-brand); }
-.od-card-body { padding: 16px 18px; }
+/* ─── Order Detail (od-*) ────────────────────────────── */
+.od-wrap { padding: 18px 20px 80px; max-width: 1280px; margin: 0 auto; }
+.od-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--pv2-muted); text-decoration: none; margin-bottom: 10px; transition: color .15s; }
+.od-back:hover { color: var(--pv2-brand); }
 
-.od-hdr-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
-.od-hdr-row .num { font-size: 22px; font-weight: 800; color: var(--pv2-text); letter-spacing: -0.3px; }
-.od-hdr-row .meta { font-size: 12px; color: var(--pv2-muted); margin-top: 4px; }
+/* Header */
+.od-hdr { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.od-hdr-l h1 { margin: 0; font-size: 22px; font-weight: 800; color: var(--pv2-text); letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.od-hdr-l .od-pills { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.od-hdr-l .od-sub { margin-top: 6px; font-size: 12.5px; color: var(--pv2-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.od-hdr-l .od-sub i { font-size: 13px; }
+.od-hdr-l .od-sub-sep { color: var(--pv2-border-strong); }
 
-.od-info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.od-info-grid .lbl { font-size: 11px; font-weight: 600; color: var(--pv2-subtle); text-transform: uppercase; letter-spacing: 0.5px; }
-.od-info-grid .val { font-size: 13px; font-weight: 600; color: var(--pv2-text); margin-top: 2px; word-break: break-word; }
+/* Pills */
+.od-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.od-pill i { font-size: 11px; }
+.od-pill-success { background: var(--pv2-success-bg); color: var(--pv2-success); }
+.od-pill-danger  { background: var(--pv2-danger-bg);  color: var(--pv2-danger); }
+.od-pill-warning { background: var(--pv2-warning-bg); color: var(--pv2-warning); }
+.od-pill-info    { background: #dbeafe; color: #1d4ed8; }
+.od-pill-muted   { background: #f3f4f6; color: #6b7280; }
+.od-pill-brand   { background: var(--pv2-brand-light); color: var(--pv2-brand-dark); }
 
+/* Action buttons row */
+.od-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.od-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--pv2-border); background: #fff; color: var(--pv2-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; text-decoration: none; }
+.od-btn:hover { background: var(--pv2-surface-alt); border-color: var(--pv2-border-strong); color: var(--pv2-text); }
+.od-btn i { font-size: 14px; }
+.od-btn-primary { background: var(--pv2-brand); color: #fff; border-color: var(--pv2-brand); }
+.od-btn-primary:hover { background: var(--pv2-brand-dark); border-color: var(--pv2-brand-dark); color: #fff; }
+.od-btn-danger { color: var(--pv2-danger); border-color: #fecaca; }
+.od-btn-danger:hover { background: var(--pv2-danger-bg); border-color: var(--pv2-danger); color: var(--pv2-danger); }
+.od-btn-icon { padding: 8px 10px; }
+
+/* Mobile-only action row */
+.od-mob-actions { display: none; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.od-mob-actions .od-btn { flex: 1 1 calc(50% - 4px); justify-content: center; min-height: 40px; }
+
+/* Body grid */
+.od-body { display: grid; grid-template-columns: 1fr 360px; gap: 18px; align-items: start; }
+
+/* Card */
+.od-card { background: #fff; border: 1px solid var(--pv2-border); border-radius: 12px; box-shadow: var(--pv2-shadow-sm); margin-bottom: 14px; overflow: hidden; }
+.od-card-h { padding: 14px 18px; border-bottom: 1px solid var(--pv2-border); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.od-card-h h6 { margin: 0; font-weight: 700; font-size: 14px; color: var(--pv2-text); display: flex; align-items: center; gap: 8px; }
+.od-card-h h6 i { color: var(--pv2-brand); font-size: 16px; }
+.od-card-h .od-card-h-act { display: flex; gap: 6px; }
+.od-card-h .od-card-h-act button { background: none; border: none; color: var(--pv2-muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; transition: all .15s; }
+.od-card-h .od-card-h-act button:hover { background: var(--pv2-surface-alt); color: var(--pv2-text); }
+.od-card-b { padding: 16px 18px; }
+.od-card-b.no-pad { padding: 0; }
+
+/* Order Info grid (3-col on web) */
+.od-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 18px; }
+.od-info > div { min-width: 0; }
+.od-lbl { font-size: 11px; font-weight: 700; color: var(--pv2-subtle); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+.od-val { font-size: 13.5px; font-weight: 600; color: var(--pv2-text); word-break: break-word; }
+.od-val-sub { font-size: 11.5px; color: var(--pv2-muted); margin-top: 2px; font-weight: 400; }
+
+/* Items */
 .od-items table { width: 100%; border-collapse: collapse; }
-.od-items th, .od-items td { padding: 10px 12px; text-align: left; vertical-align: top; }
-.od-items thead th { background: var(--pv2-surface-alt); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--pv2-subtle); border-bottom: 1px solid var(--pv2-border); }
+.od-items th, .od-items td { padding: 12px 16px; text-align: left; vertical-align: top; font-size: 13px; }
+.od-items thead th { background: var(--pv2-surface-alt); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--pv2-subtle); border-bottom: 1px solid var(--pv2-border); font-weight: 700; }
 .od-items tbody tr { border-bottom: 1px solid var(--pv2-border); }
+.od-items tbody tr:last-child { border-bottom: none; }
 .od-items tbody tr:hover { background: var(--pv2-surface-alt); }
-.od-items .right { text-align: right; }
-.od-items .item-name { font-weight: 600; color: var(--pv2-text); }
-.od-items .item-meta { font-size: 11px; color: var(--pv2-muted); margin-top: 2px; }
-.od-items .item-type-pill {
-  display: inline-block; padding: 1px 8px; border-radius: 999px;
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+.od-items .right { text-align: right; font-variant-numeric: tabular-nums; }
+.od-items .item-name { font-weight: 600; color: var(--pv2-text); font-size: 13.5px; }
+.od-items .item-meta { font-size: 11.5px; color: var(--pv2-muted); margin-top: 3px; line-height: 1.4; }
+.od-items .item-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 3px; }
+.od-items .item-pill.part    { background: var(--pv2-brand-light); color: var(--pv2-brand-dark); }
+.od-items .item-pill.vehicle { background: #dbeafe; color: #1d4ed8; }
+.od-items .item-pill.scrap   { background: var(--pv2-warning-bg); color: var(--pv2-warning); }
+.od-items .item-num { width: 32px; height: 32px; border-radius: 8px; background: var(--pv2-surface-alt); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: var(--pv2-muted); }
+
+/* Notes */
+.od-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+.od-note i { color: var(--pv2-warning); font-size: 16px; margin-top: 1px; }
+.od-note .od-note-t { font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 2px; }
+.od-note .od-note-c { font-size: 13px; color: #78350f; line-height: 1.5; }
+
+/* Timeline */
+.od-tl { position: relative; padding: 4px 0 0 6px; }
+.od-tl::before { content: ''; position: absolute; left: 14px; top: 12px; bottom: 12px; width: 2px; background: var(--pv2-border); }
+.od-tl-item { position: relative; padding: 4px 0 18px 36px; }
+.od-tl-item:last-child { padding-bottom: 0; }
+.od-tl-icon { position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--pv2-border); }
+.od-tl-icon.brand   { background: var(--pv2-brand-light); color: var(--pv2-brand-dark); }
+.od-tl-icon.success { background: var(--pv2-success-bg);  color: var(--pv2-success); }
+.od-tl-icon.danger  { background: var(--pv2-danger-bg);   color: var(--pv2-danger); }
+.od-tl-icon.warning { background: var(--pv2-warning-bg);  color: var(--pv2-warning); }
+.od-tl-icon.info    { background: #dbeafe;                color: #1d4ed8; }
+.od-tl-title { font-size: 13px; font-weight: 700; color: var(--pv2-text); }
+.od-tl-meta { font-size: 11.5px; color: var(--pv2-muted); margin-top: 2px; }
+.od-tl-time { font-size: 11px; color: var(--pv2-subtle); margin-top: 2px; }
+
+/* Summary card */
+.od-sum-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.od-sum-row .l { color: var(--pv2-muted); font-weight: 500; }
+.od-sum-row .r { color: var(--pv2-text); font-weight: 600; }
+.od-sum-row.discount .r { color: var(--pv2-success); }
+.od-sum-row.subline { padding-left: 14px; font-size: 11.5px; color: var(--pv2-subtle); padding-top: 0; padding-bottom: 0; margin-top: -2px; }
+.od-sum-row.subline .l, .od-sum-row.subline .r { color: var(--pv2-subtle); font-weight: 500; }
+.od-sum-divider { border-top: 1px dashed var(--pv2-border); margin: 8px 0; }
+.od-sum-grand { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 12px; background: var(--pv2-brand-ghost); border-radius: 8px; margin-top: 6px; }
+.od-sum-grand .l { font-size: 13px; font-weight: 700; color: var(--pv2-brand-dark); }
+.od-sum-grand .r { font-size: 20px; font-weight: 800; color: var(--pv2-brand-dark); font-variant-numeric: tabular-nums; }
+
+/* Paid / Due tile */
+.od-pd { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.od-pd-cell { background: var(--pv2-surface-alt); border-radius: 10px; padding: 10px 12px; text-align: center; }
+.od-pd-cell .l { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--pv2-subtle); }
+.od-pd-cell .r { font-size: 16px; font-weight: 800; color: var(--pv2-text); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.od-pd-cell.paid { background: var(--pv2-success-bg); }
+.od-pd-cell.paid .r { color: var(--pv2-success); }
+.od-pd-cell.due  { background: var(--pv2-danger-bg); }
+.od-pd-cell.due .r { color: var(--pv2-danger); }
+.od-pd-cell.due.zero { background: var(--pv2-success-bg); }
+.od-pd-cell.due.zero .r { color: var(--pv2-success); }
+
+/* Payment list */
+.od-pay { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--pv2-border); }
+.od-pay:last-child { border-bottom: none; }
+.od-pay-ic { width: 36px; height: 36px; border-radius: 8px; background: var(--pv2-brand-light); color: var(--pv2-brand-dark); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.od-pay-mid { flex: 1; min-width: 0; }
+.od-pay-mid .t { font-size: 13px; font-weight: 600; color: var(--pv2-text); text-transform: capitalize; }
+.od-pay-mid .m { font-size: 11.5px; color: var(--pv2-muted); margin-top: 2px; word-break: break-word; }
+.od-pay-amt { font-size: 14px; font-weight: 700; color: var(--pv2-text); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+/* Customer card */
+.od-cust-h { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; border-bottom: 1px solid var(--pv2-border); margin-bottom: 12px; }
+.od-cust-av { width: 44px; height: 44px; border-radius: 50%; background: var(--pv2-brand-light); color: var(--pv2-brand-dark); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+.od-cust-h .n { font-size: 14px; font-weight: 700; color: var(--pv2-text); }
+.od-cust-h .s { font-size: 11.5px; color: var(--pv2-muted); margin-top: 1px; }
+.od-cust-row { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 12.5px; }
+.od-cust-row i { color: var(--pv2-subtle); font-size: 14px; width: 18px; flex-shrink: 0; margin-top: 2px; }
+.od-cust-row .v { color: var(--pv2-text); font-weight: 500; word-break: break-word; flex: 1; min-width: 0; }
+.od-cust-row .v a { color: var(--pv2-brand); text-decoration: none; }
+.od-cust-row .v a:hover { text-decoration: underline; }
+
+/* More menu */
+.od-more-menu {
+  position: absolute; background: #fff; border: 1px solid var(--pv2-border);
+  border-radius: 10px; box-shadow: var(--pv2-shadow-md); padding: 6px;
+  min-width: 200px; z-index: 1000; display: none;
 }
-.od-items .item-type-pill.part    { background: rgba(0,128,96,0.10); color: var(--pv2-brand-dark); }
-.od-items .item-type-pill.vehicle { background: rgba(37,99,235,0.10); color: #1d4ed8; }
-.od-items .item-type-pill.scrap   { background: rgba(217,119,6,0.10); color: #c2410c; }
-
-.od-totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.od-totals-card { background: var(--pv2-surface-alt); border: 1px solid var(--pv2-border); border-radius: 10px; padding: 14px 16px; font-size: 13px; }
-.od-totals-row { display: flex; justify-content: space-between; padding: 4px 0; font-variant-numeric: tabular-nums; }
-.od-totals-row .l { color: var(--pv2-muted); }
-.od-totals-row .r { color: var(--pv2-text); font-weight: 600; }
-.od-totals-row.grand { border-top: 1px solid var(--pv2-border); margin-top: 6px; padding-top: 10px; font-size: 15px; }
-.od-totals-row.grand .l { color: var(--pv2-text); font-weight: 700; }
-.od-totals-row.grand .r { color: var(--pv2-brand-dark); font-weight: 800; font-size: 18px; }
-
-.od-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.od-actions .btn { min-height: 42px; }
-
-@media (max-width: 800px) {
-    .od-info-grid { grid-template-columns: repeat(2, 1fr); }
-    .od-totals    { grid-template-columns: 1fr; }
-    .od-shell     { padding: 14px; }
-    .od-card-body { padding: 14px; }
-    .od-actions .btn { flex: 1 1 calc(50% - 5px); }
+.od-more-menu.show { display: block; }
+.od-more-menu button {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: none; border: none; padding: 9px 12px; border-radius: 6px;
+  font-size: 13px; color: var(--pv2-text); cursor: pointer; font-weight: 500;
 }
+.od-more-menu button:hover { background: var(--pv2-surface-alt); }
+.od-more-menu button i { font-size: 14px; color: var(--pv2-muted); width: 18px; }
+.od-more-menu button.danger { color: var(--pv2-danger); }
+.od-more-menu button.danger i { color: var(--pv2-danger); }
+.od-more-menu .od-divider { height: 1px; background: var(--pv2-border); margin: 4px 0; }
+
+/* Mobile-only summary cards (hidden on web) */
+.od-mob-only { display: none; }
+
+/* Empty state */
+.od-empty { padding: 40px 20px; text-align: center; color: var(--pv2-muted); font-size: 13px; }
+.od-empty i { font-size: 32px; color: var(--pv2-subtle); margin-bottom: 8px; display: block; }
+
+/* ─── Tablet ≤1024 ─── */
+@media (max-width: 1024px) {
+  .od-body { grid-template-columns: 1fr 320px; gap: 14px; }
+  .od-info { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── Mobile ≤768 ─── */
+@media (max-width: 768px) {
+  .od-wrap { padding: 14px 12px 90px; }
+  .od-hdr { gap: 10px; margin-bottom: 12px; flex-direction: column; align-items: stretch; }
+  .od-hdr-l h1 { font-size: 18px; }
+  .od-hdr-r { display: none; }
+  .od-mob-actions { display: flex; }
+  .od-mob-only { display: block; }
+  .od-body { grid-template-columns: 1fr; gap: 12px; }
+  .od-info { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .od-items th, .od-items td { padding: 10px 12px; font-size: 12.5px; }
+  .od-card-h { padding: 12px 14px; }
+  .od-card-b { padding: 14px; }
+  .od-tl-item { padding-left: 32px; padding-bottom: 14px; }
+  .od-pd { grid-template-columns: 1fr 1fr; }
+  .od-sum-grand .r { font-size: 18px; }
+  /* Stack item table cells on phone */
+  .od-items table, .od-items thead, .od-items tbody, .od-items tr, .od-items th, .od-items td { display: block; }
+  .od-items thead { display: none; }
+  .od-items tbody tr { padding: 12px 14px; border-bottom: 1px solid var(--pv2-border); }
+  .od-items tbody tr:hover { background: transparent; }
+  .od-items td { padding: 3px 0; border: none; }
+  .od-items td.right { text-align: left; display: flex; justify-content: space-between; }
+  .od-items td.right::before { content: attr(data-l); color: var(--pv2-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .od-items .item-num { display: none; }
+}
+
 @media (max-width: 480px) {
-    .od-info-grid { grid-template-columns: 1fr; }
-    .od-actions .btn { flex: 1 1 100%; }
-    .od-items table, .od-items thead, .od-items tbody, .od-items tr, .od-items th, .od-items td { display: block; }
-    .od-items thead { display: none; }
-    .od-items tbody tr { padding: 10px 0; }
-    .od-items td { padding: 4px 0; }
-    .od-items td.right { text-align: left; }
-    .od-items td.right::before { content: attr(data-l) ': '; color: var(--pv2-muted); font-weight: 600; font-size: 11px; }
+  .od-info { grid-template-columns: 1fr; }
+  .od-mob-actions .od-btn { flex: 1 1 100%; }
+  .od-cust-h { flex-direction: row; }
 }
 </style>
 
-<div class="od-shell">
+<div class="od-wrap">
 
-  <!-- Top header: order number + status + actions -->
-  <div class="od-card">
-    <div class="od-card-body">
-      <div class="od-hdr-row">
-        <div>
-          <a href="/sales/orders" class="text-muted small mb-1 d-inline-flex align-items-center gap-1" style="text-decoration:none;"><i class="bi bi-arrow-left"></i> Back to Orders</a>
-          <div class="num"><%= o.order_number || ('Order ' + (o.uuid || '')) %></div>
-          <div class="meta">Created <%= dt(o.created_at) %></div>
-        </div>
-        <div class="d-flex gap-2 align-items-center flex-wrap">
-          <span class="badge <%= statusBadge.cls %> fs-6"><%= statusBadge.label %></span>
-          <span class="badge <%= payBadge.cls %> fs-6"><%= payBadge.label %></span>
-        </div>
+  <!-- Back link -->
+  <a href="javascript:void(0)" class="od-back" onclick="if(typeof spaNav==='function'){spaNav('orders');}else{window.location.href='/sales/orders';}">
+    <i class="bi bi-arrow-left"></i> Back to Orders
+  </a>
+
+  <!-- Header -->
+  <div class="od-hdr">
+    <div class="od-hdr-l">
+      <h1>
+        <%= o.order_number || ('Order ' + (o.uuid || '')) %>
+      </h1>
+      <div class="od-pills">
+        <span class="od-pill <%= statusBadge.cls %>"><i class="bi <%= statusBadge.icon %>"></i><%= statusBadge.label %></span>
+        <span class="od-pill <%= payBadge.cls %>"><i class="bi <%= payBadge.icon %>"></i><%= payBadge.label %></span>
+        <% if (o.order_type) { %>
+          <span class="od-pill od-pill-muted"><i class="bi bi-tag"></i><%= (o.order_type || '').replace(/_/g,' ') %></span>
+        <% } %>
       </div>
-    </div>
-  </div>
-
-  <!-- Action row -->
-  <div class="od-card">
-    <div class="od-card-body od-actions">
-      <button class="btn btn-primary" onclick="window.open('/sales/receipt-preview?order=<%= o.uuid %>', '_blank')">
-        <i class="bi bi-printer me-1"></i> Print Receipt
-      </button>
-      <button class="btn btn-outline-primary" onclick="window.open('/sales/receipt-preview?order=<%= o.uuid %>&print_type=duplicate', '_blank')">
-        <i class="bi bi-files me-1"></i> Duplicate Copy
-      </button>
-      <button class="btn btn-outline-secondary" onclick="window.open('/sales/orders/<%= o.uuid %>/invoice', '_blank')">
-        <i class="bi bi-file-earmark-pdf me-1"></i> A4 Invoice
-      </button>
-      <button class="btn btn-outline-info" onclick="document.getElementById('emailDlg').showModal()">
-        <i class="bi bi-envelope me-1"></i> Email
-      </button>
-      <% if (status !== 'cancelled' && status !== 'completed') { %>
-        <button class="btn btn-outline-danger ms-auto" onclick="cancelOrder()">
-          <i class="bi bi-x-circle me-1"></i> Cancel Order
-        </button>
-      <% } %>
-    </div>
-  </div>
-
-  <!-- Customer + Order info -->
-  <div class="od-card">
-    <div class="od-card-head"><h6><i class="bi bi-info-circle"></i> Order Information</h6></div>
-    <div class="od-card-body">
-      <div class="od-info-grid">
-        <div>
-          <div class="lbl">Customer</div>
-          <div class="val"><%= cust.name || o.customer_name || 'Walk-in' %></div>
-          <% if (cust.phone) { %><div class="meta"><%= cust.phone %></div><% } %>
-        </div>
-        <div>
-          <div class="lbl">Order Type</div>
-          <div class="val text-capitalize"><%= o.order_type || 'parts' %></div>
-        </div>
-        <div>
-          <div class="lbl">Payment Method</div>
-          <div class="val text-capitalize"><%= o.payment_method || '—' %></div>
-          <% if (o.payment_reference) { %><div class="meta"><%= o.payment_reference %></div><% } %>
-        </div>
-        <div>
-          <div class="lbl">Created By</div>
-          <div class="val"><%= o._cashier_name || o.created_by_name || ('User #' + (o.created_by || '')) %></div>
-        </div>
-        <% if (cust.address) { %>
-        <div style="grid-column: span 2;">
-          <div class="lbl">Customer Address</div>
-          <div class="val"><%= cust.address %></div>
-        </div>
-        <% } %>
-        <% if (cust.gst_number) { %>
-        <div>
-          <div class="lbl">Customer GSTIN</div>
-          <div class="val"><%= cust.gst_number %></div>
-        </div>
-        <% } %>
-        <% if (o.notes) { %>
-        <div style="grid-column: 1 / -1;">
-          <div class="lbl">Notes</div>
-          <div class="val" style="font-weight:400;"><%= o.notes %></div>
-        </div>
+      <div class="od-sub">
+        <span><i class="bi bi-calendar3"></i> <%= dateOnly(o.created_at) %></span>
+        <span class="od-sub-sep">•</span>
+        <span><i class="bi bi-clock"></i> <%= timeOnly(o.created_at) %></span>
+        <% if (o._cashier_name || o.created_by_name) { %>
+          <span class="od-sub-sep">•</span>
+          <span><i class="bi bi-person"></i> <%= o._cashier_name || o.created_by_name %></span>
         <% } %>
       </div>
     </div>
+    <div class="od-hdr-r od-actions">
+      <button class="od-btn od-btn-primary" onclick="odPrint()" title="Print thermal receipt">
+        <i class="bi bi-printer"></i> Print Receipt
+      </button>
+      <a class="od-btn" href="/sales/orders/<%= o.uuid %>/invoice" target="_blank" title="Open A4 invoice PDF">
+        <i class="bi bi-file-earmark-pdf"></i> A4 Invoice
+      </a>
+      <button class="od-btn" onclick="odEmail()" title="Email invoice to customer">
+        <i class="bi bi-envelope"></i> Email
+      </button>
+      <button class="od-btn od-btn-icon" onclick="odMoreOpen(event)" title="More actions" id="odMoreBtn">
+        <i class="bi bi-three-dots"></i>
+      </button>
+    </div>
   </div>
 
-  <!-- Items / parts breakdown -->
-  <div class="od-card od-items">
-    <div class="od-card-head">
-      <h6><i class="bi bi-list-check"></i> Items <span class="text-muted" style="font-weight:400;font-size:12px;">(<%= items.length %>)</span></h6>
-    </div>
-    <div class="od-card-body" style="padding:0;">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:60px;">#</th>
-            <th>Item / Part</th>
-            <th>Type</th>
-            <th class="right">Qty</th>
-            <th class="right">Unit Price</th>
-            <th class="right">Discount</th>
-            <th class="right">Tax</th>
-            <th class="right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
+  <!-- Mobile action row -->
+  <div class="od-mob-actions">
+    <button class="od-btn od-btn-primary" onclick="odPrint()"><i class="bi bi-printer"></i> Print</button>
+    <a class="od-btn" href="/sales/orders/<%= o.uuid %>/invoice" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Invoice</a>
+    <button class="od-btn" onclick="odEmail()"><i class="bi bi-envelope"></i> Email</button>
+    <button class="od-btn" onclick="odMoreOpen(event)"><i class="bi bi-three-dots"></i> More</button>
+  </div>
+
+  <!-- Body grid -->
+  <div class="od-body">
+
+    <!-- LEFT column -->
+    <div class="od-left">
+
+      <!-- Order Information -->
+      <div class="od-card">
+        <div class="od-card-h">
+          <h6><i class="bi bi-info-circle"></i> Order Information</h6>
+        </div>
+        <div class="od-card-b">
+          <div class="od-info">
+            <div>
+              <div class="od-lbl">Order Number</div>
+              <div class="od-val"><%= o.order_number || '—' %></div>
+            </div>
+            <div>
+              <div class="od-lbl">Order Date</div>
+              <div class="od-val"><%= dateOnly(o.created_at) %></div>
+              <div class="od-val-sub"><%= timeOnly(o.created_at) %></div>
+            </div>
+            <div>
+              <div class="od-lbl">Order Type</div>
+              <div class="od-val text-capitalize"><%= (o.order_type || 'parts').replace(/_/g,' ') %></div>
+            </div>
+            <div>
+              <div class="od-lbl">Payment Method</div>
+              <div class="od-val text-capitalize"><i class="bi <%= payIcon(o.payment_method) %>" style="margin-right:4px;color:var(--pv2-muted);"></i><%= o.payment_method || '—' %></div>
+              <% if (o.payment_reference) { %><div class="od-val-sub">Ref: <%= o.payment_reference %></div><% } %>
+            </div>
+            <div>
+              <div class="od-lbl">Cashier</div>
+              <div class="od-val"><%= o._cashier_name || o.created_by_name || ('User #' + (o.created_by || '')) %></div>
+            </div>
+            <div>
+              <div class="od-lbl">Items</div>
+              <div class="od-val"><%= items.length %> item<%= items.length !== 1 ? 's' : '' %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items -->
+      <div class="od-card od-items">
+        <div class="od-card-h">
+          <h6><i class="bi bi-bag-check"></i> Items <span style="font-weight:500;color:var(--pv2-muted);">(<%= items.length %>)</span></h6>
+        </div>
+        <div class="od-card-b no-pad">
           <% if (!items.length) { %>
-            <tr><td colspan="8" class="text-center text-muted py-4">No items</td></tr>
+            <div class="od-empty"><i class="bi bi-inbox"></i>No items in this order</div>
+          <% } else { %>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:50px;">#</th>
+                  <th>Item</th>
+                  <th class="right" style="width:60px;">Qty</th>
+                  <th class="right" style="width:100px;">Price</th>
+                  <th class="right" style="width:90px;">Discount</th>
+                  <th class="right" style="width:90px;">Tax</th>
+                  <th class="right" style="width:110px;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% items.forEach(function(it, i){
+                    const itype = it.item_type || 'part';
+                    const pillCls = itype === 'vehicle' ? 'vehicle' : (itype === 'scrap' ? 'scrap' : 'part');
+                %>
+                  <tr>
+                    <td><span class="item-num"><%= i + 1 %></span></td>
+                    <td>
+                      <div class="item-name"><%= it.item_name %></div>
+                      <% if (it.item_code) { %><div class="item-meta">Code: <%= it.item_code %></div><% } %>
+                      <% if (it.hsn_code) { %><div class="item-meta">HSN: <%= it.hsn_code %></div><% } %>
+                      <% if (it.scrap_description) { %><div class="item-meta"><%= it.scrap_description %></div><% } %>
+                      <% if (it.weight_kg) { %><div class="item-meta">Weight: <%= num(it.weight_kg) %> kg</div><% } %>
+                      <% if (it.notes) { %><div class="item-meta">Note: <%= it.notes %></div><% } %>
+                      <span class="item-pill <%= pillCls %>"><%= itype %></span>
+                    </td>
+                    <td class="right" data-l="Qty"><%= it.quantity %></td>
+                    <td class="right" data-l="Price"><%= currency %><%= num(it.unit_price) %></td>
+                    <td class="right" data-l="Disc"><% if (Number(it.discount_amount) > 0) { %>−<%= currency %><%= num(it.discount_amount) %><% } else { %>—<% } %></td>
+                    <td class="right" data-l="Tax"><% if (Number(it.tax_amount) > 0) { %><%= currency %><%= num(it.tax_amount) %><% } else { %>—<% } %></td>
+                    <td class="right" data-l="Total" style="font-weight:700;color:var(--pv2-brand-dark);"><%= currency %><%= num(it.total_price) %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
           <% } %>
-          <% items.forEach(function(it, i){
-              const itype = it.item_type || 'part';
-              const pillCls = itype === 'vehicle' ? 'vehicle' : (itype === 'scrap' ? 'scrap' : 'part');
-          %>
-            <tr>
-              <td><%= i + 1 %></td>
-              <td>
-                <div class="item-name"><%= it.item_name %></div>
-                <% if (it.item_code) { %><div class="item-meta">Code: <%= it.item_code %></div><% } %>
-                <% if (it.scrap_description) { %><div class="item-meta"><%= it.scrap_description %></div><% } %>
-                <% if (it.weight_kg) { %><div class="item-meta">Weight: <%= num(it.weight_kg) %> kg</div><% } %>
-                <% if (it.notes) { %><div class="item-meta"><%= it.notes %></div><% } %>
-              </td>
-              <td><span class="item-type-pill <%= pillCls %>"><%= itype %></span></td>
-              <td class="right" data-l="Qty"><%= it.quantity %></td>
-              <td class="right" data-l="Price"><%= currency %><%= num(it.unit_price) %></td>
-              <td class="right" data-l="Disc"><%= currency %><%= num(it.discount_amount) %></td>
-              <td class="right" data-l="Tax"><%= currency %><%= num(it.tax_amount) %></td>
-              <td class="right" data-l="Total" style="font-weight:700;"><%= currency %><%= num(it.total_price) %></td>
-            </tr>
+        </div>
+      </div>
+
+      <!-- Mobile-only Order Summary -->
+      <div class="od-mob-only">
+        <div class="od-card">
+          <div class="od-card-h"><h6><i class="bi bi-calculator"></i> Order Summary</h6></div>
+          <div class="od-card-b">
+            <div class="od-sum-row"><span class="l">Subtotal</span><span class="r"><%= currency %><%= num(o.subtotal) %></span></div>
+            <% if (Number(o.discount_amount) > 0) { %>
+              <div class="od-sum-row discount">
+                <span class="l">Discount<% if (o.discount_type === 'percent') { %> (<%= num(o.discount_value) %>%)<% } %></span>
+                <span class="r">− <%= currency %><%= num(o.discount_amount) %></span>
+              </div>
+            <% } %>
+            <% if (Number(o.tax_total) > 0) { %>
+              <div class="od-sum-row"><span class="l">Tax</span><span class="r"><%= currency %><%= num(o.tax_total) %></span></div>
+              <% if (o.tax_breakdown) {
+                  let tb = o.tax_breakdown;
+                  if (typeof tb === 'string') { try { tb = JSON.parse(tb); } catch(e) { tb = []; } }
+                  if (Array.isArray(tb)) tb.forEach(function(t) { %>
+                    <div class="od-sum-row subline"><span class="l"><%= t.tax_name %> (<%= num(t.percentage) %>%)</span><span class="r"><%= currency %><%= num(t.amount) %></span></div>
+                  <% }); } %>
+            <% } %>
+            <div class="od-sum-divider"></div>
+            <div class="od-sum-grand">
+              <span class="l">Grand Total</span>
+              <span class="r"><%= currency %><%= num(o.total_amount) %></span>
+            </div>
+            <div class="od-pd">
+              <div class="od-pd-cell paid">
+                <div class="l">Amount Paid</div>
+                <div class="r"><%= currency %><%= num(o.amount_paid) %></div>
+              </div>
+              <div class="od-pd-cell due <%= Number(o.amount_due) <= 0 ? 'zero' : '' %>">
+                <div class="l">Amount Due</div>
+                <div class="r"><%= currency %><%= num(o.amount_due) %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <% if (payments.length) { %>
+        <div class="od-card">
+          <div class="od-card-h"><h6><i class="bi bi-cash-coin"></i> Payment History</h6></div>
+          <div class="od-card-b">
+            <% payments.forEach(function(p) { %>
+              <div class="od-pay">
+                <div class="od-pay-ic"><i class="bi <%= payIcon(p.payment_method) %>"></i></div>
+                <div class="od-pay-mid">
+                  <div class="t"><%= p.payment_method || 'cash' %></div>
+                  <div class="m"><%= dt(p.paid_at || p.created_at) %><% if (p.reference) { %> · Ref: <%= p.reference %><% } %></div>
+                </div>
+                <div class="od-pay-amt"><%= currency %><%= num(p.amount) %></div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Notes -->
+      <% if (o.notes) { %>
+      <div class="od-card">
+        <div class="od-card-h"><h6><i class="bi bi-sticky"></i> Order Notes</h6></div>
+        <div class="od-card-b">
+          <div class="od-note">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>
+              <div class="od-note-t">Internal Note</div>
+              <div class="od-note-c"><%= o.notes %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Activity Timeline -->
+      <% if (timeline.length) { %>
+      <div class="od-card">
+        <div class="od-card-h"><h6><i class="bi bi-clock-history"></i> Activity Timeline</h6></div>
+        <div class="od-card-b">
+          <div class="od-tl">
+            <% timeline.forEach(function(t) { %>
+              <div class="od-tl-item">
+                <div class="od-tl-icon <%= t.color %>"><i class="bi <%= t.icon %>"></i></div>
+                <div class="od-tl-title"><%= t.title %></div>
+                <% if (t.meta) { %><div class="od-tl-meta"><%= t.meta %></div><% } %>
+                <div class="od-tl-time"><%= dt(t.at) %></div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+    </div>
+
+    <!-- RIGHT column (desktop sidebar) -->
+    <div class="od-right">
+
+      <!-- Order Summary -->
+      <div class="od-card">
+        <div class="od-card-h"><h6><i class="bi bi-calculator"></i> Order Summary</h6></div>
+        <div class="od-card-b">
+          <div class="od-sum-row"><span class="l">Subtotal</span><span class="r"><%= currency %><%= num(o.subtotal) %></span></div>
+          <% if (Number(o.discount_amount) > 0) { %>
+            <div class="od-sum-row discount">
+              <span class="l">Discount<% if (o.discount_type === 'percent') { %> (<%= num(o.discount_value) %>%)<% } %></span>
+              <span class="r">− <%= currency %><%= num(o.discount_amount) %></span>
+            </div>
+          <% } %>
+          <% if (Number(o.tax_total) > 0) { %>
+            <div class="od-sum-row"><span class="l">Tax</span><span class="r"><%= currency %><%= num(o.tax_total) %></span></div>
+            <% if (o.tax_breakdown) {
+                let tb = o.tax_breakdown;
+                if (typeof tb === 'string') { try { tb = JSON.parse(tb); } catch(e) { tb = []; } }
+                if (Array.isArray(tb)) tb.forEach(function(t) { %>
+                  <div class="od-sum-row subline"><span class="l"><%= t.tax_name %> (<%= num(t.percentage) %>%)</span><span class="r"><%= currency %><%= num(t.amount) %></span></div>
+                <% }); } %>
+          <% } %>
+          <div class="od-sum-divider"></div>
+          <div class="od-sum-grand">
+            <span class="l">Grand Total</span>
+            <span class="r"><%= currency %><%= num(o.total_amount) %></span>
+          </div>
+          <div class="od-pd">
+            <div class="od-pd-cell paid">
+              <div class="l">Amount Paid</div>
+              <div class="r"><%= currency %><%= num(o.amount_paid) %></div>
+            </div>
+            <div class="od-pd-cell due <%= Number(o.amount_due) <= 0 ? 'zero' : '' %>">
+              <div class="l">Amount Due</div>
+              <div class="r"><%= currency %><%= num(o.amount_due) %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment History -->
+      <% if (payments.length) { %>
+      <div class="od-card">
+        <div class="od-card-h">
+          <h6><i class="bi bi-cash-coin"></i> Payment History</h6>
+          <span style="font-size:11px;color:var(--pv2-muted);font-weight:600;"><%= payments.length %> txn</span>
+        </div>
+        <div class="od-card-b">
+          <% payments.forEach(function(p) { %>
+            <div class="od-pay">
+              <div class="od-pay-ic"><i class="bi <%= payIcon(p.payment_method) %>"></i></div>
+              <div class="od-pay-mid">
+                <div class="t"><%= p.payment_method || 'cash' %></div>
+                <div class="m"><%= dt(p.paid_at || p.created_at) %><% if (p.reference) { %><br/>Ref: <%= p.reference %><% } %></div>
+              </div>
+              <div class="od-pay-amt"><%= currency %><%= num(p.amount) %></div>
+            </div>
           <% }); %>
-        </tbody>
-      </table>
-    </div>
-  </div>
+        </div>
+      </div>
+      <% } %>
 
-  <!-- Totals + Payment -->
-  <div class="od-totals">
-    <div class="od-totals-card">
-      <div class="od-totals-row"><span class="l">Subtotal</span><span class="r"><%= currency %><%= num(o.subtotal) %></span></div>
-      <% if (Number(o.discount_amount) > 0) { %>
-        <div class="od-totals-row"><span class="l">Discount<% if (o.discount_type === 'percent') { %> (<%= num(o.discount_value) %>%)<% } %></span><span class="r" style="color:var(--pv2-success);">− <%= currency %><%= num(o.discount_amount) %></span></div>
-      <% } %>
-      <% if (Number(o.tax_total) > 0) { %>
-        <div class="od-totals-row"><span class="l">Tax</span><span class="r"><%= currency %><%= num(o.tax_total) %></span></div>
-        <% if (o.tax_breakdown) {
-            let tb = o.tax_breakdown;
-            if (typeof tb === 'string') { try { tb = JSON.parse(tb); } catch(e) { tb = []; } }
-            if (Array.isArray(tb)) tb.forEach(function(t) { %>
-              <div class="od-totals-row" style="font-size:11px;color:var(--pv2-muted);padding-left:14px;"><span><%= t.tax_name %> (<%= num(t.percentage) %>%)</span><span><%= currency %><%= num(t.amount) %></span></div>
-            <% }); } %>
-      <% } %>
-      <div class="od-totals-row grand"><span class="l">Grand Total</span><span class="r"><%= currency %><%= num(o.total_amount) %></span></div>
-    </div>
-    <div class="od-totals-card">
-      <div class="od-totals-row"><span class="l">Amount Paid</span><span class="r"><%= currency %><%= num(o.amount_paid) %></span></div>
-      <div class="od-totals-row"><span class="l">Amount Due</span><span class="r" style="color:<%= Number(o.amount_due) > 0 ? 'var(--pv2-danger)' : 'var(--pv2-success)' %>;"><%= currency %><%= num(o.amount_due) %></span></div>
-      <% if (Array.isArray(o.payments) && o.payments.length) { %>
-        <hr style="margin:8px 0; border-color: var(--pv2-border);"/>
-        <div class="lbl" style="font-size:11px;color:var(--pv2-subtle);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Payment History</div>
-        <% o.payments.forEach(function(p) { %>
-          <div class="od-totals-row" style="font-size:12px;"><span class="l text-capitalize"><%= p.payment_method %><% if (p.reference) { %> · <%= p.reference %><% } %></span><span class="r"><%= currency %><%= num(p.amount) %></span></div>
-        <% }); %>
-      <% } %>
-    </div>
-  </div>
+      <!-- Customer Details -->
+      <div class="od-card">
+        <div class="od-card-h"><h6><i class="bi bi-person"></i> Customer Details</h6></div>
+        <div class="od-card-b">
+          <div class="od-cust-h">
+            <div class="od-cust-av"><%= (customerName || 'W').charAt(0).toUpperCase() %></div>
+            <div style="flex:1;min-width:0;">
+              <div class="n"><%= customerName %></div>
+              <% if (cust.id || o.customer_id) { %>
+                <div class="s">Customer ID: #<%= cust.id || o.customer_id %></div>
+              <% } else { %>
+                <div class="s">Walk-in customer</div>
+              <% } %>
+            </div>
+          </div>
+          <% if (customerPhone) { %>
+            <div class="od-cust-row"><i class="bi bi-telephone"></i><span class="v"><a href="tel:<%= customerPhone %>"><%= customerPhone %></a></span></div>
+          <% } %>
+          <% if (customerEmail) { %>
+            <div class="od-cust-row"><i class="bi bi-envelope"></i><span class="v"><a href="mailto:<%= customerEmail %>"><%= customerEmail %></a></span></div>
+          <% } %>
+          <% if (customerGst) { %>
+            <div class="od-cust-row"><i class="bi bi-file-text"></i><span class="v">GSTIN: <%= customerGst %></span></div>
+          <% } %>
+          <% if (customerAddress) { %>
+            <div class="od-cust-row"><i class="bi bi-geo-alt"></i><span class="v"><%= customerAddress %></span></div>
+          <% } %>
+          <% if (!customerPhone && !customerEmail && !customerGst && !customerAddress) { %>
+            <div style="font-size:12px;color:var(--pv2-muted);text-align:center;padding:8px 0;">No contact details on file</div>
+          <% } %>
+        </div>
+      </div>
 
+    </div>
+
+  </div>
 </div>
 
-<!-- Email modal (lightweight, native dialog) -->
-<dialog id="emailDlg" style="border:1px solid var(--pv2-border);border-radius:12px;padding:0;max-width:420px;width:90%;">
+<!-- More menu (floating) -->
+<div class="od-more-menu" id="odMoreMenu">
+  <button onclick="odDuplicate()"><i class="bi bi-files"></i> Duplicate Copy</button>
+  <button onclick="odCopyNumber()"><i class="bi bi-clipboard"></i> Copy Order Number</button>
+  <button onclick="odShare()"><i class="bi bi-share"></i> Share Link</button>
+  <% if (status !== 'cancelled' && status !== 'returned') { %>
+    <div class="od-divider"></div>
+    <button class="danger" onclick="odCancel()"><i class="bi bi-x-circle"></i> Cancel Order</button>
+  <% } %>
+</div>
+
+<!-- Email modal -->
+<dialog id="odEmailDlg" style="border:1px solid var(--pv2-border);border-radius:12px;padding:0;max-width:440px;width:92%;box-shadow:0 20px 50px rgba(0,0,0,.18);">
   <form method="dialog" style="margin:0;">
-    <div style="padding:16px 20px;border-bottom:1px solid var(--pv2-border);display:flex;justify-content:space-between;align-items:center;">
-      <h5 style="margin:0;font-weight:700;">Email Invoice</h5>
-      <button type="submit" style="border:none;background:none;font-size:20px;cursor:pointer;">&times;</button>
+    <div style="padding:14px 18px;border-bottom:1px solid var(--pv2-border);display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="margin:0;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;"><i class="bi bi-envelope" style="color:var(--pv2-brand);"></i> Email Invoice</h5>
+      <button type="submit" style="border:none;background:none;font-size:22px;cursor:pointer;color:var(--pv2-muted);line-height:1;">&times;</button>
     </div>
-    <div style="padding:18px 20px;">
-      <label class="form-label small">Send to</label>
-      <input id="emTo" class="form-control" type="email" placeholder="customer@example.com"/>
-      <small class="text-muted d-block mt-2">Sends the A4 invoice as a PDF attachment.</small>
+    <div style="padding:18px;">
+      <label class="form-label small fw-bold">Recipient Email</label>
+      <input id="odEmTo" class="form-control" type="email" placeholder="customer@example.com" value="<%= customerEmail %>"/>
+      <small class="text-muted d-block mt-2" style="font-size:11.5px;">A4 invoice will be attached as PDF.</small>
     </div>
-    <div style="padding:12px 20px;border-top:1px solid var(--pv2-border);display:flex;gap:8px;justify-content:flex-end;">
-      <button type="submit" class="btn btn-sm btn-outline-secondary">Cancel</button>
-      <button type="button" class="btn btn-sm btn-primary" onclick="sendEmail()">Send</button>
+    <div style="padding:12px 18px;border-top:1px solid var(--pv2-border);display:flex;gap:8px;justify-content:flex-end;">
+      <button type="submit" class="od-btn">Cancel</button>
+      <button type="button" class="od-btn od-btn-primary" onclick="odEmailSend()"><i class="bi bi-send"></i> Send</button>
     </div>
   </form>
 </dialog>
 
 <script>
-function cancelOrder() {
-  if (!confirm('Cancel this order? Items will be returned to stock. This cannot be undone.')) return;
-  $.ajax({
-    url: '/sales/orders/<%= o.uuid %>/cancel', type: 'POST', contentType: 'application/json',
-    data: JSON.stringify({}),
-    success: function(r) {
-      if (r && r.status === 200) { toastr.success('Order cancelled'); setTimeout(function(){ window.location.reload(); }, 600); }
-      else toastr.error((r && r.message) || 'Failed.');
-    },
-    error: function() { toastr.error('Network error.'); }
+(function(){
+  const ORDER_UUID = '<%= o.uuid %>';
+  const ORDER_NO   = '<%= o.order_number || '' %>';
+
+  window.odPrint = function() {
+    window.open('/sales/orders/' + ORDER_UUID + '/invoice/thermal', '_blank');
+  };
+
+  window.odEmail = function() {
+    var dlg = document.getElementById('odEmailDlg');
+    if (dlg && dlg.showModal) dlg.showModal();
+  };
+
+  window.odEmailSend = function() {
+    var to = ($('#odEmTo').val() || '').trim();
+    if (!to) { if (typeof toastr !== 'undefined') toastr.warning('Enter an email address.'); return; }
+    $.ajax({
+      url: '/sales/orders/' + ORDER_UUID + '/invoice/email', type: 'POST', contentType: 'application/json',
+      data: JSON.stringify({ to: to }),
+      success: function(r) {
+        if (r && r.status === 200) {
+          if (typeof toastr !== 'undefined') toastr.success('Invoice emailed to ' + to);
+          document.getElementById('odEmailDlg').close();
+        } else {
+          if (typeof toastr !== 'undefined') toastr.error((r && r.message) || 'Failed to send.');
+        }
+      },
+      error: function() { if (typeof toastr !== 'undefined') toastr.error('Network error.'); }
+    });
+  };
+
+  window.odDuplicate = function() {
+    odMoreClose();
+    window.open('/sales/orders/' + ORDER_UUID + '/invoice?duplicate=1', '_blank');
+  };
+
+  window.odCopyNumber = function() {
+    odMoreClose();
+    if (!ORDER_NO) return;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(ORDER_NO).then(function(){
+        if (typeof toastr !== 'undefined') toastr.success('Order number copied');
+      });
+    } else {
+      var t = document.createElement('textarea'); t.value = ORDER_NO;
+      document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); if (typeof toastr !== 'undefined') toastr.success('Order number copied'); } catch (e) {}
+      document.body.removeChild(t);
+    }
+  };
+
+  window.odShare = function() {
+    odMoreClose();
+    var url = window.location.origin + '/sales/orders/' + ORDER_UUID;
+    if (navigator.share) {
+      navigator.share({ title: 'Order ' + ORDER_NO, url: url }).catch(function(){});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(function(){
+        if (typeof toastr !== 'undefined') toastr.success('Link copied to clipboard');
+      });
+    }
+  };
+
+  window.odCancel = function() {
+    odMoreClose();
+    var doIt = function() {
+      $.ajax({
+        url: '/sales/orders/' + ORDER_UUID + '/cancel', type: 'POST', contentType: 'application/json', data: '{}',
+        success: function(r) {
+          if (r && r.status === 200) {
+            if (typeof toastr !== 'undefined') toastr.success('Order cancelled. Stock restored.');
+            setTimeout(function(){
+              if (typeof spaNav === 'function') spaNav('order', ORDER_UUID);
+              else window.location.reload();
+            }, 700);
+          } else {
+            if (typeof toastr !== 'undefined') toastr.error((r && r.message) || 'Failed.');
+          }
+        },
+        error: function() { if (typeof toastr !== 'undefined') toastr.error('Network error.'); }
+      });
+    };
+    if (typeof posConfirm === 'function') {
+      posConfirm({ title: 'Cancel Order?', msg: 'Items will be returned to stock. This cannot be undone.', confirmText: 'Cancel Order', confirmClass: 'danger', onConfirm: doIt });
+    } else if (confirm('Cancel this order? Items will be returned to stock.')) {
+      doIt();
+    }
+  };
+
+  window.odMoreOpen = function(ev) {
+    ev.stopPropagation();
+    var menu = document.getElementById('odMoreMenu');
+    if (!menu) return;
+    var btn = ev.currentTarget;
+    var rect = btn.getBoundingClientRect();
+    menu.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+    menu.style.left = (rect.right + window.scrollX - menu.offsetWidth) + 'px';
+    menu.classList.toggle('show');
+    if (menu.classList.contains('show')) {
+      // Reposition after display so offsetWidth is correct
+      setTimeout(function(){
+        menu.style.left = (rect.right + window.scrollX - menu.offsetWidth) + 'px';
+      }, 0);
+    }
+  };
+  window.odMoreClose = function() {
+    var menu = document.getElementById('odMoreMenu');
+    if (menu) menu.classList.remove('show');
+  };
+
+  // Close menu on outside click
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('odMoreMenu');
+    var btn  = document.getElementById('odMoreBtn');
+    if (!menu || !menu.classList.contains('show')) return;
+    if (menu.contains(e.target) || (btn && btn.contains(e.target))) return;
+    if (e.target.closest && e.target.closest('.od-mob-actions')) return;
+    menu.classList.remove('show');
   });
-}
-function sendEmail() {
-  var to = ($('#emTo').val() || '').trim();
-  if (!to) { toastr.warning('Enter an email address.'); return; }
-  $.ajax({
-    url: '/sales/orders/<%= o.uuid %>/invoice/email', type: 'POST', contentType: 'application/json',
-    data: JSON.stringify({ to: to }),
-    success: function(r) {
-      if (r && r.status === 200) { toastr.success('Invoice emailed.'); document.getElementById('emailDlg').close(); }
-      else toastr.error((r && r.message) || 'Failed to send.');
-    },
-    error: function() { toastr.error('Network error.'); }
-  });
-}
+
+  // Auto-attach virtual keyboard for email input (web only)
+  if (typeof posAttachKeyboards === 'function') {
+    setTimeout(posAttachKeyboards, 100);
+  }
+})();
 </script>

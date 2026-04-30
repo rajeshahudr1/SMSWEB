@@ -64,6 +64,7 @@
       <button class="ps-btn" data-tip="Sales Orders" data-tip-pos="right" onclick="spaNav('orders')"><i class="bi bi-bag-check"></i></button>
       <button class="ps-btn" data-tip="Customers" data-tip-pos="right" onclick="spaNav('customers')"><i class="bi bi-people"></i></button>
       <button class="ps-btn" data-tip="Returns & Refunds" data-tip-pos="right" onclick="spaNav('returns')"><i class="bi bi-arrow-counterclockwise"></i></button>
+      <button class="ps-btn" data-tip="Saved Drafts" data-tip-pos="right" onclick="spaNav('drafts')" style="position:relative;"><i class="bi bi-bookmark-heart"></i><span id="draftSidebarCnt" style="position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--pv2-warning,#f59e0b);color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;">0</span></button>
       <button class="ps-btn" data-tip="POS Settings" data-tip-pos="right" onclick="spaNav('settings')"><i class="bi bi-gear"></i></button>
     </div>
     <div class="ps-bottom">
@@ -84,6 +85,7 @@
       <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('orders')" data-tip="Orders"><i class="bi bi-bag-check"></i></button>
       <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('customers')" data-tip="Customers"><i class="bi bi-people"></i></button>
       <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('returns')" data-tip="Returns"><i class="bi bi-arrow-counterclockwise"></i></button>
+      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('drafts')" data-tip="Drafts"><i class="bi bi-bookmark-heart"></i></button>
       <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('settings')" data-tip="Settings"><i class="bi bi-gear"></i></button>
       <div style="flex:1;"></div>
       <button class="ps-btn" onclick="toggleFS()" style="width:32px;height:32px;background:var(--bg);font-size:14px;" data-tip="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
@@ -98,9 +100,10 @@
       </div>
       <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Scan or search SKU, name, or barcode..." autocomplete="off" data-no-keyboard/></div>
       <button class="pos-btn-outline pos-btn-sm" onclick="openAdvSearch()" data-tip="Advanced Search" data-tip-pos="bottom" id="advSearchBtn"><i class="bi bi-sliders"></i><span id="advCount" style="display:none;background:var(--accent);color:#fff;border-radius:50%;min-width:16px;height:16px;font-size:9px;align-items:center;justify-content:center;margin-left:4px;"></span></button>
+      <button class="pos-btn-outline pos-btn-sm pos-refresh-btn" onclick="posRefresh(this)" data-tip="Refresh products" data-tip-pos="bottom" id="posRefreshBtn"><i class="bi bi-arrow-clockwise"></i></button>
       <div class="ph-filters">
-        <select class="ph-sel" id="fWarehouse" data-tip="Filter by warehouse" data-tip-pos="bottom"><option value="">All Warehouses</option></select>
-        <select class="ph-sel" id="fPerPage" data-tip="Items per page" data-tip-pos="bottom"><option value="20">20</option><option value="40">40</option><option value="60">60</option></select>
+        <select class="ph-sel" id="fWarehouse" data-vk-options data-tip="Filter by warehouse" data-tip-pos="bottom"><option value="">All Warehouses</option></select>
+        <select class="ph-sel" id="fPerPage" data-vk-options data-tip="Items per page" data-tip-pos="bottom"><option value="20">20</option><option value="40">40</option><option value="60">60</option></select>
         <div class="ph-pg">
           <button id="pgPrev" disabled onclick="if(_page>1){_page--;loadProducts();}" data-tip="Previous page"><i class="bi bi-chevron-left"></i></button>
           <span id="pgInfo" data-tip="Current page / Total pages" data-tip-pos="bottom">1 / 1</span>
@@ -212,11 +215,18 @@
 </div>
 
 <!-- Advanced Search Fullscreen Page -->
-<div class="info-page" id="advSearchPage">
-  <div class="ip-hdr">
-    <span class="ip-title">Filter parts</span>
-    <span id="advResultHint" style="margin-left:8px;font-size:11.5px;color:var(--pv2-muted);font-weight:500;"></span>
-    <button class="ip-back" onclick="$('#advSearchPage').removeClass('open');$(document.body).removeClass('adv-search-open');" data-tip="Close filters" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
+<div class="info-page adv-screen" id="advSearchPage">
+
+  <!-- ════════ Header (icon + title + subtitle + Save View + close) ════════ -->
+  <div class="adv-header">
+    <div class="adv-header-icon"><i class="bi bi-funnel-fill"></i></div>
+    <div class="adv-header-text">
+      <div class="adv-header-title">Filter Parts</div>
+      <div class="adv-header-sub" id="advHeaderSub">Find parts quickly with advanced filters</div>
+    </div>
+    <span id="advResultHint" class="adv-header-hint"></span>
+    <button class="adv-save-btn" onclick="saveAdvSearchView()" data-tip="Save current filters as a view" data-tip-pos="bottom"><i class="bi bi-bookmark"></i> Save View</button>
+    <button class="adv-close" onclick="$('#advSearchPage').removeClass('open');$(document.body).removeClass('adv-search-open');" data-tip="Close filters" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
   </div>
 
   <!-- Active filters chip strip (populated by JS whenever adv filters change) -->
@@ -228,21 +238,30 @@
     <div class="aab-chips" id="advActiveChips"></div>
   </div>
 
-  <!-- Deep search -->
-  <div style="padding:10px 20px;border-bottom:1px solid var(--pv2-border);display:flex;align-items:center;gap:8px;background:var(--pv2-surface-alt);">
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;">
-      <input type="checkbox" id="afDeepSearch" style="width:16px;height:16px;accent-color:var(--pv2-brand);"/> Deep Search
+  <!-- ════════ Deep Search row ════════ -->
+  <div class="adv-deep-row">
+    <label class="adv-toggle">
+      <input type="checkbox" id="afDeepSearch"/>
+      <span class="adv-toggle-track"><span class="adv-toggle-thumb"></span></span>
+      <span class="adv-toggle-text">
+        <strong>Deep Search</strong>
+        <small>Searches notes, damages, locations, attributes and more</small>
+      </span>
     </label>
-    <span style="font-size:10px;color:var(--pv2-muted);">Searches notes, damages, locations, attributes</span>
   </div>
-  <!-- Tabs — changes based on active POS tab (parts/vehicles) -->
-  <div style="display:flex;gap:4px;padding:10px 20px;border-bottom:1px solid var(--border);overflow-x:auto;" id="advTabs"></div>
-  <!-- Tab content -->
-  <div class="ip-body" id="advBody" style="padding:16px 20px;"></div>
-  <!-- Footer -->
-  <div class="ip-foot" style="gap:10px;">
-    <button class="pos-btn-outline" onclick="clearAdvSearch()"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-    <button class="pos-btn-primary" onclick="applyAdvSearch()"><i class="bi bi-check-lg"></i> <span id="advApplyLabel">Apply filters</span></button>
+
+  <!-- ════════ Tabs ════════ -->
+  <div class="adv-tabs" id="advTabs"></div>
+
+  <!-- ════════ Tab content ════════ -->
+  <div class="ip-body adv-body" id="advBody"></div>
+
+  <!-- ════════ Footer (Reset · Cancel · Apply) ════════ -->
+  <div class="ip-foot adv-footer">
+    <button class="pos-btn-outline adv-reset-btn" onclick="clearAdvSearch()"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+    <div class="adv-footer-spacer"></div>
+    <button class="pos-btn-outline adv-cancel-btn" onclick="$('#advSearchPage').removeClass('open');$(document.body).removeClass('adv-search-open');">Cancel</button>
+    <button class="pos-btn-primary adv-apply-btn" onclick="applyAdvSearch()"><i class="bi bi-funnel"></i> <span id="advApplyLabel">Apply Filters</span></button>
   </div>
 </div>
 
@@ -312,6 +331,24 @@
     <button class="cps-header-icon cps-header-mobile" data-tip="More" data-tip-pos="bottom"><i class="bi bi-three-dots-vertical"></i></button>
   </div>
 
+  <!-- ════════════ Slim payment meta-strip (Order ID · Date · Created By) ════════════ -->
+  <div class="cps-meta-strip" id="cpsMetaStrip">
+    <div class="cps-meta-item">
+      <span class="cps-meta-l">Order ID</span>
+      <span class="cps-meta-v" id="cpsOrderId">DRAFT</span>
+    </div>
+    <span class="cps-meta-dot">·</span>
+    <div class="cps-meta-item">
+      <span class="cps-meta-l">Order Date</span>
+      <span class="cps-meta-v" id="cpsOrderDate">--</span>
+    </div>
+    <span class="cps-meta-dot">·</span>
+    <div class="cps-meta-item">
+      <span class="cps-meta-l">Created By</span>
+      <span class="cps-meta-v" id="cpsCreatedBy">--</span>
+    </div>
+  </div>
+
   <!-- ════════════ 3-column body ════════════ -->
   <div class="cps-body">
 
@@ -339,7 +376,6 @@
           <div class="cps-items-wrap" id="cpsItemsWrap">
             <table class="cps-items">
               <thead><tr>
-                <th>#</th>
                 <th>ITEM DESCRIPTION</th>
                 <th>TYPE</th>
                 <th class="num">QTY</th>
@@ -376,7 +412,7 @@
         <div class="cps-card-b">
           <div class="cps-cust-row">
             <div class="cps-input-wrap" style="flex:1;">
-              <input type="text" id="custSearch" class="cps-input" placeholder="Search customer by name or phone…" autocomplete="off"/>
+              <input type="text" id="custSearch" class="cps-input" placeholder="Search customer by name or phone…" autocomplete="off" data-vk-autocomplete="custResult"/>
               <button type="button" class="cps-kb-trigger" onclick="openVK('custSearch','text')" data-tip="Open keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
               <div id="custResult" class="cps-cust-results"></div>
             </div>
@@ -398,18 +434,24 @@
           <div class="cps-cust-info">
             <div class="ci-l">
               <i class="bi bi-person-circle"></i>
-              <div>
+              <div class="ci-l-text">
                 <div class="ci-name" id="ciName">Walk-in Customer</div>
                 <div class="ci-sub" id="ciSub">General Customer</div>
               </div>
             </div>
             <div class="ci-r">
-              <div class="ci-lbl">Phone</div>
-              <div class="ci-val" id="ciPhone">-</div>
+              <i class="bi bi-telephone-fill"></i>
+              <div class="ci-r-text">
+                <div class="ci-lbl">Phone</div>
+                <div class="ci-val" id="ciPhone">-</div>
+              </div>
             </div>
             <div class="ci-r">
-              <div class="ci-lbl">Email</div>
-              <div class="ci-val" id="ciEmail">-</div>
+              <i class="bi bi-envelope-fill"></i>
+              <div class="ci-r-text">
+                <div class="ci-lbl">Email</div>
+                <div class="ci-val" id="ciEmail">-</div>
+              </div>
             </div>
           </div>
           <input type="hidden" id="custId" value=""/>
@@ -431,7 +473,7 @@
             <div class="cps-fld">
               <label>Discount Amount (<span class="cps-cur"></span>)</label>
               <div class="cps-input-wrap">
-                <input type="number" id="dVal" class="cps-input" placeholder="0.00" min="0" oninput="calcCheckout()"/>
+                <input type="number" id="dVal" class="cps-input" placeholder="0.00" min="0" oninput="validateDiscount();calcCheckout();"/>
                 <button type="button" class="cps-kb-trigger" onclick="openVK('dVal','amount')" data-tip="Open keypad" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>
               </div>
             </div>
@@ -464,27 +506,6 @@
         </div>
       </div>
 
-      <div class="cps-card cps-pd-card" data-mob="pd">
-        <button type="button" class="cps-card-h cps-card-h-toggle" onclick="cpsTogglePD()">
-          <i class="bi bi-file-earmark-text"></i>
-          <span>PAYMENT DETAILS</span>
-          <i class="bi bi-chevron-down cps-collapse-chev cps-mobile-only" id="cpsPDChev"></i>
-        </button>
-        <div class="cps-card-b" id="cpsPDBody">
-          <div class="cps-pd-row">
-            <label>Order ID</label>
-            <input type="text" id="cpsOrderId" class="cps-input cps-input-readonly" readonly value="DRAFT"/>
-          </div>
-          <div class="cps-pd-row">
-            <label>Order Date</label>
-            <input type="text" id="cpsOrderDate" class="cps-input cps-input-readonly" readonly/>
-          </div>
-          <div class="cps-pd-row">
-            <label>Created By</label>
-            <input type="text" id="cpsCreatedBy" class="cps-input cps-input-readonly" readonly/>
-          </div>
-        </div>
-      </div>
 
     </div>
 
@@ -627,33 +648,102 @@
   </div>
 </div>
 
-<!-- ═══════════ Cash confirm popup ═══════════ -->
-<div class="cps-confirm-ov" id="cashConfirmOv" style="display:none;" onclick="if(event.target===this)$('#cashConfirmOv').hide();">
-  <div class="cps-confirm-box">
-    <div class="cps-confirm-h">
-      <i class="bi bi-cash-stack"></i>
-      <h3>Confirm Cash Payment</h3>
-      <button class="cps-confirm-x" onclick="$('#cashConfirmOv').hide()" data-tip="Close (Esc)" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
-    </div>
-    <div class="cps-confirm-b">
-      <div class="cps-confirm-grid">
-        <div><div class="cps-confirm-l">Order Total</div><div class="cps-confirm-v" id="ccTotal">0.00</div></div>
-        <div><div class="cps-confirm-l">Amount Received</div><div class="cps-confirm-v cps-confirm-blue" id="ccRcv">0.00</div></div>
-        <div><div class="cps-confirm-l">Change Due</div><div class="cps-confirm-v cps-confirm-green" id="ccChange">0.00</div></div>
-      </div>
-      <div class="cps-confirm-list">
-        <div><span>Customer</span><strong id="ccCust">Walk-in Customer</strong></div>
-        <div><span>Items</span><strong id="ccItems">0</strong></div>
-        <div><span>Payment Method</span><strong>Cash</strong></div>
-      </div>
-      <div class="cps-confirm-warn" id="ccWarn" style="display:none;">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <span>Amount received is less than the total. Please collect the full amount before confirming.</span>
+<!-- ═══════════ Generic Confirm Payment popup (any payment mode) ═══════════ -->
+<div class="sc-ov pc-ov" id="cashConfirmOv" style="display:none;" onclick="if(event.target===this)$('#cashConfirmOv').hide();">
+  <div class="sc-card pc-card">
+    <button class="sc-close" onclick="$('#cashConfirmOv').hide()" data-tip="Close (Esc)" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
+
+    <div class="sc-title-row">
+      <div class="sc-check pc-check"><i class="bi bi-shield-check"></i></div>
+      <div class="sc-title-text">
+        <h2>Confirm Payment</h2>
+        <p>Verify the order and the payment details, then confirm to complete the sale.</p>
       </div>
     </div>
-    <div class="cps-confirm-f">
-      <button class="cps-confirm-btn cps-confirm-cancel" onclick="$('#cashConfirmOv').hide()"><i class="bi bi-x-lg"></i> Cancel</button>
-      <button class="cps-confirm-btn cps-confirm-ok" id="ccConfirmBtn" onclick="cpsCashConfirm()"><i class="bi bi-check-circle-fill"></i> Confirm &amp; Collect</button>
+
+    <div class="sc-body pc-body">
+      <div class="sc-col-l">
+
+        <!-- Order summary -->
+        <div class="sc-block">
+          <div class="sc-block-h"><i class="bi bi-file-earmark-text"></i> Order Summary</div>
+          <div class="sc-od">
+            <div class="sc-od-fields">
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Customer</div>
+                <div class="sc-od-val"><i class="bi bi-person-circle"></i> <span id="ccCust">Walk-in Customer</span></div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Items</div>
+                <div class="sc-od-val" id="ccItems">0 items</div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Sales Person</div>
+                <div class="sc-od-val" id="ccSalesPerson"><i class="bi bi-person"></i> User</div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Payment Method</div>
+                <div class="sc-od-val"><i id="ccMethodIcon" class="bi bi-credit-card-2-front"></i> <span id="ccMethod">Cash</span></div>
+              </div>
+            </div>
+            <div class="sc-od-totals">
+              <div class="sc-od-totals-grand">
+                <span>Total to Collect</span>
+                <span class="sc-amt-big" id="ccTotal">0.00</span>
+              </div>
+              <div class="sc-od-totals-rows" id="ccTotalsRows"></div>
+              <div class="sc-od-totals-grand-row">
+                <span>Grand Total</span>
+                <span id="ccGrand">0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items mini table -->
+        <div class="sc-block">
+          <div class="sc-block-h"><i class="bi bi-receipt"></i> Items <span class="sc-block-count" id="ccItemsCount">(0)</span></div>
+          <div class="sc-items-wrap">
+            <table class="sc-items-table">
+              <thead><tr>
+                <th>#</th><th>Item Name</th><th>SKU</th>
+                <th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th>
+              </tr></thead>
+              <tbody id="ccItemsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="sc-col-r">
+
+        <!-- Method-specific block — for Cash: Amount Received + Change. For
+             Card/UPI/Cheque: Reference. For Online: gateway info banner. -->
+        <div class="sc-block pc-method-block" id="ccMethodBlock">
+          <div class="sc-block-h"><i id="ccMethodBlockIcon" class="bi bi-cash"></i> <span id="ccMethodBlockTitle">Payment Details</span></div>
+          <div id="ccMethodBlockBody"></div>
+        </div>
+
+        <!-- Big amount + warning -->
+        <div class="sc-block pc-amt-block">
+          <div class="pc-amt-grid">
+            <div class="pc-amt-cell"><div class="pc-amt-l">Order Total</div><div class="pc-amt-v" id="ccAmtTotal">0.00</div></div>
+            <div class="pc-amt-cell"><div class="pc-amt-l">Amount Paid</div><div class="pc-amt-v sc-blue" id="ccAmtRcv">0.00</div></div>
+            <div class="pc-amt-cell"><div class="pc-amt-l">Change Due</div><div class="pc-amt-v sc-green" id="ccAmtChange">0.00</div></div>
+          </div>
+          <div class="cps-confirm-warn" id="ccWarn" style="display:none;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span id="ccWarnMsg">Amount received is less than the total.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="sc-footer">
+      <button class="sc-fbtn sc-fbtn-new" onclick="$('#cashConfirmOv').hide()"><i class="bi bi-x-lg"></i> Cancel</button>
+      <button class="sc-fbtn sc-fbtn-orders" id="ccConfirmBtn" onclick="cpsCashConfirm()"><i class="bi bi-check-circle-fill"></i> <span id="ccConfirmLbl">Confirm &amp; Pay</span></button>
     </div>
   </div>
 </div>
@@ -670,16 +760,6 @@
           <button class="vk-close" onclick="closeVK()" title="Close (Esc)"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="vk-display" id="vkDisplay">0</div>
-        <div class="vk-meta-row">
-          <div class="vk-meta">
-            <label>Input Type</label>
-            <div class="vk-meta-v" id="vkTypeLabel">Text</div>
-          </div>
-          <div class="vk-meta">
-            <label>Precision</label>
-            <div class="vk-meta-v" id="vkPrecLabel">—</div>
-          </div>
-        </div>
       </div>
 
       <div class="vk-numpad" id="vkNumpad">
@@ -708,6 +788,12 @@
           <button class="vk-key vk-num" onclick="vkSign()">+/-</button>
         </div>
       </div>
+    </div>
+
+    <!-- ── Autocomplete results pane (only shown when bound input has live matches) ── -->
+    <div class="vk-autocomplete" id="vkAutoComplete" style="display:none;">
+      <div class="vk-autocomplete-h"><i class="bi bi-search"></i> <span>Matches</span></div>
+      <div class="vk-autocomplete-list" id="vkAutoCompleteList"></div>
     </div>
 
     <!-- ── Quick amounts row (only meaningful for amount inputs) ── -->
@@ -846,7 +932,7 @@
         </div>
         <div class="cps-fld">
           <label>Type</label>
-          <select id="ncType" class="cps-input">
+          <select id="ncType" class="cps-input cps-input-native" data-no-pos-ac>
             <option value="regular">Regular</option>
             <option value="wholesale">Wholesale</option>
           </select>
@@ -881,24 +967,219 @@
   </div>
 </div>
 
-<!-- Success -->
-<div class="co-overlay" id="successOv" onclick="if(event.target===this)$(this).hide();">
-  <div class="co-box" style="text-align:center;padding:36px 24px;">
-    <div style="font-size:56px;color:var(--green);"><i class="bi bi-check-circle-fill"></i></div>
-    <h3 style="font-weight:800;font-size:20px;margin:8px 0 4px;">Sale Complete!</h3>
-    <p style="color:var(--muted);font-size:13px;" id="successInfo"></p>
+<!-- ═══════════ Print Error / Selector modal (web-only fallback) ═══════════ -->
+<div class="cps-confirm-ov" id="printErrorOv" style="display:none;" onclick="if(event.target===this)$('#printErrorOv').hide();">
+  <div class="cps-confirm-box" style="max-width:480px;">
+    <div class="cps-confirm-h" style="background:#fffbeb;border-bottom-color:#fde68a;">
+      <i class="bi bi-printer-fill" style="color:#d97706;"></i>
+      <h3>Printer Offline</h3>
+      <button class="cps-confirm-x" onclick="$('#printErrorOv').hide()" data-tip="Close" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="cps-confirm-b">
+      <p id="printErrorMsg" style="margin:0 0 14px;font-size:13px;color:var(--cps-text);line-height:1.5;">
+        The configured printer is not responding. Make sure the print agent is running and the printer is powered on.
+      </p>
+      <div id="printerListWrap" style="display:none;">
+        <div class="cps-confirm-l" style="margin-bottom:6px;">Try a different printer</div>
+        <div id="printerList" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    <div class="cps-confirm-f">
+      <button class="cps-confirm-btn cps-confirm-cancel" onclick="$('#printErrorOv').hide()"><i class="bi bi-x-lg"></i> Cancel</button>
+      <button class="cps-confirm-btn" onclick="window.open('/sales/printer-settings','_blank');" style="background:#fff;color:#1f2937;border:1.5px solid var(--cps-line);"><i class="bi bi-gear"></i> Settings</button>
+      <button class="cps-confirm-btn cps-confirm-ok" id="printRetryBtn" onclick="printRetryHandler()"><i class="bi bi-arrow-clockwise"></i> Try Again</button>
+    </div>
+  </div>
+</div>
 
-    <!-- Print row — opens the configured receipt (uses settings → format/size/QR/etc.) -->
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button type="button" class="pos-btn-outline" id="btnSuccessReceipt" onclick="successPrintReceipt('original')" style="padding:10px 18px;background:var(--brand);color:#fff;border-color:var(--brand);"><i class="bi bi-printer"></i> Print Receipt</button>
-      <button type="button" class="pos-btn-outline" id="btnSuccessReceiptDup" onclick="successPrintReceipt('duplicate')" style="padding:10px 18px;"><i class="bi bi-files"></i> Duplicate Copy</button>
-      <button type="button" class="pos-btn-outline" id="btnSuccessA4" onclick="successPrintA4()" style="padding:10px 18px;"><i class="bi bi-file-earmark-pdf"></i> A4 Invoice</button>
+<!-- ═══════════ Sale Completed Successfully (post-payment) ═══════════ -->
+<div class="sc-ov" id="successOv" onclick="if(event.target===this)$('#successOv').hide();">
+  <div class="sc-card">
+    <button class="sc-close" onclick="$('#successOv').hide();" data-tip="Close" data-tip-pos="left"><i class="bi bi-x-lg"></i></button>
+
+    <!-- Title -->
+    <div class="sc-title-row">
+      <div class="sc-check"><i class="bi bi-check-lg"></i></div>
+      <div class="sc-title-text">
+        <h2>Sale Completed Successfully!</h2>
+        <p>Your transaction has been recorded and inventory updated.</p>
+      </div>
     </div>
 
-    <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button class="pm-btn confirm" onclick="$('#successOv').hide();loadProducts();" style="flex:0;padding:10px 24px;background:var(--primary);"><i class="bi bi-plus-circle"></i> New Sale</button>
-      <button class="pm-btn cancel" onclick="window.open('/sales/orders','_blank');$('#successOv').hide();" style="flex:0;padding:10px 24px;"><i class="bi bi-receipt"></i> Orders</button>
+    <!-- Body — 2-col on web, 1-col on mobile -->
+    <div class="sc-body">
+      <div class="sc-col-l">
+
+        <!-- Order / Invoice Details -->
+        <div class="sc-block">
+          <div class="sc-block-h"><i class="bi bi-file-earmark-text"></i> Order / Invoice Details</div>
+          <div class="sc-od">
+            <div class="sc-od-fields">
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Order / Invoice No.</div>
+                <div class="sc-od-val sc-blue" id="scInvNo">INV-0000 <span class="sc-pill sc-pill-paid" id="scStatusPill">Paid</span></div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Order Date</div>
+                <div class="sc-od-val" id="scOrderDate"><i class="bi bi-calendar3"></i> --</div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Order Type</div>
+                <div class="sc-od-val" id="scOrderType">Walk-in Sale</div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Sales Person</div>
+                <div class="sc-od-val"><i class="bi bi-person-circle"></i> <span id="scSalesPerson">--</span></div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Payment Status</div>
+                <div class="sc-od-val"><i class="bi bi-check-circle-fill" style="color:var(--cps-green);"></i> <span id="scPayStatus">Completed</span></div>
+              </div>
+              <div class="sc-od-row">
+                <div class="sc-od-lbl">Payment Method</div>
+                <div class="sc-od-val"><i class="bi bi-credit-card-2-front" id="scPayMethodIcon"></i> <span id="scPayMethod">Cash</span></div>
+              </div>
+            </div>
+
+            <div class="sc-od-totals">
+              <div class="sc-od-totals-grand">
+                <span>Total Amount</span>
+                <span class="sc-amt-big" id="scTotalAmt">0.00</span>
+              </div>
+              <div class="sc-od-totals-rows" id="scTotalsRows"></div>
+              <div class="sc-od-totals-grand-row">
+                <span>Grand Total</span>
+                <span id="scGrand">0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Sold table -->
+        <div class="sc-block">
+          <div class="sc-block-h"><i class="bi bi-receipt"></i> Items Sold <span class="sc-block-count" id="scItemsCount">(0)</span></div>
+          <div class="sc-items-wrap">
+            <table class="sc-items-table">
+              <thead><tr>
+                <th>#</th><th>Item Name</th><th>SKU</th>
+                <th class="num">Qty</th><th class="num">Rate</th>
+                <th class="num">Tax</th><th class="num">Amount</th>
+              </tr></thead>
+              <tbody id="scItemsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4 stat tiles -->
+        <div class="sc-stats">
+          <div class="sc-stat">
+            <div class="sc-stat-icon"><i class="bi bi-bag"></i></div>
+            <div class="sc-stat-text">
+              <div class="sc-stat-l">Total Items</div>
+              <div class="sc-stat-v" id="scStatItems">0</div>
+              <div class="sc-stat-s">Quantity</div>
+            </div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-icon"><i class="bi bi-box-seam"></i></div>
+            <div class="sc-stat-text">
+              <div class="sc-stat-l">Total Quantity</div>
+              <div class="sc-stat-v" id="scStatQty">0</div>
+              <div class="sc-stat-s">Units</div>
+            </div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-icon"><i class="bi bi-wallet2"></i></div>
+            <div class="sc-stat-text">
+              <div class="sc-stat-l">Total Paid</div>
+              <div class="sc-stat-v sc-green" id="scStatPaid">0.00</div>
+              <div class="sc-stat-s" id="scStatMethod">Cash</div>
+            </div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-icon"><i class="bi bi-tag"></i></div>
+            <div class="sc-stat-text">
+              <div class="sc-stat-l">You Saved</div>
+              <div class="sc-stat-v" id="scStatSaved">0.00</div>
+              <div class="sc-stat-s">Discount</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thank you note -->
+        <div class="sc-thank">
+          <i class="bi bi-info-circle-fill"></i>
+          <div>
+            <div class="sc-thank-t">Thank you!</div>
+            <div class="sc-thank-s">We appreciate your business. Visit again!</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sc-col-r">
+        <!-- What would you like to do next -->
+        <div class="sc-block">
+          <div class="sc-block-h"><i class="bi bi-list-task"></i> What would you like to do next?</div>
+          <div class="sc-actions">
+            <button class="sc-action" onclick="successPrintReceipt('original')">
+              <i class="bi bi-printer sc-action-i"></i>
+              <div><div class="sc-action-t">Print Invoice</div><div class="sc-action-s">Print customer invoice</div></div>
+            </button>
+            <button class="sc-action" onclick="successPrintA4()">
+              <i class="bi bi-file-earmark-pdf sc-action-i"></i>
+              <div><div class="sc-action-t">A4 Invoice</div><div class="sc-action-s">Standard A4 invoice</div></div>
+            </button>
+            <button class="sc-action" onclick="successPrintThermal()">
+              <i class="bi bi-receipt-cutoff sc-action-i"></i>
+              <div><div class="sc-action-t">Thermal Slip</div><div class="sc-action-s">Print thermal receipt</div></div>
+            </button>
+            <button class="sc-action" onclick="successEmailInvoice()">
+              <i class="bi bi-envelope sc-action-i"></i>
+              <div><div class="sc-action-t">Email Invoice</div><div class="sc-action-s">Send invoice via email</div></div>
+            </button>
+            <button class="sc-action" onclick="successWhatsAppInvoice()">
+              <i class="bi bi-whatsapp sc-action-i" style="color:#25D366;"></i>
+              <div><div class="sc-action-t">WhatsApp Invoice</div><div class="sc-action-s">Share invoice on WhatsApp</div></div>
+            </button>
+            <button class="sc-action" onclick="successDownloadPDF()">
+              <i class="bi bi-download sc-action-i"></i>
+              <div><div class="sc-action-t">Download PDF</div><div class="sc-action-s">Save invoice as PDF</div></div>
+            </button>
+          </div>
+        </div>
+
+        <!-- More Actions -->
+        <div class="sc-block">
+          <div class="sc-block-h"><i class="bi bi-three-dots"></i> More Actions</div>
+          <div class="sc-more">
+            <button class="sc-more-item" onclick="successDuplicateCopy()">
+              <i class="bi bi-files"></i>
+              <div><div class="sc-more-t">Duplicate Copy</div><div class="sc-more-s">Create a duplicate sale</div></div>
+              <i class="bi bi-chevron-right sc-more-chev"></i>
+            </button>
+            <button class="sc-more-item" onclick="successViewOrder()">
+              <i class="bi bi-receipt"></i>
+              <div><div class="sc-more-t">View Order</div><div class="sc-more-s">View order details</div></div>
+              <i class="bi bi-chevron-right sc-more-chev"></i>
+            </button>
+            <button class="sc-more-item" onclick="successReturnRefund()">
+              <i class="bi bi-arrow-counterclockwise"></i>
+              <div><div class="sc-more-t">Return / Refund</div><div class="sc-more-s">Process return or refund</div></div>
+              <i class="bi bi-chevron-right sc-more-chev"></i>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Footer -->
+    <div class="sc-footer">
+      <button class="sc-fbtn sc-fbtn-new" onclick="$('#successOv').hide();loadProducts();"><i class="bi bi-plus-circle"></i> New Sale</button>
+      <button class="sc-fbtn sc-fbtn-orders" onclick="$('#successOv').hide();spaNav('orders');"><i class="bi bi-receipt"></i> Go to Orders</button>
+    </div>
+
+    <!-- Hidden mirror for legacy code that wrote into #successInfo -->
+    <span id="successInfo" style="display:none;"></span>
   </div>
 </div>
 
@@ -1186,14 +1467,24 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
     var html = '';
     var current = ac.$select.val();
     var hlIdx = -1, visibleIdx = 0;
+    /* Cap visible results so the dropdown stays short and predictable.
+       When the user is searching (term present) → show only top 2 matches.
+       When idle (no term) → show all so they can scroll the full list. */
+    var MAX_WHEN_SEARCHING = 2;
+    var totalMatches = 0;
     ac.options.forEach(function(o){
       var label = String(o.label||'');
       if (term && label.toLowerCase().indexOf(term) < 0) return;
+      totalMatches++;
+      if (term && visibleIdx >= MAX_WHEN_SEARCHING) return;
       var sel = String(o.value) === String(current);
       html += '<div class="ps-sel-opt'+(sel?' selected':'')+'" data-val="'+_esc(o.value)+'">'+_esc(label)+'</div>';
       if (sel && hlIdx < 0) hlIdx = visibleIdx;
       visibleIdx++;
     });
+    if (term && totalMatches > MAX_WHEN_SEARCHING){
+      html += '<div class="ps-sel-more">+' + (totalMatches - MAX_WHEN_SEARCHING) + ' more — refine your search</div>';
+    }
     if (!html) html = '<div class="ps-sel-empty">No matches</div>';
     ac.$list.html(html);
     /* Highlight the selected (or first) option for keyboard nav */
@@ -1256,6 +1547,20 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
 
       var ac = { $select:$sel, $wrap:$wrap, $trigger:$trigger, $drop:$drop, $search:$search, $list:$list, options:options };
       $sel.data('posAc', ac);
+
+      /* If the source select is marked `data-vk-options`, drop a keyboard
+         pill into the wrapper so web users can search options via the on-
+         screen VK popup.  Tablet/mobile hide the pill via CSS. */
+      if ($sel.is('[data-vk-options]')) {
+        var $kbBtn = $('<button type="button" class="ps-kb-trigger" tabindex="-1" data-tip="Search options on the on-screen keyboard" data-tip-pos="left"><i class="bi bi-keyboard"></i></button>');
+        $kbBtn.on('mousedown click', function(e){
+          e.preventDefault(); e.stopPropagation();
+          if (typeof window.openVKForSelect === 'function') {
+            window.openVKForSelect($sel.attr('id'));
+          }
+        });
+        $wrap.append($kbBtn).addClass('has-vk-kb');
+      }
 
       /* Events — `click` works on every device. We just guard against the
          synthetic 300ms-delayed click on older iOS by tracking touchend. */

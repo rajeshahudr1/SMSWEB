@@ -188,7 +188,71 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
   content:'F2';position:absolute;right:10px;top:50%;transform:translateY(-50%);
   font-size:10.5px;color:var(--pv2-subtle);font-family:var(--pv2-font-mono);pointer-events:none;
 }
+/* Refresh button — same outline style as advanced-search, with spin-on-click. */
+.pos-refresh-btn{
+  flex-shrink:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.pos-refresh-btn:hover{ color:var(--pv2-brand); border-color:var(--pv2-brand); }
+.pos-refresh-btn .bi-arrow-clockwise{ font-size:14px; transition:color .15s; }
+.pos-refresh-btn.is-spinning{ pointer-events:none; opacity:.85; }
+.pos-refresh-btn .spinning{
+  animation: pos-spin 0.8s linear infinite;
+  color:var(--pv2-brand);
+}
+@keyframes pos-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 .ph-filters{display:flex;gap:8px;margin-left:auto;align-items:center;}
+/* Fixed widths so the dropdowns never resize as content changes */
+.ph-filters > .ps-sel-fWarehouse{ flex:0 0 200px !important; min-width:200px !important; max-width:200px !important; }
+.ph-filters > .ps-sel-fPerPage  { flex:0 0 100px !important; min-width:100px !important; max-width:100px !important; }
+/* Stable sort dropdown too while we're here (used in the products grid bar) */
+.pgb-sort .ps-sel{ flex:0 0 160px !important; min-width:160px !important; max-width:160px !important; }
+/* Inline keyboard icon attached to the .ps-sel wrapper (web only) */
+.ps-sel{ position:relative; }
+.ps-sel > .ps-kb-trigger{
+  position:absolute; top:50%; transform:translateY(-50%);
+  right:30px; /* sits to the LEFT of the chevron at right:10–12px */
+  width:24px; height:24px; border-radius:5px;
+  border:1px solid var(--pv2-border); background:#fff; color:var(--pv2-brand);
+  display:none; align-items:center; justify-content:center;
+  cursor:pointer; font-size:11px; z-index:2;
+  transition:background .12s, border-color .12s;
+}
+.ps-sel > .ps-kb-trigger:hover{ background:var(--pv2-brand-ghost); border-color:var(--pv2-brand); }
+/* Show only on web ≥1100px (desktop) — tablet/mobile keep it hidden */
+@media (min-width:1100px){
+  .ps-sel.has-vk-kb > .ps-kb-trigger{ display:flex; }
+  /* Reserve room so the trigger label doesn't crash into the kb icon */
+  .ps-sel.has-vk-kb > .ps-sel-input{ padding-right:54px !important; }
+}
+
+/* Kb icon INSIDE a Select2 widget on the filter page (web only).
+   Sits at the right edge, vertically centered on the trigger — same look
+   as the Warehouse `.ps-kb-trigger`. */
+.ps-s2-kb-trigger{
+  position:absolute; right:32px; top:50%; transform:translateY(-50%);
+  width:26px; height:26px; border-radius:6px;
+  border:1px solid var(--pv2-border); background:#fff; color:var(--pv2-brand);
+  display:none; align-items:center; justify-content:center;
+  cursor:pointer; font-size:12px; z-index:5;
+  transition:background .12s, border-color .12s, transform .12s;
+  padding:0; line-height:1;
+}
+.ps-s2-kb-trigger:hover{ background:var(--pv2-brand-ghost); border-color:var(--pv2-brand); transform:translateY(-50%) scale(1.05); }
+.ps-s2-kb-trigger i{ font-size:12px; }
+@media (min-width:1100px){
+  .ps-s2-kb-trigger{ display:flex; }
+  /* Reserve room so the chosen value's text doesn't crash into the kb icon */
+  body.pos-mode .select2-container .select2-selection,
+  .info-page  .select2-container .select2-selection{
+    padding-right:68px !important;   /* 32 (chevron) + 26 (kb) + 10 gap */
+  }
+}
 /* Unified dropdown look — matches the Warehouse / select2 styling that the
    user said felt "premium". Custom chevron, bigger tap target, focus ring. */
 .ph-sel{
@@ -403,10 +467,13 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
 .cv-items{flex:1;overflow-y:auto;padding:0;}
 .ci-wrap{position:relative;margin-bottom:0;overflow:hidden;border-radius:0;}
 .ci-del-bg{
-  position:absolute;right:0;top:0;bottom:0;width:80px;
+  position:absolute;right:0;top:0;bottom:0;width:100px;
   background:var(--pv2-danger);color:#fff;display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:700;gap:4px;cursor:pointer;
+  font-size:11.5px;font-weight:700;gap:6px;cursor:pointer;
+  text-align:center;
+  -webkit-tap-highlight-color:transparent;
 }
+.ci-del-bg i{ font-size:14px; }
 .ci{
   display:flex;gap:10px;padding:10px 14px;
   background:var(--pv2-surface);border-radius:0;border-left:none;
@@ -424,16 +491,36 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;}
 .ci-price{font-size:10.5px;color:var(--pv2-subtle);margin-top:1px;}
 .ci-total{font-size:13px;font-weight:700;text-align:right;color:var(--pv2-text);font-family:var(--pv2-font-sans);min-width:auto;align-self:flex-start;margin-left:auto;white-space:nowrap;}
+/* Inline trash button on each cart row (web only, hidden on touch).
+   Two flavours: small one for individual unit rows, larger one for the
+   group header.  Both turn red on hover with a soft pink background. */
 .ci-del-btn{
-  width:22px;height:22px;border-radius:4px;
-  border:none;background:transparent;color:var(--pv2-subtle);
-  font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;transition:background .15s,color .15s;align-self:flex-start;
+  width:24px;height:24px;border-radius:6px;
+  border:1px solid transparent; background:transparent; color:var(--pv2-subtle);
+  font-size:12px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; align-self:center;
+  transition:background .15s, color .15s, border-color .15s, transform .12s;
+  -webkit-tap-highlight-color:transparent;
 }
-.ci-del-btn:hover{background:var(--pv2-danger-bg);color:var(--pv2-danger);}
+.ci-del-btn:hover{
+  background:var(--pv2-danger-bg); color:var(--pv2-danger);
+  border-color:rgba(220,38,38,.25);
+  transform:scale(1.06);
+}
+.ci-del-btn-group{
+  width:28px; height:28px; font-size:13px;
+  background:var(--pv2-surface-sunken); color:var(--pv2-muted);
+  border-color:var(--pv2-border);
+  margin-left:6px;
+}
+.ci-del-btn-group:hover{
+  background:var(--pv2-danger); color:#fff;
+  border-color:var(--pv2-danger);
+}
 @media(pointer:coarse){
   .ci-del-btn{display:none!important;}
-  .ci-wrap.swiped .ci{transform:translateX(-80px);}
+  .ci-wrap.swiped .ci{transform:translateX(-100px);}
 }
 .ci-empty{text-align:center;padding:40px 16px;color:var(--pv2-muted);}
 .ci-empty i{font-size:36px;opacity:.2;display:block;margin-bottom:10px;color:var(--pv2-ink);}
@@ -1435,6 +1522,272 @@ body.pos-mode .btn-close:hover{opacity:1;}
 
 .adv-pane{display:none;}.adv-pane.active{display:block;}
 
+/* ═══════════════════════════════════════════════════════════════════════
+   ADV — Filter Parts page redesign (matches the Figma "Filter Parts" mock).
+   Header (icon + title + subtitle + Save View + X), Deep Search toggle,
+   pill-underline tabs, sectioned body grid (4 cols web, 2 cols mobile),
+   collapsible "Additional Filters", clean footer.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Force the filter screen to fill the whole viewport — beats any legacy
+   `.info-page` width rules that might have sneaked in elsewhere. */
+.adv-screen.info-page{
+  background:var(--pv2-surface);
+  display:none; flex-direction:column;
+  position:fixed !important; inset:0 !important;
+  width:100vw !important; height:100vh !important; max-width:none !important;
+  z-index:9999;
+}
+.adv-screen.info-page.open{ display:flex !important; }
+
+/* Header */
+.adv-header{
+  display:flex; align-items:center; gap:14px;
+  padding:18px 24px; border-bottom:1px solid var(--pv2-border);
+  background:#fff; flex-shrink:0;
+}
+.adv-header-icon{
+  width:48px; height:48px; border-radius:10px;
+  background:rgba(44,95,213,.10); color:#2c5fd5;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; flex-shrink:0;
+}
+.adv-header-text{ flex:1; min-width:0; }
+.adv-header-title{ font-size:18px; font-weight:800; color:#111827; line-height:1.1; }
+.adv-header-sub{ font-size:12.5px; color:#6b7280; margin-top:3px; }
+.adv-header-hint{
+  font-size:11.5px; color:var(--pv2-muted); font-weight:500;
+  white-space:nowrap; margin:0 6px;
+}
+.adv-save-btn{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:10px 16px; border-radius:8px;
+  border:1px solid var(--pv2-border); background:#fff; color:#1f2937;
+  font-size:13px; font-weight:600; cursor:pointer;
+  transition:border-color .12s, background .12s;
+}
+.adv-save-btn i{ color:#2c5fd5; font-size:14px; }
+.adv-save-btn:hover{ border-color:#2c5fd5; background:rgba(44,95,213,.04); }
+.adv-close{
+  width:38px; height:38px; border-radius:8px;
+  border:1px solid var(--pv2-border); background:#fff; color:#6b7280;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; cursor:pointer;
+  transition:background .12s, color .12s;
+}
+.adv-close:hover{ background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
+
+/* Deep Search row */
+.adv-deep-row{
+  padding:14px 24px; background:#fafbfc; border-bottom:1px solid var(--pv2-border);
+  flex-shrink:0;
+}
+.adv-toggle{
+  display:inline-flex; align-items:center; gap:12px; cursor:pointer; user-select:none;
+}
+.adv-toggle input{ position:absolute; opacity:0; pointer-events:none; }
+.adv-toggle-track{
+  width:38px; height:22px; border-radius:999px;
+  background:#cbd5e1; position:relative;
+  transition:background .15s;
+  flex-shrink:0;
+}
+.adv-toggle-thumb{
+  position:absolute; top:3px; left:3px;
+  width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 2px rgba(11,18,32,.16);
+  transition:transform .18s;
+}
+.adv-toggle input:checked ~ .adv-toggle-track{ background:#2c5fd5; }
+.adv-toggle input:checked ~ .adv-toggle-track .adv-toggle-thumb{ transform:translateX(16px); }
+.adv-toggle-text strong{ font-size:13.5px; color:#111827; font-weight:700; display:block; }
+.adv-toggle-text small{ font-size:11.5px; color:#6b7280; display:block; margin-top:1px; }
+
+/* Tabs — high-specificity overrides so legacy global `.pcat` rules
+   (which set `border-radius:999px`, `background`, and `border-bottom:none !important`
+   on mobile) don't hijack our pill-underline design. */
+.adv-tabs{
+  display:flex; gap:0; padding:0 24px;
+  border-bottom:1px solid var(--pv2-border);
+  background:#fff; overflow-x:auto; flex-shrink:0;
+}
+.adv-screen .adv-tabs .pcat,
+.adv-tabs .pcat{
+  padding:14px 18px !important;
+  background:transparent !important;
+  border:none !important;
+  border-bottom:2px solid transparent !important;
+  border-radius:0 !important;
+  margin:0 0 -1px !important;
+  cursor:pointer;
+  font-size:13px !important; font-weight:600 !important;
+  color:#6b7280 !important;
+  display:inline-flex; align-items:center; gap:6px;
+  white-space:nowrap;
+  transition:color .12s, border-color .12s;
+  line-height:1.2;
+}
+.adv-screen .adv-tabs .pcat:hover{ color:#111827 !important; }
+.adv-screen .adv-tabs .pcat.active,
+.adv-tabs .pcat.active{
+  color:#2c5fd5 !important;
+  border-bottom-color:#2c5fd5 !important;
+  background:transparent !important;
+  font-weight:700 !important;
+}
+.adv-tabs .pcat i{ font-size:14px; }
+
+/* Body */
+.adv-body{
+  flex:1; overflow-y:auto;
+  padding:18px 24px; background:#fafbfc;
+}
+
+/* Section heading */
+.adv-section-title{
+  font-size:11px; font-weight:700; color:#9ca3af;
+  letter-spacing:.6px; text-transform:uppercase;
+  margin:0 0 14px;
+  padding-bottom:6px; border-bottom:1px solid var(--pv2-border);
+}
+.adv-section-title:not(:first-child){ margin-top:24px; }
+
+/* Field grid — 4 cols on web, 3 on tablet, 2 on mobile */
+.adv-grid{
+  display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px 16px;
+}
+@media (max-width:1099px){ .adv-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (max-width:520px) { .adv-grid{ grid-template-columns:1fr; } }
+
+/* Field cell */
+.adv-grid > div > label,
+.adv-grid > div > .co-label{
+  display:block; font-size:12px; font-weight:600; color:#1f2937;
+  margin-bottom:6px; letter-spacing:.1px;
+}
+.adv-grid input.pos-input,
+.adv-grid select.pos-input{
+  width:100%; padding:10px 14px; min-height:42px;
+  border:1px solid var(--pv2-border); border-radius:8px;
+  background:#fff; font-size:13.5px; color:#111827;
+  outline:none; transition:border-color .12s, box-shadow .12s;
+}
+.adv-grid input.pos-input::placeholder{ color:#9ca3af; }
+.adv-grid input.pos-input:focus,
+.adv-grid select.pos-input:focus{
+  border-color:#2c5fd5; box-shadow:0 0 0 3px rgba(44,95,213,.14);
+}
+.adv-grid select.pos-input{
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%236b7280' d='M3.5 6L8 10.5 12.5 6z'/></svg>");
+  background-repeat:no-repeat; background-position:right 12px center;
+  padding-right:34px;
+}
+
+/* Collapsible "Additional Filters" / "Advanced Options" section */
+.adv-collapse{
+  margin-top:24px; border:1px solid var(--pv2-border); border-radius:10px;
+  background:#fff; overflow:hidden;
+}
+.adv-collapse-h{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px; background:#fff; border:none; cursor:pointer;
+  width:100%; text-align:left;
+}
+.adv-collapse-h .adv-collapse-icon{
+  width:28px; height:28px; border-radius:6px;
+  background:rgba(44,95,213,.08); color:#2c5fd5;
+  display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+.adv-collapse-h-text{ flex:1; }
+.adv-collapse-h-title{ font-size:13.5px; font-weight:700; color:#111827; }
+.adv-collapse-h-sub{ font-size:11.5px; color:#6b7280; margin-top:1px; }
+.adv-collapse-h .adv-collapse-chev{ font-size:14px; color:#6b7280; transition:transform .18s; }
+.adv-collapse.open .adv-collapse-chev{ transform:rotate(180deg); }
+.adv-collapse-b{
+  display:none; padding:18px 16px;
+  border-top:1px solid var(--pv2-border); background:#fafbfc;
+}
+.adv-collapse.open .adv-collapse-b{ display:block; }
+
+/* Footer */
+.adv-footer{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 22px; background:#fff;
+  border-top:1px solid var(--pv2-border); flex-shrink:0;
+}
+.adv-footer-spacer{ flex:1; }
+.adv-reset-btn,.adv-cancel-btn{
+  padding:11px 18px; font-size:13.5px; font-weight:600;
+  border-radius:8px;
+}
+.adv-apply-btn{
+  padding:11px 22px; font-size:13.5px; font-weight:700;
+  border-radius:8px; background:#2c5fd5;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.adv-apply-btn:hover{ background:#1f4cb8; }
+
+/* ── Tablet (≥768 ≤1099) ── */
+@media (min-width:768px) and (max-width:1099px){
+  .adv-header{ padding:14px 18px; gap:10px; }
+  .adv-header-icon{ width:42px; height:42px; font-size:18px; }
+  .adv-header-title{ font-size:16px; }
+  .adv-header-sub{ font-size:11.5px; }
+  .adv-header-hint{ display:none; }
+  .adv-deep-row{ padding:12px 18px; }
+  .adv-tabs{ padding:0 14px; }
+  .adv-screen .adv-tabs .pcat,
+  .adv-tabs .pcat{ padding:12px 14px !important; font-size:12.5px !important; }
+  .adv-body{ padding:16px 18px; }
+}
+/* ── Mobile (<768) ── */
+@media (max-width:767px){
+  .adv-save-btn{ display:none; }
+  .adv-header{ padding:12px 14px; gap:10px; }
+  .adv-header-icon{ width:36px; height:36px; font-size:16px; border-radius:8px; }
+  .adv-header-text{ flex:1; }
+  .adv-header-title{ font-size:15px; }
+  .adv-header-sub{ font-size:11px; }
+  .adv-close{ width:34px; height:34px; flex-shrink:0; }
+
+  .adv-deep-row{ padding:11px 14px; }
+  .adv-toggle-text strong{ font-size:13px; }
+  .adv-toggle-text small{ font-size:11px; }
+
+  .adv-tabs{ padding:0 8px; gap:0; }
+  .adv-screen .adv-tabs .pcat,
+  .adv-tabs .pcat{
+    padding:11px 12px !important;
+    font-size:12px !important;
+    gap:5px;
+  }
+  .adv-tabs .pcat i{ font-size:13px; }
+
+  .adv-body{ padding:14px 14px 18px; }
+  .adv-section-title{ font-size:10.5px; margin-bottom:10px; padding-bottom:6px; }
+  .adv-section-title:not(:first-child){ margin-top:18px; }
+  .adv-grid{ gap:12px 12px; }
+  .adv-grid > div > label,
+  .adv-grid > div > .co-label{ font-size:11.5px; margin-bottom:5px; }
+  .adv-grid input.pos-input,
+  .adv-grid select.pos-input{
+    font-size:13px; min-height:40px; padding:9px 12px;
+  }
+
+  /* Collapsible — tighter on phone */
+  .adv-collapse{ margin-top:18px; border-radius:8px; }
+  .adv-collapse-h{ padding:12px 14px; }
+  .adv-collapse-h-title{ font-size:13px; }
+  .adv-collapse-h-sub{ font-size:11px; }
+  .adv-collapse-b{ padding:14px 12px; }
+
+  /* Footer: Reset + Apply only (Cancel hidden — X closes) */
+  .adv-cancel-btn{ display:none; }
+  .adv-footer{ padding:12px 14px; gap:8px; }
+  .adv-reset-btn{ flex:0 0 auto; padding:11px 14px; font-size:13px; }
+  .adv-apply-btn{ flex:1; justify-content:center; padding:13px 16px; font-size:14px; }
+}
+
 /* ═══ Select2 inside POS — restyled to match the .ps-sel "Warehouse" dropdown ═══
    Targets BOTH the default theme (`--default`) and the `--bootstrap-5` theme.
    Same light border, custom chevron, same focus ring, lighter dropdown panel. */
@@ -1616,6 +1969,47 @@ body.pos-mode .select2-container--default:not(.select2-container--has-clear) .se
 
 /* ═══ POS Autocomplete dropdown (posAutocomplete helper) ═══ */
 .ps-sel{position:relative;display:inline-flex;align-items:center;min-width:120px;vertical-align:middle;}
+
+/* When the enhanced dropdown (.ps-sel) sits inside a checkout / popup form
+   (.cps-fld, .cps-card-b, .cps-confirm-b, etc.), make it look identical to
+   the .cps-input text boxes — full-width, same min-height, same border-radius
+   and font.  Otherwise it can collapse to its content width and feel small. */
+.cps-fld > .ps-sel,
+.cps-card-b .ps-sel,
+.cps-confirm-b .ps-sel,
+.cps-input-wrap .ps-sel,
+.cps-disc-row .ps-sel,
+.cps-nc-grid .ps-sel{
+  display:flex !important; width:100% !important;
+  min-width:0 !important;
+}
+.cps-fld > .ps-sel .ps-sel-input,
+.cps-card-b .ps-sel .ps-sel-input,
+.cps-confirm-b .ps-sel .ps-sel-input,
+.cps-input-wrap .ps-sel .ps-sel-input,
+.cps-disc-row .ps-sel .ps-sel-input,
+.cps-nc-grid .ps-sel .ps-sel-input{
+  width:100%; min-height:42px;
+  padding:11px 32px 11px 14px;
+  border-radius:8px; border:1px solid var(--cps-line);
+  background:#fff; color:var(--cps-text);
+  font-size:13.5px; font-weight:500; line-height:1.3;
+}
+.cps-fld > .ps-sel .ps-sel-arrow,
+.cps-card-b .ps-sel .ps-sel-arrow,
+.cps-confirm-b .ps-sel .ps-sel-arrow,
+.cps-disc-row .ps-sel .ps-sel-arrow,
+.cps-nc-grid .ps-sel .ps-sel-arrow{
+  right:12px; font-size:11px; color:var(--cps-muted);
+}
+.cps-fld > .ps-sel.open .ps-sel-input,
+.cps-card-b .ps-sel.open .ps-sel-input,
+.cps-confirm-b .ps-sel.open .ps-sel-input,
+.cps-disc-row .ps-sel.open .ps-sel-input,
+.cps-nc-grid .ps-sel.open .ps-sel-input{
+  border-color:var(--cps-blue);
+  box-shadow:0 0 0 3px rgba(44,95,213,.14);
+}
 .ps-sel-input{
   width:100%;padding:6px 28px 6px 10px;
   border:1px solid var(--pv2-border);border-radius:6px;
@@ -1664,6 +2058,7 @@ body.pos-mode .select2-container--default:not(.select2-container--has-clear) .se
 .ps-sel-opt.selected{background:var(--pv2-brand-light);font-weight:600;color:var(--pv2-brand);}
 .ps-sel-opt.selected::after{content:'\F26E';font-family:'bootstrap-icons';float:right;font-size:12px;}
 .ps-sel-empty{padding:16px 12px;text-align:center;color:var(--pv2-muted);font-size:12px;}
+.ps-sel-more{padding:8px 12px;text-align:center;color:var(--pv2-muted);font-size:11px;font-style:italic;border-top:1px dashed var(--pv2-border);}
 
 .ord-del-btn{opacity:.6;transition:opacity .15s;}
 .ord-del-btn:hover{opacity:1;}
@@ -2309,6 +2704,42 @@ body.pos-mode .select2-container--default:not(.select2-container--has-clear) .se
 }
 .cps-close-fab:hover{ background:var(--cps-blue); color:#fff; border-color:var(--cps-blue); transform:scale(1.05); }
 
+/* Slim meta-strip — replaces the old PAYMENT DETAILS card.
+   Single inline line: Order ID · Order Date · Created By. Saves a full card
+   of vertical real-estate.  Wraps gracefully on mobile. */
+.cps-meta-strip{
+  display:flex; flex-wrap:wrap; align-items:center;
+  gap:6px 14px;
+  padding:8px 22px;
+  background:#fff;
+  border-bottom:1px solid var(--cps-line);
+  font-size:12.5px; color:var(--cps-text);
+  flex-shrink:0;
+}
+.cps-meta-item{ display:inline-flex; align-items:baseline; gap:6px; min-width:0; }
+.cps-meta-item .cps-meta-l{
+  font-size:10.5px; font-weight:700; color:var(--cps-muted);
+  text-transform:uppercase; letter-spacing:.5px;
+}
+.cps-meta-item .cps-meta-v{
+  font-weight:700; color:var(--cps-text);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px;
+}
+.cps-meta-dot{ color:var(--cps-line); font-weight:700; user-select:none; }
+
+/* Tighter on tablet/mobile */
+@media (max-width:1099px){
+  .cps-meta-strip{ padding:7px 14px; font-size:12px; gap:4px 10px; }
+  .cps-meta-dot{ display:none; }   /* gap is enough; dots add noise */
+  .cps-meta-item{ flex:0 1 auto; }
+  .cps-meta-item .cps-meta-l{ font-size:10px; }
+}
+@media (max-width:520px){
+  .cps-meta-strip{ padding:8px 12px; }
+  .cps-meta-item .cps-meta-v{ max-width:none; font-size:12px; }
+}
+
 /* Default visibility helpers for breakpoint-specific elements. */
 .cps-mobile-only{ display:none !important; }
 .cps-header-mobile{ display:none !important; }
@@ -2462,12 +2893,17 @@ body.pos-mode .select2-container--default:not(.select2-container--has-clear) .se
 }
 .cps-items tbody td.num{ text-align:right; font-variant-numeric:tabular-nums; }
 .cps-items tbody tr:last-child td{ border-bottom:none; }
+.cps-items .cps-row-name-line{
+  display:flex; align-items:center; gap:6px;
+}
 .cps-items .cps-row-name{ font-weight:600; }
-.cps-items .cps-row-sub{ font-size:11px; color:var(--cps-muted); margin-top:1px; }
+.cps-items .cps-row-sub{ font-size:11px; color:var(--cps-muted); margin-top:1px; padding-left:18px; }
 .cps-items .cps-row{ cursor:pointer; transition:background .12s; }
 .cps-items .cps-row:hover{ background:#fafbfc; }
 .cps-items .cps-row-chev{
-  display:inline-block; transition:transform .15s; color:var(--cps-subtle); font-size:12px;
+  display:inline-block; transition:transform .15s, color .15s;
+  color:var(--cps-subtle); font-size:11px;
+  width:12px; flex-shrink:0;
 }
 .cps-items .cps-row-chev.open{ transform:rotate(90deg); color:var(--cps-blue); }
 
@@ -2606,17 +3042,36 @@ select.cps-input{
 }
 
 .cps-cust-info{
-  display:grid; grid-template-columns: minmax(180px,1.2fr) minmax(110px,0.8fr) minmax(180px,1.6fr);
-  gap:14px; margin-top:10px; padding:14px; border-radius:8px;
+  display:flex; flex-wrap:wrap; gap:10px;
+  margin-top:10px; padding:12px; border-radius:8px;
   background:#fafbfc; border:1px solid var(--cps-line);
 }
-.cps-cust-info .ci-l{ display:flex; align-items:center; gap:10px; min-width:0; }
-.cps-cust-info .ci-l > i{ font-size:30px; color:var(--cps-blue); flex-shrink:0; }
-.cps-cust-info .ci-l .ci-name{ font-size:13.5px; font-weight:700; color:var(--cps-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cps-cust-info .ci-l .ci-sub{ font-size:11.5px; color:var(--cps-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cps-cust-info .ci-r{ min-width:0; }
-.cps-cust-info .ci-lbl{ font-size:11px; color:var(--cps-muted); margin-bottom:2px; }
-.cps-cust-info .ci-val{ font-size:13px; color:var(--cps-text); font-weight:600; word-break:break-word; line-height:1.35; }
+/* Each block (name / phone / email) — same icon + label/value layout */
+.cps-cust-info .ci-l,
+.cps-cust-info .ci-r{
+  flex:1 1 calc(33.333% - 10px); min-width:0;
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px; border-radius:6px;
+  background:#fff; border:1px solid var(--cps-line);
+}
+.cps-cust-info .ci-l > i,
+.cps-cust-info .ci-r > i{
+  font-size:18px; color:var(--cps-blue); flex-shrink:0;
+}
+.cps-cust-info .ci-l > i{ font-size:24px; }
+.cps-cust-info .ci-l-text,
+.cps-cust-info .ci-r-text{ min-width:0; flex:1; }
+.cps-cust-info .ci-name{ font-size:13px; font-weight:700; color:var(--cps-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cps-cust-info .ci-sub{ font-size:11px; color:var(--cps-muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cps-cust-info .ci-lbl{
+  font-size:10.5px; font-weight:600; color:var(--cps-muted);
+  text-transform:uppercase; letter-spacing:.4px;
+  margin-bottom:2px;
+}
+.cps-cust-info .ci-val{
+  font-size:12.5px; color:var(--cps-text); font-weight:600;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
 
 .cps-disc-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .cps-fld label{ display:block; font-size:11.5px; color:var(--cps-muted); margin-bottom:6px; font-weight:600; }
@@ -2685,7 +3140,19 @@ select.cps-input{
 .cps-pmode-icon{
   font-size:16px; color:var(--cps-muted); flex-shrink:0;
 }
-.cps-pmode.active .cps-pmode-icon{ color:var(--cps-blue); }
+/* High-specificity rules so the legacy `.co-pay-btn.active i { color:#fff !important }`
+   from the old wizard CSS doesn't make the active mode's icon white & invisible
+   against the light blue-soft background. */
+.cps-screen .cps-pmode .cps-pmode-icon,
+.cps-pmode.cps-pmode .cps-pmode-icon{
+  color: var(--cps-muted) !important;
+}
+.cps-screen .cps-pmode.active .cps-pmode-icon,
+.cps-pmode.cps-pmode.active .cps-pmode-icon,
+.cps-pmode.active i.cps-pmode-icon,
+.cps-pmode.active.co-pay-btn i{
+  color: var(--cps-blue) !important;
+}
 
 /* Walk-in fallback fields (visible when no registered customer is picked). */
 .cps-walkin{
@@ -2770,6 +3237,9 @@ select.cps-input{
   .cps-input-wrap > input,
   .cps-input-wrap > textarea,
   .cps-input-wrap > select{ padding-right:14px !important; }
+  /* Customer info: name on its own row, phone & email side-by-side beneath */
+  .cps-cust-info .ci-l{ flex:1 1 100%; }
+  .cps-cust-info .ci-r{ flex:1 1 calc(50% - 5px); }
   .cps-header{
     display:flex; align-items:center; gap:14px;
     padding:12px 18px; background:var(--cps-navy); color:#fff;
@@ -2784,7 +3254,7 @@ select.cps-input{
   }
   .cps-card-h{ padding:12px 14px 8px; font-size:11.5px; }
   .cps-card-b{ padding:0 14px 14px; }
-  .cps-cust-info{ grid-template-columns:1fr; gap:10px; }
+  /* Tablet customer chip already handled in main rule above (ci-l 100%, ci-r 50%) */
 }
 
 /* MOBILE (<768) */
@@ -2845,9 +3315,9 @@ select.cps-input{
   .cps-cust-row{ flex-direction:column; gap:8px; }
   .cps-cust-row .cps-input-wrap{ width:100%; }
   .cps-cust-row .cps-btn-primary{ width:100%; justify-content:center; padding:10px; }
-  .cps-cust-info{ grid-template-columns:1fr; gap:8px; padding:10px; }
-  .cps-cust-info .ci-r{ display:flex; gap:8px; align-items:center; }
-  .cps-cust-info .ci-lbl{ min-width:60px; margin-bottom:0; }
+  .cps-cust-info{ flex-direction:column; gap:8px; padding:10px; }
+  .cps-cust-info .ci-l,
+  .cps-cust-info .ci-r{ flex:1 1 100%; }
 
   /* Discount */
   .cps-disc-row{ grid-template-columns:1fr 1fr; gap:8px; }
@@ -2922,6 +3392,297 @@ select.cps-input{
     background:transparent !important;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   SC — Sale Completed Successfully screen (post-payment).
+   Big card overlay, 2-col body on web (Order details + items + stats LEFT,
+   action buttons + more actions RIGHT), single column on mobile.
+   ═════════════════════════════════════════════════════════════════════════ */
+.sc-ov{
+  position:fixed; inset:0; z-index:99998;
+  background:rgba(11,18,32,.55); backdrop-filter:blur(3px);
+  display:none; align-items:flex-start; justify-content:center;
+  padding:24px 20px; overflow-y:auto;
+  font-family:var(--pv2-font-sans, 'Inter', system-ui, sans-serif);
+}
+.sc-ov[style*="display:flex"],
+.sc-ov[style*="display: flex"]{ display:flex !important; }
+.sc-card{
+  background:#fff; border-radius:14px; width:100%; max-width:1280px;
+  box-shadow:0 24px 60px rgba(11,18,32,.30);
+  position:relative; overflow:hidden;
+  animation:vk-pop .2s ease-out both;
+}
+.sc-close{
+  position:absolute; top:16px; right:16px; z-index:5;
+  width:34px; height:34px; border-radius:8px;
+  border:1px solid var(--cps-line); background:#fff; color:var(--cps-muted);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px;
+  transition:background .12s, color .12s;
+}
+.sc-close:hover{ background:#fee2e2; color:var(--cps-red); border-color:#fca5a5; }
+
+/* Title row */
+.sc-title-row{
+  display:flex; align-items:center; gap:18px;
+  padding:30px 30px 18px;
+}
+.sc-check{
+  width:64px; height:64px; border-radius:50%;
+  background:var(--cps-green); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:30px; flex-shrink:0;
+  box-shadow:0 6px 16px rgba(22,163,74,.30);
+}
+.sc-title-text h2{ font-size:22px; font-weight:800; color:var(--cps-text); margin:0; line-height:1.15; }
+.sc-title-text p{ font-size:13px; color:var(--cps-muted); margin:4px 0 0; }
+
+/* Body — 2-col grid on web */
+.sc-body{
+  display:grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap:18px; padding:0 30px 24px;
+}
+.sc-col-l, .sc-col-r{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+
+/* Block (= card) */
+.sc-block{
+  background:#fff; border:1px solid var(--cps-line); border-radius:10px;
+  padding:14px 16px;
+}
+.sc-block-h{
+  display:flex; align-items:center; gap:8px;
+  font-size:13px; font-weight:800; color:var(--cps-text);
+  margin-bottom:14px;
+}
+.sc-block-h i{ color:var(--cps-blue); font-size:16px; }
+.sc-block-count{ color:var(--cps-muted); font-weight:500; font-size:12.5px; margin-left:4px; }
+
+/* Order / Invoice details */
+.sc-od{
+  display:grid; grid-template-columns: 1.4fr 1fr; gap:16px;
+  align-items:start;
+}
+.sc-od-fields{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px 18px;
+}
+.sc-od-row{ min-width:0; }
+.sc-od-lbl{ font-size:11.5px; color:var(--cps-muted); font-weight:600; margin-bottom:4px; }
+.sc-od-val{ font-size:13.5px; color:var(--cps-text); font-weight:600; display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.sc-od-val i{ color:var(--cps-muted); }
+.sc-od-val.sc-blue{ color:var(--cps-blue); font-weight:800; font-size:15px; letter-spacing:.3px; }
+.sc-pill{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+.sc-pill-paid{ background:var(--cps-green-soft); color:var(--cps-green); }
+.sc-pill-pending{ background:#fef3c7; color:#b45309; }
+.sc-pill-partial{ background:#dbeafe; color:#1d4ed8; }
+
+/* Right-side totals box */
+.sc-od-totals{
+  background:var(--cps-green-soft); border:1px solid #c8e9d3;
+  border-radius:10px; padding:14px 16px;
+}
+.sc-od-totals-grand{
+  display:flex; justify-content:space-between; align-items:flex-start;
+  padding-bottom:10px; border-bottom:1px solid rgba(22,163,74,.15);
+}
+.sc-od-totals-grand > span:first-child{ font-size:12.5px; color:var(--cps-muted); font-weight:600; }
+.sc-amt-big{ font-size:20px; font-weight:800; color:var(--cps-green); font-variant-numeric:tabular-nums; }
+.sc-od-totals-rows{ padding:8px 0; display:flex; flex-direction:column; gap:6px; }
+.sc-od-totals-rows .sc-trow{
+  display:flex; justify-content:space-between; font-size:12.5px; color:var(--cps-muted);
+}
+.sc-od-totals-rows .sc-trow > span:last-child{ color:var(--cps-text); font-weight:600; font-variant-numeric:tabular-nums; }
+.sc-od-totals-grand-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding-top:10px; border-top:1px solid rgba(22,163,74,.15);
+  font-size:13.5px; font-weight:800;
+}
+.sc-od-totals-grand-row > span:last-child{
+  color:var(--cps-green); font-size:15px; font-variant-numeric:tabular-nums;
+}
+
+/* Items sold table */
+.sc-items-wrap{ overflow-x:auto; }
+.sc-items-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+.sc-items-table thead th{
+  text-align:left; padding:10px 12px; background:#fafbfc;
+  border-bottom:1px solid var(--cps-line);
+  font-size:10.5px; color:var(--cps-muted); font-weight:700; letter-spacing:.5px;
+}
+.sc-items-table thead th.num{ text-align:right; }
+.sc-items-table tbody td{
+  padding:10px 12px; border-bottom:1px solid #f1f3f8; vertical-align:top;
+}
+.sc-items-table tbody td.num{ text-align:right; font-variant-numeric:tabular-nums; }
+.sc-items-table tbody tr:last-child td{ border-bottom:none; }
+
+/* 4 stat tiles */
+.sc-stats{
+  display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;
+}
+.sc-stat{
+  display:flex; align-items:center; gap:10px;
+  padding:14px; border:1px solid var(--cps-line); border-radius:10px;
+  background:#fafbfc;
+}
+.sc-stat-icon{
+  width:42px; height:42px; border-radius:50%;
+  background:var(--cps-blue-soft); color:var(--cps-blue);
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+  flex-shrink:0;
+}
+.sc-stat-text{ min-width:0; }
+.sc-stat-l{ font-size:11px; color:var(--cps-muted); font-weight:600; }
+.sc-stat-v{ font-size:18px; font-weight:800; color:var(--cps-text); margin:2px 0 0; line-height:1.1; font-variant-numeric:tabular-nums; }
+.sc-stat-v.sc-green{ color:var(--cps-green); }
+.sc-stat-s{ font-size:11px; color:var(--cps-muted); margin-top:2px; }
+
+/* Thank you */
+.sc-thank{
+  display:flex; align-items:center; gap:10px;
+  background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px;
+  padding:12px 14px;
+}
+.sc-thank > i{ color:var(--cps-blue); font-size:18px; flex-shrink:0; }
+.sc-thank-t{ font-size:13px; font-weight:700; color:var(--cps-blue); }
+.sc-thank-s{ font-size:12px; color:var(--cps-muted); }
+
+/* Right column — actions grid */
+.sc-actions{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+.sc-action{
+  display:flex; align-items:center; gap:10px;
+  padding:13px 12px; border:1px solid var(--cps-line); border-radius:10px;
+  background:#fff; cursor:pointer; text-align:left;
+  transition:border-color .12s, background .12s;
+  font-family:inherit;
+}
+.sc-action:hover{ border-color:var(--cps-blue); background:var(--cps-blue-soft); }
+.sc-action-i{ font-size:20px; color:var(--cps-blue); flex-shrink:0; }
+.sc-action-t{ font-size:13px; font-weight:700; color:var(--cps-blue); line-height:1.2; }
+.sc-action-s{ font-size:11px; color:var(--cps-muted); margin-top:2px; line-height:1.2; }
+
+/* More Actions list */
+.sc-more{ display:flex; flex-direction:column; gap:6px; }
+.sc-more-item{
+  display:flex; align-items:center; gap:12px;
+  padding:13px 14px; border:1px solid var(--cps-line); border-radius:10px;
+  background:#fff; cursor:pointer; text-align:left;
+  transition:border-color .12s, background .12s;
+  font-family:inherit;
+}
+.sc-more-item:hover{ border-color:var(--cps-blue); background:var(--cps-blue-soft); }
+.sc-more-item > i:first-child{ font-size:18px; color:var(--cps-blue); flex-shrink:0; }
+.sc-more-item > div{ flex:1; min-width:0; }
+.sc-more-t{ font-size:13px; font-weight:700; color:var(--cps-blue); line-height:1.2; }
+.sc-more-s{ font-size:11.5px; color:var(--cps-muted); margin-top:2px; line-height:1.2; }
+.sc-more-chev{ font-size:14px; color:var(--cps-muted); }
+
+/* Footer */
+.sc-footer{
+  display:flex; gap:12px; padding:18px 30px;
+  border-top:1px solid var(--cps-line); background:#fafbfc;
+}
+.sc-fbtn{
+  flex:1; min-height:50px; border-radius:10px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-size:14px; font-weight:700; font-family:inherit;
+  transition:filter .12s, transform .04s;
+}
+.sc-fbtn-new{
+  background:#fff; color:var(--cps-blue); border:1.5px solid var(--cps-blue);
+}
+.sc-fbtn-new:hover{ background:var(--cps-blue-soft); }
+.sc-fbtn-orders{
+  background:var(--cps-blue); color:#fff; border:none;
+}
+.sc-fbtn-orders:hover{ background:#1f4cb8; }
+
+/* Tablet (≤1099) — keep 2 columns but tighter */
+@media (max-width:1099px){
+  .sc-card{ max-width:none; }
+  .sc-title-row{ padding:22px 20px 14px; gap:14px; }
+  .sc-check{ width:54px; height:54px; font-size:25px; }
+  .sc-title-text h2{ font-size:19px; }
+  .sc-body{ padding:0 20px 18px; gap:14px; }
+  .sc-od{ grid-template-columns:1fr; }
+  .sc-od-totals{ order:-1; }     /* totals on top of fields on tablet */
+  .sc-stats{ grid-template-columns:repeat(2, 1fr); }
+  .sc-footer{ padding:14px 20px; }
+}
+/* Mobile (<768) — single column, compact */
+@media (max-width:767px){
+  .sc-ov{ padding:0; align-items:stretch; }
+  .sc-card{ border-radius:0; min-height:100vh; max-height:100vh; overflow-y:auto; }
+  .sc-close{ top:8px; right:8px; }
+  .sc-title-row{ flex-direction:column; text-align:center; gap:10px; padding:30px 18px 14px; }
+  .sc-check{ width:62px; height:62px; font-size:28px; }
+  .sc-title-text h2{ font-size:20px; }
+  .sc-title-text p{ font-size:12.5px; }
+
+  .sc-body{ grid-template-columns:1fr; padding:0 14px 18px; gap:12px; }
+  .sc-block{ padding:12px 14px; }
+  .sc-od-fields{ grid-template-columns:1fr; gap:10px; }
+
+  .sc-actions{ grid-template-columns:1fr 1fr; gap:8px; }
+  .sc-action{ padding:11px 10px; }
+  .sc-action-i{ font-size:18px; }
+  .sc-action-t{ font-size:12.5px; }
+  .sc-action-s{ font-size:10.5px; }
+
+  .sc-more-item{ padding:11px 12px; }
+  .sc-more-t{ font-size:12.5px; }
+  .sc-more-s{ font-size:11px; }
+
+  .sc-stats{ grid-template-columns:1fr 1fr; }
+  .sc-stat{ padding:10px; gap:8px; }
+  .sc-stat-icon{ width:36px; height:36px; font-size:15px; }
+  .sc-stat-v{ font-size:16px; }
+
+  .sc-footer{
+    padding:12px 14px; gap:8px;
+    position:sticky; bottom:0; z-index:3;
+    box-shadow:0 -4px 12px rgba(11,18,32,.06);
+  }
+  .sc-fbtn{ min-height:46px; font-size:13.5px; }
+
+  /* Items table — make it more readable on phone */
+  .sc-items-table{ font-size:11.5px; }
+  .sc-items-table thead th,
+  .sc-items-table tbody td{ padding:8px 8px; }
+}
+
+/* ── Confirm Payment screen (re-uses .sc-card / .sc-block / .sc-footer) ── */
+.pc-card .sc-check.pc-check{ background:#1d4ed8; box-shadow:0 6px 16px rgba(29,78,216,.30); }
+.pc-method-block #ccMethodBlockBody{ font-size:13px; color:var(--cps-text); }
+.pc-method-block .pc-cash-row,
+.pc-method-block .pc-ref-row{
+  display:flex; flex-direction:column; gap:8px;
+}
+.pc-method-block .pc-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1px dashed var(--cps-line);
+  font-size:13px;
+}
+.pc-method-block .pc-row:last-child{ border-bottom:none; }
+.pc-method-block .pc-row > span:first-child{ color:var(--cps-muted); }
+.pc-method-block .pc-row > span:last-child{ color:var(--cps-text); font-weight:700; font-variant-numeric:tabular-nums; }
+.pc-method-block .pc-banner{
+  padding:10px 12px; border-radius:8px; background:var(--cps-blue-soft);
+  color:var(--cps-blue); font-size:12.5px; font-weight:600;
+  display:flex; gap:8px; align-items:flex-start;
+}
+.pc-method-block .pc-banner i{ font-size:14px; flex-shrink:0; margin-top:1px; }
+.pc-amt-block{ background:linear-gradient(135deg, #f8faff 0%, #fff 100%); }
+.pc-amt-grid{ display:grid; grid-template-columns:1fr; gap:8px; }
+.pc-amt-cell{
+  border:1px solid var(--cps-line); border-radius:8px;
+  padding:12px; background:#fff; text-align:center;
+}
+.pc-amt-l{ font-size:11px; color:var(--cps-muted); font-weight:600; }
+.pc-amt-v{ font-size:20px; font-weight:800; color:var(--cps-text); margin-top:4px; font-variant-numeric:tabular-nums; }
+.pc-card .sc-fbtn-orders{ background:var(--cps-green); }
+.pc-card .sc-fbtn-orders:hover{ background:#15803d; }
 
 /* ═════════════════════════════════════════════════════════════════════════
    CPS — Cash Confirm modal. Opens when the cashier clicks "Collect Cash"
@@ -3040,6 +3801,20 @@ select.cps-input{
   opacity:.45; cursor:not-allowed;
   background:#f1f5f9 !important; border-color:var(--cps-line) !important; color:var(--cps-subtle) !important;
 }
+
+/* ── Defensive: <select> / dropdown widgets must NEVER show a keyboard icon ──
+   Hides any `.cps-kb-trigger` that ends up next to a select / select2 /
+   posAutocomplete wrapper, or inside a wrap that contains one. */
+select + .cps-kb-trigger,
+.select2-container + .cps-kb-trigger,
+.ps-sel + .cps-kb-trigger,
+.cps-input-wrap:has(> select) > .cps-kb-trigger,
+.cps-input-wrap:has(.select2-container) > .cps-kb-trigger,
+.cps-input-wrap:has(.ps-sel) > .cps-kb-trigger,
+.ps-sel .cps-kb-trigger,
+.ps-sel-drop .cps-kb-trigger{
+  display:none !important;
+}
 .cps-input-wrap-textarea{ display:block; }
 .cps-input-wrap-textarea > .cps-input{ padding-right:14px !important; }
 .cps-kb-trigger-tarea{ position:absolute; right:6px; top:6px; transform:none; }
@@ -3136,6 +3911,43 @@ select.cps-input{
   font-size:18px; font-weight:800;
 }
 .vk-ok:hover{ background:#15803d; }
+
+/* Autocomplete results pane inside the keyboard popup — used when the
+   bound input has a live dropdown (e.g. customer search). */
+.vk-autocomplete{
+  background:#fff; border:1px solid var(--cps-line); border-radius:12px;
+  padding:10px 12px;
+}
+.vk-autocomplete-h{
+  display:flex; align-items:center; gap:6px;
+  font-size:11.5px; font-weight:800; color:var(--cps-blue);
+  letter-spacing:.6px; text-transform:uppercase;
+  margin-bottom:8px;
+}
+.vk-autocomplete-h i{ font-size:13px; }
+.vk-autocomplete-list{
+  display:flex; flex-direction:column; gap:0;
+  max-height:240px; overflow-y:auto;
+  border:1px solid var(--cps-line); border-radius:8px;
+  background:var(--cps-bg);
+}
+.vk-autocomplete-list a{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; font-size:13.5px;
+  color:var(--cps-text) !important; text-decoration:none !important;
+  background:#fff;
+  border-bottom:1px solid #f1f3f8;
+  transition:background .12s;
+}
+.vk-autocomplete-list a:last-child{ border-bottom:none; }
+.vk-autocomplete-list a:hover,
+.vk-autocomplete-list a:active{
+  background:var(--cps-blue-soft);
+}
+.vk-autocomplete-list a::before{
+  content:""; flex-shrink:0; width:32px; height:32px; border-radius:50%;
+  background:var(--cps-blue-soft) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='%232c5fd5' viewBox='0 0 16 16'><path d='M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2 1H6a4 4 0 0 0-4 4v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1a4 4 0 0 0-4-4Z'/></svg>") center / 18px no-repeat;
+}
 
 /* Quick amounts row */
 .vk-quick{
