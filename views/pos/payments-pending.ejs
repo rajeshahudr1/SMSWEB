@@ -1,0 +1,373 @@
+<% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
+<%
+// SMS_CURRENCY is a *client-side* window global from main.ejs; at server
+// render time we just use a sensible default and let the JS swap it on load.
+const currency = (typeof locals !== 'undefined' && locals.currency) ? locals.currency : '₹';
+%>
+
+<style>
+.pp-wrap { padding: 18px 20px 80px; max-width: 1280px; margin: 0 auto; }
+.pp-hdr { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.pp-hdr h1 { font-size: 22px; font-weight: 800; margin: 0; color: var(--pv2-text); letter-spacing: -0.3px; }
+.pp-hdr .sub { font-size: 12.5px; color: var(--pv2-muted); margin-top: 2px; }
+
+.pp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.pp-stat { background: #fff; border: 1px solid var(--pv2-border); border-radius: 10px; padding: 12px 14px; }
+.pp-stat .l { font-size: 11px; font-weight: 700; color: var(--pv2-subtle); text-transform: uppercase; letter-spacing: 0.5px; }
+.pp-stat .v { font-size: 22px; font-weight: 800; color: var(--pv2-text); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.pp-stat .v small { font-size: 12px; color: var(--pv2-muted); font-weight: 500; }
+.pp-stat.pending .v { color: var(--pv2-warning); }
+.pp-stat.expired .v { color: var(--pv2-danger); }
+.pp-stat.paid    .v { color: var(--pv2-success); }
+
+/* Filter row */
+.pp-filters { background: #fff; border: 1px solid var(--pv2-border); border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.pp-filters .form-control, .pp-filters .form-select { height: 38px; min-width: 140px; }
+.pp-filters .pp-search { flex: 1 1 280px; min-width: 200px; }
+.pp-filters .pp-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--pv2-border); background: #fff; color: var(--pv2-text); font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.pp-filters .pp-btn:hover { background: var(--pv2-surface-alt); }
+.pp-filters .pp-btn.primary { background: var(--pv2-brand); border-color: var(--pv2-brand); color: #fff; }
+.pp-filters .pp-btn.primary:hover { background: var(--pv2-brand-dark); border-color: var(--pv2-brand-dark); }
+
+/* Card list (mobile-first) */
+.pp-card { background: #fff; border: 1px solid var(--pv2-border); border-radius: 12px; box-shadow: var(--pv2-shadow-sm); padding: 14px 16px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr auto; gap: 10px 14px; }
+.pp-card .row1 { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-card .num { font-weight: 700; font-size: 14px; color: var(--pv2-text); font-family: var(--pv2-font-mono); }
+.pp-card .pp-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.pp-card .pp-pill.created { background: #fef3c7; color: #92400e; }
+.pp-card .pp-pill.pending { background: #dbeafe; color: #1d4ed8; }
+.pp-card .pp-pill.expired { background: var(--pv2-danger-bg); color: var(--pv2-danger); }
+.pp-card .pp-pill.cancelled { background: #f3f4f6; color: #6b7280; }
+.pp-card .pp-pill.paid    { background: var(--pv2-success-bg); color: var(--pv2-success); }
+.pp-card .pp-pill.failed  { background: var(--pv2-danger-bg); color: var(--pv2-danger); }
+.pp-card .pp-pill.gateway { background: var(--pv2-brand-light); color: var(--pv2-brand-dark); text-transform: capitalize; }
+.pp-card .pp-pill.method  { background: #ede9fe; color: #6d28d9; text-transform: capitalize; }
+.pp-card .grow { flex: 1; }
+.pp-card .ttl { font-size: 18px; font-weight: 800; color: var(--pv2-text); font-variant-numeric: tabular-nums; text-align: right; }
+.pp-card .ttl small { font-size: 11px; color: var(--pv2-muted); font-weight: 500; }
+
+.pp-card .meta { font-size: 12px; color: var(--pv2-muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.pp-card .meta span { display: inline-flex; align-items: center; gap: 5px; }
+.pp-card .meta i { color: var(--pv2-subtle); }
+.pp-card .timer { font-family: var(--pv2-font-mono); font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--pv2-surface-alt); color: var(--pv2-text); }
+.pp-card .timer.warn { background: var(--pv2-warning-bg); color: var(--pv2-warning); }
+.pp-card .timer.crit { background: var(--pv2-danger-bg); color: var(--pv2-danger); }
+
+.pp-card .items { font-size: 12px; color: var(--pv2-muted); }
+.pp-card .items strong { color: var(--pv2-text); font-weight: 600; }
+
+.pp-card .actions { display: flex; gap: 8px; flex-wrap: wrap; grid-column: 1 / -1; padding-top: 8px; border-top: 1px dashed var(--pv2-border); margin-top: 4px; }
+.pp-card .actions button, .pp-card .actions a {
+  border: 1px solid var(--pv2-border); background: #fff; color: var(--pv2-text);
+  padding: 7px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 5px; text-decoration: none;
+}
+.pp-card .actions button:hover, .pp-card .actions a:hover { background: var(--pv2-surface-alt); }
+.pp-card .actions .danger { color: var(--pv2-danger); border-color: #fecaca; }
+.pp-card .actions .danger:hover { background: var(--pv2-danger-bg); }
+.pp-card .actions .copy { color: var(--pv2-brand); border-color: var(--pv2-brand-light); }
+.pp-card .actions .copy:hover { background: var(--pv2-brand-ghost); }
+
+.pp-empty { background: #fff; border: 1px dashed var(--pv2-border); border-radius: 12px; padding: 60px 20px; text-align: center; color: var(--pv2-muted); }
+.pp-empty i { font-size: 40px; color: var(--pv2-subtle); display: block; margin-bottom: 10px; }
+.pp-empty h6 { color: var(--pv2-text); font-weight: 700; margin: 0 0 4px; }
+
+.pp-loader { padding: 40px; text-align: center; color: var(--pv2-muted); }
+
+@media (max-width: 768px) {
+  .pp-wrap { padding: 12px 12px 90px; }
+  .pp-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .pp-stat .v { font-size: 18px; }
+  .pp-card { padding: 12px; gap: 8px 10px; }
+  .pp-card .ttl { font-size: 16px; text-align: left; }
+  .pp-card .actions button, .pp-card .actions a { flex: 1 1 calc(50% - 4px); justify-content: center; }
+  .pp-filters .form-control, .pp-filters .form-select { min-width: 0; flex: 1 1 calc(50% - 5px); }
+  .pp-filters .pp-search { flex: 1 1 100%; }
+}
+</style>
+
+<div class="pp-wrap">
+  <div class="pp-hdr">
+    <div>
+      <h1><i class="bi bi-hourglass-split me-2" style="color:var(--pv2-warning);"></i>Pending Payments</h1>
+      <div class="sub">Online transactions still waiting for the customer to pay. Roll back manually to release stock back to inventory.</div>
+    </div>
+    <div>
+      <button class="pp-btn primary" id="ppRefresh" style="padding:8px 14px;border-radius:8px;border:1px solid var(--pv2-brand);background:var(--pv2-brand);color:#fff;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="pp-stats">
+    <div class="pp-stat pending">
+      <div class="l">Pending</div>
+      <div class="v" id="ppStatPending">0</div>
+    </div>
+    <div class="pp-stat expired">
+      <div class="l">Expired (auto-cancelled soon)</div>
+      <div class="v" id="ppStatExpired">0</div>
+    </div>
+    <div class="pp-stat">
+      <div class="l">Total Locked Stock</div>
+      <div class="v" id="ppStatHolds">0 <small>holds</small></div>
+    </div>
+    <div class="pp-stat">
+      <div class="l">Total Pending Amount</div>
+      <div class="v" id="ppStatTotal"><%= currency %>0.00</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="pp-filters">
+    <input type="text" id="ppSearch" class="form-control pp-search" placeholder="Search by tx UUID, gateway order ID, customer name or phone…">
+    <select id="ppGateway" class="form-select">
+      <option value="">All gateways</option>
+      <option value="razorpay">Razorpay</option>
+      <option value="stripe">Stripe</option>
+    </select>
+    <select id="ppStatus" class="form-select">
+      <option value="">Pending only</option>
+      <option value="created">Created</option>
+      <option value="pending">Pending verify</option>
+      <option value="paid">Paid</option>
+      <option value="expired">Expired</option>
+      <option value="cancelled">Cancelled</option>
+      <option value="failed">Failed</option>
+    </select>
+    <button class="pp-btn" id="ppApply"><i class="bi bi-funnel"></i> Apply</button>
+    <button class="pp-btn" id="ppClear"><i class="bi bi-x-lg"></i> Clear</button>
+  </div>
+
+  <!-- List -->
+  <div id="ppList">
+    <div class="pp-loader"><div class="spinner-border text-primary" role="status"></div><div style="margin-top:8px;">Loading transactions…</div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var CURR = (window.SMS_CURRENCY || '<%= currency %>');
+  function F(n) { return CURR + parseFloat(n||0).toFixed(2); }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDateTime(s) { try { return new Date(s).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); } catch(e){ return s||''; } }
+  function fmtMs(ms) {
+    if (ms <= 0) return '0:00';
+    var s = Math.floor(ms/1000);
+    var m = Math.floor(s/60); s = s % 60;
+    var h = Math.floor(m/60); m = m % 60;
+    if (h > 0) return h + 'h ' + (m<10?'0':'') + m + 'm';
+    return m + ':' + (s<10?'0':'') + s;
+  }
+  function gatewayIcon(g) {
+    if (g === 'razorpay') return 'bi-credit-card-2-front';
+    if (g === 'stripe')   return 'bi-credit-card';
+    return 'bi-globe';
+  }
+
+  var _rows = [];
+  var _timer = null;
+
+  function load() {
+    var q = {
+      search:  $('#ppSearch').val() || '',
+      gateway: $('#ppGateway').val() || '',
+      status:  $('#ppStatus').val() || '',
+    };
+    $('#ppList').html('<div class="pp-loader"><div class="spinner-border text-primary" role="status"></div><div style="margin-top:8px;">Loading transactions…</div></div>');
+    $.ajax({
+      url: '/sales/payment/pending', type: 'GET', data: q,
+      success: function(r) {
+        if (r && r.status === 200 && r.data && Array.isArray(r.data.rows)) {
+          _rows = r.data.rows;
+          render();
+        } else {
+          $('#ppList').html('<div class="pp-empty"><i class="bi bi-exclamation-triangle"></i><h6>Could not load transactions</h6><div>' + esc((r && r.message) || 'Unknown error') + '</div></div>');
+        }
+      },
+      error: function() {
+        $('#ppList').html('<div class="pp-empty"><i class="bi bi-wifi-off"></i><h6>Network error</h6><div>Please refresh and try again.</div></div>');
+      }
+    });
+  }
+
+  function render() {
+    // Stats
+    var pending = 0, expired = 0, holds = 0, total = 0;
+    _rows.forEach(function(r){
+      if (r.status === 'created' || r.status === 'pending') pending++;
+      if (r.expired) expired++;
+      holds += parseInt(r.hold_count) || 0;
+      if (r.status === 'created' || r.status === 'pending') total += parseFloat(r.amount) || 0;
+    });
+    $('#ppStatPending').text(pending);
+    $('#ppStatExpired').text(expired);
+    $('#ppStatHolds').html(holds + ' <small>holds</small>');
+    $('#ppStatTotal').text(F(total));
+
+    if (!_rows.length) {
+      $('#ppList').html('<div class="pp-empty"><i class="bi bi-check2-circle"></i><h6>No pending payments</h6><div>All online transactions are settled or in a terminal state.</div></div>');
+      return;
+    }
+
+    var html = _rows.map(function(r){
+      var statusCls = r.status || 'created';
+      var statusLabel = ({ created:'Awaiting payment', pending:'Verifying', paid:'Paid', expired:'Expired', cancelled:'Cancelled', failed:'Failed' })[r.status] || r.status;
+      var timerCls = r.expired ? 'crit' : (r.ms_remaining < 5*60*1000 ? 'warn' : '');
+      var canRollback = (r.status === 'created' || r.status === 'pending');
+      var customer = r.customer_name ? r.customer_name : 'Walk-in';
+      var phone    = r.customer_phone || '';
+      var itemsList = (r.items_summary || []).map(function(i){ return esc(i.name) + ' x' + i.qty; }).join(', ');
+      if (r.item_count > (r.items_summary||[]).length) itemsList += ' +' + (r.item_count - (r.items_summary||[]).length) + ' more';
+
+      return [
+        '<div class="pp-card" data-uuid="', esc(r.uuid), '" data-expires="', r.expires_at || '', '">',
+          '<div class="row1">',
+            '<span class="num">#', esc(r.uuid.slice(0, 8)), '</span>',
+            '<span class="pp-pill gateway"><i class="bi ', gatewayIcon(r.gateway), '"></i> ', esc(r.gateway || 'unknown'), '</span>',
+            r.method ? ('<span class="pp-pill method">' + esc(r.method) + '</span>') : '',
+            '<span class="pp-pill ', statusCls, '">', esc(statusLabel), '</span>',
+            r.expired ? '<span class="pp-pill expired"><i class="bi bi-exclamation-triangle"></i> Expired</span>' : '',
+            '<span class="grow"></span>',
+            (canRollback && !r.expired) ? ('<span class="timer ' + timerCls + '" data-ms="' + r.ms_remaining + '"><i class="bi bi-clock"></i> ' + fmtMs(r.ms_remaining) + '</span>') : '',
+          '</div>',
+
+          '<div>',
+            '<div class="meta">',
+              '<span><i class="bi bi-person"></i> ', esc(customer), phone ? (' · ' + esc(phone)) : '', '</span>',
+              '<span><i class="bi bi-bag"></i> <strong>', r.item_count, '</strong> item' + (r.item_count !== 1 ? 's' : ''), '</span>',
+              '<span><i class="bi bi-lock"></i> ', r.hold_count, ' stock hold' + (r.hold_count !== 1 ? 's' : ''), '</span>',
+              r.cashier_name ? ('<span><i class="bi bi-person-badge"></i> ' + esc(r.cashier_name) + '</span>') : '',
+              '<span><i class="bi bi-calendar3"></i> ', fmtDateTime(r.created_at), '</span>',
+            '</div>',
+            itemsList ? ('<div class="items" style="margin-top:6px;">' + itemsList + '</div>') : '',
+            r.failure_reason ? ('<div class="items" style="margin-top:6px;color:var(--pv2-danger);">⚠ ' + esc(r.failure_reason) + '</div>') : '',
+          '</div>',
+
+          '<div class="ttl">', F(r.amount), '<br><small>', esc(r.currency || ''), '</small></div>',
+
+          '<div class="actions">',
+            r.gateway_link_url ? ('<a href="' + esc(r.gateway_link_url) + '" target="_blank" class="copy"><i class="bi bi-link-45deg"></i> Open Pay Link</a>') : '',
+            r.gateway_link_url ? ('<button class="copy" onclick="ppCopyLink(\'' + esc(r.uuid) + '\')"><i class="bi bi-clipboard"></i> Copy Link</button>') : '',
+            '<button onclick="ppRefreshOne(\'' + esc(r.uuid) + '\')"><i class="bi bi-arrow-clockwise"></i> Status</button>',
+            canRollback ? ('<button class="danger" onclick="ppRollback(\'' + esc(r.uuid) + '\', ' + r.amount + ')"><i class="bi bi-arrow-counterclockwise"></i> Rollback &amp; Release Stock</button>') : '',
+          '</div>',
+
+        '</div>'
+      ].join('');
+    }).join('');
+    $('#ppList').html(html);
+  }
+
+  // Tick countdowns every second so the timers stay live
+  function tick() {
+    $('#ppList .timer[data-ms]').each(function(){
+      var $el = $(this);
+      var ms = parseInt($el.attr('data-ms')) - 1000;
+      if (ms <= 0) { $el.text('expired').removeClass('warn').addClass('crit'); $el.attr('data-ms', 0); return; }
+      $el.attr('data-ms', ms);
+      $el.html('<i class="bi bi-clock"></i> ' + fmtMs(ms));
+      if (ms < 5*60*1000) $el.removeClass().addClass('timer warn');
+    });
+  }
+
+  // Background per-row status check — for every still-pending row visible on
+  // screen, ask the API for its current status. If it has flipped to 'paid'
+  // (webhook fired) or any terminal state, fade the card out and reload the
+  // list so KPIs + auto-refresh stay consistent.
+  var _statusBusy = false;
+  function checkStatuses() {
+    if (_statusBusy) return;
+    var pending = _rows.filter(function(r){ return r.status === 'created' || r.status === 'pending'; });
+    if (!pending.length) return;
+    _statusBusy = true;
+    var done = 0, anyChanged = false;
+    pending.forEach(function(r){
+      $.get('/sales/payment/status/' + r.uuid, function(s){
+        done++;
+        if (s && s.status === 200 && s.data) {
+          var st = s.data.status;
+          if (st === 'paid' && s.data.order_uuid) {
+            // Mark visually then trigger a full reload below
+            $('.pp-card[data-uuid="' + r.uuid + '"]').css({transition:'all .35s', opacity:0.4, transform:'scale(0.98)'}).find('.row1').prepend('<span class="pp-pill paid"><i class="bi bi-check-circle-fill"></i> Paid · Order ' + (s.data.order_number||'') + '</span>');
+            anyChanged = true;
+          } else if (st === 'expired' || st === 'cancelled' || st === 'failed') {
+            anyChanged = true;
+          } else if (st !== r.status) {
+            // status changed but not terminal yet — refresh in place
+            anyChanged = true;
+          }
+        }
+        if (done === pending.length) {
+          _statusBusy = false;
+          if (anyChanged) setTimeout(load, 600);
+        }
+      }).fail(function(){
+        done++;
+        if (done === pending.length) _statusBusy = false;
+      });
+    });
+  }
+
+  window.ppRollback = function(uuid, amount) {
+    var msg = 'Roll back this transaction (' + F(amount) + ')? Stock will be released back to inventory and the gateway link will stop working.';
+    var doIt = function() {
+      var reason = prompt('Optional reason for rollback (shown in audit log):', 'Manual rollback by operator');
+      $.ajax({
+        url: '/sales/payment/' + uuid + '/rollback', type: 'POST', contentType: 'application/json',
+        data: JSON.stringify({ reason: reason || 'Manual rollback by operator' }),
+        success: function(r) {
+          if (r && r.status === 200) {
+            toastr.success('Rolled back. ' + ((r.data && r.data.holds_released) || 0) + ' hold(s) released.');
+            load();
+          } else {
+            toastr.error((r && r.message) || 'Rollback failed.');
+          }
+        },
+        error: function(xhr) {
+          var m = (xhr.responseJSON && xhr.responseJSON.message) || 'Rollback failed.';
+          toastr.error(m);
+        }
+      });
+    };
+    if (typeof posConfirm === 'function') posConfirm({ title: 'Rollback Payment?', msg: msg, confirmText: 'Yes, rollback', confirmClass: 'danger', onConfirm: doIt });
+    else if (confirm(msg)) doIt();
+  };
+
+  window.ppRefreshOne = function(uuid) {
+    $.ajax({
+      url: '/sales/payment/status/' + uuid, type: 'GET',
+      success: function(r) {
+        if (r && r.status === 200 && r.data) {
+          var s = r.data;
+          if (s.order_uuid) toastr.success('Payment confirmed. Order ' + (s.order_number || '') + ' created.');
+          else toastr.info('Status: ' + (s.status || 'unknown'));
+          load();
+        }
+      }
+    });
+  };
+
+  window.ppCopyLink = function(uuid) {
+    var row = _rows.find(function(r){ return r.uuid === uuid; });
+    if (!row || !row.gateway_link_url) return;
+    if (navigator.clipboard) navigator.clipboard.writeText(row.gateway_link_url).then(function(){ toastr.success('Link copied.'); });
+    else { var t=document.createElement('textarea'); t.value=row.gateway_link_url; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); toastr.success('Link copied.'); }
+  };
+
+  $('#ppRefresh, #ppApply').on('click', load);
+  $('#ppClear').on('click', function(){ $('#ppSearch').val(''); $('#ppGateway').val(''); $('#ppStatus').val(''); load(); });
+  $('#ppSearch').on('keypress', function(e){ if (e.which === 13) load(); });
+  $('#ppGateway, #ppStatus').on('change', load);
+
+  // Web-only keyboard icon for search
+  if (typeof posAttachKeyboards === 'function') setTimeout(posAttachKeyboards, 100);
+
+  // Auto-refresh list every 15s, run per-row status polls every 5s,
+  // tick countdowns every second.
+  load();
+  if (_timer) clearInterval(_timer);
+  _timer = setInterval(tick, 1000);
+  setInterval(checkStatuses, 5000);
+  setInterval(load, 15000);
+})();
+</script>

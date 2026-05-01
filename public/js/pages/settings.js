@@ -394,13 +394,19 @@ window.saveAiConfig = function () {
    VEHICLE INVENTORY SETTINGS
    ══════════════════════════════════════════════════════ */
 (function(){
-    // Load current values
+    // Load current values — populates either the editable inputs (super
+    // admin) or the read-only labels (org admin), whichever the EJS rendered.
     $.get(BASE_URL + '/vehicle-inventories/settings', function(res) {
         if (res && res.status === 200 && res.data) {
-            $('#fViMaxImageSize').val(res.data.max_image_size || 5);
-            $('#fViMaxVideoSize').val(res.data.max_video_size || 50);
-            $('#fViMaxImageCount').val(res.data.max_image_count || 20);
-            $('#fViMaxVideoCount').val(res.data.max_video_count || 10);
+            var d = res.data;
+            $('#fViMaxImageSize').val(d.max_image_size || 5);
+            $('#fViMaxVideoSize').val(d.max_video_size || 50);
+            $('#fViMaxImageCount').val(d.max_image_count || 20);
+            $('#fViMaxVideoCount').val(d.max_video_count || 10);
+            $('#lblViMaxImageSize').text((d.max_image_size || 5) + ' MB');
+            $('#lblViMaxVideoSize').text((d.max_video_size || 50) + ' MB');
+            $('#lblViMaxImageCount').text(d.max_image_count || 20);
+            $('#lblViMaxVideoCount').text(d.max_video_count || 10);
         }
     });
 })();
@@ -478,10 +484,15 @@ window.saveViSettings = function() {
 (function(){
     $.get(BASE_URL + '/part-inventories/settings', function(res) {
         if (res && res.status === 200 && res.data) {
-            $('#fPiMaxImageSize').val(res.data.max_image_size || 5);
-            $('#fPiMaxVideoSize').val(res.data.max_video_size || 50);
-            $('#fPiMaxImageCount').val(res.data.max_image_count || 20);
-            $('#fPiMaxVideoCount').val(res.data.max_video_count || 10);
+            var d = res.data;
+            $('#fPiMaxImageSize').val(d.max_image_size || 5);
+            $('#fPiMaxVideoSize').val(d.max_video_size || 50);
+            $('#fPiMaxImageCount').val(d.max_image_count || 20);
+            $('#fPiMaxVideoCount').val(d.max_video_count || 10);
+            $('#lblPiMaxImageSize').text((d.max_image_size || 5) + ' MB');
+            $('#lblPiMaxVideoSize').text((d.max_video_size || 50) + ' MB');
+            $('#lblPiMaxImageCount').text(d.max_image_count || 20);
+            $('#lblPiMaxVideoCount').text(d.max_video_count || 10);
         }
     });
 })();

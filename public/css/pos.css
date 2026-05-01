@@ -178,6 +178,12 @@ button,.pc,.dv-unit,.pay-method,.co-pay-btn,.co-card-btn,.pcat,.ps-btn{
 .ph-title{font-size:15px;font-weight:700;letter-spacing:-0.2px;white-space:nowrap;color:var(--pv2-text);margin:0;line-height:1;}
 .ph-subtitle{display:none;}
 .ph-search{flex:1;max-width:480px;position:relative;display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--pv2-surface-sunken);border-radius:6px;min-width:120px;}
+/* When the input gets auto-wrapped by posAttachKeyboards, the wrap must
+   stretch to fill the remaining space so the keyboard icon ends up flush
+   against the right edge of the search box, not floating mid-row. */
+.ph-search > .cps-input-wrap{ flex:1; min-width:0; display:flex; align-items:center; }
+.ph-search > .cps-input-wrap > input{ background:transparent; border:0; padding:0 38px 0 0; height:auto; min-height:0; box-shadow:none !important; }
+.ph-search > .cps-input-wrap > .cps-kb-trigger{ right:0; width:28px; height:28px; background:#fff; border:1px solid var(--pv2-border); }
 .ph-search input{
   flex:1;padding:0;border:none;background:transparent;outline:none;
   font-size:13px;color:var(--pv2-text);min-width:0;
@@ -1642,14 +1648,16 @@ body.pos-mode .btn-close:hover{opacity:1;}
   padding:18px 24px; background:#fafbfc;
 }
 
-/* Section heading */
+/* Section heading — generous top + bottom space so each section reads as
+   its own block, and the divider isn't crammed against the previous row */
 .adv-section-title{
   font-size:11px; font-weight:700; color:#9ca3af;
   letter-spacing:.6px; text-transform:uppercase;
-  margin:0 0 14px;
-  padding-bottom:6px; border-bottom:1px solid var(--pv2-border);
+  margin:14px 0 18px;
+  padding-bottom:10px; border-bottom:1px solid var(--pv2-border);
 }
-.adv-section-title:not(:first-child){ margin-top:24px; }
+.adv-section-title:first-child{ margin-top:6px; }
+.adv-section-title:not(:first-child){ margin-top:32px; }
 
 /* Field grid — 4 cols on web, 3 on tablet, 2 on mobile */
 .adv-grid{
@@ -1657,6 +1665,21 @@ body.pos-mode .btn-close:hover{opacity:1;}
 }
 @media (max-width:1099px){ .adv-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 @media (max-width:520px) { .adv-grid{ grid-template-columns:1fr; } }
+/* Equal-width fields: each grid cell stretches to fill its column, and the
+   inner control fills the cell so plain <select> (Is Master Part / Print
+   Label / Tax Included / Custom Size / Status) match the wider select2
+   widgets (Vehicle Make / Brand / Catalog / Warehouse, etc.) */
+.adv-grid > div{ min-width:0; width:auto; box-sizing:border-box; display:flex; flex-direction:column; }
+.adv-grid > div > .pos-input,
+.adv-grid > div > select.pos-input,
+.adv-grid > div > input.pos-input,
+.adv-grid > div > .select2-container{
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
 
 /* Field cell */
 .adv-grid > div > label,
@@ -1716,16 +1739,21 @@ body.pos-mode .btn-close:hover{opacity:1;}
   border-top:1px solid var(--pv2-border); flex-shrink:0;
 }
 .adv-footer-spacer{ flex:1; }
-.adv-reset-btn,.adv-cancel-btn{
-  padding:11px 18px; font-size:13.5px; font-weight:600;
-  border-radius:8px;
+.adv-reset-btn,
+.adv-cancel-btn{
+  padding:10px 18px; font-size:13.5px; font-weight:600;
+  border-radius:8px; min-width:110px; height:42px;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  flex:0 0 auto; white-space:nowrap;
 }
 .adv-apply-btn{
-  padding:11px 22px; font-size:13.5px; font-weight:700;
-  border-radius:8px; background:#2c5fd5;
-  display:inline-flex; align-items:center; gap:6px;
+  padding:10px 22px; font-size:13.5px; font-weight:700;
+  border-radius:8px; background:#2c5fd5; color:#fff;
+  border:1px solid #2c5fd5; min-width:160px; height:42px;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  flex:0 0 auto; white-space:nowrap;
 }
-.adv-apply-btn:hover{ background:#1f4cb8; }
+.adv-apply-btn:hover{ background:#1f4cb8; border-color:#1f4cb8; }
 
 /* ── Tablet (≥768 ≤1099) ── */
 @media (min-width:768px) and (max-width:1099px){
@@ -1764,8 +1792,9 @@ body.pos-mode .btn-close:hover{opacity:1;}
   .adv-tabs .pcat i{ font-size:13px; }
 
   .adv-body{ padding:14px 14px 18px; }
-  .adv-section-title{ font-size:10.5px; margin-bottom:10px; padding-bottom:6px; }
-  .adv-section-title:not(:first-child){ margin-top:18px; }
+  .adv-section-title{ font-size:10.5px; margin:10px 0 14px; padding-bottom:8px; }
+  .adv-section-title:first-child{ margin-top:4px; }
+  .adv-section-title:not(:first-child){ margin-top:26px; }
   .adv-grid{ gap:12px 12px; }
   .adv-grid > div > label,
   .adv-grid > div > .co-label{ font-size:11.5px; margin-bottom:5px; }

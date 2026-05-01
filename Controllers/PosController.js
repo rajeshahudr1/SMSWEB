@@ -80,6 +80,15 @@ exports.paymentLink = async (req, res) => { res.json(await api.post('/pos/paymen
 exports.paymentVerify = async (req, res) => { res.json(await api.post('/pos/payment/verify', req.body, req.session.token)); };
 exports.paymentCancel = async (req, res) => { res.json(await api.post('/pos/payment/cancel', req.body, req.session.token)); };
 exports.paymentStatus = async (req, res) => { res.json(await api.get('/pos/payment/status/' + req.params.uuid, req.session.token)); };
+exports.paymentGateways = async (req, res) => { res.json(await api.get('/pos/payment/gateways', req.session.token)); };
+exports.paymentPendingList = async (req, res) => { res.json(await api.get('/pos/payment/pending', req.session.token, req.query)); };
+exports.paymentRollback = async (req, res) => { res.json(await api.post('/pos/payment/' + req.params.uuid + '/rollback', req.body, req.session.token)); };
+exports.paymentsPendingPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    const opts = { page_title: 'Pending Payments', activeLink: 'pos-payments-pending', breadcrumbs: [] };
+    if (isSpa) res.render('pos/payments-pending', { ...opts, layout: false, _spa: true });
+    else       res.render('pos/payments-pending', opts);
+};
 exports.dashboard = async (req, res) => { res.json(await api.get('/pos/dashboard', req.session.token)); };
 exports.taxes = async (req, res) => { res.json(await api.get('/pos/taxes', req.session.token)); };
 exports.warehouses = async (req, res) => { res.json(await api.get('/pos/warehouses', req.session.token)); };

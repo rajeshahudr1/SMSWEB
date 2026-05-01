@@ -1075,6 +1075,19 @@ $(function() {
                             r.savedDbId = resp.data.id;
                         }
                         if (!r.references) r.references = [];
+                        // Pull the unit rows the server just auto-created via
+                        // _syncLocationUnits so Tab 8 (Locations) shows them
+                        // after the batch save completes — without this the
+                        // locations table stays empty until the user reloads.
+                        if (r.savedUuid) {
+                            $.get(BASE_URL + '/part-inventories/' + r.savedUuid + '/locations', function(locRes) {
+                                if (locRes && locRes.status === 200 && Array.isArray(locRes.data)) {
+                                    r.locations = locRes.data;
+                                }
+                                next();
+                            }).fail(function(){ next(); });
+                            return;
+                        }
                     }
                     else { fail++; errors.push('#' + (ok+fail) + ': ' + (resp && resp.message ? resp.message : 'Failed')); }
                     next();

@@ -65,6 +65,7 @@
       <button class="ps-btn" data-tip="Customers" data-tip-pos="right" onclick="spaNav('customers')"><i class="bi bi-people"></i></button>
       <button class="ps-btn" data-tip="Returns & Refunds" data-tip-pos="right" onclick="spaNav('returns')"><i class="bi bi-arrow-counterclockwise"></i></button>
       <button class="ps-btn" data-tip="Saved Drafts" data-tip-pos="right" onclick="spaNav('drafts')" style="position:relative;"><i class="bi bi-bookmark-heart"></i><span id="draftSidebarCnt" style="position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--pv2-warning,#f59e0b);color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;">0</span></button>
+      <button class="ps-btn" data-tip="Pending Payments" data-tip-pos="right" onclick="spaNav('payments-pending')" style="position:relative;"><i class="bi bi-hourglass-split"></i><span id="pendingSidebarCnt" style="position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--pv2-warning,#f59e0b);color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;">0</span></button>
       <button class="ps-btn" data-tip="POS Settings" data-tip-pos="right" onclick="spaNav('settings')"><i class="bi bi-gear"></i></button>
     </div>
     <div class="ps-bottom">
@@ -80,25 +81,93 @@
     <button class="ps-toggle" onclick="toggleSidebar()" data-tip="Show sidebar" data-tip-pos="right"><i class="bi bi-layout-sidebar-inset"></i></button>
 
     <!-- Mobile top bar (hidden on desktop) -->
-    <div class="mob-topbar" style="display:none;align-items:center;gap:6px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);">
+    <!-- Keeps the bar uncluttered: Home + Fullscreen + 3-dot menu on the
+         left, flex-spacer, then the prominent Cart button on the right.
+         All other nav items collapse into the kebab menu opened by `mobMoreToggle()`. -->
+    <div class="mob-topbar" style="display:none;align-items:center;gap:6px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);position:relative;">
       <a href="/dashboard" class="ps-btn" data-tip="Dashboard" style="width:32px;height:32px;background:var(--bg);font-size:14px;color:var(--primary);"><i class="bi bi-grid-1x2-fill"></i></a>
-      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('orders')" data-tip="Orders"><i class="bi bi-bag-check"></i></button>
-      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('customers')" data-tip="Customers"><i class="bi bi-people"></i></button>
-      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('returns')" data-tip="Returns"><i class="bi bi-arrow-counterclockwise"></i></button>
-      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('drafts')" data-tip="Drafts"><i class="bi bi-bookmark-heart"></i></button>
-      <button class="ps-btn" style="width:32px;height:32px;background:var(--bg);font-size:14px;" onclick="spaNav('settings')" data-tip="Settings"><i class="bi bi-gear"></i></button>
-      <div style="flex:1;"></div>
       <button class="ps-btn" onclick="toggleFS()" style="width:32px;height:32px;background:var(--bg);font-size:14px;" data-tip="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
-      <button class="ps-btn" onclick="showCart();$('#posRight').toggleClass('open');" style="width:36px;height:36px;background:var(--primary);color:#fff;position:relative;font-size:15px;" data-tip="Cart"><i class="bi bi-cart3"></i><span id="mobCartCnt" style="position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0 4px;">0</span></button>
-      <a href="/logout" class="ps-btn" style="width:32px;height:32px;background:rgba(239,68,68,.1);color:var(--red);font-size:14px;" data-tip="Logout"><i class="bi bi-box-arrow-left"></i></a>
+      <button class="ps-btn" id="mobMoreBtn" onclick="mobMoreToggle(event)" style="width:32px;height:32px;background:var(--bg);font-size:16px;position:relative;" data-tip="More menu"><i class="bi bi-three-dots-vertical"></i><span id="mobMoreDot" style="position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--pv2-warning,#f59e0b);display:none;"></span></button>
+      <div style="flex:1;"></div>
+      <button id="mobCartBtn" class="ps-btn" onclick="showCart();$('#posRight').toggleClass('open');" style="width:38px;height:38px;background:var(--primary);color:#fff;position:relative;font-size:16px;" data-tip="Cart"><i class="bi bi-cart3"></i><span id="mobCartCnt" style="position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0 4px;">0</span></button>
+
+      <!-- Backdrop — tapping anywhere on it closes the dropdown. Sits below
+           the menu (z-index 8900) and above the page (z-index 9000 menu). -->
+      <div id="mobMoreBackdrop" onclick="mobMoreClose()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.18);z-index:8900;"></div>
+
+      <!-- Mobile More dropdown — anchored to the topbar -->
+      <div id="mobMoreMenu" style="display:none;position:absolute;top:48px;left:8px;right:8px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 36px rgba(11,18,32,.18);padding:8px;z-index:9000;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px 10px;border-bottom:1px solid var(--border);margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:800;color:var(--text2,#6b7280);text-transform:uppercase;letter-spacing:0.5px;">Menu</span>
+          <button onclick="mobMoreClose()" aria-label="Close" style="background:var(--bg,#f3f4f6);border:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text,#1a2332);"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <button class="mob-mm-item" onclick="mobMoreClose();spaNav('pos')"><i class="bi bi-grid-1x2-fill"></i><span class="mob-mm-lbl">Point of Sale</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <button class="mob-mm-item" onclick="mobMoreClose();spaNav('orders')"><i class="bi bi-bag-check"></i><span class="mob-mm-lbl">Sales Orders</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <button class="mob-mm-item" onclick="mobMoreClose();spaNav('customers')"><i class="bi bi-people"></i><span class="mob-mm-lbl">Customers</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <button class="mob-mm-item" onclick="mobMoreClose();spaNav('returns')"><i class="bi bi-arrow-counterclockwise"></i><span class="mob-mm-lbl">Returns &amp; Refunds</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <button class="mob-mm-item" onclick="mobMoreClose();spaNav('drafts')"><i class="bi bi-bookmark-heart"></i><span class="mob-mm-lbl">Saved Drafts</span><span id="mobMmDraftCnt" class="mob-mm-cnt">0</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <button class="mob-mm-item" onclick="mobMoreClose();spaNav('payments-pending')"><i class="bi bi-hourglass-split"></i><span class="mob-mm-lbl">Pending Payments</span><span id="mobMmPendingCnt" class="mob-mm-cnt">0</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <button class="mob-mm-item" onclick="mobMoreClose();spaNav('settings')"><i class="bi bi-gear"></i><span class="mob-mm-lbl">POS Settings</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <div style="height:1px;background:var(--border);margin:6px 4px;"></div>
+        <a class="mob-mm-item" href="/logout" style="color:var(--red);"><i class="bi bi-box-arrow-left"></i><span class="mob-mm-lbl">Logout</span><i class="bi bi-chevron-right mob-mm-chev"></i></a>
+      </div>
     </div>
+    <style>
+      .mob-mm-item{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:8px;border:none;background:transparent;text-align:left;cursor:pointer;font-size:14px;font-weight:600;color:var(--text,#1a2332);text-decoration:none;line-height:1.3;}
+      .mob-mm-item:hover,.mob-mm-item:active{background:var(--bg,#f3f4f6);}
+      .mob-mm-item>i:first-child{font-size:18px;color:var(--pv2-brand,#008060);width:22px;text-align:center;flex-shrink:0;}
+      .mob-mm-item .mob-mm-lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .mob-mm-item .mob-mm-cnt{
+        flex:0 0 auto;
+        display:none;
+        align-items:center;justify-content:center;
+        min-width:22px;height:20px;padding:0 7px;
+        background:var(--pv2-warning,#f59e0b);color:#fff;
+        font-size:11px;font-weight:700;line-height:1;
+        border-radius:999px;
+      }
+      .mob-mm-item .mob-mm-cnt.show{display:inline-flex;}
+      .mob-mm-item .mob-mm-chev{font-size:13px;color:var(--text2,#6b7280);flex-shrink:0;}
+      @media (min-width:1025px){#mobMoreMenu{display:none !important;}}
+    </style>
+    <script>
+      window.mobMoreToggle = function(ev){
+        if (ev) { ev.stopPropagation(); ev.preventDefault && ev.preventDefault(); }
+        var $m = $('#mobMoreMenu'), $bd = $('#mobMoreBackdrop');
+        var open = $m.is(':visible');
+        if (open) { $m.hide(); $bd.hide(); return; }
+        // Sync the count badges shown inside the menu
+        var d = parseInt(($('#draftSidebarCnt').text() || '0'), 10);
+        var p = parseInt(($('#pendingSidebarCnt').text() || '0'), 10);
+        $('#mobMmDraftCnt').text(d > 0 ? d : '').toggleClass('show', d > 0);
+        $('#mobMmPendingCnt').text(p > 0 ? p : '').toggleClass('show', p > 0);
+        $bd.show();
+        $m.show();
+      };
+      window.mobMoreClose = function(){
+        $('#mobMoreMenu').hide();
+        $('#mobMoreBackdrop').hide();
+      };
+      // Close on Escape — useful for keyboards / external bluetooth keyboards
+      $(document).on('keydown.mobmm', function(e){
+        if (e.key === 'Escape' && $('#mobMoreMenu').is(':visible')) mobMoreClose();
+      });
+      // Highlight the More button when there are pending payments or drafts
+      function _mobMoreDotUpdate(){
+        var d = parseInt(($('#draftSidebarCnt').text() || '0'), 10);
+        var p = parseInt(($('#pendingSidebarCnt').text() || '0'), 10);
+        if (d > 0 || p > 0) $('#mobMoreDot').show(); else $('#mobMoreDot').hide();
+      }
+      setInterval(_mobMoreDotUpdate, 5000);
+      setTimeout(_mobMoreDotUpdate, 1500);
+    </script>
 
     <!-- Header -->
     <div class="pos-header" id="posHeader">
       <div class="ph-heading">
         <h2 class="ph-title">POS</h2>
       </div>
-      <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Scan or search SKU, name, or barcode..." autocomplete="off" data-no-keyboard/></div>
+      <div class="ph-search"><i class="bi bi-search"></i><input type="text" id="fSearch" placeholder="Scan or search SKU, name, or barcode..." autocomplete="off"/></div>
       <button class="pos-btn-outline pos-btn-sm" onclick="openAdvSearch()" data-tip="Advanced Search" data-tip-pos="bottom" id="advSearchBtn"><i class="bi bi-sliders"></i><span id="advCount" style="display:none;background:var(--accent);color:#fff;border-radius:50%;min-width:16px;height:16px;font-size:9px;align-items:center;justify-content:center;margin-left:4px;"></span></button>
       <button class="pos-btn-outline pos-btn-sm pos-refresh-btn" onclick="posRefresh(this)" data-tip="Refresh products" data-tip-pos="bottom" id="posRefreshBtn"><i class="bi bi-arrow-clockwise"></i></button>
       <div class="ph-filters">

@@ -410,6 +410,29 @@
             <input type="password" class="form-control" id="pg_stripe_webhook_secret" placeholder="whsec_...  (••••••••)"/>
             <small class="form-hint">Stripe dashboard → Developers → Webhooks. URL: <code>/api/pos/payment/webhook/stripe</code></small>
           </div>
+          <div class="col-md-6">
+            <label class="form-label">Stripe Settlement Currency</label>
+            <select class="form-select" id="pg_stripe_currency">
+              <option value="USD">USD — US Dollar</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="GBP">GBP — British Pound</option>
+              <option value="AED">AED — UAE Dirham</option>
+              <option value="AUD">AUD — Australian Dollar</option>
+              <option value="CAD">CAD — Canadian Dollar</option>
+              <option value="SGD">SGD — Singapore Dollar</option>
+              <option value="HKD">HKD — Hong Kong Dollar</option>
+              <option value="JPY">JPY — Japanese Yen</option>
+              <option value="INR">INR — Indian Rupee</option>
+              <option value="MYR">MYR — Malaysian Ringgit</option>
+              <option value="BRL">BRL — Brazilian Real</option>
+              <option value="MXN">MXN — Mexican Peso</option>
+              <option value="CHF">CHF — Swiss Franc</option>
+              <option value="DKK">DKK — Danish Krone</option>
+              <option value="NOK">NOK — Norwegian Krone</option>
+              <option value="SEK">SEK — Swedish Krona</option>
+            </select>
+            <small class="form-hint">Must match the currency your Stripe merchant account is registered for. Sending the wrong currency causes the "amount must convert to at least…" error.</small>
+          </div>
         </div>
       </div>
     </div>
@@ -563,6 +586,7 @@ $(function(){
     $('#pg_stripe_publishable_key').val(d.stripe_publishable_key||'');
     $('#pg_stripe_secret_key').attr('placeholder', d.stripe_secret_key_set?'••••••••':'Secret (paste to set)');
     $('#pg_stripe_webhook_secret').attr('placeholder', d.stripe_webhook_secret_set?'••••••••':'Webhook secret');
+    $('#pg_stripe_currency').val((d.stripe_currency||'USD').toUpperCase());
   });
   $(document).off('click.posPg').on('click.posPg', '#btnSavePg', function(){
     var rz = $('#pg_razorpay_enabled').is(':checked');
@@ -580,6 +604,7 @@ $(function(){
       stripe_publishable_key: $('#pg_stripe_publishable_key').val().trim(),
       stripe_secret_key: $('#pg_stripe_secret_key').val().trim(),
       stripe_webhook_secret: $('#pg_stripe_webhook_secret').val().trim(),
+      stripe_currency: ($('#pg_stripe_currency').val() || 'USD').toUpperCase(),
     };
     $.ajax({ url:'/sales/payment/config', type:'PUT', contentType:'application/json',
       data: JSON.stringify(body),

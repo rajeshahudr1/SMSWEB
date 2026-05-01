@@ -32,9 +32,10 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
       <i class="bi bi-chevron-down text-muted" style="font-size:10px;"></i>
     </button>
 
-    <!-- Theme panel -->
-    <button class="sms-header__btn sms-header__icon-btn" id="smsBtnTheme" title="Customise">
-      <i class="bi bi-sliders"></i>
+    <!-- Fullscreen toggle (matches the POS layout's behaviour) -->
+    <button type="button" class="sms-header__btn sms-header__icon-btn" id="smsFsBtn"
+            onclick="smsToggleFullscreen()" title="Toggle fullscreen">
+      <i class="bi bi-arrows-fullscreen" id="smsFsIcon"></i>
     </button>
 
     <!-- Notifications -->
@@ -105,9 +106,9 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
     <span style="font-size:16px;"><%- curLangObj ? curLangObj.flag : '🌐' %></span>
   </button>
 
-  <!-- Mobile theme -->
-  <button class="sms-topbar__btn" id="smsBtnThemeMobile">
-    <i class="bi bi-sliders fs-5"></i>
+  <!-- Mobile fullscreen toggle -->
+  <button type="button" class="sms-topbar__btn" onclick="smsToggleFullscreen()" id="smsFsBtnMobile" title="Toggle fullscreen">
+    <i class="bi bi-arrows-fullscreen fs-5" id="smsFsIconMobile"></i>
   </button>
 
   <!-- Mobile dark -->
@@ -136,6 +137,60 @@ var curLangObj = (SUPPORTED_LANGUAGES||[]).find(function(l){ return l.code===cur
     </div>
   </div>
 </div>
+
+<!-- ══ Fullscreen toggle (shared by desktop + mobile header buttons) ══ -->
+<script>
+(function(){
+  var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+               (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
+
+  window.smsToggleFullscreen = function(){
+    if (IS_IOS) {
+      if (window.toastr) toastr.info('iPad/iPhone: use Share → Add to Home Screen for fullscreen.');
+      else alert('iPad/iPhone: use Share → Add to Home Screen for fullscreen.');
+      return;
+    }
+    try {
+      var d = document, el = d.documentElement;
+      var fs = d.fullscreenElement || d.webkitFullscreenElement;
+      if (fs) {
+        if (d.exitFullscreen) d.exitFullscreen();
+        else if (d.webkitExitFullscreen) d.webkitExitFullscreen();
+        try { localStorage.setItem('sms_fs','0'); } catch(_){}
+      } else {
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        try { localStorage.setItem('sms_fs','1'); } catch(_){}
+      }
+    } catch(e) {}
+  };
+
+  function smsSyncFsIcon(){
+    var fs = document.fullscreenElement || document.webkitFullscreenElement;
+    var cls = fs ? 'bi bi-fullscreen-exit' : 'bi bi-arrows-fullscreen';
+    var a = document.getElementById('smsFsIcon');       if (a) a.className = cls;
+    var b = document.getElementById('smsFsIconMobile'); if (b) b.className = cls;
+  }
+  document.addEventListener('fullscreenchange',         smsSyncFsIcon);
+  document.addEventListener('webkitfullscreenchange',   smsSyncFsIcon);
+
+  // Restore last fullscreen choice on first user gesture (browsers require it)
+  try {
+    if (!IS_IOS && localStorage.getItem('sms_fs') === '1') {
+      document.addEventListener('click', function once(){
+        document.removeEventListener('click', once);
+        var d = document, el = d.documentElement;
+        if (!d.fullscreenElement && !d.webkitFullscreenElement) {
+          try {
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+          } catch(e){}
+        }
+      });
+    }
+  } catch(_){}
+})();
+</script>
 
 <!-- ══ Language Picker Modal — shared by desktop + mobile ═════════ -->
 <div class="modal fade" id="langModal" tabindex="-1" aria-hidden="true">

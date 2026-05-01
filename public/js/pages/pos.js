@@ -114,12 +114,12 @@ function hidePcTip(){if($pcTip)$pcTip.removeClass('show');}
    SPA NAVIGATION — no page refresh, fullscreen stays
    ══════════════════════════════════════════ */
 var _spaPage='pos';
-var _spaUrls={orders:'/sales/orders',customers:'/sales/customers',returns:'/sales/returns',drafts:'/sales/drafts',settings:'/sales/settings'};
+var _spaUrls={orders:'/sales/orders',customers:'/sales/customers',returns:'/sales/returns',drafts:'/sales/drafts','payments-pending':'/sales/payments-pending',settings:'/sales/settings'};
 
 function spaNav(page){
     // Update sidebar active state
     $('.ps-nav .ps-btn').removeClass('active');
-    $('.ps-nav .ps-btn').eq({pos:0,orders:1,customers:2,returns:3,drafts:4,settings:5}[page]||0).addClass('active');
+    $('.ps-nav .ps-btn').eq({pos:0,orders:1,customers:2,returns:3,drafts:4,'payments-pending':5,settings:6}[page]||0).addClass('active');
     _spaPage=page;
 
     if(page==='pos'){
@@ -127,6 +127,8 @@ function spaNav(page){
         $('#posHeader,.pos-cats,#vBackBar,#prodGrid').show();
         $('#spaContent').hide().html('');
         $('#posRight').css('display','');
+        // Cart button is meaningful only on the sell screen
+        $('#mobCartBtn').css('display','');
         history.pushState(null,'','/sales');
         return;
     }
@@ -134,6 +136,10 @@ function spaNav(page){
     // Hide POS views, show SPA content
     $('#posHeader,.pos-cats,#vBackBar,#prodGrid').hide();
     $('#posRight').css('display','none');
+    // Cart icon only makes sense while you're actively selling — hide on
+    // sub-pages (orders / customers / returns / drafts / payments-pending /
+    // settings) so the mobile topbar doesn't expose dead UI.
+    $('#mobCartBtn').css('display','none');
     closePanel();
     var $spa=$('#spaContent');
     $spa.show().html('<div style="text-align:center;padding:60px;"><div class="spinner-border" style="color:var(--primary);"></div></div>');
@@ -143,7 +149,7 @@ function spaNav(page){
     $.ajax({url:_spaUrls[page],headers:{'X-SPA':'1','X-Requested-With':'XMLHttpRequest'},success:function(html){
         var h='<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">';
         h+='<button onclick="spaNav(\'pos\')" style="width:34px;height:34px;border-radius:var(--rs);border:1.5px solid var(--border);background:none;cursor:pointer;font-size:15px;color:var(--text2);display:flex;align-items:center;justify-content:center;" data-tip="Back to POS"><i class="bi bi-arrow-left"></i></button>';
-        h+='<h2 style="font-size:20px;font-weight:800;margin:0;">'+({orders:'Sales Orders',customers:'Customers',returns:'Returns',drafts:'Saved Drafts',settings:'POS Settings'}[page]||page)+'</h2>';
+        h+='<h2 style="font-size:20px;font-weight:800;margin:0;">'+({orders:'Sales Orders',customers:'Customers',returns:'Returns',drafts:'Saved Drafts','payments-pending':'Pending Payments',settings:'POS Settings'}[page]||page)+'</h2>';
         h+='</div><div id="spaInner"></div>';
         $spa.html(h);
         // Use jQuery .html() on #spaInner — it automatically executes <script> tags
@@ -160,6 +166,8 @@ window.addEventListener('popstate',function(){
     else if(path.includes('/orders'))spaNav('orders');
     else if(path.includes('/customers'))spaNav('customers');
     else if(path.includes('/returns'))spaNav('returns');
+    else if(path.includes('/payments-pending'))spaNav('payments-pending');
+    else if(path.includes('/drafts'))spaNav('drafts');
     else if(path.includes('/settings'))spaNav('settings');
 });
 
@@ -677,11 +685,15 @@ function buildUnits(locs,pid){
     locs.forEach(function(l){
         var inC=_cart.some(function(c){return c.item_type==='part'&&String(c.id)===String(pid)&&c.unit_number===l.unit_number;});
         var loc=[l.warehouse_name,l.warehouse_zone_name,l.warehouse_shelf_name,l.warehouse_rack_name,l.warehouse_bin_name].filter(Boolean);
-        h+='<div class="dv-unit'+(inC?' in-cart':'')+'" onclick="unitRowClick(this,event)">';
+        var locStr=loc.join(' \u203A ')||'';
+        // Compact label preferred for cart row: location_code if present, else
+        // a "Wh \u203A Bin" tail-piece, else the warehouse name.
+        var locShort=(l.location_code||'')||(loc.length>=2?(loc[0]+' \u203A '+loc[loc.length-1]):loc[0]||'');
+        h+='<div class="dv-unit'+(inC?' in-cart':'')+'" data-loc="'+esc(locStr)+'" data-loc-short="'+esc(locShort)+'" data-loc-code="'+esc(l.location_code||'')+'" onclick="unitRowClick(this,event)">';
         h+='<input type="checkbox" class="unit-chk" data-unit="'+l.unit_number+'" data-wh="'+(l.warehouse_id||0)+'" '+(inC?'disabled checked':'')+'>';
         h+='<div class="dv-unit-info"><div class="dv-unit-top"><span class="dv-unit-num">#'+l.unit_number+'</span>';
         if(l.location_code)h+='<span class="dv-unit-code">'+esc(l.location_code)+'</span>';
-        h+='</div><div class="dv-unit-loc">'+esc(loc.join(' \u203A ')||'No location')+'</div></div>';
+        h+='</div><div class="dv-unit-loc">'+esc(locStr||'No location')+'</div></div>';
         if(inC)h+='<span class="dv-unit-badge"><i class="bi bi-check-circle"></i> Added</span>';
         h+='</div>';
     });
@@ -694,7 +706,10 @@ function dvAddClick(){
     $ch.each(function(){
         var $u=$(this).closest('.dv-unit'),un=parseInt($(this).data('unit')),wh=parseInt($(this).data('wh'))||0;
         var vatInc=_selPart._full&&_selPart._full.vat_included;
-        addToCart('part',_selPart.id,_selPart.name,_selPart.price,1,_selPart.code,wh,un,vatInc);
+        // Pull the compact location label saved on the unit row (preferred:
+        // location_code, then "Wh › Bin", then warehouse name).
+        var loc=$u.attr('data-loc-short')||$u.attr('data-loc')||$u.attr('data-loc-code')||'';
+        addToCart('part',_selPart.id,_selPart.name,_selPart.price,1,_selPart.code,wh,un,vatInc,loc);
         $(this).prop('disabled',true);$u.addClass('in-cart');$u.find('.dv-unit-badge').remove();
         $u.append('<span class="dv-unit-badge"><i class="bi bi-check-circle"></i> Added</span>');
     });
@@ -853,7 +868,8 @@ function addAllVehicleParts(){
                 locs.forEach(function(l){
                     var already=_cart.some(function(c){return c.item_type==='part'&&String(c.id)===String(p.id)&&c.unit_number===l.unit_number;});
                     if(!already){
-                        addToCart('part',p.id,p.display_name,p.display_price,1,p.part_code||'',l.warehouse_id||0,l.unit_number,res.data.vat_included);
+                        var locStr=l.location_code||[l.warehouse_name,l.warehouse_bin_name].filter(Boolean).join(' › ')||l.warehouse_name||'';
+                        addToCart('part',p.id,p.display_name,p.display_price,1,p.part_code||'',l.warehouse_id||0,l.unit_number,res.data.vat_included,locStr);
                         totalAdded++;
                     }
                 });
@@ -875,9 +891,9 @@ function updatePg(total){
 /* ══════════════════════════════════════════
    CART
    ══════════════════════════════════════════ */
-function addToCart(type,id,name,price,mq,code,wh,unit,vatIncluded){
+function addToCart(type,id,name,price,mq,code,wh,unit,vatIncluded,location){
     if(_cart.some(function(c){return c.item_type===type&&String(c.id)===String(id)&&c.unit_number===unit;}))return;
-    _cart.push({item_type:type,id:id,item_name:name,item_code:code,unit_price:parseFloat(price),quantity:1,max_qty:1,total_price:parseFloat(price),discount_amount:0,warehouse_id:wh||null,part_inventory_id:type==='part'?id:null,vehicle_inventory_id:type==='vehicle'?id:null,unit_number:unit||null,vat_included:!!vatIncluded});
+    _cart.push({item_type:type,id:id,item_name:name,item_code:code,unit_price:parseFloat(price),quantity:1,max_qty:1,total_price:parseFloat(price),discount_amount:0,warehouse_id:wh||null,part_inventory_id:type==='part'?id:null,vehicle_inventory_id:type==='vehicle'?id:null,unit_number:unit||null,vat_included:!!vatIncluded,location:location||''});
     renderCart();
 }
 function removeFromCart(i){_cart.splice(i,1);renderCart();}
@@ -915,7 +931,7 @@ function renderCart(){
         sub+=it.total_price;
         var key=it.item_type+'_'+it.id;
         if(!groups[key]){groups[key]={name:it.item_name,code:it.item_code,type:it.item_type,id:it.id,units:[],total:0,price:it.unit_price};order.push(key);}
-        groups[key].units.push({idx:i,unit:it.unit_number,price:it.total_price});
+        groups[key].units.push({idx:i,unit:it.unit_number,price:it.total_price,location:it.location||''});
         groups[key].total+=it.total_price;
     });
     order.forEach(function(key){
@@ -944,10 +960,17 @@ function renderCart(){
         // Unit rows (collapsed by default if >1 unit)
         h+='<div class="ci-units" style="margin-bottom:6px;margin-left:16px;'+(unitCnt>1?'display:none;':'')+'">';
         g.units.forEach(function(u){
+            // Show the unit's location next to its unit number. When the cart
+            // item didn't capture a location (legacy adds, walk-in, etc.) we
+            // explicitly say "No location" instead of misleadingly saying "Unit".
+            var hasLoc=!!(u.location && String(u.location).trim());
+            var locTxt=hasLoc?esc(String(u.location).trim()):'No location';
+            var locColor=hasLoc?'var(--muted)':'var(--red)';
+            var locTitle=hasLoc?(' title="'+esc(u.location)+'"'):'';
             h+='<div class="ci-wrap" data-idx="'+u.idx+'">';
             h+='<div class="ci" style="border-left:2px solid var(--border);margin-left:4px;padding:6px 10px;">';
             h+='<span style="font-size:11px;color:var(--primary);font-weight:700;min-width:36px;">#'+u.unit+'</span>';
-            h+='<span style="flex:1;font-size:11px;color:var(--muted);">Unit</span>';
+            h+='<span style="flex:1;font-size:11px;color:'+locColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"'+locTitle+'><i class="bi bi-geo-alt" style="margin-right:4px;font-size:10px;"></i>'+locTxt+'</span>';
             h+='<span style="font-size:11px;font-weight:600;">'+F(u.price)+'</span>';
             h+='<button class="ci-del-btn" onclick="event.stopPropagation();removeFromCart('+u.idx+')" data-tip="Remove this unit" data-tip-pos="left" data-tip-color="red"><i class="bi bi-trash3"></i></button>';
             h+='</div>';
@@ -2448,9 +2471,12 @@ function doCheckout(autoPrint){
     window._cashConfirmed = false;   // reset for next round
     $('#cashConfirmOv').hide();
 
-    /* After confirmation: route to the right backend. */
-    if(payMethod==='online'){ return doOnlinePayment(); }
-    if(payMethod==='link'){ return doPaymentLink(); }
+    /* After confirmation: route to the right backend. Online + Link share the
+       same gateway-picker popup — operator chooses Razorpay / Stripe and
+       whether to open the gateway here or send a payment link to the customer. */
+    if(payMethod==='online' || payMethod==='link'){
+        return _openOnlinePayPicker(payMethod === 'link' ? 'link' : 'now');
+    }
 
     var rcvAmt=parseFloat($('#amtRcv').val())||0;
     if(payMethod==='cash' && rcvAmt<_coData.total){toastr.warning('Amount received ('+F(rcvAmt)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');return;}
@@ -2534,13 +2560,265 @@ function _cartItemsForPayment(){
     };});
 }
 
-function doOnlinePayment(){
+/* ══════════════════════════════════════════════════════════
+   ONLINE PAYMENT — gateway + mode picker popup
+   ══════════════════════════════════════════════════════════ */
+var _gatewaysCache = null;
+
+function _fetchGateways(cb) {
+    if (_gatewaysCache) return cb(_gatewaysCache);
+    $.get(BASE_URL + '/sales/payment/gateways', function(r) {
+        _gatewaysCache = (r && r.status === 200 && r.data) ? r.data : { gateways: [], default: '' };
+        cb(_gatewaysCache);
+    }).fail(function(){
+        _gatewaysCache = { gateways: [], default: '' };
+        cb(_gatewaysCache);
+    });
+}
+
+function _openOnlinePayPicker(initialMode) {
+    initialMode = initialMode || 'now';
+    _fetchGateways(function(g) {
+        var list = (g.gateways || []);
+        if (!list.length) {
+            toastr.error('No payment gateway is configured. Open POS Settings → Payment Gateway to add Razorpay or Stripe credentials.');
+            _resetCheckoutBtn();
+            return;
+        }
+
+        var defaultGw = g.default || (list[0] && list[0].key) || '';
+        var custEmail = (window._custEmail || '').trim();
+        var custPhone = (window._custPhone || '').trim();
+        // If we don't have these in window, try DOM
+        if (!custEmail) custEmail = ($('#custEmail').val() || '').trim();
+        if (!custPhone) custPhone = ($('#custPhone').val() || $('#walkInPhone').val() || '').trim();
+        var custName = ($('#walkInName').val() || $('#custResult .name').text() || $('#custResult').text() || '').trim();
+
+        var gwHtml = list.map(function(gw, i){
+            var checked = gw.key === defaultGw ? 'checked' : '';
+            return ''
+              + '<label class="oppay-gw' + (gw.key === defaultGw ? ' active' : '') + '">'
+              +   '<input type="radio" name="oppayGw" value="' + esc(gw.key) + '" ' + checked + '>'
+              +   '<i class="bi ' + esc(gw.icon || 'bi-globe') + '"></i>'
+              +   '<div class="oppay-gw-mid">'
+              +     '<div class="oppay-gw-t">' + esc(gw.label) + '</div>'
+              +     '<div class="oppay-gw-s">' + esc(gw.currency || '') + '</div>'
+              +   '</div>'
+              +   '<i class="bi bi-check-circle-fill oppay-gw-tick"></i>'
+              + '</label>';
+        }).join('');
+
+        // Build popup once
+        if (!$('#oppayOv').length) {
+            $('body').append(
+              '<div id="oppayOv" class="co-overlay" style="z-index:99997;display:none;" onclick="if(event.target===this)_closeOnlinePayPicker();">'
+            +   '<div class="co-box oppay-box" style="max-width:520px;width:94%;padding:0;border-radius:14px;overflow:hidden;">'
+            +     '<div class="oppay-hdr">'
+            +       '<div>'
+            +         '<div class="oppay-title"><i class="bi bi-globe2"></i> Online Payment</div>'
+            +         '<div class="oppay-sub">Choose gateway and how the customer will pay. Stock is held for 1 hour.</div>'
+            +       '</div>'
+            +       '<button class="oppay-close" type="button" onclick="_closeOnlinePayPicker()"><i class="bi bi-x-lg"></i></button>'
+            +     '</div>'
+            +     '<div class="oppay-body">'
+            +       '<div class="oppay-section-l">Payment Gateway</div>'
+            +       '<div class="oppay-gw-list" id="oppayGwList"></div>'
+            +       '<div class="oppay-section-l" style="margin-top:14px;">How will the customer pay?</div>'
+            +       '<div class="oppay-mode">'
+            +         '<label class="oppay-mode-btn" data-mode="now">'
+            +           '<input type="radio" name="oppayMode" value="now">'
+            +           '<i class="bi bi-credit-card-2-front"></i>'
+            +           '<div><div class="t">Pay Now (open gateway)</div><div class="s">Cashier swipes card / customer scans here</div></div>'
+            +         '</label>'
+            +         '<label class="oppay-mode-btn" data-mode="link">'
+            +           '<input type="radio" name="oppayMode" value="link">'
+            +           '<i class="bi bi-link-45deg"></i>'
+            +           '<div><div class="t">Send Payment Link</div><div class="s">SMS + email — customer pays from their phone</div></div>'
+            +         '</label>'
+            +       '</div>'
+            +       '<div class="oppay-link-opts" id="oppayLinkOpts" style="display:none;">'
+            +         '<div class="oppay-section-l" style="margin-top:14px;">Send link to customer</div>'
+            +         '<div class="oppay-cust-row">'
+            +           '<label><input type="checkbox" id="oppayNotifySms" checked> <i class="bi bi-phone"></i> SMS</label>'
+            +           '<input type="tel" id="oppayCustPhone" class="form-control" placeholder="Phone (with country code)" style="flex:1;min-width:160px;">'
+            +         '</div>'
+            +         '<div class="oppay-cust-row">'
+            +           '<label><input type="checkbox" id="oppayNotifyEmail" checked> <i class="bi bi-envelope"></i> Email</label>'
+            +           '<input type="email" id="oppayCustEmail" class="form-control" placeholder="customer@example.com" style="flex:1;min-width:160px;">'
+            +         '</div>'
+            +         '<div class="oppay-link-info"><i class="bi bi-info-circle"></i> Link is valid for 1 hour. Stock is held during this time. You can manually rollback in <a href="/sales/payments-pending" target="_blank">Pending Payments</a>.</div>'
+            +       '</div>'
+            +     '</div>'
+            +     '<div class="oppay-foot">'
+            +       '<button type="button" class="pm-btn cancel" onclick="_closeOnlinePayPicker()">Cancel</button>'
+            +       '<button type="button" class="pm-btn primary oppay-go" id="oppayGo"><i class="bi bi-arrow-right"></i> Continue</button>'
+            +     '</div>'
+            +   '</div>'
+            + '</div>'
+            );
+            // styles (one-time)
+            if (!$('#oppayCss').length) {
+                $('head').append('<style id="oppayCss">'
+                  + '.oppay-hdr{padding:18px 20px;border-bottom:1px solid var(--pv2-border,#e5e7eb);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}'
+                  + '.oppay-title{font-size:17px;font-weight:800;color:var(--pv2-text,#1a2332);display:flex;align-items:center;gap:8px;}'
+                  + '.oppay-title i{color:var(--pv2-brand,#008060);}'
+                  + '.oppay-sub{font-size:12px;color:var(--pv2-muted,#6b7280);margin-top:3px;}'
+                  + '.oppay-close{background:none;border:none;color:var(--pv2-muted,#6b7280);cursor:pointer;padding:4px 8px;font-size:18px;border-radius:6px;}'
+                  + '.oppay-close:hover{background:var(--pv2-surface-alt,#f9fafb);color:var(--pv2-text,#1a2332);}'
+                  + '.oppay-body{padding:18px 20px;max-height:60vh;overflow-y:auto;}'
+                  + '.oppay-section-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--pv2-subtle,#9ca3af);margin-bottom:8px;}'
+                  + '.oppay-gw-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;}'
+                  + '@media (max-width:520px){.oppay-gw-list{grid-template-columns:1fr;}.oppay-mode{grid-template-columns:1fr !important;}}'
+                  + '.oppay-gw{display:flex;align-items:center;gap:10px;padding:12px;border:2px solid var(--pv2-border,#e5e7eb);border-radius:10px;cursor:pointer;background:#fff;transition:all .15s;}'
+                  + '.oppay-gw:hover{border-color:var(--pv2-brand,#008060);background:var(--pv2-brand-ghost,#f1faf7);}'
+                  + '.oppay-gw.active{border-color:var(--pv2-brand,#008060);background:var(--pv2-brand-ghost,#f1faf7);box-shadow:0 0 0 3px rgba(0,128,96,.08);}'
+                  + '.oppay-gw input{display:none;}'
+                  + '.oppay-gw>i{font-size:24px;color:var(--pv2-brand,#008060);width:32px;text-align:center;}'
+                  + '.oppay-gw-mid{flex:1;min-width:0;}'
+                  + '.oppay-gw-t{font-size:14px;font-weight:700;color:var(--pv2-text,#1a2332);}'
+                  + '.oppay-gw-s{font-size:11px;color:var(--pv2-muted,#6b7280);margin-top:1px;}'
+                  + '.oppay-gw-tick{font-size:18px;color:var(--pv2-brand,#008060);opacity:0;}'
+                  + '.oppay-gw.active .oppay-gw-tick{opacity:1;}'
+                  + '.oppay-mode{display:grid;grid-template-columns:1fr 1fr;gap:10px;}'
+                  + '.oppay-mode-btn{display:flex;align-items:center;gap:10px;padding:12px;border:2px solid var(--pv2-border,#e5e7eb);border-radius:10px;cursor:pointer;background:#fff;transition:all .15s;}'
+                  + '.oppay-mode-btn:hover{border-color:var(--pv2-brand,#008060);background:var(--pv2-brand-ghost,#f1faf7);}'
+                  + '.oppay-mode-btn.active{border-color:var(--pv2-brand,#008060);background:var(--pv2-brand-ghost,#f1faf7);box-shadow:0 0 0 3px rgba(0,128,96,.08);}'
+                  + '.oppay-mode-btn input{display:none;}'
+                  + '.oppay-mode-btn i{font-size:22px;color:var(--pv2-brand,#008060);width:28px;text-align:center;}'
+                  + '.oppay-mode-btn .t{font-size:13.5px;font-weight:700;color:var(--pv2-text,#1a2332);}'
+                  + '.oppay-mode-btn .s{font-size:11px;color:var(--pv2-muted,#6b7280);margin-top:1px;}'
+                  + '.oppay-cust-row{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;}'
+                  + '.oppay-cust-row label{font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;min-width:80px;}'
+                  + '.oppay-cust-row .form-control{height:36px;}'
+                  + '.oppay-link-info{margin-top:10px;font-size:11.5px;color:var(--pv2-muted,#6b7280);background:var(--pv2-warning-bg,#fef3c7);border:1px solid #fde68a;color:#92400e;padding:8px 10px;border-radius:8px;display:flex;gap:6px;align-items:flex-start;}'
+                  + '.oppay-link-info i{margin-top:2px;flex-shrink:0;}'
+                  + '.oppay-link-info a{color:#92400e;font-weight:700;}'
+                  + '.oppay-foot{padding:12px 18px;border-top:1px solid var(--pv2-border,#e5e7eb);display:flex;justify-content:flex-end;gap:8px;background:var(--pv2-surface-alt,#f9fafb);}'
+                  + '.oppay-foot .pm-btn{padding:9px 18px;}'
+                  + '.oppay-foot .pm-btn.primary{background:var(--pv2-brand,#008060);color:#fff;border:none;font-weight:700;}'
+                  + '.oppay-foot .pm-btn.primary:hover{background:var(--pv2-brand-dark,#004c3f);}'
+                  + '.oppay-foot .pm-btn.cancel{background:#fff;border:1px solid var(--pv2-border,#e5e7eb);color:var(--pv2-text,#1a2332);}'
+                  + '</style>');
+            }
+        }
+
+        $('#oppayGwList').html(gwHtml);
+        $('#oppayCustEmail').val(custEmail);
+        $('#oppayCustPhone').val(custPhone);
+
+        // Set initial mode
+        $('.oppay-mode-btn').removeClass('active');
+        $('.oppay-mode-btn[data-mode="' + initialMode + '"]').addClass('active');
+        $('.oppay-mode-btn[data-mode="' + initialMode + '"] input').prop('checked', true);
+        $('#oppayLinkOpts').toggle(initialMode === 'link');
+
+        // Bind interactions (off+on so reopens are clean)
+        $('.oppay-gw input').off('change.oppay').on('change.oppay', function(){
+            $('.oppay-gw').removeClass('active');
+            $(this).closest('.oppay-gw').addClass('active');
+        });
+        $('.oppay-mode-btn input').off('change.oppay').on('change.oppay', function(){
+            var m = $(this).val();
+            $('.oppay-mode-btn').removeClass('active');
+            $(this).closest('.oppay-mode-btn').addClass('active');
+            $('#oppayLinkOpts').toggle(m === 'link');
+        });
+
+        $('#oppayGo').off('click.oppay').on('click.oppay', function(){
+            var gw   = $('input[name="oppayGw"]:checked').val();
+            var mode = $('input[name="oppayMode"]:checked').val();
+            if (!gw)   { toastr.warning('Choose a payment gateway first.'); return; }
+            if (!mode) { toastr.warning('Choose Pay Now or Send Link.'); return; }
+
+            if (mode === 'link') {
+                var notifySms   = $('#oppayNotifySms').is(':checked');
+                var notifyEmail = $('#oppayNotifyEmail').is(':checked');
+                var phone = ($('#oppayCustPhone').val() || '').trim();
+                var email = ($('#oppayCustEmail').val() || '').trim();
+                if (notifySms && !phone)   { toastr.warning('Enter customer phone (or untick SMS).'); return; }
+                if (notifyEmail && !email) { toastr.warning('Enter customer email (or untick Email).'); return; }
+                if (!notifySms && !notifyEmail) { /* operator wants to copy-share; that's allowed */ }
+                _closeOnlinePayPicker();
+                doPaymentLink({ gateway: gw, notify_sms: notifySms, notify_email: notifyEmail, customer_phone: phone, customer_email: email });
+            } else {
+                _closeOnlinePayPicker();
+                doOnlinePayment(gw);
+            }
+        });
+
+        $('#oppayOv').css('display', 'flex');
+    });
+}
+
+function _closeOnlinePayPicker(){ $('#oppayOv').hide(); _resetCheckoutBtn(); }
+
+/* Share popup shown after a payment link is created — gives the cashier a
+   one-tap copy + WhatsApp + SMS launcher even when SMS/email auto-notify
+   was disabled, plus a live status text while polling for the webhook. */
+function _showLinkSharePopup(linkUrl, txUuid) {
+    if (!linkUrl) return;
+    if (!$('#oplinkOv').length) {
+        $('body').append(
+          '<div id="oplinkOv" class="co-overlay" style="z-index:99997;display:none;" onclick="if(event.target===this)_closeLinkShare()">'
+        +   '<div class="co-box" style="max-width:480px;width:94%;padding:0;border-radius:14px;overflow:hidden;">'
+        +     '<div style="padding:18px 20px;border-bottom:1px solid var(--pv2-border,#e5e7eb);">'
+        +       '<div style="font-size:16px;font-weight:800;color:var(--pv2-text,#1a2332);display:flex;align-items:center;gap:8px;"><i class="bi bi-link-45deg" style="color:var(--pv2-brand,#008060);"></i> Payment Link Created</div>'
+        +       '<div style="font-size:12px;color:var(--pv2-muted,#6b7280);margin-top:3px;">Stock is held for 1 hour. Waiting for the customer to pay…</div>'
+        +     '</div>'
+        +     '<div style="padding:18px 20px;">'
+        +       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--pv2-subtle,#9ca3af);margin-bottom:6px;">Payment Link</div>'
+        +       '<div id="oplinkUrl" style="font-family:var(--pv2-font-mono,monospace);font-size:12px;background:var(--pv2-surface-alt,#f9fafb);padding:10px 12px;border-radius:8px;word-break:break-all;border:1px solid var(--pv2-border,#e5e7eb);"></div>'
+        +       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;">'
+        +         '<button class="pm-btn" onclick="_oplinkCopy()" style="padding:10px;font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;"><i class="bi bi-clipboard"></i> Copy</button>'
+        +         '<a id="oplinkWa" target="_blank" class="pm-btn" style="padding:10px;font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#1a2332;"><i class="bi bi-whatsapp" style="color:#25D366;"></i> WhatsApp</a>'
+        +         '<a id="oplinkSms" class="pm-btn" style="padding:10px;font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#1a2332;"><i class="bi bi-chat-dots"></i> SMS</a>'
+        +       '</div>'
+        +       '<div id="oplinkStatus" style="margin-top:14px;font-size:12px;color:var(--pv2-muted,#6b7280);display:flex;align-items:center;gap:8px;"><div class="spinner-border spinner-border-sm text-primary"></div> Waiting for payment confirmation…</div>'
+        +     '</div>'
+        +     '<div style="padding:12px 18px;border-top:1px solid var(--pv2-border,#e5e7eb);background:var(--pv2-surface-alt,#f9fafb);display:flex;justify-content:space-between;gap:8px;">'
+        +       '<button class="pm-btn cancel" onclick="_oplinkRollback()" style="background:#fff;border:1px solid #fecaca;color:var(--pv2-danger,#dc2626);"><i class="bi bi-x-circle"></i> Rollback</button>'
+        +       '<button class="pm-btn" onclick="_closeLinkShare()" style="background:#fff;border:1px solid var(--pv2-border,#e5e7eb);">Close (link stays active)</button>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+        );
+    }
+    $('#oplinkUrl').text(linkUrl);
+    $('#oplinkWa').attr('href', 'https://wa.me/?text=' + encodeURIComponent('Pay here: ' + linkUrl));
+    $('#oplinkSms').attr('href', 'sms:?&body=' + encodeURIComponent('Pay here: ' + linkUrl));
+    $('#oplinkOv').data('url', linkUrl).data('tx', txUuid).css('display', 'flex');
+}
+function _closeLinkShare(){ $('#oplinkOv').hide(); }
+function _oplinkCopy(){
+    var url = $('#oplinkOv').data('url') || '';
+    if (!url) return;
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(function(){ toastr.success('Link copied.'); });
+    else { var t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); toastr.success('Link copied.'); }
+}
+function _oplinkRollback(){
+    var tx = $('#oplinkOv').data('tx');
+    if (!tx) { _closeLinkShare(); return; }
+    posConfirm('Cancel this payment link and release stock back to inventory?', function(){
+        $.ajax({
+            url: BASE_URL + '/sales/payment/' + tx + '/rollback', type: 'POST', contentType: 'application/json',
+            data: JSON.stringify({ reason: 'Cashier cancelled link before customer paid' }),
+            success: function(r){
+                if (r && r.status === 200) { toastr.info('Link cancelled. Stock released.'); _closeLinkShare(); _resetCheckoutBtn(); }
+                else toastr.error((r && r.message) || 'Failed.');
+            },
+            error: function(){ toastr.error('Network error.'); }
+        });
+    });
+}
+
+function doOnlinePayment(gatewayKey){
     var $b=$('#coComplete');$b.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Initialising...');
     var body = {
         items: _cartItemsForPayment(),
         customer_id: $('#custId').val()||null,
         discount_type: $('#dType').val()||null,
         discount_value: $('#dVal').val()||0,
+        gateway: gatewayKey || null,
     };
     $.ajax({url:BASE_URL+'/sales/payment/init', type:'POST', contentType:'application/json', data: JSON.stringify(body),
         success: function(r){
@@ -2634,15 +2912,23 @@ function _openStripeCheckout(tx){
     }
 }
 
-function doPaymentLink(){
+function doPaymentLink(opts){
+    opts = opts || {};
     var $b=$('#coComplete');$b.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Creating link...');
     var body = {
         items: _cartItemsForPayment(),
-        customer_id: $('#custId').val()||null,
-        discount_type: $('#dType').val()||null,
+        customer_id:    $('#custId').val()||null,
+        discount_type:  $('#dType').val()||null,
         discount_value: $('#dVal').val()||0,
-        notify_sms: $('#linkNotifySms').is(':checked'),
-        notify_email: $('#linkNotifyEmail').is(':checked'),
+        notify_sms:     !!opts.notify_sms,
+        notify_email:   !!opts.notify_email,
+        description:    opts.description || null,
+        gateway:        opts.gateway || null,
+        // Override / supply customer contact when not on file (walk-in path or
+        // cashier entered fresh details into the picker).
+        customer_phone: opts.customer_phone || ($('#walkInPhone').val() || '').trim() || null,
+        customer_email: opts.customer_email || null,
+        customer_name:  opts.customer_name  || ($('#walkInName').val()  || '').trim() || null,
     };
     $.ajax({url:BASE_URL+'/sales/payment/link', type:'POST', contentType:'application/json', data: JSON.stringify(body),
         success: function(r){
@@ -2650,11 +2936,9 @@ function doPaymentLink(){
             if(r.status===409 && r.data && r.data.stock_errors){ _handleStockConflict(r); return; }
             if(r.status!==200 || !r.data){ toastr.error(r.message||'Failed to create link'); return; }
             _currentTx = r.data;
-            // Show link in a toast with copy-to-clipboard
-            var url = r.data.link_url || '';
-            toastr.success('Payment link created — waiting for customer to pay.');
-            window.prompt('Copy this link and send to customer:', url);
-            // Poll for success
+            // Show share popup so cashier can copy / WhatsApp / mail manually if needed
+            _showLinkSharePopup(r.data.link_url || '', r.data.tx_uuid);
+            // Poll for success (1 hour, ticks every 5s)
             _pollPaymentStatus(r.data.tx_uuid);
         },
         error: function(xhr){
@@ -2667,21 +2951,46 @@ function doPaymentLink(){
 
 function _pollPaymentStatus(txUuid){
     if(!txUuid) return;
-    var tries = 0, max = 60; // 60 * 5s = 5 min (matches hold TTL)
-    var timer = setInterval(function(){
-        tries++;
-        if(tries>max){ clearInterval(timer); toastr.warning('Payment link expired.'); return; }
+    // Poll every 3s for the first minute (customer pays fast), then drop to
+    // 8s to keep load reasonable. 1-hour overall ceiling matches the hold TTL.
+    var elapsed = 0, ceiling = 60 * 60 * 1000;
+    function tick(){
+        if (elapsed >= ceiling) {
+            $('#oplinkStatus').html('<i class="bi bi-clock-history" style="color:var(--pv2-warning,#d97706);"></i> Link expired — stock released.');
+            toastr.warning('Payment link expired.');
+            return;
+        }
         $.get(BASE_URL+'/sales/payment/status/'+txUuid, function(r){
-            if(r.status!==200 || !r.data) return;
-            if(r.data.status==='paid' && r.data.order_uuid){
-                clearInterval(timer);
-                _onPaymentSuccess({ order_uuid: r.data.order_uuid, order_number: r.data.order_number, total_amount: r.data.amount });
-            } else if(r.data.status==='failed' || r.data.status==='cancelled'){
-                clearInterval(timer);
-                toastr.error('Payment '+r.data.status);
+            if (r && r.status===200 && r.data) {
+                var s = r.data;
+                if (s.status === 'paid' && s.order_uuid) {
+                    // Update share popup with success state, then auto-close after 1.5s
+                    var $sp = $('#oplinkStatus');
+                    if ($sp.length) {
+                        $sp.html('<i class="bi bi-check-circle-fill" style="color:var(--pv2-success,#059669);font-size:18px;"></i> <strong>Payment received.</strong> Closing…');
+                    }
+                    setTimeout(function(){ _closeLinkShare(); }, 1500);
+                    _onPaymentSuccess({ order_uuid: s.order_uuid, order_number: s.order_number, total_amount: s.amount });
+                    return; // stop polling
+                }
+                if (s.status === 'failed' || s.status === 'cancelled' || s.status === 'expired') {
+                    $('#oplinkStatus').html('<i class="bi bi-x-circle-fill" style="color:var(--pv2-danger,#dc2626);"></i> Payment ' + s.status + '.');
+                    toastr.error('Payment ' + s.status);
+                    return;
+                }
             }
+            // Still pending — schedule next tick
+            var nextDelay = elapsed < 60000 ? 3000 : 8000;
+            elapsed += nextDelay;
+            setTimeout(tick, nextDelay);
+        }).fail(function(){
+            // Network blip — retry on the same cadence
+            var nextDelay = elapsed < 60000 ? 3000 : 8000;
+            elapsed += nextDelay;
+            setTimeout(tick, nextDelay);
         });
-    }, 5000);
+    }
+    setTimeout(tick, 3000);
 }
 
 // Holds the most-recently-completed order so the success-overlay print
@@ -2837,6 +3146,9 @@ window.successReturnRefund = function(){
 
 function _onPaymentSuccess(d){
     $('#coPage').removeClass('open');
+    // Close any helper overlays so the success screen is the only thing visible
+    $('#oplinkOv').hide();
+    $('#oppayOv').hide();
     var payMethod = ($('.co-pay-btn.active,.cps-pmode.active').data('method') || 'online');
     window._smsLastOrder = {
         uuid: d.order_uuid || d.uuid,
@@ -3049,7 +3361,8 @@ function handleBarcodeScan(val){
                 if(_cart.some(function(c){return c.item_type==='part'&&String(c.id)===String(part.id)&&c.unit_number===u.unit_number;})){
                     skipped++;return;
                 }
-                addToCart('part',part.id,part.name,part.price,1,part.code,u.warehouse_id,u.unit_number,part.vat_included);
+                var locStr=u.location_code||[u.warehouse_name,u.warehouse_bin_name].filter(Boolean).join(' › ')||u.warehouse_name||'';
+                addToCart('part',part.id,part.name,part.price,1,part.code,u.warehouse_id,u.unit_number,part.vat_included,locStr);
                 added++;
             });
         });
@@ -3249,6 +3562,18 @@ $(function(){
     };
     /* Refresh once on POS load and every time the success / cart changes. */
     setTimeout(refreshDraftBadge, 800);
+
+    /* Pending Payments count — refreshed every minute and after key events. */
+    window.refreshPendingBadge = function(){
+        $.get(BASE_URL + '/sales/payment/pending', function(r){
+            var rows = (r && r.data && Array.isArray(r.data.rows)) ? r.data.rows : [];
+            var n = rows.filter(function(x){ return x.status === 'created' || x.status === 'pending'; }).length;
+            var $b = $('#pendingSidebarCnt');
+            if (n > 0){ $b.text(n).css('display', 'flex'); } else { $b.hide(); }
+        });
+    };
+    setTimeout(refreshPendingBadge, 1200);
+    setInterval(refreshPendingBadge, 60000);
 
     /* Load a draft → validate stock → push available items into _cart. */
     window.cpsLoadDraft = function(uuid){

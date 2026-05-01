@@ -545,6 +545,32 @@ var curIconColor = s.icon_color || 'theme';
           </button>
         </div>
         <hr class="my-4"/>
+        <% } else if (user.is_org_admin) { %>
+        <!-- Org admin: read-only view of the limits configured by super admin -->
+        <p class="text-muted small mb-3">File upload limits configured by super admin. Contact support to change.</p>
+        <div class="row g-3">
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Image Size</div>
+            <div class="fs-5 fw-bold text-primary" id="lblViMaxImageSize">— MB</div>
+            <div class="form-hint">Per file</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Images Count</div>
+            <div class="fs-5 fw-bold text-primary" id="lblViMaxImageCount">—</div>
+            <div class="form-hint">Per vehicle</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Video Size</div>
+            <div class="fs-5 fw-bold text-primary" id="lblViMaxVideoSize">— MB</div>
+            <div class="form-hint">Per file</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Videos Count</div>
+            <div class="fs-5 fw-bold text-primary" id="lblViMaxVideoCount">—</div>
+            <div class="form-hint">Per vehicle</div>
+          </div>
+        </div>
+        <hr class="my-4"/>
         <% } %>
 
         <!-- List Column Configuration -->
@@ -606,6 +632,32 @@ var curIconColor = s.icon_color || 'theme';
           <button type="button" class="btn btn-primary" id="btnSavePiSettings" onclick="savePiSettings()">
             <i class="bi bi-floppy me-1"></i>Save Upload Settings
           </button>
+        </div>
+        <hr class="my-4"/>
+        <% } else if (user.is_org_admin) { %>
+        <!-- Org admin: read-only view of the limits configured by super admin -->
+        <p class="text-muted small mb-3">File upload limits configured by super admin. Contact support to change.</p>
+        <div class="row g-3">
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Image Size</div>
+            <div class="fs-5 fw-bold text-primary" id="lblPiMaxImageSize">— MB</div>
+            <div class="form-hint">Per file</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Images Count</div>
+            <div class="fs-5 fw-bold text-primary" id="lblPiMaxImageCount">—</div>
+            <div class="form-hint">Per part</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Video Size</div>
+            <div class="fs-5 fw-bold text-primary" id="lblPiMaxVideoSize">— MB</div>
+            <div class="form-hint">Per file</div>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <div class="form-label fw-semibold">Max Videos Count</div>
+            <div class="fs-5 fw-bold text-primary" id="lblPiMaxVideoCount">—</div>
+            <div class="form-hint">Per part</div>
+          </div>
         </div>
         <hr class="my-4"/>
         <% } %>
