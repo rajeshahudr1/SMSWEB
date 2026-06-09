@@ -1,0 +1,138 @@
+<!-- ═══════════ Virtual Keyboard popup (opened from .cps-kb-trigger / .we-kb icons) ═══════════
+     Shared between the main POS screen (pos/index.ejs) and pos-layout sub-pages
+     (wallet-edit, payments-pending, orders, drafts, customers, returns, settings).
+     The handlers (vkType, closeVK, vkAlpha, etc.) live in /js/pages/pos.js. -->
+<div class="vk-overlay" id="vkOv" style="display:none;" onclick="if(event.target===this)closeVK();">
+  <div class="vk-panel" onmousedown="event.stopPropagation();">
+
+    <!-- ── Top row: Active Input + Numeric Keypad ── -->
+    <div class="vk-top">
+      <div class="vk-active">
+        <div class="vk-active-h">
+          <label class="vk-lbl">Active Input</label>
+          <button class="vk-close" onclick="closeVK()" title="Close (Esc)"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="vk-display" id="vkDisplay">0</div>
+      </div>
+
+      <div class="vk-numpad" id="vkNumpad">
+        <div class="vk-numpad-h">
+          <i class="bi bi-keyboard-fill"></i>
+          <span>NUMERIC KEYPAD</span>
+        </div>
+        <div class="vk-numpad-grid">
+          <button class="vk-key vk-num" onclick="vkType('7')">7</button>
+          <button class="vk-key vk-num" onclick="vkType('8')">8</button>
+          <button class="vk-key vk-num" onclick="vkType('9')">9</button>
+          <button class="vk-key vk-back" onclick="vkBack()"><i class="bi bi-backspace"></i></button>
+
+          <button class="vk-key vk-num" onclick="vkType('4')">4</button>
+          <button class="vk-key vk-num" onclick="vkType('5')">5</button>
+          <button class="vk-key vk-num" onclick="vkType('6')">6</button>
+          <button class="vk-key vk-clr" onclick="vkClear()">C</button>
+
+          <button class="vk-key vk-num" onclick="vkType('1')">1</button>
+          <button class="vk-key vk-num" onclick="vkType('2')">2</button>
+          <button class="vk-key vk-num" onclick="vkType('3')">3</button>
+          <button class="vk-key vk-ok" id="vkOkBtn" onclick="vkOK()" rowspan="2">OK</button>
+
+          <button class="vk-key vk-num" onclick="vkType('0')">0</button>
+          <button class="vk-key vk-num" onclick="vkType('.')">.</button>
+          <button class="vk-key vk-num" onclick="vkSign()">+/-</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Autocomplete results pane (only shown when bound input has live matches) ── -->
+    <div class="vk-autocomplete" id="vkAutoComplete" style="display:none;">
+      <div class="vk-autocomplete-h"><i class="bi bi-search"></i> <span>Matches</span></div>
+      <div class="vk-autocomplete-list" id="vkAutoCompleteList"></div>
+    </div>
+
+    <!-- ── Quick amounts row (only meaningful for amount inputs) ── -->
+    <div class="vk-quick" id="vkQuickRow">
+      <span class="vk-quick-l">Quick Actions</span>
+      <button onclick="vkSet('100')">100</button>
+      <button onclick="vkSet('200')">200</button>
+      <button onclick="vkSet('500')">500</button>
+      <button onclick="vkSet('1000')">1000</button>
+      <button onclick="vkSet('2000')">2000</button>
+      <button onclick="vkSet('5000')">5000</button>
+      <button onclick="vkSet('10000')">10000</button>
+      <button class="vk-clear-all" onclick="vkClear()">Clear All</button>
+    </div>
+
+    <!-- ── Full QWERTY (shown for text inputs only) ── -->
+    <div class="vk-qwerty" id="vkQwerty">
+      <div class="vk-row">
+        <button class="vk-key vk-k" onclick="vkType('1')">1</button>
+        <button class="vk-key vk-k" onclick="vkType('2')">2</button>
+        <button class="vk-key vk-k" onclick="vkType('3')">3</button>
+        <button class="vk-key vk-k" onclick="vkType('4')">4</button>
+        <button class="vk-key vk-k" onclick="vkType('5')">5</button>
+        <button class="vk-key vk-k" onclick="vkType('6')">6</button>
+        <button class="vk-key vk-k" onclick="vkType('7')">7</button>
+        <button class="vk-key vk-k" onclick="vkType('8')">8</button>
+        <button class="vk-key vk-k" onclick="vkType('9')">9</button>
+        <button class="vk-key vk-k" onclick="vkType('0')">0</button>
+        <button class="vk-key vk-k" onclick="vkType('-')">-</button>
+        <button class="vk-key vk-k" onclick="vkType('=')">=</button>
+        <button class="vk-key vk-k vk-back-sm" onclick="vkBack()"><i class="bi bi-backspace"></i></button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" onclick="vkType('\t')">Tab</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Q</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">W</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">E</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">R</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">T</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Y</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">U</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">I</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">O</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">P</button>
+        <button class="vk-key vk-k" onclick="vkType('[')">[</button>
+        <button class="vk-key vk-k" onclick="vkType(']')">]</button>
+        <button class="vk-key vk-k" onclick="vkType('\\')">\</button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" id="vkCaps" onclick="vkToggleCaps()"><span class="vk-caps-led"></span> Caps</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">A</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">S</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">D</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">F</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">G</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">H</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">J</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">K</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">L</button>
+        <button class="vk-key vk-k" onclick="vkType(';')">;</button>
+        <button class="vk-key vk-k" onclick="vkType(&quot;'&quot;)">'</button>
+        <button class="vk-key vk-k vk-mod" onclick="vkOK()">Enter</button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" id="vkShift" onclick="vkToggleShift()">Shift</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Z</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">X</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">C</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">V</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">B</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">N</button>
+        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">M</button>
+        <button class="vk-key vk-k" onclick="vkType(',')">,</button>
+        <button class="vk-key vk-k" onclick="vkType('.')">.</button>
+        <button class="vk-key vk-k" onclick="vkType('/')">/</button>
+        <button class="vk-key vk-k vk-mod" onclick="vkToggleShift()">Shift</button>
+      </div>
+      <div class="vk-row">
+        <button class="vk-key vk-k vk-mod" disabled>Ctrl</button>
+        <button class="vk-key vk-k vk-mod" disabled>Alt</button>
+        <button class="vk-key vk-k vk-space" onclick="vkType(' ')">Space</button>
+        <button class="vk-key vk-k" onclick="vkType('@')">@</button>
+        <button class="vk-key vk-k" onclick="vkType('.')">.</button>
+        <button class="vk-key vk-k vk-back-sm" onclick="vkBack()">&lt;&lt;</button>
+      </div>
+    </div>
+
+  </div>
+</div>

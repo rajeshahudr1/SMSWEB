@@ -1,0 +1,802 @@
+<% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
+
+<style>
+/* ════════════════════════════════════════════════════════════════════
+   Add / Edit Wholesale Wallet — design tokens mirror the POS Settings
+   page (.sales-settings) so cards, inputs, switches, and the sticky
+   action bar share the same visual language across the admin section.
+   Layout:
+     ≥1025px  2-col body — form on the left, sticky summary sidebar on right
+     720–1024 single column, summary stacks below the form
+     ≤719px   tighter padding, action-bar buttons stretch, KPIs stack
+   ══════════════════════════════════════════════════════════════════ */
+.we{
+  --we-blue:        var(--pv2-brand,        #1e4cb8);
+  --we-blue-dark:   var(--pv2-brand-dark,   #163a8a);
+  --we-blue-soft:   var(--pv2-brand-light,  #eaf0fb);
+  --we-green:       var(--pv2-success,      #16a34a);
+  --we-green-soft:  var(--pv2-success-bg,   #e7f6ec);
+  --we-red:         var(--pv2-danger,       #dc2626);
+  --we-red-soft:    var(--pv2-danger-bg,    #fde8e8);
+  --we-amber:       var(--pv2-warning,      #d97706);
+  --we-amber-soft:  var(--pv2-warning-bg,   #fef3e2);
+  --we-text:        var(--pv2-text,         #1a2332);
+  --we-muted:       var(--pv2-muted,        #5b6578);
+  --we-subtle:      var(--pv2-subtle,       #8a94a6);
+  --we-border:      var(--pv2-border,       #e8ecf1);
+  --we-border-strong: var(--pv2-border-strong, #d3d9e2);
+  --we-surface:     var(--pv2-surface,      #ffffff);
+  --we-surface-alt: var(--pv2-surface-alt,  #f7f9fc);
+  --we-bg:          #f1f3f7;
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--we-text);
+  background: var(--we-bg);
+  min-height: 100%;
+  padding: 22px 28px 110px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.we *{ box-sizing: border-box; }
+.we input, .we select, .we textarea, .we button{ font-family: inherit; }
+
+/* ─── PAGE HEADER (mirrors .ss-hero pattern) ──────────────────── */
+.we-pagehdr{ display:flex; align-items:center; gap:14px; margin-bottom:18px; flex-wrap:wrap; }
+.we-back{ width:38px; height:38px; border-radius:8px; background:var(--we-surface); border:1px solid var(--we-border);
+          display:inline-flex; align-items:center; justify-content:center; color:var(--we-text);
+          text-decoration:none; flex-shrink:0; transition:background .15s; }
+.we-back:hover{ background:var(--we-surface-alt); }
+.we-pagehdr-title{ flex:1; min-width:0; }
+.we-pagehdr-title h1{ font-size:24px; font-weight:800; margin:0; color:var(--we-text); letter-spacing:-0.4px; }
+.we-pagehdr-title p{ font-size:13px; color:var(--we-muted); margin:4px 0 0; }
+.we-back-link{ display:inline-flex; align-items:center; gap:7px; padding:9px 14px;
+               border:1px solid var(--we-border-strong); border-radius:7px; background:var(--we-surface);
+               font-size:13px; font-weight:600; color:var(--we-text); text-decoration:none; transition:background .15s; }
+.we-back-link:hover{ background:var(--we-surface-alt); }
+
+/* ─── CUSTOMER-SUMMARY CARD (settings .ss-card style) ────────── */
+.we-cust{ background:var(--we-surface); border:1px solid var(--we-border); border-radius:12px;
+          padding:18px 20px; display:grid; grid-template-columns:1fr repeat(4, minmax(0, max-content));
+          gap:24px; align-items:center; margin-bottom:18px; }
+.we-cust-id{ display:flex; align-items:flex-start; gap:12px; min-width:0; }
+.we-cust-avatar{ width:46px; height:46px; border-radius:10px; background:var(--we-green-soft); color:var(--we-green);
+                 display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; flex-shrink:0; }
+.we-cust-name{ font-size:18px; font-weight:800; color:var(--we-text);
+               display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.we-cust-pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600;
+               padding:2px 9px; border-radius:999px; }
+.we-cust-pill.active{ background:var(--we-green-soft); color:var(--we-green); }
+.we-cust-pill.disabled{ background:var(--we-surface-alt); color:var(--we-muted); }
+.we-cust-contact{ font-size:12.5px; color:var(--we-muted); margin-top:5px;
+                  display:flex; gap:14px; flex-wrap:wrap; }
+.we-cust-contact span{ display:inline-flex; align-items:center; gap:5px; }
+.we-cust-contact i{ font-size:11px; color:var(--we-subtle); }
+.we-cust-gstin{ font-size:12.5px; color:var(--we-muted); margin-top:3px; }
+.we-cust-gstin strong{ color:var(--we-text); font-family:'JetBrains Mono', monospace; }
+.we-cust-kpi{ min-width:0; padding-left:20px; border-left:1px solid var(--we-border); }
+.we-cust-kpi .l{ font-size:11px; font-weight:700; color:var(--we-subtle); text-transform:uppercase; letter-spacing:0.5px; }
+.we-cust-kpi .v{ font-size:18px; font-weight:800; margin-top:6px; font-variant-numeric:tabular-nums; color:var(--we-text); white-space:nowrap; }
+.we-cust-kpi .s{ font-size:11.5px; color:var(--we-muted); margin-top:4px; }
+.we-cust-kpi.limit .v{ color:var(--we-blue); }
+.we-cust-kpi.outstanding .v{ color:var(--we-amber); }
+.we-cust-kpi.available .v{ color:var(--we-green); }
+/* Wallet status tile uses a pill instead of a raw number — keeps it
+   visually balanced against the numeric KPIs at any width. */
+.we-cust-kpi.status .v{ font-size:14px; margin-top:6px; }
+.we-cust-kpi.status .v .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 12px; border-radius:999px; font-size:13px; font-weight:700;
+    background:var(--we-green-soft); color:var(--we-green);
+}
+.we-cust-kpi.status .v .pill::before{
+    content:''; width:7px; height:7px; border-radius:50%; background:currentColor;
+    box-shadow:0 0 0 3px rgba(22,163,74,.18);
+}
+.we-cust-kpi.status.is-disabled .v .pill{ background:#f3f4f6; color:var(--we-muted); }
+.we-cust-kpi.status.is-disabled .v .pill::before{ box-shadow:0 0 0 3px rgba(107,114,128,.15); }
+
+/* ─── BODY: 2-COL GRID (settings layout pattern) ─────────────── */
+.we-body{ display:grid; grid-template-columns:minmax(0, 1fr) 340px; gap:18px; }
+
+/* ─── CARD (mirrors .ss-card) ─────────────────────────────────── */
+/* Padding lives on the card itself; card-h uses negative margin to
+   sit flush against the card edges so its border-bottom spans the
+   full width without an extra wrapper div. Every other direct child
+   inherits the 18px 20px card padding naturally. */
+.we-card{ background:var(--we-surface); border:1px solid var(--we-border); border-radius:12px;
+          padding:18px 20px; margin-bottom:18px; overflow:hidden; }
+.we-card-h{ display:flex; align-items:center; gap:12px;
+            margin:-18px -20px 14px; padding:14px 20px;
+            border-bottom:1px solid var(--we-border); }
+.we-card-h .ico{ width:36px; height:36px; border-radius:8px; background:var(--we-blue-soft); color:var(--we-blue);
+                 display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.we-card-h h3{ font-size:15px; font-weight:700; margin:0; color:var(--we-text); }
+
+/* ─── FORM ROW (settings input styling) ──────────────────────── */
+.we-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; }
+.we-fld{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.we-fld label{ font-size:13px; font-weight:600; color:var(--we-text); display:inline-flex; align-items:center; gap:4px; }
+.we-fld label .req{ color:var(--we-red); }
+.we-fld .help{ font-size:11.5px; color:var(--we-muted); margin-top:2px; }
+.we-fld .err{ font-size:11.5px; color:var(--we-red); margin-top:2px; min-height:14px; }
+
+/* Input + keyboard-icon wrapper. The wrapper hosts <input> + <button.we-kb>
+   stacked on top of each other so the keyboard icon sits inside the input
+   (right-aligned). Hidden on touch + ≤1024 (the OS soft keyboard handles it). */
+.we-input-wrap{ position:relative; display:flex; }
+.we-input-wrap > input,
+.we-input-wrap > select,
+.we-input-wrap > textarea{ flex:1; width:100%; padding:9px 40px 9px 11px; font-size:13px; line-height:1.4;
+                           border:1px solid var(--we-border-strong); border-radius:7px;
+                           background:var(--we-surface); color:var(--we-text); transition:border-color .15s, box-shadow .15s; outline:none; }
+.we-input-wrap > textarea{ resize:vertical; min-height:80px; padding-right:11px; }
+.we-input-wrap > input:focus,
+.we-input-wrap > select:focus,
+.we-input-wrap > textarea:focus{ border-color:var(--we-blue); box-shadow:0 0 0 3px rgba(30,76,184,.12); }
+.we-input-wrap > input:disabled,
+.we-input-wrap > select:disabled,
+.we-input-wrap > textarea:disabled{ background:var(--we-surface-alt); color:var(--we-muted); cursor:not-allowed; }
+.we-input-wrap > input::placeholder, .we-input-wrap > textarea::placeholder{ color:var(--we-subtle); opacity:1; }
+.we-input-wrap > select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%235b6578' d='M3.5 6L8 10.5 12.5 6z'/></svg>");
+    background-repeat:no-repeat; background-position:right 34px center; padding-right:60px; }
+.we-kb{ position:absolute; right:5px; top:5px; width:30px; height:calc(100% - 10px); border:none; background:transparent;
+        color:var(--we-subtle); cursor:pointer; border-radius:6px;
+        display:inline-flex; align-items:center; justify-content:center; font-size:15px;
+        transition:background .15s, color .15s; }
+.we-kb:hover{ background:var(--we-blue-soft); color:var(--we-blue); }
+.we-input-wrap > textarea ~ .we-kb{ top:5px; height:30px; }
+/* On mobile / tablet (touchscreens) the OS soft keyboard pops up
+   automatically when a field is focused, so the manual "open keyboard"
+   icon is redundant + clutters the input. Hide it below the desktop
+   breakpoint and reset the input padding. */
+@media (max-width: 1024px), (pointer: coarse){
+    .we-kb{ display:none !important; }
+    .we-input-wrap > input,
+    .we-input-wrap > select,
+    .we-input-wrap > textarea{ padding-right:11px !important; }
+    .we-input-wrap > select{ background-position:right 11px center; padding-right:32px !important; }
+}
+
+/* Customer-search dropdown that appears under the Customer field */
+.we-search-results{ position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:50;
+                    background:var(--we-surface); border:1px solid var(--we-border); border-radius:8px;
+                    box-shadow:0 10px 30px rgba(11,18,32,.1); max-height:260px; overflow-y:auto;
+                    display:none; }
+.we-search-results.show{ display:block; }
+.we-search-results a{ display:flex; align-items:center; gap:10px; padding:9px 12px;
+                      text-decoration:none; color:var(--we-text); border-bottom:1px solid var(--we-border); }
+.we-search-results a:last-child{ border-bottom:none; }
+.we-search-results a:hover{ background:var(--we-surface-alt); }
+.we-search-results .av{ width:28px; height:28px; border-radius:6px; background:var(--we-blue-soft); color:var(--we-blue);
+                        display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; flex-shrink:0; }
+.we-search-results .nm{ flex:1; min-width:0; font-size:13px; font-weight:600; }
+.we-search-results .sm{ font-size:11.5px; color:var(--we-muted); }
+.we-search-results .empty{ padding:14px; text-align:center; color:var(--we-muted); font-size:13px; }
+
+/* ─── RIGHT SIDEBAR ───────────────────────────────────────────── */
+.we-side{ position:sticky; top:14px; align-self:flex-start; }
+.we-summary-row{ display:flex; align-items:center; justify-content:space-between; gap:10px;
+                 padding:10px 0; font-size:13.5px; }
+.we-summary-row + .we-summary-row{ border-top:1px solid var(--we-border); }
+.we-summary-row .l{ color:var(--we-muted); font-size:13px; }
+.we-summary-row .v{ font-weight:700; font-variant-numeric:tabular-nums; color:var(--we-text); }
+.we-summary-row.brand .v{ color:var(--we-blue); }
+.we-summary-row.outstanding .v{ color:var(--we-amber); }
+.we-summary-row.available .v{ color:var(--we-green); }
+.we-summary-row.overdue .v{ color:var(--we-red); }
+.we-util{ margin-top:14px; padding-top:14px; border-top:1px solid var(--we-border); }
+.we-util-h{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:8px; }
+.we-util-h .l{ color:var(--we-muted); }
+.we-util-h .v{ font-weight:700; color:var(--we-text); }
+.we-util-bar{ height:6px; background:var(--we-surface-alt); border-radius:3px; overflow:hidden; }
+.we-util-bar-fill{ height:100%; background:linear-gradient(90deg, var(--we-blue), var(--we-amber));
+                   border-radius:3px; transition:width .25s; }
+.we-util-bar-fill.green{ background:var(--we-green); }
+.we-util-bar-fill.danger{ background:var(--we-red); }
+.we-util-scale{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--we-subtle); margin-top:6px; }
+
+/* Transaction history empty state */
+.we-tx-empty{ text-align:center; padding:30px 20px; color:var(--we-muted); }
+.we-tx-empty .ic{ width:48px; height:48px; border-radius:50%; background:var(--we-blue-soft); color:var(--we-blue);
+                  display:inline-flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:10px; }
+.we-tx-empty .t{ font-size:13.5px; font-weight:700; color:var(--we-text); }
+.we-tx-empty .s{ font-size:12px; margin-top:4px; }
+
+/* Transaction list (when there are entries) */
+.we-tx{ display:grid; grid-template-columns:32px 1fr auto; gap:10px; padding:10px 0;
+        border-bottom:1px dashed var(--we-border); align-items:flex-start; }
+.we-tx:last-child{ border-bottom:none; }
+.we-tx .ic{ width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+            font-size:13px; flex-shrink:0; }
+.we-tx .ic.credit{  background:var(--we-blue-soft);  color:var(--we-blue); }
+.we-tx .ic.sale{    background:var(--we-amber-soft); color:var(--we-amber); }
+.we-tx .ic.payment{ background:var(--we-green-soft); color:var(--we-green); }
+.we-tx .ic.adjust{  background:var(--we-surface-alt); color:var(--we-muted); }
+.we-tx .ic.late{    background:var(--we-red-soft);   color:var(--we-red); }
+.we-tx .info .t{ font-size:13px; font-weight:600; color:var(--we-text); }
+.we-tx .info .s{ font-size:11px; color:var(--we-muted); margin-top:2px; }
+.we-tx .amt{ font-size:13px; font-weight:800; font-variant-numeric:tabular-nums;
+             text-align:right; white-space:nowrap; }
+.we-tx .amt.pos{ color:var(--we-amber); }
+.we-tx .amt.neg{ color:var(--we-green); }
+
+/* ─── STICKY ACTION BAR ───────────────────────────────────────── */
+.we-actionbar{ position:fixed; left:0; right:0; bottom:0; background:var(--we-surface);
+               border-top:1px solid var(--we-border); padding:12px 24px; z-index:90;
+               display:flex; justify-content:space-between; align-items:center; gap:10px;
+               box-shadow:0 -2px 12px rgba(15,23,42,0.05); }
+.we-actionbar-left{ display:inline-flex; gap:10px; }
+.we-actionbar-right{ display:inline-flex; gap:10px; }
+.we-btn{ padding:9px 18px; border-radius:7px; border:1px solid var(--we-border-strong); background:var(--we-surface);
+         font-size:13px; font-weight:600; color:var(--we-text); cursor:pointer;
+         display:inline-flex; align-items:center; gap:7px; transition:background .15s, filter .15s; }
+.we-btn:hover{ background:var(--we-surface-alt); }
+.we-btn.primary{ background:var(--we-blue); color:#fff; border-color:var(--we-blue); }
+.we-btn.primary:hover{ filter:brightness(.92); background:var(--we-blue); }
+.we-btn.primary:disabled{ opacity:.5; cursor:not-allowed; }
+.we-btn.danger{ color:var(--we-red); border-color:var(--we-red); background:var(--we-surface); }
+.we-btn.danger:hover{ background:var(--we-red-soft); }
+.we-btn .spin{ display:inline-block; width:12px; height:12px; border:2px solid currentColor;
+               border-top-color:transparent; border-radius:50%; animation:we-spin .7s linear infinite; }
+@keyframes we-spin { to { transform:rotate(360deg); } }
+
+/* ─── RESPONSIVE — breakpoints aligned with settings.ejs ─────── */
+/* Tablet: ≤1024px */
+@media (max-width: 1024px){
+    .we{ padding:18px 22px 110px; }
+    .we-cust{ grid-template-columns:1fr 1fr; gap:18px; }
+    .we-cust-id{ grid-column:1 / -1; }
+    .we-cust-kpi{ padding-left:0; border-left:none; }
+    .we-body{ grid-template-columns:1fr; }
+    .we-side{ position:static; }
+}
+/* Small tablet / large phone: ≤720px */
+@media (max-width: 720px){
+    .we{ padding:14px 14px 130px; }
+    .we-pagehdr{ gap:10px; }
+    .we-pagehdr-title h1{ font-size:20px; }
+    .we-pagehdr-title p{ font-size:12.5px; }
+    .we-back-link{ display:none; }     /* arrow back is enough */
+    .we-cust{ padding:14px 16px; gap:14px; grid-template-columns:1fr 1fr; }
+    .we-cust-name{ font-size:16px; }
+    .we-cust-avatar{ width:42px; height:42px; font-size:16px; }
+    .we-cust-kpi .v{ font-size:15px; }
+    .we-cust-kpi.status .v{ font-size:13px; }
+    .we-card{ padding:14px 16px; }
+    .we-card-h{ margin:-14px -16px 12px; padding:12px 16px; }
+    .we-grid{ grid-template-columns:1fr; gap:12px; }
+    .we-actionbar{ padding:10px 14px; flex-wrap:wrap; gap:8px; }
+    .we-actionbar-left, .we-actionbar-right{ flex:1; }
+    .we-btn{ flex:1; justify-content:center; padding:11px 14px; font-size:13px; }
+}
+</style>
+
+<div class="we">
+  <!-- ─── PAGE HEADER ─── -->
+  <div class="we-pagehdr">
+    <a class="we-back" href="/sales/wallet" data-tip="Back to wallet list" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <div class="we-pagehdr-title">
+      <h1 id="wePageTitle"><%= walletUuid ? 'Edit' : 'Add' %> / Edit Wholesale Wallet</h1>
+      <p>Manage credit limit, terms and payment settings for this customer.</p>
+    </div>
+    <a class="we-back-link" href="/sales/wallet"><i class="bi bi-arrow-left"></i> Back to Wallet</a>
+  </div>
+
+  <!-- ─── CUSTOMER SUMMARY (only shown once a customer is loaded/selected) ─── -->
+  <div class="we-cust" id="weCust" style="display:none;">
+    <div class="we-cust-id">
+      <div class="we-cust-avatar" id="weCustAvatar">—</div>
+      <div>
+        <div class="we-cust-name"><span id="weCustName">—</span> <span id="weCustPill" class="we-cust-pill active">Active</span></div>
+        <div class="we-cust-contact">
+          <span id="weCustPhoneRow"><i class="bi bi-telephone"></i> <span id="weCustPhone">—</span></span>
+          <span id="weCustEmailRow"><i class="bi bi-envelope"></i> <span id="weCustEmail">—</span></span>
+        </div>
+        <div class="we-cust-gstin" id="weCustGstinRow" style="display:none;">GSTIN: <strong id="weCustGstin">—</strong></div>
+      </div>
+    </div>
+    <div class="we-cust-kpi limit">
+      <div class="l">CREDIT LIMIT</div>
+      <div class="v" id="weHdrLimit">₹0.00</div>
+      <div class="s">Total approved limit</div>
+    </div>
+    <div class="we-cust-kpi outstanding">
+      <div class="l">OUTSTANDING</div>
+      <div class="v" id="weHdrOutstanding">₹0.00</div>
+      <div class="s">Current due amount</div>
+    </div>
+    <div class="we-cust-kpi available">
+      <div class="l">AVAILABLE CREDIT</div>
+      <div class="v" id="weHdrAvailable">₹0.00</div>
+      <div class="s">Remaining credit</div>
+    </div>
+    <div class="we-cust-kpi status" id="weHdrStatusBox">
+      <div class="l">WALLET STATUS</div>
+      <div class="v"><span class="pill" id="weHdrStatus">Active</span></div>
+      <div class="s" id="weHdrStatusSub">Wallet is enabled</div>
+    </div>
+  </div>
+
+  <!-- ─── 2-COLUMN BODY ─── -->
+  <div class="we-body">
+    <!-- LEFT: form cards -->
+    <div>
+      <!-- Wallet Configuration -->
+      <div class="we-card">
+        <div class="we-card-h">
+          <div class="ico"><i class="bi bi-clipboard2-data"></i></div>
+          <h3>Wallet Configuration</h3>
+        </div>
+        <div class="we-grid">
+          <div class="we-fld" style="position:relative;">
+            <label>Customer <span class="req">*</span></label>
+            <div class="we-input-wrap">
+              <input type="text" id="weCustomer" placeholder="Search customer by name or phone…" autocomplete="off" <%= walletUuid ? 'disabled' : '' %>/>
+              <button type="button" class="we-kb" data-vk="weCustomer" data-vk-type="text" data-tip="Open keyboard" aria-label="Open keyboard"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="we-search-results" id="weCustomerResults"></div>
+            <input type="hidden" id="weCustomerUuid" value=""/>
+            <div class="err" id="weCustomerErr"></div>
+          </div>
+          <div class="we-fld">
+            <label>Credit Limit (₹) <span class="req">*</span></label>
+            <div class="we-input-wrap">
+              <input type="number" id="weLimit" min="0" step="100" placeholder="10000.00"/>
+              <button type="button" class="we-kb" data-vk="weLimit" data-vk-type="amount" data-tip="Open keypad" aria-label="Open keypad"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="help">Set the total credit limit for this customer</div>
+            <div class="err" id="weLimitErr"></div>
+          </div>
+          <div class="we-fld">
+            <label>Terms (Days) <span class="req">*</span></label>
+            <div class="we-input-wrap">
+              <input type="number" id="weTerms" min="0" placeholder="30"/>
+              <button type="button" class="we-kb" data-vk="weTerms" data-vk-type="amount" data-tip="Open keypad" aria-label="Open keypad"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="help">Number of days for payment terms</div>
+          </div>
+          <div class="we-fld">
+            <label>Grace Period (Days)</label>
+            <div class="we-input-wrap">
+              <input type="number" id="weGrace" min="0" placeholder="0"/>
+              <button type="button" class="we-kb" data-vk="weGrace" data-vk-type="amount" data-tip="Open keypad" aria-label="Open keypad"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="help">Additional grace days after due date</div>
+          </div>
+          <div class="we-fld">
+            <label>Late Fee (%)</label>
+            <div class="we-input-wrap">
+              <input type="number" id="weFee" min="0" step="0.01" placeholder="0.00"/>
+              <button type="button" class="we-kb" data-vk="weFee" data-vk-type="amount" data-tip="Open keypad" aria-label="Open keypad"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="help">Late payment fee percentage</div>
+          </div>
+          <div class="we-fld">
+            <label>Wallet Status <span class="req">*</span></label>
+            <div class="we-input-wrap">
+              <select id="weStatus">
+                <option value="1">Active</option>
+                <option value="0">Disabled</option>
+              </select>
+              <button type="button" class="we-kb" data-vk="weStatus" data-vk-type="select" data-tip="Open keyboard" aria-label="Open keyboard"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="help">Enable or disable wallet for this customer</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Settings -->
+      <div class="we-card">
+        <div class="we-card-h">
+          <div class="ico"><i class="bi bi-cash-stack"></i></div>
+          <h3>Payment Settings</h3>
+        </div>
+        <div class="we-grid">
+          <div class="we-fld">
+            <label>Payment Terms</label>
+            <div class="we-input-wrap">
+              <select id="wePaymentTerms">
+                <option value="0">Due on Receipt</option>
+                <option value="7">Net 7 — pay within 7 days</option>
+                <option value="15">Net 15 — pay within 15 days</option>
+                <option value="30">Net 30 — pay within 30 days</option>
+                <option value="45">Net 45 — pay within 45 days</option>
+                <option value="60">Net 60 — pay within 60 days</option>
+                <option value="custom">Custom (use Terms field above)</option>
+              </select>
+              <button type="button" class="we-kb" data-vk="wePaymentTerms" data-vk-type="select" data-tip="Open keyboard" aria-label="Open keyboard"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="help">When customer needs to pay</div>
+          </div>
+          <div class="we-fld">
+            <label>Payment Reminder</label>
+            <div class="we-input-wrap">
+              <select id="weReminder">
+                <option value="before">Before Due Date</option>
+                <option value="on">On Due Date</option>
+                <option value="after">After Due Date (overdue)</option>
+                <option value="all">All of the above</option>
+                <option value="off">Off — no reminders</option>
+              </select>
+              <button type="button" class="we-kb" data-vk="weReminder" data-vk-type="select" data-tip="Open keyboard" aria-label="Open keyboard"><i class="bi bi-keyboard"></i></button>
+            </div>
+            <div class="help">Send reminder before or after due date</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="we-card">
+        <div class="we-card-h">
+          <div class="ico"><i class="bi bi-journal-text"></i></div>
+          <h3>Notes</h3>
+        </div>
+        <div class="we-fld">
+          <div class="we-input-wrap">
+            <textarea id="weNotes" rows="3" placeholder="Add any notes about this customer wallet…"></textarea>
+            <button type="button" class="we-kb" data-vk="weNotes" data-vk-type="text" data-tip="Open keyboard" aria-label="Open keyboard"><i class="bi bi-keyboard"></i></button>
+          </div>
+          <div class="help">Internal notes for reference (optional)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: live summary + transaction history -->
+    <div class="we-side">
+      <div class="we-card">
+        <div class="we-card-h">
+          <div class="ico"><i class="bi bi-bar-chart"></i></div>
+          <h3>Credit Summary</h3>
+        </div>
+        <div class="we-summary-row brand"><div class="l">Credit Limit</div><div class="v" id="weSumLimit">₹0.00</div></div>
+        <div class="we-summary-row outstanding"><div class="l">Outstanding</div><div class="v" id="weSumOutstanding">₹0.00</div></div>
+        <div class="we-summary-row available"><div class="l">Available Credit</div><div class="v" id="weSumAvailable">₹0.00</div></div>
+        <div class="we-summary-row overdue"><div class="l">Overdue Amount</div><div class="v" id="weSumOverdue">₹0.00</div></div>
+        <div class="we-util">
+          <div class="we-util-h"><span class="l">Credit Utilization</span><span class="v" id="weSumPct">0%</span></div>
+          <div class="we-util-bar"><div class="we-util-bar-fill green" id="weSumBarFill" style="width:0%"></div></div>
+          <div class="we-util-scale"><span>0%</span><span>100%</span></div>
+        </div>
+      </div>
+
+      <div class="we-card">
+        <div class="we-card-h">
+          <div class="ico"><i class="bi bi-arrow-down-up"></i></div>
+          <h3>Transaction History</h3>
+        </div>
+        <div id="weTxBody">
+          <div class="we-tx-empty">
+            <div class="ic"><i class="bi bi-file-earmark-text"></i></div>
+            <div class="t">No transactions yet</div>
+            <div class="s">Transactions will appear here once payments are made.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── STICKY ACTION BAR ───────────────────────────────────────────
+       Lives INSIDE .we so the `--we-*` CSS variables cascade into it.
+       Outside the container the background falls back to transparent
+       and the bar appears as a white-on-white line at the bottom. -->
+  <div class="we-actionbar">
+    <div class="we-actionbar-left">
+      <a href="/sales/wallet" class="we-btn"><i class="bi bi-x-circle"></i> Cancel</a>
+    </div>
+    <div class="we-actionbar-right">
+      <button type="button" class="we-btn" id="weReset"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+      <% if (can('edit_pos_wallet_customers') || can('edit_pos_wallet_settings')) { %>
+        <button type="button" class="we-btn primary" id="weSave"><i class="bi bi-save"></i> Save Wallet</button>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ── Page mode: Add (no uuid) vs Edit (has uuid) ────────────────
+  var WALLET_UUID = '<%- walletUuid %>';
+  var IS_EDIT     = !!WALLET_UUID;
+  var CURR        = (window.SMS_CURRENCY || '₹');
+
+  // ── Form state ─────────────────────────────────────────────────
+  // _initial holds the snapshot we loaded — used for Reset and dirty
+  // checks so the user can revert without reloading the page.
+  var _initial = null;
+  var _customer = null;          // current customer object (loaded or picked)
+  var _searchTimer = null;
+
+  // ── Utility helpers ────────────────────────────────────────────
+  function fmt(n){ return CURR + parseFloat(n||0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDt(s){ try { return new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return s||'—'; } }
+  function initial(name){ return (String(name||'?').trim()[0] || '?').toUpperCase(); }
+
+  // ── On-screen keyboard plumbing ───────────────────────────────
+  // Every input has a `<button class="we-kb" data-vk="ID" data-vk-type="…">`
+  // sibling. When clicked we route through the global pos.js virtual
+  // keyboard if available (touchscreen POS terminals), or fall back to
+  // focusing + selecting the input (desktop / OS soft keyboard).
+  $(document).on('click', '.we-kb', function(){
+    var id = $(this).data('vk');
+    var type = $(this).data('vk-type') || 'text';
+    var $el = $('#' + id);
+    if (!$el.length) return;
+    if (type === 'select' && typeof window.openVKForSelect === 'function') {
+      window.openVKForSelect(id);
+    } else if (typeof window.openVK === 'function') {
+      window.openVK(id, type);
+    } else {
+      // Fallback: focus + select. On Windows touch + iPadOS this
+      // brings up the OS soft keyboard automatically.
+      $el.focus();
+      if (typeof $el[0].select === 'function') { try { $el[0].select(); } catch(_){} }
+    }
+  });
+
+  // ── Customer search (only enabled in Add mode) ────────────────
+  var $custInput = $('#weCustomer');
+  var $custResults = $('#weCustomerResults');
+  $custInput.on('input', function(){
+    if (IS_EDIT) return;     // customer locked once picked
+    var q = ($(this).val() || '').trim();
+    clearTimeout(_searchTimer);
+    if (q.length < 2) { $custResults.removeClass('show').empty(); return; }
+    _searchTimer = setTimeout(function(){
+      $.get('/sales/customers/search', { q: q }, function(r){
+        if (!r || r.status !== 200) return;
+        var rows = (r.data || []).slice(0, 8);
+        if (!rows.length) {
+          $custResults.html('<div class="empty">No customers match "' + esc(q) + '"</div>').addClass('show');
+          return;
+        }
+        var html = rows.map(function(c){
+          return '<a href="#" data-uuid="' + esc(c.uuid) + '" data-id="' + esc(c.id || '') + '">'
+               +   '<div class="av">' + esc(initial(c.name)) + '</div>'
+               +   '<div style="flex:1;min-width:0;">'
+               +     '<div class="nm">' + esc(c.name) + '</div>'
+               +     '<div class="sm">' + esc(c.phone || '') + (c.email ? ' · ' + esc(c.email) : '') + '</div>'
+               +   '</div>'
+               + '</a>';
+        }).join('');
+        $custResults.html(html).addClass('show');
+      });
+    }, 250);
+  });
+  // Pick a customer from the dropdown
+  $custResults.on('click', 'a', function(e){
+    e.preventDefault();
+    var uuid = $(this).data('uuid');
+    var name = $(this).find('.nm').text();
+    var sm   = $(this).find('.sm').text();
+    $custInput.val(name + (sm ? ' (' + sm.split(' · ')[0] + ')' : ''));
+    $('#weCustomerUuid').val(uuid);
+    $custResults.removeClass('show').empty();
+    loadCustomer(uuid);
+  });
+  // Clicking outside the dropdown closes it
+  $(document).on('mousedown', function(e){
+    if ($(e.target).closest('.we-search-results, #weCustomer').length === 0) {
+      $custResults.removeClass('show');
+    }
+  });
+
+  // ── Load + render a customer ──────────────────────────────────
+  // Called once on page boot in Edit mode (with the URL uuid), or after
+  // the user picks someone from the search dropdown in Add mode.
+  function loadCustomer(uuid){
+    if (!uuid) return;
+    $.get('/sales/wallet/customers/' + uuid, function(r){
+      if (!r || r.status !== 200 || !r.data) {
+        toastr.error((r && r.message) || 'Customer not found.');
+        return;
+      }
+      _customer = r.data;
+      $('#weCustomerUuid').val(_customer.uuid);
+      renderCustomerHeader(_customer);
+      populateForm(_customer);
+      renderTransactions(_customer.transactions || []);
+      renderSummary();
+      _initial = readForm();
+    });
+  }
+
+  function renderCustomerHeader(c){
+    $('#weCust').show();
+    $('#weCustAvatar').text(initial(c.name));
+    $('#weCustName').text(c.name || 'Customer');
+    var enabled = !!c.is_wallet_enabled;
+    $('#weCustPill').toggleClass('active', enabled).toggleClass('disabled', !enabled).text(enabled ? 'Active' : 'Disabled');
+    if (c.phone) { $('#weCustPhone').text(c.phone); $('#weCustPhoneRow').show(); } else { $('#weCustPhoneRow').hide(); }
+    if (c.email) { $('#weCustEmail').text(c.email); $('#weCustEmailRow').show(); } else { $('#weCustEmailRow').hide(); }
+    if (c.gst_number) { $('#weCustGstin').text(c.gst_number); $('#weCustGstinRow').show(); } else { $('#weCustGstinRow').hide(); }
+  }
+
+  function populateForm(c){
+    $('#weLimit').val(parseFloat(c.wallet_credit_limit || 0).toFixed(2));
+    $('#weTerms').val(parseInt(c.wallet_terms_days || 30));
+    $('#weGrace').val(parseInt(c.wallet_grace_days || 0));
+    $('#weFee').val(parseFloat(c.wallet_late_fee_pct || 0).toFixed(2));
+    $('#weStatus').val(c.is_wallet_enabled ? '1' : '0');
+    $('#weNotes').val(c.wallet_notes || '');
+    // Payment Terms preset: pick the matching preset, fallback to "custom"
+    var t = parseInt(c.wallet_terms_days || 30);
+    var presets = [0, 7, 15, 30, 45, 60];
+    $('#wePaymentTerms').val(presets.indexOf(t) >= 0 ? String(t) : 'custom');
+    // Reminder default — reminder_when isn't persisted yet, default to 'before'
+    $('#weReminder').val(c.wallet_reminder_when || 'before');
+  }
+
+  // ── Live summary tiles + utilization bar ─────────────────────
+  // Recomputed on every input change so admins see the available-credit
+  // and utilization numbers update as they edit the limit. Outstanding
+  // and overdue stay tied to the loaded customer's actual ledger.
+  function renderSummary(){
+    var limit = parseFloat($('#weLimit').val() || 0);
+    var bal   = parseFloat((_customer && _customer.wallet_balance) || 0);
+    var avail = Math.max(0, limit - bal);
+    var overdue = 0;
+    if (_customer && Array.isArray(_customer.unpaid_sales)) {
+      overdue = _customer.unpaid_sales.filter(function(s){ return s.days_overdue > 0; })
+                                       .reduce(function(a, s){ return a + parseFloat(s.amount || 0); }, 0);
+    }
+    var pct = limit > 0 ? Math.min(100, Math.max(0, (bal / limit) * 100)) : 0;
+
+    $('#weSumLimit').text(fmt(limit));
+    $('#weSumOutstanding').text(fmt(bal));
+    $('#weSumAvailable').text(fmt(avail));
+    $('#weSumOverdue').text(fmt(overdue));
+    $('#weSumPct').text(Math.round(pct) + '%');
+    var $fill = $('#weSumBarFill').css('width', pct + '%');
+    $fill.removeClass('green danger');
+    if (pct >= 90) $fill.addClass('danger');
+    else if (pct < 50) $fill.addClass('green');
+
+    // Header KPIs mirror the same numbers
+    $('#weHdrLimit').text(fmt(limit));
+    $('#weHdrOutstanding').text(fmt(bal));
+    $('#weHdrAvailable').text(fmt(avail));
+    var enabled = $('#weStatus').val() === '1';
+    $('#weHdrStatus').text(enabled ? 'Active' : 'Disabled');
+    $('#weHdrStatusBox').toggleClass('is-disabled', !enabled);
+    $('#weHdrStatusSub').text(enabled ? 'Wallet is enabled' : 'Wallet is disabled');
+  }
+
+  // Wire the 5 inputs that affect summary so utilisation refreshes live
+  $('#weLimit, #weStatus').on('input change', renderSummary);
+
+  // Payment Terms preset → Terms (Days)
+  $('#wePaymentTerms').on('change', function(){
+    var v = $(this).val();
+    if (v === 'custom') return;
+    $('#weTerms').val(v);
+  });
+
+  // ── Transaction history list ─────────────────────────────────
+  function renderTransactions(txs){
+    if (!txs.length) return;   // empty-state HTML stays untouched
+    $('#weTxBody').html(txs.slice(0, 20).map(function(t){
+      var icon = '', cls = '', sign = '';
+      if (t.type === 'credit_grant')      { icon='bi-plus-circle'; cls='credit'; }
+      else if (t.type === 'sale')         { icon='bi-receipt';     cls='sale';    sign='+'; }
+      else if (t.type === 'payment_received') { icon='bi-cash-coin'; cls='payment'; sign='-'; }
+      else if (t.type === 'refund')       { icon='bi-arrow-counterclockwise'; cls='payment'; sign='-'; }
+      else if (t.type === 'late_fee')     { icon='bi-exclamation-triangle';   cls='late'; sign='+'; }
+      else                                 { icon='bi-pencil'; cls='adjust';
+                                             sign = (parseFloat(t.amount) >= 0 ? '+' : ''); }
+      var amtCls = parseFloat(t.amount) < 0 ? 'neg' : (parseFloat(t.amount) > 0 ? 'pos' : '');
+      var label = (t.type || '').replace(/_/g, ' ').replace(/^\w/, function(s){ return s.toUpperCase(); });
+      return ''
+        + '<div class="we-tx">'
+        +   '<div class="ic ' + cls + '"><i class="bi ' + icon + '"></i></div>'
+        +   '<div class="info">'
+        +     '<div class="t">' + esc(label) + (t.order_number ? ' · ' + esc(t.order_number) : '') + '</div>'
+        +     '<div class="s">' + esc(fmtDt(t.created_at)) + (t.payment_method ? ' · ' + esc(t.payment_method) : '') + '</div>'
+        +   '</div>'
+        +   '<div class="amt ' + amtCls + '">' + sign + fmt(Math.abs(t.amount || 0)) + '</div>'
+        + '</div>';
+    }).join(''));
+  }
+
+  // ── Read / write form snapshot (used by Save + Reset) ────────
+  function readForm(){
+    return {
+      uuid:         $('#weCustomerUuid').val(),
+      enabled:      $('#weStatus').val() === '1',
+      credit_limit: parseFloat($('#weLimit').val() || 0),
+      terms_days:   parseInt($('#weTerms').val() || 30),
+      grace_days:   parseInt($('#weGrace').val() || 0),
+      late_fee_pct: parseFloat($('#weFee').val() || 0),
+      notes:        $('#weNotes').val() || '',
+    };
+  }
+
+  // ── Validation ────────────────────────────────────────────────
+  function validate(){
+    var ok = true;
+    $('#weCustomerErr,#weLimitErr').text('');
+    var uuid = $('#weCustomerUuid').val();
+    if (!uuid) { $('#weCustomerErr').text('Pick a customer first.'); ok = false; }
+    var lim = parseFloat($('#weLimit').val() || 0);
+    if (!(lim >= 0)) { $('#weLimitErr').text('Enter a non-negative credit limit.'); ok = false; }
+    return ok;
+  }
+
+  // ── Save ──────────────────────────────────────────────────────
+  $('#weSave').on('click', function(){
+    if (!validate()) return;
+    var data = readForm();
+    var url = '/sales/wallet/customers/' + data.uuid + '/enable';
+    var $btn = $(this).prop('disabled', true).html('<span class="spin"></span> Saving…');
+    $.ajax({
+      url: url, type: 'POST', contentType: 'application/json',
+      data: JSON.stringify({
+        enabled:      data.enabled,
+        credit_limit: data.credit_limit,
+        terms_days:   data.terms_days,
+        grace_days:   data.grace_days,
+        late_fee_pct: data.late_fee_pct,
+        notes:        data.notes,
+      }),
+      success: function(r){
+        $btn.prop('disabled', false).html('<i class="bi bi-save"></i> Save Wallet');
+        if (r && r.status === 200) {
+          toastr.success(r.message || 'Wallet saved.');
+          // After Add → redirect to the Edit page so the user can keep
+          // adjusting and the URL is shareable.
+          if (!IS_EDIT) {
+            window.location.href = '/sales/wallet/edit/' + data.uuid;
+          } else {
+            // Edit mode: re-load to refresh transactions / overdue / summary
+            loadCustomer(data.uuid);
+          }
+        } else {
+          toastr.error((r && r.message) || 'Save failed.');
+        }
+      },
+      error: function(xhr){
+        $btn.prop('disabled', false).html('<i class="bi bi-save"></i> Save Wallet');
+        toastr.error((xhr.responseJSON && xhr.responseJSON.message) || 'Network error.');
+      }
+    });
+  });
+
+  // ── Reset (revert to last loaded snapshot) ───────────────────
+  $('#weReset').on('click', function(){
+    if (!_initial) {
+      // No customer loaded yet — just clear the form fields
+      $('#weCustomer,#weCustomerUuid,#weNotes').val('');
+      $('#weLimit').val('10000.00');
+      $('#weTerms').val(30);
+      $('#weGrace').val(0);
+      $('#weFee').val('0.00');
+      $('#weStatus').val('1');
+      $('#wePaymentTerms').val('30');
+      $('#weReminder').val('before');
+      $('#weCust').hide();
+      renderSummary();
+      return;
+    }
+    if (_customer) populateForm(_customer);
+    renderSummary();
+    toastr.info('Form reverted.');
+  });
+
+  // ── Boot ──────────────────────────────────────────────────────
+  if (IS_EDIT) {
+    loadCustomer(WALLET_UUID);
+    $('#wePageTitle').text('Edit Wholesale Wallet');
+  } else {
+    // Add mode — pre-fill defaults so the user sees realistic numbers
+    $('#weLimit').val('10000.00');
+    $('#weTerms').val(30);
+    $('#weGrace').val(0);
+    $('#weFee').val('0.00');
+    $('#weStatus').val('1');
+    $('#wePaymentTerms').val('30');
+    $('#weReminder').val('before');
+    $('#wePageTitle').text('Add Wholesale Wallet');
+    renderSummary();
+  }
+})();
+</script>

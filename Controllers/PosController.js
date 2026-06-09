@@ -83,6 +83,43 @@ exports.paymentStatus = async (req, res) => { res.json(await api.get('/pos/payme
 exports.paymentGateways = async (req, res) => { res.json(await api.get('/pos/payment/gateways', req.session.token)); };
 exports.paymentPendingList = async (req, res) => { res.json(await api.get('/pos/payment/pending', req.session.token, req.query)); };
 exports.paymentRollback = async (req, res) => { res.json(await api.post('/pos/payment/' + req.params.uuid + '/rollback', req.body, req.session.token)); };
+// ── Wallet ──
+exports.walletPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    const opts = { page_title: 'Wallet · Wholesale credit', activeLink: 'pos-wallet', breadcrumbs: [] };
+    if (isSpa) res.render('pos/wallet', { ...opts, layout: false, _spa: true });
+    else       res.render('pos/wallet', opts);
+};
+// Add / Edit Wholesale Wallet — handles both:
+//   GET /sales/wallet/add            (no uuid → blank form, customer picker enabled)
+//   GET /sales/wallet/edit/:uuid     (uuid    → load that customer, picker locked)
+//
+// All the data loading happens client-side via the existing /sales/wallet/customers/:uuid
+// JSON endpoint. This controller just renders the shell with the page mode + uuid.
+exports.walletEditPage = (req, res) => {
+    const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
+    const uuid = req.params.uuid || '';
+    const opts = {
+        page_title: uuid ? 'Edit Wholesale Wallet' : 'Add Wholesale Wallet',
+        activeLink: 'pos-wallet',
+        walletUuid: uuid,
+        breadcrumbs: [],
+    };
+    if (isSpa) res.render('pos/wallet-edit', { ...opts, layout: false, _spa: true });
+    else       res.render('pos/wallet-edit', opts);
+};
+exports.walletStats         = async (req, res) => { res.json(await api.get('/pos/wallet/stats', req.session.token)); };
+exports.walletCustomers     = async (req, res) => { res.json(await api.get('/pos/wallet/customers', req.session.token, req.query)); };
+exports.walletCustomer      = async (req, res) => { res.json(await api.get('/pos/wallet/customers/' + req.params.uuid, req.session.token)); };
+exports.walletEnable        = async (req, res) => { res.json(await api.post('/pos/wallet/customers/' + req.params.uuid + '/enable',   req.body, req.session.token)); };
+exports.walletGrant         = async (req, res) => { res.json(await api.post('/pos/wallet/customers/' + req.params.uuid + '/grant',    req.body, req.session.token)); };
+exports.walletRecordPayment = async (req, res) => { res.json(await api.post('/pos/wallet/customers/' + req.params.uuid + '/payment',  req.body, req.session.token)); };
+exports.walletAdjust        = async (req, res) => { res.json(await api.post('/pos/wallet/customers/' + req.params.uuid + '/adjust',   req.body, req.session.token)); };
+exports.walletOnlineLink    = async (req, res) => { res.json(await api.post('/pos/wallet/customers/' + req.params.uuid + '/online-link', req.body, req.session.token)); };
+exports.walletSettings      = async (req, res) => { res.json(await api.get ('/pos/wallet/settings', req.session.token)); };
+exports.walletSettingsUpd   = async (req, res) => { res.json(await api.put ('/pos/wallet/settings', req.body, req.session.token)); };
+exports.walletRecent        = async (req, res) => { res.json(await api.get ('/pos/wallet/transactions/recent', req.session.token)); };
+
 exports.paymentsPendingPage = (req, res) => {
     const isSpa = !!(req.xhr || req.headers['x-spa'] === '1');
     const opts = { page_title: 'Pending Payments', activeLink: 'pos-payments-pending', breadcrumbs: [] };
@@ -368,6 +405,9 @@ async function proxyPdf(apiPath, req, res, fallbackName) {
     } catch (err) { res.status(500).json({ status: 500, message: 'Failed.' }); }
 }
 exports.orderInvoice = (req, res) => proxyPdf('/pos/orders/' + req.params.uuid + '/invoice', req, res, 'invoice.pdf');
+// Demo A4 preview — no order id, pulls sample data on the API side.
+// Linked from the Receipts/Thermal section in /sales/settings.
+exports.invoicePreview = (req, res) => proxyPdf('/pos/invoice-preview', req, res, 'invoice-preview.pdf');
 exports.orderInvoiceThermal = (req, res) => proxyPdf('/pos/orders/' + req.params.uuid + '/invoice/thermal', req, res, 'receipt.pdf');
 exports.orderInvoiceEmail = async (req, res) => { res.json(await api.post('/pos/orders/' + req.params.uuid + '/invoice/email', req.body, req.session.token)); };
 exports.orderPayment = async (req, res) => { res.json(await api.post('/pos/orders/' + req.params.uuid + '/payment', req.body, req.session.token)); };
@@ -409,34 +449,42 @@ exports.draftShow     = async (req, res) => { res.json(await api.get('/pos/draft
 exports.draftUpdate   = async (req, res) => { res.json(await api.put('/pos/drafts/' + req.params.uuid, req.body, req.session.token)); };
 exports.draftDestroy  = async (req, res) => { res.json(await api.del('/pos/drafts/' + req.params.uuid, req.session.token)); };
 
-// POST /sales/settings/upload/:kind  (kind = logo | qr | signature)
+// POST /sales/settings/upload/:kind  (kind = logo | qr | signature | biz_signature | biz_quality)
 // Multipart file upload. Saves to /public/uploads/settings/, then PUTs the
-// resulting URL into the matching `pos_receipt_*_url` setting via the API.
+// resulting URL into the matching field — either a `pos_receipt_*_url`
+// setting (thermal receipt assets) or an `organizations.*` column
+// (A4-invoice assets like signature_url, quality_badge_image).
 exports.settingsUpload = [settingsUpload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.json({ status: 422, message: 'No file uploaded.' });
         const kind = (req.params.kind || '').toLowerCase();
+
+        // Map kind → { target, field }. `target` is 'setting' (per-org/user
+        // settings table) or 'invoice' (organizations columns updated via
+        // the invoice-settings endpoint).
         const map = {
-            logo:      'pos_receipt_logo_url',
-            qr:        'pos_receipt_qr_image_url',
-            signature: 'pos_receipt_signature_url',
+            logo:           { target: 'setting', field: 'pos_receipt_logo_url' },
+            qr:             { target: 'setting', field: 'pos_receipt_qr_image_url' },
+            signature:      { target: 'setting', field: 'pos_receipt_signature_url' },
+            biz_signature:  { target: 'invoice', field: 'signature_url' },
+            biz_quality:    { target: 'invoice', field: 'quality_badge_image' },
         };
-        const settingKey = map[kind];
-        if (!settingKey) {
-            // Cleanup the orphan file before erroring out.
+        const cfg = map[kind];
+        if (!cfg) {
             try { fs.unlinkSync(req.file.path); } catch (_) {}
             return res.json({ status: 422, message: 'Unknown upload kind: ' + kind });
         }
         const url = '/uploads/settings/' + req.file.filename;
+        const update = {}; update[cfg.field] = url;
 
-        // Persist the URL into the org's setting so reads come back consistent.
-        const update = {};
-        update[settingKey] = url;
-        const r = await api.put('/pos/settings', update, req.session.token);
-        if (r.status !== 200) {
-            return res.json({ status: r.status, message: r.message || 'Saved file but failed to update setting.' });
+        const r = (cfg.target === 'invoice')
+            ? await api.put('/pos/invoice-settings', update, req.session.token)
+            : await api.put('/pos/settings',         update, req.session.token);
+
+        if (!r || r.status !== 200) {
+            return res.json({ status: (r && r.status) || 500, message: (r && r.message) || 'Saved file but failed to update setting.' });
         }
-        return res.json({ status: 200, message: 'Uploaded.', data: { url, key: settingKey } });
+        return res.json({ status: 200, message: 'Uploaded.', data: { url, key: cfg.field } });
     } catch (err) {
         return res.json({ status: 500, message: err.message || 'Upload failed.' });
     }

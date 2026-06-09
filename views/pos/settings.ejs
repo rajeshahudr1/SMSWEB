@@ -1,798 +1,1688 @@
 <% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
+<%
+const isSuper = !!(user && user.is_super_admin);
+const isOrgAdmin = !!(user && (user.is_super_admin || user.is_org_admin));
+%>
 
-<!-- Business / Invoice Details (GST) -->
-<div class="card shadow-sm mb-3">
-  <div class="card-header py-2 border-bottom">
-    <h3 class="card-title mb-0"><i class="bi bi-building me-2 text-primary"></i>Business &amp; Invoice Details</h3>
-    <small class="text-muted ms-2">Used on invoices printed/emailed to customers. GST &amp; PAN for compliance.</small>
+<style>
+/* ════════════════════════════════════════════════════════════════════
+   SALES SETTINGS — pixel-mapped from sms/project/SalesSettings.html
+   Design palette (--blue / --green / etc.) is aliased onto the themable
+   --pv2-* tokens so the brand colour from the UI Kit cascades through.
+   ════════════════════════════════════════════════════════════════════ */
+.sales-settings{
+  --ss-blue:        var(--pv2-brand,        #1e4cb8);
+  --ss-blue-dark:   var(--pv2-brand-dark,   #163a8a);
+  --ss-blue-soft:   var(--pv2-brand-light,  #eaf0fb);
+  --ss-blue-line:   #c7d4ee;
+  --ss-green:       var(--pv2-success,      #16a34a);
+  --ss-green-soft:  var(--pv2-success-bg,   #e7f6ec);
+  --ss-red:         var(--pv2-danger,       #dc2626);
+  --ss-red-soft:    var(--pv2-danger-bg,    #fde8e8);
+  --ss-amber:       var(--pv2-warning,      #d97706);
+  --ss-amber-soft:  var(--pv2-warning-bg,   #fef3e2);
+  --ss-text:        var(--pv2-text,         #1a2332);
+  --ss-muted:       var(--pv2-muted,        #5b6578);
+  --ss-subtle:      var(--pv2-subtle,       #8a94a6);
+  --ss-border:      var(--pv2-border,       #e8ecf1);
+  --ss-border-strong:var(--pv2-border-strong,#d3d9e2);
+  --ss-surface:     var(--pv2-surface,      #ffffff);
+  --ss-surface-alt: var(--pv2-surface-alt,  #f7f9fc);
+  --ss-bg:          #f1f3f7;
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--ss-text);
+  background: var(--ss-bg);
+  min-height: 100%;
+  padding-bottom: 80px;
+}
+.sales-settings *{ box-sizing: border-box; }
+.sales-settings input, .sales-settings select, .sales-settings textarea, .sales-settings button{ font-family: inherit; }
+
+/* HERO */
+.sales-settings .ss-hero{ padding: 24px 28px 0; }
+.sales-settings .ss-hero h1{ margin:0; font-size:26px; letter-spacing:-0.5px; font-weight:800; color:var(--ss-text); }
+.sales-settings .ss-hero p{ margin:6px 0 0; color:var(--ss-muted); font-size:14px; }
+.sales-settings .ss-save-status{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:4px 10px; background:var(--ss-green-soft); color:var(--ss-green); font-size:12px; font-weight:600; border-radius:999px; }
+.sales-settings .ss-save-status.dirty{ background:var(--ss-amber-soft); color:var(--ss-amber); }
+.sales-settings .ss-pulse{ width:6px; height:6px; background:currentColor; border-radius:3px; animation: ss-pulse 1.4s infinite; }
+@keyframes ss-pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+
+/* TABS — mobile/tablet only. Hidden on desktop because the left-rail
+   quicknav covers the same role there. Stays sticky at the top of the
+   scroll container so it never moves when the user scrolls. */
+.sales-settings .ss-tabs-wrap{ display:none; margin:14px 0 0; padding:0 16px; position:sticky; top:0; background:var(--ss-bg); z-index:40; }
+.sales-settings .ss-tabs{ display:flex; gap:4px; border-bottom:1px solid var(--ss-border); overflow-x:auto; scrollbar-width:thin; }
+.sales-settings .ss-tab{ display:inline-flex; align-items:center; gap:7px; padding:10px 14px; border:none; background:none; font-size:13.5px; font-weight:600; color:var(--ss-muted); cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s, border-color .15s; }
+.sales-settings .ss-tab:hover{ color:var(--ss-text); }
+.sales-settings .ss-tab.active{ color:var(--ss-blue); border-bottom-color:var(--ss-blue); }
+.sales-settings .ss-tab .ss-badge{ background:var(--ss-blue-soft); color:var(--ss-blue); font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px; }
+
+/* LAYOUT — full-width on web, single column on mobile. Sidebar (quicknav)
+   shows ONLY on web (≥1025px) and sits sticky inside the scroll container. */
+.sales-settings .ss-layout{ margin:0; padding:22px 28px 90px; display:grid; grid-template-columns:240px 1fr; gap:28px; }
+.sales-settings .ss-quicknav{ position:sticky; top:14px; align-self:start; background:var(--ss-surface); border:1px solid var(--ss-border); border-radius:12px; padding:14px 10px; box-shadow:0 1px 2px rgba(15,23,42,0.04); max-height:calc(100vh - 80px); overflow-y:auto; }
+.sales-settings .ss-quicknav-head{ padding:0 8px 10px; border-bottom:1px solid var(--ss-border); margin-bottom:8px; }
+.sales-settings .ss-quicknav h4{ margin:0; font-size:11px; font-weight:700; color:var(--ss-subtle); text-transform:uppercase; letter-spacing:0.9px; }
+.sales-settings .ss-quicknav-progress{ display:flex; align-items:center; gap:8px; margin-top:8px; font-size:11px; color:var(--ss-muted); }
+.sales-settings .ss-quicknav-progress .bar{ flex:1; height:4px; background:var(--ss-surface-alt); border-radius:2px; overflow:hidden; }
+.sales-settings .ss-quicknav-progress .bar-fill{ height:100%; background:linear-gradient(90deg, var(--ss-blue), #14b8a6); border-radius:2px; transition:width .25s; }
+.sales-settings .ss-quicknav a{ display:flex; align-items:center; gap:10px; padding:8px 10px; font-size:13px; color:var(--ss-muted); text-decoration:none; border-radius:7px; position:relative; transition:all .15s; }
+.sales-settings .ss-quicknav a::before{ content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:0; background:var(--ss-blue); border-radius:2px; transition:height .2s; }
+.sales-settings .ss-quicknav a:hover{ background:var(--ss-surface-alt); color:var(--ss-text); }
+.sales-settings .ss-quicknav a.active{ background:var(--ss-blue-soft); color:var(--ss-blue); font-weight:600; }
+.sales-settings .ss-quicknav a.active::before{ height:18px; }
+.sales-settings .ss-quicknav a svg{ width:15px; height:15px; opacity:.85; flex-shrink:0; }
+.sales-settings .ss-quicknav-foot{ margin-top:12px; padding:10px; background:linear-gradient(135deg, var(--ss-blue-soft), #f0f5ff); border-radius:8px; font-size:11.5px; color:var(--ss-blue); display:flex; gap:9px; align-items:flex-start; }
+.sales-settings .ss-quicknav-foot svg{ flex-shrink:0; margin-top:1px; }
+.sales-settings .ss-quicknav-foot b{ display:block; font-size:12px; margin-bottom:1px; }
+
+.sales-settings .ss-content{ display:flex; flex-direction:column; gap:18px; min-width:0; }
+
+/* CARD */
+.sales-settings .ss-card{ background:var(--ss-surface); border:1px solid var(--ss-border); border-radius:12px; overflow:hidden; }
+.sales-settings .ss-card-head{ padding:16px 20px 10px; border-bottom:1px solid var(--ss-border); display:flex; align-items:center; gap:12px; }
+.sales-settings .ss-card-icon{ width:36px; height:36px; border-radius:8px; background:var(--ss-blue-soft); color:var(--ss-blue); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sales-settings .ss-card-title{ font-size:15px; font-weight:700; }
+.sales-settings .ss-card-sub{ font-size:12px; color:var(--ss-muted); margin-top:1px; }
+.sales-settings .ss-card-body{ padding:18px 20px; }
+
+/* FORM ROWS */
+.sales-settings .ss-row{ display:grid; grid-template-columns:220px 1fr; gap:24px; padding:14px 0; border-bottom:1px solid var(--ss-border); }
+.sales-settings .ss-row:last-child{ border-bottom:none; padding-bottom:0; }
+.sales-settings .ss-row:first-child{ padding-top:0; }
+.sales-settings .ss-row-label{ font-size:13px; font-weight:600; color:var(--ss-text); }
+.sales-settings .ss-row-hint{ font-size:11.5px; color:var(--ss-muted); margin-top:2px; line-height:1.45; }
+.sales-settings .ss-row-control{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+/* Broaden the form-control styling so EVERY input/select/textarea inside
+   .sales-settings looks consistent — Razorpay/Stripe credential fields,
+   method-card foot inputs, danger-zone confirm boxes, etc. that aren't
+   wrapped in .ss-row-control still pick up the same look. */
+.sales-settings input[type="text"], .sales-settings input[type="number"],
+.sales-settings input[type="email"], .sales-settings input[type="tel"],
+.sales-settings input[type="password"], .sales-settings input[type="search"],
+.sales-settings input[type="url"],
+.sales-settings select, .sales-settings textarea{
+  width:100%; padding:9px 11px; font-size:13px; line-height:1.4;
+  border:1px solid var(--ss-border-strong); border-radius:7px;
+  background:var(--ss-surface); color:var(--ss-text); outline:none;
+  font-family:inherit; transition:border-color .15s, box-shadow .15s;
+}
+.sales-settings input:focus, .sales-settings select:focus, .sales-settings textarea:focus{
+  border-color:var(--ss-blue); box-shadow:0 0 0 3px rgba(30,76,184,0.12);
+}
+.sales-settings input[disabled], .sales-settings select[disabled], .sales-settings textarea[disabled]{
+  background:var(--ss-surface-alt); color:var(--ss-muted); cursor:not-allowed;
+}
+.sales-settings input::placeholder, .sales-settings textarea::placeholder{
+  color:var(--ss-subtle); opacity:1;
+}
+.sales-settings textarea{ min-height:70px; resize:vertical; }
+/* Native select chevron — replace browser default with a clean SVG arrow */
+.sales-settings select{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%235b6578' d='M3.5 6L8 10.5 12.5 6z'/></svg>");
+  background-repeat:no-repeat; background-position:right 11px center;
+  padding-right:34px;
+}
+.sales-settings .ss-help-line{ font-size:11.5px; color:var(--ss-muted); }
+.sales-settings .ss-help-line.ok{ color:var(--ss-green); font-weight:600; }
+.sales-settings .ss-input-prefix{ position:relative; }
+.sales-settings .ss-input-prefix > input{ padding-left:54px !important; }
+.sales-settings .ss-input-prefix > .pre{ position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ss-muted); font-size:11px; font-weight:600; pointer-events:none; }
+.sales-settings .ss-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sales-settings .ss-grid-3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+/* 2-column wrapper for the receipt-visibility toggles. Each child row has
+   its own border-bottom; we suppress the divider between vertically-paired
+   rows so the grid reads as a clean 6×2 instead of a busy double border. */
+.sales-settings .ss-toggle-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+@media (max-width:720px){ .sales-settings .ss-toggle-grid{ grid-template-columns:1fr; } }
+
+/* TOGGLE */
+.sales-settings .ss-toggle-row{ display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--ss-border); }
+.sales-settings .ss-toggle-row:last-child{ border-bottom:none; padding-bottom:0; }
+.sales-settings .ss-toggle-row:first-child{ padding-top:0; }
+.sales-settings .ss-toggle-grid .ss-toggle-row{ font-size:13.5px; font-weight:600; }
+.sales-settings .ss-toggle-grid .ss-toggle-row span{ flex:1; min-width:0; }
+.sales-settings .ss-toggle-row-text{ flex:1; min-width:0; }
+.sales-settings .ss-toggle-row-title{ font-size:13.5px; font-weight:600; }
+.sales-settings .ss-toggle-row-sub{ font-size:12px; color:var(--ss-muted); margin-top:2px; }
+.sales-settings .ss-switch{ width:38px; height:22px; background:var(--ss-border-strong); border-radius:999px; position:relative; cursor:pointer; transition:background .2s; flex-shrink:0; border:none; padding:0; }
+.sales-settings .ss-switch::after{ content:''; width:16px; height:16px; background:#fff; border-radius:50%; position:absolute; top:3px; left:3px; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+.sales-settings .ss-switch.on{ background:var(--ss-blue); }
+.sales-settings .ss-switch.on::after{ transform:translateX(16px); }
+
+/* TAX TABLE */
+.sales-settings .ss-table-wrap{ border:1px solid var(--ss-border); border-radius:10px; overflow:hidden; }
+.sales-settings .ss-table{ width:100%; border-collapse:collapse; font-size:13px; }
+.sales-settings .ss-table thead th{ background:var(--ss-surface-alt); text-align:left; padding:10px 14px; font-weight:600; color:var(--ss-muted); font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--ss-border); }
+.sales-settings .ss-table tbody td{ padding:12px 14px; border-bottom:1px solid var(--ss-border); }
+.sales-settings .ss-table tbody tr:last-child td{ border-bottom:none; }
+.sales-settings .ss-table tbody tr:hover{ background:var(--ss-surface-alt); }
+.sales-settings .ss-pill{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; }
+.sales-settings .ss-pill.green{ background:var(--ss-green-soft); color:var(--ss-green); }
+.sales-settings .ss-pill.amber{ background:var(--ss-amber-soft); color:var(--ss-amber); }
+.sales-settings .ss-pill.red{ background:var(--ss-red-soft); color:var(--ss-red); }
+.sales-settings .ss-row-actions{ display:flex; gap:4px; }
+.sales-settings .ss-row-actions button{ width:26px; height:26px; border:1px solid var(--ss-border); border-radius:6px; background:#fff; color:var(--ss-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.sales-settings .ss-row-actions button:hover{ color:var(--ss-blue); border-color:var(--ss-blue-line); }
+
+/* SEQUENCE PREVIEW */
+.sales-settings .ss-seq-preview{ padding:14px 16px; background:var(--ss-surface-alt); border:1px dashed var(--ss-border-strong); border-radius:8px; font-family:'JetBrains Mono', monospace; font-size:16px; color:var(--ss-blue); font-weight:700; letter-spacing:0.5px; }
+
+/* INTEGRATION CARD */
+.sales-settings .ss-int-card{ display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--ss-border); border-radius:10px; }
+.sales-settings .ss-int-logo{ width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; flex-shrink:0; }
+.sales-settings .ss-int-name{ font-size:13.5px; font-weight:700; }
+.sales-settings .ss-int-sub{ font-size:11.5px; color:var(--ss-muted); margin-top:1px; }
+.sales-settings .ss-int-cta{ margin-left:auto; }
+
+/* IMAGE UPLOADER — pre-styled label-button + thumbnail. The default
+   fallback dropzone gets a dashed border so it reads as a target. */
+.sales-settings .ss-img-up{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.sales-settings .ss-img-up .ss-thumb{
+  width:120px; height:60px; border-radius:8px; border:1.5px dashed var(--ss-border-strong);
+  background:var(--ss-surface-alt); display:flex; align-items:center; justify-content:center;
+  color:var(--ss-subtle); font-size:11px; font-style:italic; text-align:center; padding:6px;
+  flex-shrink:0; transition:border-color .15s, background .15s;
+}
+.sales-settings .ss-img-up .ss-thumb img{ max-height:54px; max-width:114px; object-fit:contain; }
+.sales-settings .ss-img-up .ss-thumb.has-img{ border-style:solid; border-color:var(--ss-border); background:#fff; padding:3px; }
+.sales-settings .ss-img-up:hover .ss-thumb{ border-color:var(--ss-blue); }
+/* Upload + clear buttons sit next to the thumb */
+.sales-settings .ss-img-up label.ss-btn{ margin:0; cursor:pointer; }
+
+/* BUTTONS */
+.sales-settings .ss-btn{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; padding:8px 14px; border-radius:7px; cursor:pointer; border:1px solid transparent; transition:background .15s, border-color .15s; }
+.sales-settings .ss-btn-primary{ background:var(--ss-blue); color:#fff; }
+.sales-settings .ss-btn-primary:hover{ background:var(--ss-blue-dark); }
+.sales-settings .ss-btn-secondary{ background:#fff; color:var(--ss-text); border-color:var(--ss-border-strong); }
+.sales-settings .ss-btn-secondary:hover{ border-color:var(--ss-blue); color:var(--ss-blue); }
+.sales-settings .ss-btn-ghost{ background:transparent; color:var(--ss-muted); }
+.sales-settings .ss-btn-ghost:hover{ color:var(--ss-text); background:var(--ss-surface-alt); }
+.sales-settings .ss-btn-danger{ background:#fff; color:var(--ss-red); border-color:var(--ss-red-soft); }
+.sales-settings .ss-btn-danger:hover{ background:var(--ss-red-soft); }
+.sales-settings .ss-btn[disabled]{ opacity:.55; cursor:not-allowed; }
+
+/* STICKY ACTION BAR — ALL rules un-scoped (the bar lives outside the
+   .sales-settings wrapper) but we duplicate the .ss-btn classes here so
+   the buttons get the same look they would inside the page. */
+.ss-action-bar{ position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e8ecf1; padding:12px 24px; display:flex; align-items:center; gap:12px; z-index:60; box-shadow:0 -4px 16px rgba(0,0,0,0.04); font-family: Inter, system-ui, sans-serif; }
+.ss-action-bar .inner{ margin:0; width:100%; display:flex; align-items:center; gap:12px; }
+.ss-action-bar .pending{ font-size:12.5px; color:#d97706; display:flex; align-items:center; gap:6px; font-weight:600; }
+.ss-action-bar .pending.clean{ color:#16a34a; }
+.ss-action-bar .ss-btn{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; cursor:pointer; border:1px solid transparent; transition:background .15s, border-color .15s, color .15s, box-shadow .15s; font-family:inherit; line-height:1; }
+.ss-action-bar .ss-btn-primary{ background:var(--pv2-brand, #1e4cb8); color:#fff; border-color:var(--pv2-brand, #1e4cb8); box-shadow:0 1px 2px rgba(30,76,184,.18); }
+.ss-action-bar .ss-btn-primary:hover:not([disabled]){ background:var(--pv2-brand-dark, #163a8a); border-color:var(--pv2-brand-dark, #163a8a); }
+.ss-action-bar .ss-btn-secondary{ background:#fff; color:#1a2332; border-color:#d3d9e2; }
+.ss-action-bar .ss-btn-secondary:hover:not([disabled]){ border-color:var(--pv2-brand, #1e4cb8); color:var(--pv2-brand, #1e4cb8); }
+.ss-action-bar .ss-btn-ghost{ background:transparent; color:#5b6578; }
+.ss-action-bar .ss-btn-ghost:hover:not([disabled]){ background:#f7f9fc; color:#1a2332; }
+.ss-action-bar .ss-btn[disabled]{ opacity:.45; cursor:not-allowed; }
+
+/* RECEIPT PREVIEW */
+.sales-settings .ss-receipt-preview{ background:#fff; border:1px solid var(--ss-border); border-radius:8px; padding:14px 12px; font-family:'Courier New', monospace; font-size:11px; line-height:1.5; max-width:240px; }
+.sales-settings .ss-receipt-preview .center{ text-align:center; }
+.sales-settings .ss-receipt-preview .h1{ font-size:14px; font-weight:800; letter-spacing:1px; }
+.sales-settings .ss-receipt-preview .dash{ border-top:1px dashed #000; margin:6px 0; }
+.sales-settings .ss-receipt-preview .total{ font-weight:800; font-size:13px; }
+.sales-settings .ss-receipt-preview .rrow{ display:flex; justify-content:space-between; }
+
+/* RESPONSIVE
+   Web (≥1025px): sidebar visible, tabs hidden, full-width content
+   Tablet/Mobile (<1025px): tabs visible (sticky), sidebar hidden,
+                            single-column content
+*/
+@media (max-width:1024px){
+  .sales-settings .ss-tabs-wrap{ display:block; }
+  .sales-settings .ss-layout{ grid-template-columns:1fr; padding:18px 16px 100px; gap:16px; }
+  .sales-settings .ss-quicknav{ display:none; }
+  .sales-settings .ss-hero{ padding:20px 16px 0; }
+  .sales-settings .ss-row{ grid-template-columns:1fr; gap:8px; }
+  .sales-settings .ss-grid-3{ grid-template-columns:repeat(2, 1fr); }
+}
+@media (max-width:720px){
+  .sales-settings .ss-hero{ padding:16px 14px 0; }
+  .sales-settings .ss-hero h1{ font-size:22px; }
+  .sales-settings .ss-tabs-wrap{ padding:0 12px; margin-top:10px; }
+  .sales-settings .ss-tab{ padding:10px 12px; font-size:12.5px; }
+  .sales-settings .ss-layout{ padding:14px 12px 110px; }
+  .sales-settings .ss-card-head{ padding:14px 14px 8px; }
+  .sales-settings .ss-card-body{ padding:14px; }
+  .sales-settings .ss-grid-2, .sales-settings .ss-grid-3{ grid-template-columns:1fr; }
+  .ss-action-bar{ padding:10px 14px; flex-wrap:wrap; }
+  .ss-action-bar .pending{ width:100%; }
+}
+</style>
+
+<div class="sales-settings">
+  <!-- HERO ──────────────────────────────────────────────────── -->
+  <div class="ss-hero">
+    <h1>Sales settings</h1>
+    <p>Configure how invoices, taxes, payments, and receipts behave across all sales workflows.</p>
+    <div id="ssSaveStatus" class="ss-save-status"><span class="ss-pulse"></span> All changes saved</div>
   </div>
-  <div class="card-body">
-    <ul class="nav nav-tabs mb-3" id="bizTabs">
-      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#bizIdentity"><i class="bi bi-card-heading me-1"></i>Identity &amp; GST</a></li>
-      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizBank"><i class="bi bi-bank me-1"></i>Bank Details</a></li>
-      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizInvoice"><i class="bi bi-receipt me-1"></i>Invoice Defaults</a></li>
-      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bizReceipt"><i class="bi bi-receipt-cutoff me-1"></i>Receipt</a></li>
-    </ul>
-    <div class="tab-content">
-      <div class="tab-pane fade show active" id="bizIdentity">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Legal Business Name</label>
-            <input type="text" class="form-control" id="biz_legal_name" placeholder="e.g., ABC Auto Spares Pvt. Ltd."/>
-            <small class="form-hint">Registered legal name. If blank, uses company name.</small>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">GSTIN</label>
-            <input type="text" class="form-control" id="biz_gst_number" placeholder="15-digit GSTIN" maxlength="15"/>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">State Code</label>
-            <input type="text" class="form-control" id="biz_state_code" placeholder="e.g., 27" maxlength="2"/>
-            <small class="form-hint">First 2 digits of GSTIN.</small>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">PAN</label>
-            <input type="text" class="form-control" id="biz_pan_number" placeholder="ABCDE1234F" maxlength="10"/>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">CIN (optional)</label>
-            <input type="text" class="form-control" id="biz_cin_number" placeholder="Corporate Identification Number"/>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Billing / Registered Address</label>
-            <textarea class="form-control" id="biz_billing_address" rows="2" placeholder="Full registered address shown on invoice"></textarea>
-            <small class="form-hint">Leave blank to use main company address.</small>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">CGST/SGST or IGST</label>
-            <select class="form-select" id="biz_include_cgst_sgst">
-              <option value="1">CGST + SGST (intra-state)</option>
-              <option value="0">IGST only (inter-state)</option>
-            </select>
-            <small class="form-hint">Most small businesses: CGST+SGST. Change per-order if selling to other states.</small>
-          </div>
-        </div>
-      </div>
-      <div class="tab-pane fade" id="bizBank">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Bank Name</label>
-            <input type="text" class="form-control" id="biz_bank_name" placeholder="e.g., HDFC Bank"/>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Account Number</label>
-            <input type="text" class="form-control" id="biz_bank_account_number" placeholder="Account number"/>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">IFSC Code</label>
-            <input type="text" class="form-control" id="biz_bank_ifsc_code" placeholder="e.g., HDFC0001234"/>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Branch</label>
-            <input type="text" class="form-control" id="biz_bank_branch" placeholder="Branch name/city"/>
-          </div>
-        </div>
-        <small class="form-hint d-block mt-2">These appear on the invoice footer so customers can pay via bank transfer.</small>
-      </div>
-      <div class="tab-pane fade" id="bizInvoice">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label">Invoice Prefix</label>
-            <input type="text" class="form-control" id="biz_invoice_prefix" value="INV" maxlength="10"/>
-            <small class="form-hint">Used in numbers like <code>INV-202604-0001</code>.</small>
-          </div>
-          <div class="col-md-9">
-            <label class="form-label">Signature Image URL (optional)</label>
-            <input type="text" class="form-control" id="biz_signature_url" placeholder="https://... or upload later"/>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Default Terms &amp; Conditions</label>
-            <textarea class="form-control" id="biz_invoice_terms" rows="3" placeholder="e.g., Goods once sold will not be taken back..."></textarea>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Default Notes (Thank-you line)</label>
-            <textarea class="form-control" id="biz_invoice_notes" rows="2" placeholder="e.g., Thank you for your business!"></textarea>
-          </div>
-        </div>
-      </div>
 
-      <!-- ========== Receipt Tab ========== -->
-      <div class="tab-pane fade" id="bizReceipt">
-        <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Drives every receipt the POS prints — A4 invoice, 80&nbsp;mm thermal, and email. Anything blank falls back to the company defaults from the Identity tab.</p>
-
-        <!-- Company block on receipt -->
-        <h6 class="fw-semibold mt-2 mb-2"><i class="bi bi-building me-1"></i>Company Block</h6>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Company Logo</label>
-            <div class="d-flex align-items-center gap-3">
-              <div id="rc_logo_preview" class="border rounded d-flex align-items-center justify-content-center" style="width:72px;height:72px;background:#f9fafb;color:#9ca3af;font-size:11px;text-align:center;">No logo</div>
-              <div class="flex-grow-1">
-                <input type="file" class="form-control form-control-sm" id="rc_logo_file" accept="image/*"/>
-                <input type="hidden" id="rc_logo_url" name="pos_receipt_logo_url"/>
-                <small class="form-hint">PNG / JPG / WEBP up to 5 MB. Saved automatically on file pick.</small>
-                <a href="#" id="rc_logo_remove" class="small text-danger d-none">Remove logo</a>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Display Name (overrides company name)</label>
-            <input type="text" class="form-control" id="rc_company_name" name="pos_receipt_company_name" placeholder="Leave blank to use registered company name"/>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Tagline / Slogan</label>
-            <input type="text" class="form-control" id="rc_tagline" name="pos_receipt_tagline" placeholder='e.g., "A Perfect Scrap Solution"'/>
-            <small class="form-hint">Printed below the company name in italics.</small>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Phone</label>
-            <input type="text" class="form-control" id="rc_phone" name="pos_receipt_phone" placeholder="+91 XXXXX XXXXX"/>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Alternate Phone</label>
-            <input type="text" class="form-control" id="rc_alt_mobile" name="pos_receipt_alt_mobile" placeholder="+91 XXXXX XXXXX"/>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" id="rc_email" name="pos_receipt_email" placeholder="billing@company.com"/>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Website</label>
-            <input type="text" class="form-control" id="rc_website" name="pos_receipt_website" placeholder="www.company.com"/>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">City</label>
-            <input type="text" class="form-control" id="rc_city" name="pos_receipt_city" placeholder="e.g., Surat"/>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Pincode</label>
-            <input type="text" class="form-control" id="rc_pincode" name="pos_receipt_pincode" placeholder="6 digits" maxlength="10"/>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Tax / GSTIN Line (override)</label>
-            <input type="text" class="form-control" id="rc_tax_line" name="pos_receipt_tax_line" placeholder="GSTIN: 27ABCDE1234F1Z5"/>
-            <small class="form-hint">Leave blank to use the GSTIN from the Identity tab.</small>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Counter / Terminal No</label>
-            <input type="text" class="form-control" id="rc_counter_no" name="pos_receipt_counter_no" placeholder="e.g., COUNTER-1"/>
-            <small class="form-hint">Printed in the bill header so multi-counter setups can be reconciled.</small>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Address (override)</label>
-            <textarea class="form-control" id="rc_address" name="pos_receipt_address" rows="2" placeholder="Full address as it should appear on receipts"></textarea>
-          </div>
-        </div>
-
-        <!-- UPI / Payment block -->
-        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-qr-code me-1"></i>UPI &amp; QR Block</h6>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">UPI ID (VPA)</label>
-            <input type="text" class="form-control" id="rc_upi_id" name="pos_receipt_upi_id" placeholder="merchant@upi"/>
-            <small class="form-hint">Auto-generates a "Scan &amp; Pay" QR if no image is uploaded.</small>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">UPI Payee Name</label>
-            <input type="text" class="form-control" id="rc_upi_payee_name" name="pos_receipt_upi_payee_name" placeholder="Shown on the customer's UPI app"/>
-          </div>
-          <div class="col-12">
-            <label class="form-label">QR Code Image (override)</label>
-            <div class="d-flex align-items-center gap-3">
-              <div id="rc_qr_preview" class="border rounded d-flex align-items-center justify-content-center" style="width:96px;height:96px;background:#f9fafb;color:#9ca3af;font-size:11px;text-align:center;">No QR</div>
-              <div class="flex-grow-1">
-                <input type="file" class="form-control form-control-sm" id="rc_qr_file" accept="image/*"/>
-                <input type="hidden" id="rc_qr_image_url" name="pos_receipt_qr_image_url"/>
-                <small class="form-hint">Upload your existing UPI QR (e.g. printed from your bank app). When uploaded, the receipt prints this image directly. Leave empty to auto-generate from UPI ID above.</small>
-                <a href="#" id="rc_qr_remove" class="small text-danger d-none">Remove QR image</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Terms / Extra charges -->
-        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-file-text me-1"></i>Terms &amp; Extra Charges</h6>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Extra Charges Label</label>
-            <input type="text" class="form-control" id="rc_extra_charges_label" name="pos_receipt_extra_charges_label" placeholder="e.g., Loading / Cutting"/>
-            <small class="form-hint">If you add extra-charges manually on the bill, this label is printed.</small>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Default Print Type</label>
-            <select class="form-select" id="rc_default_print_type" name="pos_receipt_default_print_type">
-              <option value="original">Original</option>
-              <option value="duplicate">Duplicate</option>
-            </select>
-            <small class="form-hint">Stamp shown on each printed copy. Re-prints flip to "Duplicate".</small>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Terms &amp; Conditions</label>
-            <textarea class="form-control" id="rc_terms" name="pos_receipt_terms" rows="3" placeholder="Goods once sold are not refundable…"></textarea>
-            <small class="form-hint">Printed when the "Show terms &amp; conditions" toggle below is on.</small>
-          </div>
-        </div>
-
-        <!-- Header / Footer text -->
-        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-text-paragraph me-1"></i>Header &amp; Footer</h6>
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label">Header Text</label>
-            <textarea class="form-control" id="rc_header" name="pos_receipt_header" rows="2" placeholder="Tagline / promo / branch info shown above the items list"></textarea>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Thank-you Message</label>
-            <input type="text" class="form-control" id="rc_thank_you" name="pos_receipt_thank_you" placeholder="Thank you for shopping with us!"/>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Return / Refund Policy</label>
-            <textarea class="form-control" id="rc_return_policy" name="pos_receipt_return_policy" rows="2" placeholder="e.g., Returns accepted within 7 days with original invoice."></textarea>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Footer Text</label>
-            <textarea class="form-control" id="rc_footer" name="pos_receipt_footer" rows="2" placeholder="Anything you want at the very bottom — slogan, social handle, etc."></textarea>
-          </div>
-        </div>
-
-        <!-- Section toggles -->
-        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-toggles me-1"></i>What to print on the receipt</h6>
-        <div class="row g-3">
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_logo" name="pos_receipt_show_logo">
-            <label class="form-check-label" for="rc_show_logo">Show logo</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_gst" name="pos_receipt_show_gst">
-            <label class="form-check-label" for="rc_show_gst">Show GSTIN line</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_tax_breakdown" name="pos_receipt_show_tax_breakdown">
-            <label class="form-check-label" for="rc_show_tax_breakdown">Show tax breakdown (CGST/SGST/IGST)</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_discount" name="pos_receipt_show_discount">
-            <label class="form-check-label" for="rc_show_discount">Show discount line</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_cashier" name="pos_receipt_show_cashier">
-            <label class="form-check-label" for="rc_show_cashier">Show cashier name</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_customer" name="pos_receipt_show_customer">
-            <label class="form-check-label" for="rc_show_customer">Show customer details</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_invoice_number" name="pos_receipt_show_invoice_number">
-            <label class="form-check-label" for="rc_show_invoice_number">Show invoice number</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_barcode" name="pos_receipt_show_barcode">
-            <label class="form-check-label" for="rc_show_barcode">Show barcode</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_qr" name="pos_receipt_show_qr">
-            <label class="form-check-label" for="rc_show_qr">Show QR code</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_payment_method" name="pos_receipt_show_payment_method">
-            <label class="form-check-label" for="rc_show_payment_method">Show payment method &amp; change</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_signature" name="pos_receipt_show_signature">
-            <label class="form-check-label" for="rc_show_signature">Show signature line</label>
-          </div></div>
-          <div class="col-md-4"><div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="rc_show_terms" name="pos_receipt_show_terms">
-            <label class="form-check-label" for="rc_show_terms">Show terms &amp; conditions</label>
-          </div></div>
-        </div>
-
-        <!-- Payment modes -->
-        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-credit-card me-1"></i>Accepted Payment Modes</h6>
-        <p class="text-muted small mb-2">Tick every method you accept. The list is printed on the receipt under "We accept" and used to populate the cashier's pay-method picker.</p>
-        <div class="row g-2">
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_cash" value="cash"><label class="form-check-label" for="rc_pm_cash">Cash</label></div></div>
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_card" value="card"><label class="form-check-label" for="rc_pm_card">Card (Debit / Credit)</label></div></div>
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_upi" value="upi"><label class="form-check-label" for="rc_pm_upi">UPI</label></div></div>
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_wallet" value="wallet"><label class="form-check-label" for="rc_pm_wallet">Wallet (Paytm / PhonePe)</label></div></div>
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_netbanking" value="netbanking"><label class="form-check-label" for="rc_pm_netbanking">Net Banking</label></div></div>
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_bank_transfer" value="bank_transfer"><label class="form-check-label" for="rc_pm_bank_transfer">Bank Transfer</label></div></div>
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_cheque" value="cheque"><label class="form-check-label" for="rc_pm_cheque">Cheque</label></div></div>
-          <div class="col-md-3 col-6"><div class="form-check"><input class="form-check-input rc-pm" type="checkbox" id="rc_pm_credit" value="credit"><label class="form-check-label" for="rc_pm_credit">Credit / On-account</label></div></div>
-          <input type="hidden" id="rc_payment_modes" name="pos_receipt_payment_modes"/>
-        </div>
-
-        <!-- Format -->
-        <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-rulers me-1"></i>Format</h6>
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label">Default Receipt Size</label>
-            <select class="form-select" id="rc_size" name="pos_receipt_size">
-              <option value="80mm">80 mm (Thermal)</option>
-              <option value="58mm">58 mm (Thermal)</option>
-              <option value="a4">A4 (Tax Invoice)</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Currency Symbol</label>
-            <input type="text" class="form-control" id="rc_currency_symbol" name="pos_receipt_currency_symbol" maxlength="4" placeholder="₹"/>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Date Format</label>
-            <select class="form-select" id="rc_date_format" name="pos_receipt_date_format">
-              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-              <option value="DD-MMM-YYYY">DD-MMM-YYYY</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Number of Copies</label>
-            <input type="number" class="form-control" id="rc_copies" name="pos_receipt_copies" min="1" max="5" value="1"/>
-          </div>
-        </div>
-
-        <% if (can('edit_pos_settings')) { %>
-        <div class="mt-4 d-flex gap-2">
-          <button type="button" class="btn btn-primary" id="btnSaveReceipt"><i class="bi bi-check-lg me-1"></i>Save Receipt Settings</button>
-          <button type="button" class="btn btn-outline-secondary" id="btnPreviewReceipt"><i class="bi bi-eye me-1"></i>Preview</button>
-        </div>
-        <% } %>
-      </div>
+  <!-- TABS ──────────────────────────────────────────────────── -->
+  <div class="ss-tabs-wrap">
+    <!-- Tabs MUST stay in the same order as the <section> blocks below so the
+         active-tab highlight tracks the user's scroll position. Same goes for
+         the desktop sidebar (.ss-quicknav). -->
+    <div class="ss-tabs" id="ssTabs">
+      <button class="ss-tab active" data-section="general"><i class="bi bi-building" style="font-size:14px;"></i> General</button>
+      <button class="ss-tab" data-section="bank"><i class="bi bi-bank" style="font-size:14px;"></i> Bank</button>
+      <button class="ss-tab" data-section="pos-prefs"><i class="bi bi-gear" style="font-size:14px;"></i> POS</button>
+      <button class="ss-tab" data-section="invoicing"><i class="bi bi-file-earmark-text" style="font-size:14px;"></i> Invoicing</button>
+      <button class="ss-tab" data-section="payments"><i class="bi bi-credit-card" style="font-size:14px;"></i> Payments</button>
+      <button class="ss-tab" data-section="receipts"><i class="bi bi-receipt" style="font-size:14px;"></i> Receipts</button>
+      <button class="ss-tab" data-section="thermal"><i class="bi bi-printer" style="font-size:14px;"></i> Thermal</button>
+      <button class="ss-tab" data-section="numbering"><i class="bi bi-list-ol" style="font-size:14px;"></i> Numbering</button>
+      <button class="ss-tab" data-section="terms"><i class="bi bi-file-text" style="font-size:14px;"></i> Terms</button>
+      <button class="ss-tab" data-section="wallet"><i class="bi bi-wallet2" style="font-size:14px;"></i> Wallet</button>
+      <% if (isSuper) { %><button class="ss-tab" data-section="advanced"><i class="bi bi-sliders" style="font-size:14px;"></i> Advanced</button><% } %>
+      <% if (isSuper) { %><button class="ss-tab" data-section="danger" style="color:var(--ss-red);"><i class="bi bi-exclamation-triangle" style="font-size:14px;"></i> Danger</button><% } %>
     </div>
-    <% if (can('edit_pos_settings')) { %>
-    <div class="mt-3">
-      <button type="button" class="btn btn-primary" id="btnSaveBiz"><i class="bi bi-check-lg me-1"></i>Save Business Details</button>
-    </div>
-    <% } %>
   </div>
-</div>
 
-<!-- Payment Gateway -->
-<div class="card shadow-sm mb-3">
-  <div class="card-header py-2 border-bottom">
-    <h3 class="card-title mb-0"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Online Payment Gateway</h3>
-    <small class="text-muted ms-2">For online card / UPI / pay-by-link. Secrets never leave the server.</small>
-  </div>
-  <div class="card-body">
-    <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Enable any gateway you want available in the POS. If both are enabled, the cashier picks at checkout time. If neither is enabled, online payment is hidden in the POS.</p>
+  <!-- LAYOUT ────────────────────────────────────────────────── -->
+  <div class="ss-layout">
 
-    <!-- Razorpay (India) — with inline Enable toggle -->
-    <div class="card border mb-3">
-      <div class="card-header py-2 d-flex align-items-center" style="background:var(--pv2-surface-alt);">
-        <h5 class="mb-0 fw-semibold flex-grow-1"><i class="bi bi-bank me-2"></i>Razorpay <span class="text-muted small ms-1">(India)</span></h5>
-        <div class="form-check form-switch m-0">
-          <input class="form-check-input" type="checkbox" id="pg_razorpay_enabled" role="switch">
-          <label class="form-check-label fw-semibold" for="pg_razorpay_enabled">Enable</label>
+    <!-- QUICK NAV -->
+    <aside class="ss-quicknav">
+      <div class="ss-quicknav-head">
+        <h4>On this page</h4>
+        <div class="ss-quicknav-progress">
+          <div class="bar"><div class="bar-fill" id="ssProgressBar" style="width:0%"></div></div>
+          <span id="ssProgressLabel">0%</span>
         </div>
       </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Razorpay Key ID</label>
-            <input type="text" class="form-control" id="pg_razorpay_key_id" placeholder="rzp_live_...  /  rzp_test_..."/>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Razorpay Key Secret</label>
-            <input type="password" class="form-control" id="pg_razorpay_key_secret" placeholder="••••••••"/>
-            <small class="form-hint">Leave blank to keep the existing secret.</small>
-          </div>
-          <div class="col-md-12">
-            <label class="form-label">Razorpay Webhook Secret</label>
-            <input type="password" class="form-control" id="pg_razorpay_webhook_secret" placeholder="••••••••"/>
-            <small class="form-hint">Set this to the same value in Razorpay dashboard → Webhooks. URL: <code>/api/pos/payment/webhook/razorpay</code></small>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stripe (International) — with inline Enable toggle -->
-    <div class="card border mb-3">
-      <div class="card-header py-2 d-flex align-items-center" style="background:var(--pv2-surface-alt);">
-        <h5 class="mb-0 fw-semibold flex-grow-1"><i class="bi bi-globe me-2"></i>Stripe <span class="text-muted small ms-1">(International)</span></h5>
-        <div class="form-check form-switch m-0">
-          <input class="form-check-input" type="checkbox" id="pg_stripe_enabled" role="switch">
-          <label class="form-check-label fw-semibold" for="pg_stripe_enabled">Enable</label>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Stripe Publishable Key</label>
-            <input type="text" class="form-control" id="pg_stripe_publishable_key" placeholder="pk_live_... / pk_test_..."/>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Stripe Secret Key</label>
-            <input type="password" class="form-control" id="pg_stripe_secret_key" placeholder="••••••••"/>
-          </div>
-          <div class="col-md-12">
-            <label class="form-label">Stripe Webhook Secret</label>
-            <input type="password" class="form-control" id="pg_stripe_webhook_secret" placeholder="whsec_...  (••••••••)"/>
-            <small class="form-hint">Stripe dashboard → Developers → Webhooks. URL: <code>/api/pos/payment/webhook/stripe</code></small>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Stripe Settlement Currency</label>
-            <select class="form-select" id="pg_stripe_currency">
-              <option value="USD">USD — US Dollar</option>
-              <option value="EUR">EUR — Euro</option>
-              <option value="GBP">GBP — British Pound</option>
-              <option value="AED">AED — UAE Dirham</option>
-              <option value="AUD">AUD — Australian Dollar</option>
-              <option value="CAD">CAD — Canadian Dollar</option>
-              <option value="SGD">SGD — Singapore Dollar</option>
-              <option value="HKD">HKD — Hong Kong Dollar</option>
-              <option value="JPY">JPY — Japanese Yen</option>
-              <option value="INR">INR — Indian Rupee</option>
-              <option value="MYR">MYR — Malaysian Ringgit</option>
-              <option value="BRL">BRL — Brazilian Real</option>
-              <option value="MXN">MXN — Mexican Peso</option>
-              <option value="CHF">CHF — Swiss Franc</option>
-              <option value="DKK">DKK — Danish Krone</option>
-              <option value="NOK">NOK — Norwegian Krone</option>
-              <option value="SEK">SEK — Swedish Krona</option>
-            </select>
-            <small class="form-hint">Must match the currency your Stripe merchant account is registered for. Sending the wrong currency causes the "amount must convert to at least…" error.</small>
-          </div>
-        </div>
-      </div>
-    </div>
-    <% if (can('edit_pos_settings')) { %>
-    <div class="mt-3">
-      <button type="button" class="btn btn-primary" id="btnSavePg"><i class="bi bi-check-lg me-1"></i>Save Gateway Settings</button>
-    </div>
-    <% } %>
-  </div>
-</div>
-
-<!-- Label Printer moved to dedicated Printer Settings page -->
-<div class="alert alert-info d-flex align-items-center gap-2 mb-3" style="border:1px solid var(--pv2-border);background:var(--pv2-brand-ghost);color:var(--pv2-text);">
-  <i class="bi bi-printer-fill" style="font-size:20px;color:var(--pv2-brand);"></i>
-  <div class="flex-grow-1">
-    <div style="font-weight:600;">Printer configuration has moved</div>
-    <div class="small text-muted">Label, receipt, A4 and QR printers are now managed in the dedicated Printer Settings page — scan USB &amp; network printers, assign roles, and test in one place.</div>
-  </div>
-  <a href="/sales/printer-settings" class="btn btn-sm btn-primary"><i class="bi bi-arrow-right"></i> Open Printer Settings</a>
-</div>
-
-<div class="card shadow-sm">
-  <div class="card-header py-2 border-bottom">
-    <h3 class="card-title mb-0"><i class="bi bi-gear me-2 text-primary"></i>POS Settings</h3>
-  </div>
-  <div class="card-body">
-    <form id="settingsForm">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <div class="mb-3">
-            <label class="form-label">Default Warehouse</label>
-            <select class="form-select" id="pos_default_warehouse" name="pos_default_warehouse">
-              <option value="">-- All Warehouses --</option>
-            </select>
-            <small class="form-hint">Default warehouse for POS product listing</small>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <label class="form-label">Low Stock Alert Threshold</label>
-            <input type="number" class="form-control" id="pos_low_stock_alert" name="pos_low_stock_alert" value="5" min="0"/>
-            <small class="form-hint">Alert when stock falls below this quantity</small>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="pos_enable_discount" name="pos_enable_discount" checked/>
-              <label class="form-check-label" for="pos_enable_discount">Enable Discounts</label>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="pos_enable_tax" name="pos_enable_tax" checked/>
-              <label class="form-check-label" for="pos_enable_tax">Enable Tax Calculation</label>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="pos_show_vehicle_tab" name="pos_show_vehicle_tab" checked/>
-              <label class="form-check-label" for="pos_show_vehicle_tab">Show Vehicle Tab</label>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="pos_allow_multi_warehouse" name="pos_allow_multi_warehouse" checked/>
-              <label class="form-check-label" for="pos_allow_multi_warehouse">Allow Multi-Warehouse</label>
-            </div>
-          </div>
-        </div>
-        <!-- Receipt header / footer fields moved to the Receipt tab so all
-             receipt-related settings live in one place. -->
-      </div>
-      <% if (can('edit_pos_settings')) { %>
-      <div class="mt-3">
-        <button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg me-1"></i>Save Settings</button>
-      </div>
+      <!-- Sidebar order MUST mirror the DOM order of the <section> blocks
+           below so the scroll-spy highlight stays in sync as the user
+           scrolls. Same order is repeated in the mobile #ssTabs strip. -->
+      <a href="#general" class="active"><i class="bi bi-building"></i> Business profile</a>
+      <a href="#bank"><i class="bi bi-bank"></i> Bank details</a>
+      <a href="#pos-prefs"><i class="bi bi-gear"></i> POS preferences</a>
+      <a href="#invoicing"><i class="bi bi-file-earmark-text"></i> Invoicing defaults</a>
+      <a href="#payments"><i class="bi bi-credit-card"></i> Payment methods</a>
+      <a href="#receipts"><i class="bi bi-receipt"></i> Receipts &amp; printing</a>
+      <a href="#thermal"><i class="bi bi-printer"></i> Thermal receipt</a>
+      <a href="#numbering"><i class="bi bi-list-ol"></i> Document numbering</a>
+      <a href="#terms"><i class="bi bi-file-text"></i> Terms &amp; notes</a>
+      <a href="#wallet"><i class="bi bi-wallet2"></i> Wallet defaults</a>
+      <% if (isSuper) { %>
+      <a href="#advanced"><i class="bi bi-sliders"></i> Upload limits</a>
+      <a href="#danger" style="color:var(--ss-red); margin-top:14px;"><i class="bi bi-exclamation-triangle"></i> Danger zone</a>
       <% } %>
-    </form>
+      <div class="ss-quicknav-foot">
+        <i class="bi bi-info-circle" style="font-size:14px;"></i>
+        <div><b>Tip</b>Changes are saved together when you click <b>Save changes</b>.</div>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <div class="ss-content">
+
+      <!-- ▶ GENERAL / Business profile -->
+      <section id="general" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-building"></i></div>
+          <div>
+            <div class="ss-card-title">Business profile</div>
+            <div class="ss-card-sub">Appears on invoices, receipts and customer-facing emails</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Legal business name</div>
+              <div class="ss-row-hint">Registered name on tax documents</div>
+            </div>
+            <div class="ss-row-control">
+              <input type="text" id="biz_legal_name" data-bind="biz" placeholder="e.g., ABC Auto Spares Pvt. Ltd."/>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Trading tagline</div>
+              <div class="ss-row-hint">Shown under the company name on invoices</div>
+            </div>
+            <div class="ss-row-control">
+              <input type="text" id="biz_tagline" data-bind="biz" placeholder="e.g., Automotive Parts &amp; Services"/>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">GSTIN</div>
+              <div class="ss-row-hint">15-digit Goods &amp; Services Tax ID</div>
+            </div>
+            <div class="ss-row-control">
+              <input type="text" id="biz_gst_number" data-bind="biz" maxlength="15" style="font-family:'JetBrains Mono', monospace;" placeholder="22AAAAA0000A1Z5"/>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">PAN / CIN</div>
+            <div class="ss-row-control">
+              <div class="ss-grid-2">
+                <input type="text" id="biz_pan_number" data-bind="biz" placeholder="ABCDE1234F" maxlength="10" style="font-family:'JetBrains Mono', monospace;"/>
+                <input type="text" id="biz_cin_number" data-bind="biz" placeholder="CIN (optional)"/>
+              </div>
+              <input type="text" id="biz_state_code" data-bind="biz" placeholder="State code (e.g., 27)" maxlength="2" style="max-width:140px;font-family:'JetBrains Mono', monospace;"/>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Address</div>
+              <div class="ss-row-hint">Used for billing addresses on invoices</div>
+            </div>
+            <div class="ss-row-control">
+              <textarea id="biz_billing_address" data-bind="biz" placeholder="Full registered address shown on invoice"></textarea>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Phone &amp; email</div>
+            <div class="ss-row-control">
+              <div class="ss-grid-2">
+                <input type="text" id="biz_phone_display" data-bind="biz_phone_display" placeholder="+91 98765 43210" disabled title="Saved on the organization profile"/>
+                <input type="email" id="biz_email_display" data-bind="biz_email_display" placeholder="info@example.com" disabled title="Saved on the organization profile"/>
+              </div>
+              <span class="ss-help-line">Phone &amp; email come from your organization profile.</span>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">UPI ID</div>
+            <div class="ss-row-control">
+              <input type="text" id="biz_upi_id" data-bind="biz" placeholder="merchant@upi"/>
+              <span class="ss-help-line">Printed under the "Scan to Pay Again" QR code on invoices.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ BANK DETAILS -->
+      <section id="bank" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-bank"></i></div>
+          <div>
+            <div class="ss-card-title">Bank details</div>
+            <div class="ss-card-sub">Shown on the invoice footer so customers can pay by bank transfer</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-row">
+            <div class="ss-row-label">Bank name</div>
+            <div class="ss-row-control"><input type="text" id="biz_bank_name" data-bind="biz" placeholder="e.g., HDFC Bank"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Account number</div>
+            <div class="ss-row-control"><input type="text" id="biz_bank_account_number" data-bind="biz" placeholder="Account number" style="font-family:'JetBrains Mono', monospace;"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">IFSC code</div>
+            <div class="ss-row-control"><input type="text" id="biz_bank_ifsc_code" data-bind="biz" placeholder="HDFC0001234" style="font-family:'JetBrains Mono', monospace;"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Branch</div>
+            <div class="ss-row-control"><input type="text" id="biz_bank_branch" data-bind="biz" placeholder="Branch name / city"/></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ POS PREFERENCES -->
+      <section id="pos-prefs" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-gear"></i></div>
+          <div>
+            <div class="ss-card-title">POS preferences</div>
+            <div class="ss-card-sub">Default warehouse, low-stock alerts, and feature toggles</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Default warehouse</div>
+              <div class="ss-row-hint">Pre-selected on the POS product list</div>
+            </div>
+            <div class="ss-row-control">
+              <select id="pos_default_warehouse" data-bind="pos_setting">
+                <option value="">All warehouses</option>
+              </select>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Low-stock alert threshold</div>
+              <div class="ss-row-hint">Yellow badge appears at or below this number</div>
+            </div>
+            <div class="ss-row-control"><input type="number" id="pos_low_stock_alert" data-bind="pos_setting" min="0" placeholder="5" style="max-width:160px;"/></div>
+          </div>
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Enable per-line discount</div>
+              <div class="ss-toggle-row-sub">Cashier can apply a discount to individual cart items</div>
+            </div>
+            <button type="button" class="ss-switch on" id="pos_enable_discount" data-bind="pos_setting"></button>
+          </div>
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Apply tax automatically</div>
+              <div class="ss-toggle-row-sub">Add the configured tax to every line at checkout</div>
+            </div>
+            <button type="button" class="ss-switch on" id="pos_enable_tax" data-bind="pos_setting"></button>
+          </div>
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Show vehicle tab</div>
+              <div class="ss-toggle-row-sub">Display the Vehicles category in the POS product grid</div>
+            </div>
+            <button type="button" class="ss-switch on" id="pos_show_vehicle_tab" data-bind="pos_setting"></button>
+          </div>
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Allow multi-warehouse cart</div>
+              <div class="ss-toggle-row-sub">Permit a single sale to draw stock from more than one warehouse</div>
+            </div>
+            <button type="button" class="ss-switch on" id="pos_allow_multi_warehouse" data-bind="pos_setting"></button>
+          </div>
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Enable on-screen keyboard</div>
+              <div class="ss-toggle-row-sub">Show the small keyboard icon beside text fields in POS for touchscreen typing</div>
+            </div>
+            <button type="button" class="ss-switch on" id="pos_keyboard_enabled" data-bind="pos_setting"></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ INVOICING -->
+      <section id="invoicing" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-file-earmark-text"></i></div>
+          <div>
+            <div class="ss-card-title">Invoicing defaults</div>
+            <div class="ss-card-sub">Default behavior when creating new invoices</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Auto-email invoice on payment</div>
+              <div class="ss-toggle-row-sub">Send a PDF copy to the customer when an order is fully paid</div>
+            </div>
+            <button type="button" class="ss-switch" id="pos_auto_email_invoice" data-bind="pos_setting"></button>
+          </div>
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Show payment QR on invoice</div>
+              <div class="ss-toggle-row-sub">Embed a UPI QR code on every printable invoice</div>
+            </div>
+            <button type="button" class="ss-switch on" id="pos_invoice_show_qr" data-bind="pos_setting"></button>
+          </div>
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Allow partial payments</div>
+              <div class="ss-toggle-row-sub">Customers can pay in installments; outstanding amount tracked</div>
+            </div>
+            <button type="button" class="ss-switch on" id="pos_allow_partial_payments" data-bind="pos_setting"></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ PAYMENTS -->
+      <section id="payments" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-credit-card"></i></div>
+          <div>
+            <div class="ss-card-title">Payment methods</div>
+            <div class="ss-card-sub">Toggle methods customers can use at checkout</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <h6 class="fw-semibold mb-2"><i class="bi bi-cloud me-1"></i> Online gateways</h6>
+          <p class="ss-help-line mb-3">Enable to accept online payments through the secure gateway. Secrets never leave the server.</p>
+
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Razorpay <span class="ss-pill green" id="rzpStatus" style="display:none;">Connected</span></div>
+              <div class="ss-toggle-row-sub">Cards, UPI, netbanking and pay-by-link for India</div>
+            </div>
+            <button type="button" class="ss-switch" id="pg_razorpay_enabled" data-bind="pg"></button>
+          </div>
+          <div id="rzpFields" style="margin-left:0; padding:14px 0; display:none;">
+            <div class="ss-grid-2" style="margin-bottom:8px;">
+              <div>
+                <label class="ss-row-label">Key ID</label>
+                <input type="text" id="pg_razorpay_key_id" data-bind="pg" placeholder="rzp_live_... / rzp_test_..."/>
+              </div>
+              <div>
+                <label class="ss-row-label">Key Secret</label>
+                <input type="password" id="pg_razorpay_key_secret" data-bind="pg" placeholder="••••••••"/>
+              </div>
+            </div>
+            <label class="ss-row-label">Webhook Secret</label>
+            <input type="password" id="pg_razorpay_webhook_secret" data-bind="pg" placeholder="••••••••"/>
+            <small class="ss-help-line">Razorpay → Developers → Webhooks. URL: <code>/api/pos/payment/webhook/razorpay</code></small>
+          </div>
+
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Stripe <span class="ss-pill green" id="stripeStatus" style="display:none;">Connected</span></div>
+              <div class="ss-toggle-row-sub">Cards in 35+ currencies (recommended outside India)</div>
+            </div>
+            <button type="button" class="ss-switch" id="pg_stripe_enabled" data-bind="pg"></button>
+          </div>
+          <div id="stripeFields" style="margin-left:0; padding:14px 0; display:none;">
+            <div class="ss-grid-2" style="margin-bottom:8px;">
+              <div>
+                <label class="ss-row-label">Publishable Key</label>
+                <input type="text" id="pg_stripe_publishable_key" data-bind="pg" placeholder="pk_live_... / pk_test_..."/>
+              </div>
+              <div>
+                <label class="ss-row-label">Secret Key</label>
+                <input type="password" id="pg_stripe_secret_key" data-bind="pg" placeholder="••••••••"/>
+              </div>
+            </div>
+            <div class="ss-grid-2">
+              <div>
+                <label class="ss-row-label">Webhook Secret</label>
+                <input type="password" id="pg_stripe_webhook_secret" data-bind="pg" placeholder="whsec_..."/>
+              </div>
+              <div>
+                <label class="ss-row-label">Settlement Currency</label>
+                <select id="pg_stripe_currency" data-bind="pg">
+                  <option value="USD">USD — US Dollar</option>
+                  <option value="EUR">EUR — Euro</option>
+                  <option value="GBP">GBP — British Pound</option>
+                  <option value="AED">AED — UAE Dirham</option>
+                  <option value="AUD">AUD — Australian Dollar</option>
+                  <option value="CAD">CAD — Canadian Dollar</option>
+                  <option value="SGD">SGD — Singapore Dollar</option>
+                  <option value="INR">INR — Indian Rupee</option>
+                  <option value="JPY">JPY — Japanese Yen</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ RECEIPTS -->
+      <section id="receipts" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-receipt"></i></div>
+          <div style="flex:1;min-width:0;">
+            <div class="ss-card-title">Receipts &amp; printing</div>
+            <div class="ss-card-sub">Customise the printed thermal receipt and A4 invoice</div>
+          </div>
+          <!-- Quick actions: open live previews + printer settings in new
+               tabs. The previews use whatever is currently saved in the
+               settings table — handy for sanity-checking the configuration
+               you're editing without making a real sale. -->
+          <div class="ss-receipt-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="/sales/receipt-preview" target="_blank" class="ss-btn ss-btn-secondary" style="text-decoration:none;"><i class="bi bi-printer"></i> Preview 80&nbsp;mm receipt</a>
+            <a href="/sales/invoice-preview"  target="_blank" class="ss-btn ss-btn-secondary" style="text-decoration:none;"><i class="bi bi-file-earmark-pdf"></i> Preview A4 invoice</a>
+            <a href="/sales/printer-settings" target="_blank" class="ss-btn ss-btn-primary"   style="text-decoration:none;"><i class="bi bi-gear"></i> Printer settings</a>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div style="display:grid; grid-template-columns:1fr 280px; gap:24px;" id="ssReceiptGrid">
+            <div>
+              <div class="ss-row">
+                <div class="ss-row-label">Authorized signature</div>
+                <div class="ss-row-control">
+                  <div class="ss-img-up">
+                    <div class="ss-thumb" id="biz_signature_thumb">
+                      <img id="biz_signature_preview" src="" alt="" style="display:none;"/>
+                      <span id="biz_signature_empty">PNG / JPG<br>240×80&nbsp;px+</span>
+                    </div>
+                    <label class="ss-btn ss-btn-secondary">
+                      <i class="bi bi-upload"></i> Upload signature
+                      <input type="file" id="biz_signature_file" accept="image/*" style="display:none;"/>
+                    </label>
+                    <button type="button" class="ss-btn ss-btn-danger" id="biz_signature_clear" style="display:none;"><i class="bi bi-x-lg"></i> Remove</button>
+                  </div>
+                  <input type="hidden" id="biz_signature_url" data-bind="biz"/>
+                  <span class="ss-help-line">Transparent PNG recommended — drawn over the signature line on the printed invoice.</span>
+                </div>
+              </div>
+              <div class="ss-row">
+                <div class="ss-row-label">Quality badge image</div>
+                <div class="ss-row-control">
+                  <div class="ss-img-up">
+                    <div class="ss-thumb" id="biz_quality_thumb">
+                      <img id="biz_quality_preview" src="" alt="" style="display:none;"/>
+                      <span id="biz_quality_empty">Default<br>check-mark</span>
+                    </div>
+                    <label class="ss-btn ss-btn-secondary">
+                      <i class="bi bi-upload"></i> Upload badge
+                      <input type="file" id="biz_quality_file" accept="image/*" style="display:none;"/>
+                    </label>
+                    <button type="button" class="ss-btn ss-btn-danger" id="biz_quality_clear" style="display:none;"><i class="bi bi-x-lg"></i> Remove</button>
+                  </div>
+                  <input type="hidden" id="biz_quality_badge_image" data-bind="biz"/>
+                  <span class="ss-help-line">Square image. Replaces the default star inside the seal circle on the invoice.</span>
+                </div>
+              </div>
+              <div class="ss-row">
+                <div class="ss-row-label">Quality badge — line 1</div>
+                <div class="ss-row-control"><input type="text" id="biz_quality_badge_line1" data-bind="biz" maxlength="60" placeholder="Quality Parts"/></div>
+              </div>
+              <div class="ss-row">
+                <div class="ss-row-label">Quality badge — line 2</div>
+                <div class="ss-row-control"><input type="text" id="biz_quality_badge_line2" data-bind="biz" maxlength="60" placeholder="Reliable Service"/></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px; font-weight:700; color:var(--ss-subtle); text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Receipt preview · 80mm</div>
+              <div class="ss-receipt-preview">
+                <div class="center h1" id="rPrev_company">COMPANY NAME</div>
+                <div class="center" style="font-size:10px;" id="rPrev_tagline">Tagline</div>
+                <div class="dash"></div>
+                <div class="rrow" style="font-size:10px;"><span>#INV-XXXX</span><span id="rPrev_date"></span></div>
+                <div class="dash"></div>
+                <div class="rrow"><span>Sample item × 1</span><span>₹100.00</span></div>
+                <div class="dash"></div>
+                <div class="rrow total"><span>TOTAL</span><span>₹118.00</span></div>
+                <div class="center" style="margin-top:8px; font-size:10px;" id="rPrev_thanks">Thank you!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ THERMAL RECEIPT — full pos_receipt_* configuration ─────────
+           Restored from the previous design: every key the API persists in
+           POS_SETTING_KEYS for thermal receipts (header info, format,
+           toggles, text blocks, UPI/QR) gets a control here. Field IDs
+           match the setting keys exactly so the load/save loops can iterate
+           the list without per-field branches. -->
+      <section id="thermal" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-printer"></i></div>
+          <div style="flex:1;min-width:0;">
+            <div class="ss-card-title">Thermal receipt</div>
+            <div class="ss-card-sub">Configure the 80&nbsp;mm / 58&nbsp;mm printed receipt — header, layout, what to show, and footer text</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="/sales/receipt-preview" target="_blank" class="ss-btn ss-btn-secondary" style="text-decoration:none;"><i class="bi bi-printer"></i> Preview live</a>
+            <a href="/sales/printer-settings" target="_blank" class="ss-btn ss-btn-secondary" style="text-decoration:none;"><i class="bi bi-gear"></i> Printer settings</a>
+          </div>
+        </div>
+        <div class="ss-card-body">
+
+          <!-- ── Company info on receipt ───────────────────────────── -->
+          <div style="font-size:11px;font-weight:700;color:var(--ss-subtle);text-transform:uppercase;letter-spacing:0.5px;margin:4px 0 12px;">Company info on receipt</div>
+          <div class="ss-row">
+            <div class="ss-row-label">Receipt logo</div>
+            <div class="ss-row-control">
+              <div class="ss-img-up">
+                <div class="ss-thumb" id="pos_receipt_logo_thumb">
+                  <img id="pos_receipt_logo_preview" src="" alt="" style="display:none;"/>
+                  <span id="pos_receipt_logo_empty">PNG / JPG<br>200×80&nbsp;px+</span>
+                </div>
+                <label class="ss-btn ss-btn-secondary"><i class="bi bi-upload"></i> Upload logo
+                  <input type="file" id="pos_receipt_logo_file" accept="image/*" style="display:none;"/>
+                </label>
+                <button type="button" class="ss-btn ss-btn-danger" id="pos_receipt_logo_clear" style="display:none;"><i class="bi bi-x-lg"></i> Remove</button>
+              </div>
+              <input type="hidden" id="pos_receipt_logo_url" data-bind="pos_setting"/>
+              <span class="ss-help-line">Black-on-white image works best on thermal printers.</span>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Company name</div>
+            <div class="ss-row-control"><input type="text" id="pos_receipt_company_name" data-bind="pos_setting" placeholder="ABC Auto Spares"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Tagline</div>
+            <div class="ss-row-control"><input type="text" id="pos_receipt_tagline" data-bind="pos_setting" maxlength="80" placeholder="Quality parts &amp; reliable service"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Phone</div>
+            <div class="ss-row-control ss-grid-2">
+              <input type="text" id="pos_receipt_phone" data-bind="pos_setting" placeholder="+91 98765 43210"/>
+              <input type="text" id="pos_receipt_alt_mobile" data-bind="pos_setting" placeholder="Alt. mobile (optional)"/>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Email / website</div>
+            <div class="ss-row-control ss-grid-2">
+              <input type="email" id="pos_receipt_email" data-bind="pos_setting" placeholder="info@example.com"/>
+              <input type="text"  id="pos_receipt_website" data-bind="pos_setting" placeholder="www.example.com"/>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Address</div>
+            <div class="ss-row-control"><textarea id="pos_receipt_address" data-bind="pos_setting" rows="2" placeholder="Shop / line 1, line 2"></textarea></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">City / pincode</div>
+            <div class="ss-row-control ss-grid-2">
+              <input type="text" id="pos_receipt_city" data-bind="pos_setting" placeholder="City"/>
+              <input type="text" id="pos_receipt_pincode" data-bind="pos_setting" placeholder="Pincode" style="font-family:'JetBrains Mono', monospace;"/>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Tax line / counter</div>
+            <div class="ss-row-control ss-grid-2">
+              <input type="text" id="pos_receipt_tax_line"  data-bind="pos_setting" placeholder="GSTIN: 22AAAAA0000A1Z5" style="font-family:'JetBrains Mono', monospace;"/>
+              <input type="text" id="pos_receipt_counter_no" data-bind="pos_setting" placeholder="Counter / Cashier ID"/>
+            </div>
+          </div>
+
+          <!-- ── Format & layout ───────────────────────────────────── -->
+          <div style="font-size:11px;font-weight:700;color:var(--ss-subtle);text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px;border-top:1px solid var(--ss-border);padding-top:18px;">Format &amp; layout</div>
+          <div class="ss-row">
+            <div class="ss-row-label">Receipt size</div>
+            <div class="ss-row-control">
+              <select id="pos_receipt_size" data-bind="pos_setting" style="max-width:200px;">
+                <option value="80mm">80 mm (standard)</option>
+                <option value="58mm">58 mm (compact)</option>
+              </select>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Default print type</div>
+            <div class="ss-row-control">
+              <select id="pos_receipt_default_print_type" data-bind="pos_setting" style="max-width:200px;">
+                <option value="">— None —</option>
+                <option value="original">Original</option>
+                <option value="duplicate">Duplicate</option>
+              </select>
+              <span class="ss-help-line">Stamped at the top of every receipt unless changed at print time.</span>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Copies per print</div>
+            <div class="ss-row-control"><input type="number" id="pos_receipt_copies" data-bind="pos_setting" min="1" max="5" placeholder="1" style="max-width:120px;"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Currency symbol</div>
+            <div class="ss-row-control"><input type="text" id="pos_receipt_currency_symbol" data-bind="pos_setting" maxlength="6" placeholder="₹" style="max-width:120px;font-family:'JetBrains Mono', monospace;"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Date format</div>
+            <div class="ss-row-control">
+              <select id="pos_receipt_date_format" data-bind="pos_setting" style="max-width:240px;">
+                <option value="DD/MM/YYYY">DD/MM/YYYY (e.g. 31/12/2026)</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY (e.g. 12/31/2026)</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD (e.g. 2026-12-31)</option>
+                <option value="DD-MMM-YYYY">DD-MMM-YYYY (e.g. 31-Dec-2026)</option>
+              </select>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Payment mode label</div>
+            <div class="ss-row-control"><input type="text" id="pos_receipt_payment_modes" data-bind="pos_setting" placeholder="Cash / Card / UPI / Cheque"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Extra-charges label</div>
+            <div class="ss-row-control"><input type="text" id="pos_receipt_extra_charges_label" data-bind="pos_setting" placeholder="Other charges"/></div>
+          </div>
+
+          <!-- ── What to show ─────────────────────────────────────── -->
+          <div style="font-size:11px;font-weight:700;color:var(--ss-subtle);text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px;border-top:1px solid var(--ss-border);padding-top:18px;">What to show on the receipt</div>
+          <div class="ss-toggle-grid">
+            <label class="ss-toggle-row"><span>Logo</span><button type="button" class="ss-switch on" id="pos_receipt_show_logo" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Invoice number</span><button type="button" class="ss-switch on" id="pos_receipt_show_invoice_number" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Cashier name</span><button type="button" class="ss-switch on" id="pos_receipt_show_cashier" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Customer details</span><button type="button" class="ss-switch on" id="pos_receipt_show_customer" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>GSTIN / tax line</span><button type="button" class="ss-switch on" id="pos_receipt_show_gst" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Tax breakdown</span><button type="button" class="ss-switch on" id="pos_receipt_show_tax_breakdown" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Discount line</span><button type="button" class="ss-switch on" id="pos_receipt_show_discount" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Payment method</span><button type="button" class="ss-switch on" id="pos_receipt_show_payment_method" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Barcode</span><button type="button" class="ss-switch" id="pos_receipt_show_barcode" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>UPI / payment QR</span><button type="button" class="ss-switch on" id="pos_receipt_show_qr" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Signature line</span><button type="button" class="ss-switch" id="pos_receipt_show_signature" data-bind="pos_setting"></button></label>
+            <label class="ss-toggle-row"><span>Terms / footer</span><button type="button" class="ss-switch on" id="pos_receipt_show_terms" data-bind="pos_setting"></button></label>
+          </div>
+
+          <!-- ── Text blocks ──────────────────────────────────────── -->
+          <div style="font-size:11px;font-weight:700;color:var(--ss-subtle);text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px;border-top:1px solid var(--ss-border);padding-top:18px;">Header, footer &amp; notes</div>
+          <div class="ss-row">
+            <div class="ss-row-label">Header text</div>
+            <div class="ss-row-control"><textarea id="pos_receipt_header" data-bind="pos_setting" rows="2" placeholder="Top-of-receipt message — e.g. 'Welcome to ABC Auto Spares'"></textarea></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Footer text</div>
+            <div class="ss-row-control"><textarea id="pos_receipt_footer" data-bind="pos_setting" rows="2" placeholder="Bottom-of-receipt message"></textarea></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Thank-you note</div>
+            <div class="ss-row-control"><input type="text" id="pos_receipt_thank_you" data-bind="pos_setting" placeholder="Thank you for your business"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Return policy</div>
+            <div class="ss-row-control"><textarea id="pos_receipt_return_policy" data-bind="pos_setting" rows="2" placeholder="Goods once sold will not be taken back without original invoice within 7 days."></textarea></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Terms &amp; conditions</div>
+            <div class="ss-row-control"><textarea id="pos_receipt_terms" data-bind="pos_setting" rows="3" placeholder="• Subject to local jurisdiction&#10;• Warranty as per manufacturer policy"></textarea></div>
+          </div>
+
+          <!-- ── UPI / QR / signature image ────────────────────────── -->
+          <div style="font-size:11px;font-weight:700;color:var(--ss-subtle);text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px;border-top:1px solid var(--ss-border);padding-top:18px;">UPI &amp; QR for receipts</div>
+          <div class="ss-row">
+            <div class="ss-row-label">UPI ID (receipt)</div>
+            <div class="ss-row-control ss-grid-2">
+              <input type="text" id="pos_receipt_upi_id" data-bind="pos_setting" placeholder="merchant@upi"/>
+              <input type="text" id="pos_receipt_upi_payee_name" data-bind="pos_setting" placeholder="Payee name"/>
+            </div>
+            <span class="ss-help-line">Used to generate the live UPI QR. Leave blank to use the value from the Business profile section.</span>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Custom QR image</div>
+            <div class="ss-row-control">
+              <div class="ss-img-up">
+                <div class="ss-thumb" id="pos_receipt_qr_thumb">
+                  <img id="pos_receipt_qr_preview" src="" alt="" style="display:none;"/>
+                  <span id="pos_receipt_qr_empty">Square<br>QR&nbsp;PNG</span>
+                </div>
+                <label class="ss-btn ss-btn-secondary"><i class="bi bi-upload"></i> Upload QR
+                  <input type="file" id="pos_receipt_qr_file" accept="image/*" style="display:none;"/>
+                </label>
+                <button type="button" class="ss-btn ss-btn-danger" id="pos_receipt_qr_clear" style="display:none;"><i class="bi bi-x-lg"></i> Remove</button>
+              </div>
+              <input type="hidden" id="pos_receipt_qr_image_url" data-bind="pos_setting"/>
+              <span class="ss-help-line">Overrides the live UPI QR — useful if you have a custom-printed scanner code.</span>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Receipt signature</div>
+            <div class="ss-row-control">
+              <div class="ss-img-up">
+                <div class="ss-thumb" id="pos_receipt_signature_thumb">
+                  <img id="pos_receipt_signature_preview" src="" alt="" style="display:none;"/>
+                  <span id="pos_receipt_signature_empty">Transparent<br>PNG&nbsp;240×80</span>
+                </div>
+                <label class="ss-btn ss-btn-secondary"><i class="bi bi-upload"></i> Upload signature
+                  <input type="file" id="pos_receipt_signature_file" accept="image/*" style="display:none;"/>
+                </label>
+                <button type="button" class="ss-btn ss-btn-danger" id="pos_receipt_signature_clear" style="display:none;"><i class="bi bi-x-lg"></i> Remove</button>
+              </div>
+              <input type="hidden" id="pos_receipt_signature_url" data-bind="pos_setting"/>
+              <span class="ss-help-line">Drawn above the signature line on receipts that have one enabled.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ NUMBERING -->
+      <section id="numbering" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-list-ol"></i></div>
+          <div>
+            <div class="ss-card-title">Document numbering</div>
+            <div class="ss-card-sub">Sequence and prefix for invoices</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-row">
+            <div class="ss-row-label">Invoice prefix</div>
+            <div class="ss-row-control">
+              <div class="ss-grid-2" style="max-width:360px;">
+                <div class="ss-input-prefix"><span class="pre">Prefix</span><input type="text" id="biz_invoice_prefix" data-bind="biz" maxlength="10" style="font-family:'JetBrains Mono', monospace;" placeholder="INV-"/></div>
+              </div>
+              <div class="ss-seq-preview" id="seqPreview">Loading…</div>
+              <span class="ss-help-line">Numbers are generated server-side. Last issued is shown above.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ TERMS -->
+      <section id="terms" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-file-text"></i></div>
+          <div>
+            <div class="ss-card-title">Terms &amp; default notes</div>
+            <div class="ss-card-sub">Pre-fill for new invoices</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Default notes</div>
+              <div class="ss-row-hint">One per line — each becomes a bullet under "NOTES" on the invoice.</div>
+            </div>
+            <div class="ss-row-control"><textarea id="biz_invoice_default_notes" data-bind="biz" placeholder="• Goods once sold will not be taken back.&#10;• Warranty as per manufacturer policy."></textarea></div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Terms &amp; conditions</div>
+              <div class="ss-row-hint">One per line — appears under "TERMS &amp; CONDITIONS"</div>
+            </div>
+            <div class="ss-row-control"><textarea id="biz_invoice_terms" data-bind="biz" placeholder="• All disputes are subject to local jurisdiction."></textarea></div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Thank-you message</div>
+              <div class="ss-row-hint">Multi-line allowed; appears above the signature</div>
+            </div>
+            <div class="ss-row-control"><textarea id="biz_invoice_thank_you" data-bind="biz" placeholder="Thank you for your business."></textarea></div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Footer note (one-liner)</div>
+              <div class="ss-row-hint">Used by older receipt templates as a fallback.</div>
+            </div>
+            <div class="ss-row-control"><input type="text" id="biz_invoice_notes" data-bind="biz" placeholder="Thank you!"/></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ WALLET DEFAULTS — applies to NEW wallet customers; existing
+           customers keep their per-customer overrides. -->
+      <section id="wallet" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-wallet2"></i></div>
+          <div>
+            <div class="ss-card-title">Wallet defaults</div>
+            <div class="ss-card-sub">Defaults applied when enabling wallet for a new customer. Existing per-customer settings are kept.</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Default payment terms</div>
+              <div class="ss-row-hint">Days from invoice date until payment is due</div>
+            </div>
+            <div class="ss-row-control"><input type="number" id="wallet_default_terms_days" data-bind="wallet" min="0" placeholder="30" style="max-width:140px;"/></div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Grace period</div>
+              <div class="ss-row-hint">Extra days after due date before late fee applies</div>
+            </div>
+            <div class="ss-row-control"><input type="number" id="wallet_default_grace_days" data-bind="wallet" min="0" placeholder="0" style="max-width:140px;"/></div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Default late fee</div>
+              <div class="ss-row-hint">% of outstanding amount per period</div>
+            </div>
+            <div class="ss-row-control">
+              <div class="ss-grid-2" style="max-width:340px;">
+                <input type="number" id="wallet_default_late_fee_pct" data-bind="wallet" step="0.01" min="0" placeholder="2.00"/>
+                <select id="wallet_late_fee_mode" data-bind="wallet">
+                  <option value="monthly">% per month</option>
+                  <option value="one_time">% one-time</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Reminder schedule (before due)</div>
+              <div class="ss-row-hint">Comma-separated days. e.g., <code>7,3,1</code> sends 7, 3, and 1 day before due</div>
+            </div>
+            <div class="ss-row-control"><input type="text" id="wallet_reminder_days_before" data-bind="wallet" placeholder="7,3,1" style="max-width:200px;"/></div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Overdue reminder schedule</div>
+              <div class="ss-row-hint">Comma-separated days AFTER due. e.g., <code>1,7,15</code></div>
+            </div>
+            <div class="ss-row-control"><input type="text" id="wallet_overdue_reminder_days" data-bind="wallet" placeholder="1,7,15" style="max-width:200px;"/></div>
+          </div>
+          <div class="ss-row">
+            <div>
+              <div class="ss-row-label">Reminder email subject</div>
+              <div class="ss-row-hint">Available placeholders: <code>{customer_name}</code> <code>{invoice_number}</code> <code>{amount}</code> <code>{due_date}</code> <code>{company_name}</code></div>
+            </div>
+            <div class="ss-row-control"><input type="text" id="wallet_email_subject" data-bind="wallet" placeholder="Payment reminder for invoice {invoice_number}"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Reminder email body</div>
+            <div class="ss-row-control"><textarea id="wallet_email_body" data-bind="wallet" rows="6" placeholder="Hi {customer_name},..."></textarea></div>
+          </div>
+        </div>
+      </section>
+
+      <% if (isSuper) { %>
+      <!-- ▶ ADVANCED — Upload limits (super admin only) -->
+      <section id="advanced" class="ss-card">
+        <div class="ss-card-head">
+          <div class="ss-card-icon"><i class="bi bi-sliders"></i></div>
+          <div>
+            <div class="ss-card-title">Upload limits</div>
+            <div class="ss-card-sub">Per-file size and per-record count caps for inventory media</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <h6 class="fw-semibold mb-2"><i class="bi bi-truck me-1"></i> Vehicle inventory</h6>
+          <div class="ss-row">
+            <div class="ss-row-label">Max image size (MB)</div>
+            <div class="ss-row-control"><input type="number" id="fViMaxImageSize" data-bind="vi" min="1" max="50" placeholder="5"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Max images count</div>
+            <div class="ss-row-control"><input type="number" id="fViMaxImageCount" data-bind="vi" min="1" max="100" placeholder="20"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Max video size (MB)</div>
+            <div class="ss-row-control"><input type="number" id="fViMaxVideoSize" data-bind="vi" min="1" max="500" placeholder="50"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Max videos count</div>
+            <div class="ss-row-control"><input type="number" id="fViMaxVideoCount" data-bind="vi" min="1" max="50" placeholder="10"/></div>
+          </div>
+
+          <h6 class="fw-semibold mt-4 mb-2"><i class="bi bi-boxes me-1"></i> Part inventory</h6>
+          <div class="ss-row">
+            <div class="ss-row-label">Max image size (MB)</div>
+            <div class="ss-row-control"><input type="number" id="fPiMaxImageSize" data-bind="pi" min="1" max="50" placeholder="5"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Max images count</div>
+            <div class="ss-row-control"><input type="number" id="fPiMaxImageCount" data-bind="pi" min="1" max="100" placeholder="20"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Max video size (MB)</div>
+            <div class="ss-row-control"><input type="number" id="fPiMaxVideoSize" data-bind="pi" min="1" max="500" placeholder="50"/></div>
+          </div>
+          <div class="ss-row">
+            <div class="ss-row-label">Max videos count</div>
+            <div class="ss-row-control"><input type="number" id="fPiMaxVideoCount" data-bind="pi" min="1" max="50" placeholder="10"/></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ▶ DANGER ZONE -->
+      <section id="danger" class="ss-card" style="border-color:var(--ss-red-soft);">
+        <div class="ss-card-head" style="border-bottom-color:var(--ss-red-soft);">
+          <div class="ss-card-icon" style="background:var(--ss-red-soft); color:var(--ss-red);"><i class="bi bi-exclamation-triangle"></i></div>
+          <div>
+            <div class="ss-card-title" style="color:var(--ss-red);">Danger zone</div>
+            <div class="ss-card-sub">Irreversible actions — proceed carefully</div>
+          </div>
+        </div>
+        <div class="ss-card-body">
+          <div class="ss-toggle-row">
+            <div class="ss-toggle-row-text">
+              <div class="ss-toggle-row-title">Reset POS theme to defaults</div>
+              <div class="ss-toggle-row-sub">Discards your saved UI Kit colors. Cannot be undone.</div>
+            </div>
+            <button type="button" class="ss-btn ss-btn-danger" onclick="ssResetTheme()">Reset theme</button>
+          </div>
+        </div>
+      </section>
+      <% } %>
+
+    </div>
+  </div>
+</div>
+
+<!-- Sticky action bar -->
+<div class="ss-action-bar" id="ssActionBar">
+  <div class="inner">
+    <span class="pending clean" id="ssPending"><i class="bi bi-check2-circle" style="font-size:14px;"></i> No unsaved changes</span>
+    <div style="flex:1;"></div>
+    <button type="button" class="ss-btn ss-btn-ghost" id="ssDiscard" disabled>Discard</button>
+    <% if (can('edit_pos_settings')) { %>
+      <button type="button" class="ss-btn ss-btn-primary" id="ssSaveAll" disabled><i class="bi bi-check-lg"></i> Save changes</button>
+    <% } %>
   </div>
 </div>
 
 <script>
-$(function(){
-  // Load settings
-  $.get('/sales/settings/data', function(res){
-    if(res.status===200 && res.data){
-      var d = res.data;
-      Object.keys(d).forEach(function(k){
-        var el = $('#'+k);
-        if(!el.length) return;
-        if(el.is(':checkbox')) el.prop('checked', d[k]==='1'||d[k]===true||d[k]==='true');
-        else el.val(d[k]||'');
-      });
-      // Load warehouses for dropdown
-      if(d._warehouses){
-        d._warehouses.forEach(function(w){
-          $('#pos_default_warehouse').append('<option value="'+w.id+'" '+(String(d.pos_default_warehouse)===String(w.id)?'selected':'')+'>'+w.warehouse_name+'</option>');
-        });
-      }
+/* ════════════════════════════════════════════════════════════════════
+   SALES SETTINGS — unified state + save flow
+   Single shared state object tracks every input across the page.
+   `data-bind` attribute on each input picks the destination endpoint:
+     biz             → /sales/invoice-settings  (PUT)
+     pg              → /sales/payment/config   (PUT)
+     pos_setting     → /sales/settings         (PUT)
+     vi              → /sales/vehicle-inventories/settings  (POST)
+     pi              → /sales/part-inventories/settings     (POST)
+   On Save, we fan out one batched request per touched group.
+   ════════════════════════════════════════════════════════════════════ */
+(function(){
+  var initial = {};   // values when page loaded
+  var current = {};   // live values
+
+  // ── Helpers ────────────────────────────────────────────────────
+  function readControl($el){
+    if ($el.is('button.ss-switch')) return $el.hasClass('on') ? '1' : '0';
+    if ($el.attr('type') === 'checkbox') return $el.prop('checked') ? '1' : '0';
+    return $el.val();
+  }
+  function writeControl($el, val){
+    if ($el.is('button.ss-switch')) {
+      $el.toggleClass('on', val === '1' || val === true || val === 1);
+    } else if ($el.attr('type') === 'checkbox') {
+      $el.prop('checked', val === '1' || val === true || val === 1);
+    } else {
+      $el.val(val == null ? '' : val);
     }
+  }
+  function snapshotInitial(){
+    $('[data-bind]').each(function(){
+      var id = $(this).attr('id');
+      if (id) initial[id] = readControl($(this));
+    });
+    current = Object.assign({}, initial);
+    refreshDirty();
+  }
+  function snapshotCurrent(){
+    $('[data-bind]').each(function(){
+      var id = $(this).attr('id');
+      if (id) current[id] = readControl($(this));
+    });
+  }
+  function dirtyKeys(){
+    snapshotCurrent();
+    return Object.keys(current).filter(function(k){ return String(current[k]) !== String(initial[k] == null ? '' : initial[k]); });
+  }
+  function refreshDirty(){
+    var dk = dirtyKeys();
+    var n = dk.length;
+    var $p = $('#ssPending'), $s = $('#ssSaveStatus');
+    if (n === 0){
+      $p.removeClass().addClass('pending clean').html('<i class="bi bi-check2-circle" style="font-size:14px;"></i> No unsaved changes');
+      $('#ssDiscard,#ssSaveAll').prop('disabled', true);
+      $s.removeClass('dirty').html('<span class="ss-pulse"></span> All changes saved');
+    } else {
+      $p.removeClass().addClass('pending').html('<i class="bi bi-exclamation-circle" style="font-size:14px;"></i> ' + n + ' unsaved change' + (n>1?'s':''));
+      $('#ssDiscard,#ssSaveAll').prop('disabled', false);
+      $s.addClass('dirty').html('<span class="ss-pulse"></span> ' + n + ' pending change' + (n>1?'s':''));
+    }
+    // Quicknav progress — % of fields filled out
+    var total = $('[data-bind]').length;
+    var filled = $('[data-bind]').filter(function(){ var v = readControl($(this)); return v && String(v).trim() !== '' && v !== '0'; }).length;
+    var pct = total ? Math.round(filled / total * 100) : 0;
+    $('#ssProgressBar').css('width', pct + '%');
+    $('#ssProgressLabel').text(pct + '%');
+  }
+  // Bind change events
+  $(document).on('input change', '.sales-settings [data-bind]', refreshDirty);
+  $(document).on('click', '.sales-settings .ss-switch', function(){
+    if ($(this).attr('data-bind')) { $(this).toggleClass('on'); refreshDirty(); }
+    else { $(this).toggleClass('on'); }   // visual-only switches (e.g. method cards)
   });
 
-  /* ───── Business / Invoice Details ───── */
-  var bizFields = ['legal_name','gst_number','state_code','pan_number','cin_number','billing_address',
-                   'bank_name','bank_account_number','bank_ifsc_code','bank_branch',
-                   'invoice_prefix','invoice_terms','invoice_notes','signature_url'];
-  $.get('/sales/invoice-settings', function(res){
-    if(res.status!==200 || !res.data) return;
-    bizFields.forEach(function(k){
-      var el = $('#biz_'+k);
-      if(el.length) el.val(res.data[k]||'');
-    });
-    $('#biz_include_cgst_sgst').val(res.data.include_cgst_sgst===false||res.data.include_cgst_sgst==='0' ? '0' : '1');
-  });
-  $(document).off('click.posBiz').on('click.posBiz', '#btnSaveBiz', function(){
-    var body = { include_cgst_sgst: $('#biz_include_cgst_sgst').val()==='1' };
-    bizFields.forEach(function(k){ body[k] = $('#biz_'+k).val(); });
-    var $btn = $(this).prop('disabled', true);
-    $.ajax({ url:'/sales/invoice-settings', type:'PUT', contentType:'application/json',
-      data: JSON.stringify(body),
-      success:function(r){
-        $btn.prop('disabled', false);
-        if(r.status===200) toastr.success('Business details saved');
-        else toastr.error(r.message||'Failed');
-      },
-      error:function(){ $btn.prop('disabled', false); toastr.error('Failed to save business details'); }
-    });
-  });
+  // ── Live "Next invoice" preview ──────────────────────────────
+  // Rebuilds the preview as the user types in the prefix box so admins
+  // see what the next invoice will look like (e.g. "TT-0003") without
+  // saving + reloading. The trailing digits come from the server on
+  // boot (window._invSeqSuffix), the prefix portion is whatever's
+  // currently typed in the input.
+  function renderInvoicePreview(){
+    var $p = $('#biz_invoice_prefix');
+    if (!$p.length) return;
+    var prefix = String($p.val() || '');
+    var suffix = window._invSeqSuffix || '0001';
+    $('#seqPreview').text('Next invoice → ' + (prefix || '') + suffix);
+  }
+  $(document).on('input.invPreview', '#biz_invoice_prefix', renderInvoicePreview);
 
-  /* ───── Payment Gateway — toggles per provider ───── */
-  $.get('/sales/payment/config', function(res){
-    if(res.status!==200||!res.data)return;
-    var d = res.data;
-    /* Map saved payment_gateway string → individual toggles. New shape:
-       razorpay_enabled / stripe_enabled (booleans). Falls back to the legacy
-       payment_gateway='razorpay'|'stripe' for backwards compat. */
-    var rzEnabled = d.razorpay_enabled === true || d.razorpay_enabled === '1' || d.payment_gateway === 'razorpay';
-    var stEnabled = d.stripe_enabled   === true || d.stripe_enabled   === '1' || d.payment_gateway === 'stripe';
-    $('#pg_razorpay_enabled').prop('checked', !!rzEnabled);
-    $('#pg_stripe_enabled').prop('checked',   !!stEnabled);
-    $('#pg_razorpay_key_id').val(d.razorpay_key_id||'');
-    $('#pg_razorpay_key_secret').attr('placeholder', d.razorpay_key_secret_set?'••••••••':'Secret (paste to set)');
-    $('#pg_razorpay_webhook_secret').attr('placeholder', d.razorpay_webhook_secret_set?'••••••••':'Webhook secret');
-    $('#pg_stripe_publishable_key').val(d.stripe_publishable_key||'');
-    $('#pg_stripe_secret_key').attr('placeholder', d.stripe_secret_key_set?'••••••••':'Secret (paste to set)');
-    $('#pg_stripe_webhook_secret').attr('placeholder', d.stripe_webhook_secret_set?'••••••••':'Webhook secret');
-    $('#pg_stripe_currency').val((d.stripe_currency||'USD').toUpperCase());
-  });
-  $(document).off('click.posPg').on('click.posPg', '#btnSavePg', function(){
-    var rz = $('#pg_razorpay_enabled').is(':checked');
-    var st = $('#pg_stripe_enabled').is(':checked');
-    /* Compute legacy single-string for any older code reading payment_gateway:
-       priority razorpay > stripe; if neither enabled → empty. */
-    var primary = rz ? 'razorpay' : (st ? 'stripe' : '');
-    var body = {
-      payment_gateway: primary,
+  // ── Load state from each backend ──────────────────────────────
+  function loadAll(){
+    return Promise.all([
+      $.get('/sales/invoice-settings').then(function(r){
+        if (r && r.status === 200 && r.data){
+          var d = r.data;
+          ['legal_name','gst_number','state_code','pan_number','cin_number','billing_address',
+           'bank_name','bank_account_number','bank_ifsc_code','bank_branch',
+           'invoice_prefix','invoice_terms','invoice_notes','signature_url',
+           'tagline','upi_id','invoice_default_notes','invoice_thank_you',
+           'quality_badge_line1','quality_badge_line2','quality_badge_image'].forEach(function(k){
+              writeControl($('#biz_'+k), d[k]||'');
+          });
+          // Image previews
+          syncImagePreview('biz_signature', 'biz_signature_url');
+          syncImagePreview('biz_quality',   'biz_quality_badge_image');
+          // Receipt preview
+          $('#rPrev_company').text((d.legal_name||'COMPANY NAME').toUpperCase());
+          $('#rPrev_tagline').text(d.tagline||'');
+          $('#rPrev_date').text(new Date().toLocaleDateString());
+          $('#rPrev_thanks').text((d.invoice_notes || (d.invoice_thank_you||'').split('\n')[0] || 'Thank you!'));
+          // (#payUpiIdPreview was the UPI method card label — removed
+          //  from the Payment methods section; the UPI ID itself lives
+          //  in the Business profile / receipt section now.)
+        }
+      }),
+      $.get('/sales/payment/config').then(function(r){
+        if (r && r.status === 200 && r.data){
+          var d = r.data;
+          writeControl($('#pg_razorpay_enabled'), (d.razorpay_enabled===true||d.razorpay_enabled==='1'||d.payment_gateway==='razorpay') ? '1' : '0');
+          writeControl($('#pg_stripe_enabled'),   (d.stripe_enabled===true||d.stripe_enabled==='1'||d.payment_gateway==='stripe') ? '1' : '0');
+          writeControl($('#pg_razorpay_key_id'), d.razorpay_key_id||'');
+          $('#pg_razorpay_key_secret').attr('placeholder', d.razorpay_key_secret_set ? '••••••••' : 'Secret');
+          $('#pg_razorpay_webhook_secret').attr('placeholder', d.razorpay_webhook_secret_set ? '••••••••' : 'Webhook secret');
+          writeControl($('#pg_stripe_publishable_key'), d.stripe_publishable_key||'');
+          $('#pg_stripe_secret_key').attr('placeholder', d.stripe_secret_key_set ? '••••••••' : 'Secret');
+          $('#pg_stripe_webhook_secret').attr('placeholder', d.stripe_webhook_secret_set ? '••••••••' : 'Webhook secret');
+          writeControl($('#pg_stripe_currency'), (d.stripe_currency||'USD').toUpperCase());
+          // Status pills next to each gateway card in the Payments section.
+          // (#rzpInline / #stripeInline used to live in the Integrations
+          // card too; that whole section was removed.)
+          $('#rzpStatus').toggle(!!d.razorpay_key_id);
+          $('#stripeStatus').toggle(!!d.stripe_publishable_key);
+          updateGatewayFieldVisibility();
+        }
+      }),
+      $.get('/sales/settings/data').then(function(r){
+        if (r && r.status === 200 && r.data){
+          var d = r.data;
+          // Invoicing toggles
+          writeControl($('#pos_auto_email_invoice'),     d.pos_auto_email_invoice === '1');
+          writeControl($('#pos_invoice_show_qr'),        d.pos_invoice_show_qr   !== '0');
+          writeControl($('#pos_allow_partial_payments'), d.pos_allow_partial_payments !== '0');
+          // POS preferences
+          writeControl($('#pos_default_warehouse'),      d.pos_default_warehouse || '');
+          writeControl($('#pos_low_stock_alert'),        d.pos_low_stock_alert   || 5);
+          writeControl($('#pos_enable_discount'),        d.pos_enable_discount        !== '0');
+          writeControl($('#pos_enable_tax'),             d.pos_enable_tax             !== '0');
+          writeControl($('#pos_show_vehicle_tab'),       d.pos_show_vehicle_tab       !== '0');
+          writeControl($('#pos_allow_multi_warehouse'),  d.pos_allow_multi_warehouse  !== '0');
+          writeControl($('#pos_keyboard_enabled'),       d.pos_keyboard_enabled       !== '0');
+
+          // Thermal-receipt text fields — every key in POS_RECEIPT_TEXT_KEYS
+          // maps 1:1 to a same-named input id, so we just push the value in.
+          // Empty/missing values stay blank instead of "undefined".
+          POS_RECEIPT_TEXT_KEYS.forEach(function(k){
+            writeControl($('#'+k), d[k] == null ? '' : d[k]);
+          });
+          // Visibility toggles — most default ON if the value is missing
+          // (a blank value means the org never explicitly turned it off).
+          // Barcode + signature default OFF since most stores don't print them.
+          var DEFAULT_OFF = ['pos_receipt_show_barcode','pos_receipt_show_signature'];
+          POS_RECEIPT_TOGGLE_KEYS.forEach(function(k){
+            var v = d[k];
+            var on = (v === '1' || v === 1 || v === true) ||
+                     (v == null && DEFAULT_OFF.indexOf(k) === -1);
+            $('#'+k).toggleClass('on', !!on);
+          });
+          // Image previews for receipt logo / QR / signature
+          syncImagePreview('pos_receipt_logo',      'pos_receipt_logo_url');
+          syncImagePreview('pos_receipt_qr',        'pos_receipt_qr_image_url');
+          syncImagePreview('pos_receipt_signature', 'pos_receipt_signature_url');
+        }
+      }),
+      $.get('/sales/warehouses').then(function(r){
+        if (r && r.status === 200 && Array.isArray(r.data)){
+          var $sel = $('#pos_default_warehouse');
+          var current = $sel.val();
+          $sel.find('option:not(:first)').remove();
+          r.data.forEach(function(w){
+            $sel.append('<option value="' + w.id + '">' + (w.name || w.code || ('Warehouse ' + w.id)) + '</option>');
+          });
+          if (current) $sel.val(current);
+        }
+      }).catch(function(){}),
+      <% if (isSuper) { %>
+      $.get('/vehicle-inventories/settings').then(function(r){
+        if (r && r.status === 200 && r.data){
+          var d = r.data;
+          writeControl($('#fViMaxImageSize'),  d.max_image_size  || 5);
+          writeControl($('#fViMaxImageCount'), d.max_image_count || 20);
+          writeControl($('#fViMaxVideoSize'),  d.max_video_size  || 50);
+          writeControl($('#fViMaxVideoCount'), d.max_video_count || 10);
+        }
+      }).catch(function(){}),
+      $.get('/part-inventories/settings').then(function(r){
+        if (r && r.status === 200 && r.data){
+          var d = r.data;
+          writeControl($('#fPiMaxImageSize'),  d.max_image_size  || 5);
+          writeControl($('#fPiMaxImageCount'), d.max_image_count || 20);
+          writeControl($('#fPiMaxVideoSize'),  d.max_video_size  || 50);
+          writeControl($('#fPiMaxVideoCount'), d.max_video_count || 10);
+        }
+      }).catch(function(){}),
+      <% } %>
+      $.get('/sales/next-invoice-number').then(function(r){
+        if (r && r.status === 200 && r.data){
+          // Stash the trailing sequence digits ("0003" out of "INV-0003")
+          // so the preview can rebuild instantly as the user edits the
+          // prefix — no server round-trip required.
+          var next = String(r.data.next || '');
+          var m = next.match(/(\d+)$/);
+          window._invSeqSuffix = m ? m[1] : '';
+          renderInvoicePreview();
+        }
+      }).catch(function(){ $('#seqPreview').text('—'); }),
+      // Wallet defaults
+      $.get('/sales/wallet/settings').then(function(r){
+        if (r && r.status === 200 && r.data){
+          var d = r.data;
+          ['wallet_default_terms_days','wallet_default_grace_days','wallet_default_late_fee_pct',
+           'wallet_reminder_days_before','wallet_overdue_reminder_days',
+           'wallet_email_subject','wallet_email_body','wallet_late_fee_mode'].forEach(function(k){
+            writeControl($('#'+k), d[k]||'');
+          });
+        }
+      }).catch(function(){}),
+    ]).then(snapshotInitial);
+  }
+
+  function updateGatewayFieldVisibility(){
+    $('#rzpFields').toggle($('#pg_razorpay_enabled').hasClass('on'));
+    $('#stripeFields').toggle($('#pg_stripe_enabled').hasClass('on'));
+  }
+  $(document).on('click', '#pg_razorpay_enabled, #pg_stripe_enabled', function(){ setTimeout(updateGatewayFieldVisibility, 50); });
+
+  // ── Save: fan out per-group ───────────────────────────────────
+  function buildBizPayload(){
+    var keys = ['legal_name','gst_number','state_code','pan_number','cin_number','billing_address',
+      'bank_name','bank_account_number','bank_ifsc_code','bank_branch',
+      'invoice_prefix','invoice_terms','invoice_notes','signature_url',
+      'tagline','upi_id','invoice_default_notes','invoice_thank_you',
+      'quality_badge_line1','quality_badge_line2','quality_badge_image'];
+    var p = {};
+    keys.forEach(function(k){ p[k] = $('#biz_'+k).val(); });
+    return p;
+  }
+  function buildPgPayload(){
+    var rz = $('#pg_razorpay_enabled').hasClass('on'), st = $('#pg_stripe_enabled').hasClass('on');
+    return {
+      payment_gateway: rz ? 'razorpay' : (st ? 'stripe' : ''),
       razorpay_enabled: rz ? '1' : '0',
       stripe_enabled:   st ? '1' : '0',
-      razorpay_key_id: $('#pg_razorpay_key_id').val().trim(),
-      razorpay_key_secret: $('#pg_razorpay_key_secret').val().trim(),
-      razorpay_webhook_secret: $('#pg_razorpay_webhook_secret').val().trim(),
-      stripe_publishable_key: $('#pg_stripe_publishable_key').val().trim(),
-      stripe_secret_key: $('#pg_stripe_secret_key').val().trim(),
-      stripe_webhook_secret: $('#pg_stripe_webhook_secret').val().trim(),
+      razorpay_key_id: ($('#pg_razorpay_key_id').val()||'').trim(),
+      razorpay_key_secret: ($('#pg_razorpay_key_secret').val()||'').trim(),
+      razorpay_webhook_secret: ($('#pg_razorpay_webhook_secret').val()||'').trim(),
+      stripe_publishable_key: ($('#pg_stripe_publishable_key').val()||'').trim(),
+      stripe_secret_key: ($('#pg_stripe_secret_key').val()||'').trim(),
+      stripe_webhook_secret: ($('#pg_stripe_webhook_secret').val()||'').trim(),
       stripe_currency: ($('#pg_stripe_currency').val() || 'USD').toUpperCase(),
     };
-    $.ajax({ url:'/sales/payment/config', type:'PUT', contentType:'application/json',
-      data: JSON.stringify(body),
-      success:function(r){
-        if(r.status===200){ toastr.success('Gateway settings saved'); $('#pg_razorpay_key_secret,#pg_razorpay_webhook_secret,#pg_stripe_secret_key,#pg_stripe_webhook_secret').val(''); }
-        else toastr.error(r.message||'Failed');
-      },
-      error:function(){ toastr.error('Failed to save gateway settings'); }
-    });
-  });
-
-  /* Label Printer config moved to /sales/printer-settings */
-  // (Label Printer UI moved to /sales/printer-settings — see banner at top of page)
-
-  // Save (main POS settings card)
-  $(document).off('submit.posSettings').on('submit.posSettings', '#settingsForm', function(e){
-    e.preventDefault();
-    var data = {};
-    $(this).find('input,select,textarea').each(function(){
-      var el=$(this), k=el.attr('name');
-      if(!k) return;
-      if(el.is(':checkbox')) data[k] = el.is(':checked') ? '1' : '0';
-      else data[k] = el.val();
-    });
-    $.ajax({
-      url:'/sales/settings', type:'PUT', contentType:'application/json',
-      data: JSON.stringify(data),
-      success:function(res){
-        if(res.status===200) toastr.success('Settings saved successfully');
-        else toastr.error(res.message||'Failed');
-      },
-      error:function(){ toastr.error('Failed to save settings'); }
-    });
-  });
-
-  /* ───── Receipt Settings tab ───── */
-  // All field IDs → backing settings keys. Toggles are checkboxes.
-  var rcTextFields = [
-    // Company block
-    'logo_url','company_name','tagline','phone','alt_mobile','email','website',
-    'city','pincode','tax_line','counter_no','address',
-    // UPI / QR
-    'upi_id','upi_payee_name',
-    // Terms / extra charges / print type
-    'extra_charges_label','default_print_type','terms',
-    // Header / Footer
-    'header','thank_you','return_policy','footer',
-    // Format
-    'currency_symbol','date_format','size','copies'
-  ];
-  var rcToggleFields = [
-    'show_logo','show_gst','show_tax_breakdown','show_discount','show_cashier',
-    'show_customer','show_invoice_number','show_barcode','show_qr',
-    'show_payment_method','show_signature','show_terms'
-  ];
-  var rcPaymentModes = ['cash','card','upi','wallet','netbanking','bank_transfer','cheque','credit'];
-
-  function _loadReceiptSettings(){
-    $.get('/sales/settings/data', function(res){
-      if(res.status!==200 || !res.data) return;
-      var d = res.data;
-      // Text fields
-      rcTextFields.forEach(function(k){
-        var v = d['pos_receipt_'+k]; if (v == null) v = '';
-        $('#rc_'+k).val(v);
-      });
-      // Toggles — default to ON for first-time users so receipts look complete
-      rcToggleFields.forEach(function(k){
-        var raw = d['pos_receipt_'+k];
-        var checked = raw==null ? true : (raw==='1'||raw===true||raw==='true');
-        $('#rc_'+k).prop('checked', checked);
-      });
-      // Payment modes — comma-separated string
-      var modes = (d.pos_receipt_payment_modes||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
-      rcPaymentModes.forEach(function(m){
-        $('#rc_pm_'+m).prop('checked', modes.indexOf(m) > -1);
-      });
-      // Size default
-      if (!$('#rc_size').val()) $('#rc_size').val('80mm');
-      if (!$('#rc_date_format').val()) $('#rc_date_format').val('DD/MM/YYYY');
-      // ─── File previews ────────────────────────────
-      _renderImgPreview('logo', d.pos_receipt_logo_url || '');
-      _renderImgPreview('qr',   d.pos_receipt_qr_image_url || '');
-    });
   }
-  _loadReceiptSettings();
+  // Thermal-receipt key lists, kept here so load + save iterate the same set.
+  // Order doesn't matter — these go into the settings table by key.
+  var POS_RECEIPT_TEXT_KEYS = [
+    // Company info
+    'pos_receipt_company_name','pos_receipt_tagline','pos_receipt_phone','pos_receipt_alt_mobile',
+    'pos_receipt_email','pos_receipt_website','pos_receipt_address','pos_receipt_city','pos_receipt_pincode',
+    'pos_receipt_tax_line','pos_receipt_counter_no',
+    // Format
+    'pos_receipt_size','pos_receipt_default_print_type','pos_receipt_copies',
+    'pos_receipt_currency_symbol','pos_receipt_date_format',
+    'pos_receipt_payment_modes','pos_receipt_extra_charges_label',
+    // Text blocks
+    'pos_receipt_header','pos_receipt_footer','pos_receipt_thank_you',
+    'pos_receipt_return_policy','pos_receipt_terms',
+    // UPI
+    'pos_receipt_upi_id','pos_receipt_upi_payee_name',
+    // Image URLs (set by upload handlers; written to the same hidden inputs)
+    'pos_receipt_logo_url','pos_receipt_qr_image_url','pos_receipt_signature_url',
+  ];
+  var POS_RECEIPT_TOGGLE_KEYS = [
+    'pos_receipt_show_logo','pos_receipt_show_invoice_number','pos_receipt_show_cashier',
+    'pos_receipt_show_customer','pos_receipt_show_gst','pos_receipt_show_tax_breakdown',
+    'pos_receipt_show_discount','pos_receipt_show_payment_method','pos_receipt_show_barcode',
+    'pos_receipt_show_qr','pos_receipt_show_signature','pos_receipt_show_terms',
+  ];
+  function buildPosSettingPayload(){
+    var p = {
+      // Invoicing toggles
+      pos_auto_email_invoice:     $('#pos_auto_email_invoice').hasClass('on') ? '1' : '0',
+      pos_invoice_show_qr:        $('#pos_invoice_show_qr').hasClass('on') ? '1' : '0',
+      pos_allow_partial_payments: $('#pos_allow_partial_payments').hasClass('on') ? '1' : '0',
+      // POS preferences
+      pos_default_warehouse:      $('#pos_default_warehouse').val() || '',
+      pos_low_stock_alert:        $('#pos_low_stock_alert').val() || '5',
+      pos_enable_discount:        $('#pos_enable_discount').hasClass('on') ? '1' : '0',
+      pos_enable_tax:             $('#pos_enable_tax').hasClass('on') ? '1' : '0',
+      pos_show_vehicle_tab:       $('#pos_show_vehicle_tab').hasClass('on') ? '1' : '0',
+      pos_allow_multi_warehouse:  $('#pos_allow_multi_warehouse').hasClass('on') ? '1' : '0',
+      pos_keyboard_enabled:       $('#pos_keyboard_enabled').hasClass('on') ? '1' : '0',
+    };
+    // Thermal-receipt fields — text inputs, selects, hidden URLs all read .val()
+    POS_RECEIPT_TEXT_KEYS.forEach(function(k){ p[k] = ($('#'+k).val() || '').toString(); });
+    // Thermal-receipt visibility toggles — '1' if on, '0' otherwise
+    POS_RECEIPT_TOGGLE_KEYS.forEach(function(k){ p[k] = $('#'+k).hasClass('on') ? '1' : '0'; });
+    return p;
+  }
+  function buildViPayload(){
+    return {
+      max_image_size:  parseInt($('#fViMaxImageSize').val())||5,
+      max_image_count: parseInt($('#fViMaxImageCount').val())||20,
+      max_video_size:  parseInt($('#fViMaxVideoSize').val())||50,
+      max_video_count: parseInt($('#fViMaxVideoCount').val())||10,
+    };
+  }
+  function buildPiPayload(){
+    return {
+      max_image_size:  parseInt($('#fPiMaxImageSize').val())||5,
+      max_image_count: parseInt($('#fPiMaxImageCount').val())||20,
+      max_video_size:  parseInt($('#fPiMaxVideoSize').val())||50,
+      max_video_count: parseInt($('#fPiMaxVideoCount').val())||10,
+    };
+  }
 
-  // Renders a thumbnail in the logo / QR preview box and toggles the
-  // "Remove" link. `kind` = 'logo' | 'qr'.
-  function _renderImgPreview(kind, url) {
-    var hidden = kind === 'logo' ? '#rc_logo_url' : '#rc_qr_image_url';
-    var box    = kind === 'logo' ? '#rc_logo_preview' : '#rc_qr_preview';
-    var rm     = kind === 'logo' ? '#rc_logo_remove' : '#rc_qr_remove';
-    $(hidden).val(url || '');
-    if (url) {
-      $(box).html('<img src="' + url + '" style="max-width:100%;max-height:100%;object-fit:contain;"/>');
-      $(rm).removeClass('d-none');
+  $('#ssSaveAll').on('click', function(){
+    var dk = dirtyKeys();
+    if (!dk.length) return;
+    var groups = new Set();
+    dk.forEach(function(k){
+      var g = $('#'+k).attr('data-bind') || '';
+      groups.add(g);
+    });
+    var $btn = $('#ssSaveAll').prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Saving…');
+    var jobs = [];
+    if (groups.has('biz')) {
+      jobs.push($.ajax({ url:'/sales/invoice-settings', type:'PUT', contentType:'application/json', data: JSON.stringify(buildBizPayload()) }));
+    }
+    if (groups.has('pg')) {
+      jobs.push($.ajax({ url:'/sales/payment/config', type:'PUT', contentType:'application/json', data: JSON.stringify(buildPgPayload()) }).then(function(){
+        // Clear secret inputs after save so the masked placeholders take over.
+        ['pg_razorpay_key_secret','pg_razorpay_webhook_secret','pg_stripe_secret_key','pg_stripe_webhook_secret'].forEach(function(id){ $('#'+id).val(''); });
+      }));
+    }
+    if (groups.has('pos_setting')) {
+      jobs.push($.ajax({ url:'/sales/settings', type:'PUT', contentType:'application/json', data: JSON.stringify(buildPosSettingPayload()) }));
+    }
+    if (groups.has('wallet')) {
+      var walletPayload = {};
+      ['wallet_default_terms_days','wallet_default_grace_days','wallet_default_late_fee_pct',
+       'wallet_reminder_days_before','wallet_overdue_reminder_days',
+       'wallet_email_subject','wallet_email_body','wallet_late_fee_mode'].forEach(function(k){
+        walletPayload[k] = $('#'+k).val();
+      });
+      jobs.push($.ajax({ url:'/sales/wallet/settings', type:'PUT', contentType:'application/json', data: JSON.stringify(walletPayload) }));
+    }
+    <% if (isSuper) { %>
+    if (groups.has('vi')) {
+      jobs.push($.ajax({ url:'/vehicle-inventories/settings', type:'POST', contentType:'application/json', data: JSON.stringify(buildViPayload()) }));
+    }
+    if (groups.has('pi')) {
+      jobs.push($.ajax({ url:'/part-inventories/settings', type:'POST', contentType:'application/json', data: JSON.stringify(buildPiPayload()) }));
+    }
+    <% } %>
+    Promise.all(jobs).then(function(){
+      toastr.success('Settings saved.');
+      snapshotInitial();
+      $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i> Save changes');
+    }).catch(function(xhr){
+      var m = (xhr && xhr.responseJSON && xhr.responseJSON.message) || 'Save failed.';
+      toastr.error(m);
+      $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i> Save changes');
+    });
+  });
+
+  $('#ssDiscard').on('click', function(){
+    Object.keys(initial).forEach(function(k){ writeControl($('#'+k), initial[k]); });
+    syncImagePreview('biz_signature', 'biz_signature_url');
+    syncImagePreview('biz_quality',   'biz_quality_badge_image');
+    refreshDirty();
+    toastr.info('Discarded unsaved changes.');
+  });
+
+  // ── Image upload widgets ──────────────────────────────────────
+  function syncImagePreview(prefix, urlInputId){
+    var url = $('#'+urlInputId).val() || '';
+    var $thumb = $('#'+prefix+'_thumb');
+    if (url){
+      $('#'+prefix+'_preview').attr('src', url).show();
+      $('#'+prefix+'_empty').hide();
+      $('#'+prefix+'_clear').show();
+      $thumb.addClass('has-img');
     } else {
-      $(box).html(kind === 'qr' ? 'No QR' : 'No logo');
-      $(rm).addClass('d-none');
+      $('#'+prefix+'_preview').attr('src','').hide();
+      $('#'+prefix+'_empty').show();
+      $('#'+prefix+'_clear').hide();
+      $thumb.removeClass('has-img');
     }
   }
-
-  // ─── File upload (logo / QR) ───────────────────────
-  // Each <input type="file"> auto-uploads on change → backend writes the URL
-  // into the right setting → preview updates → no extra Save click needed.
-  function _doUpload(kind, fileInput, onDone) {
-    var f = fileInput.files && fileInput.files[0];
-    if (!f) return;
-    var fd = new FormData();
-    fd.append('file', f);
-    $.ajax({
-      url: '/sales/settings/upload/' + kind,
-      type: 'POST', data: fd, processData: false, contentType: false,
-      success: function(r) {
-        if (r.status === 200 && r.data && r.data.url) {
-          if (typeof toastr !== 'undefined') toastr.success('Uploaded.');
-          if (onDone) onDone(r.data.url);
-        } else {
-          if (typeof toastr !== 'undefined') toastr.error(r.message || 'Upload failed.');
-        }
-        fileInput.value = '';     // reset so re-pick of same file fires change again
-      },
-      error: function(xhr) {
-        if (typeof toastr !== 'undefined') toastr.error((xhr.responseJSON && xhr.responseJSON.message) || 'Upload failed.');
-        fileInput.value = '';
-      },
+  function wireImgUpload(fileSel, kind, urlInputId, prefix){
+    $(fileSel).on('change', function(){
+      var file = this.files && this.files[0]; if (!file) return;
+      var fd = new FormData(); fd.append('file', file);
+      var $row = $(this).closest('.ss-row');
+      $row.find('label.ss-btn').css('opacity', .5);
+      $.ajax({ url:'/sales/settings/upload/'+kind, type:'POST', data:fd, processData:false, contentType:false, success: function(r){
+        $row.find('label.ss-btn').css('opacity', 1);
+        if (r && r.status === 200 && r.data && r.data.url){
+          $('#'+urlInputId).val(r.data.url).trigger('change');
+          syncImagePreview(prefix, urlInputId);
+          toastr.success('Uploaded.');
+        } else { toastr.error((r && r.message) || 'Upload failed.'); }
+      }, error: function(xhr){
+        $row.find('label.ss-btn').css('opacity', 1);
+        toastr.error((xhr.responseJSON && xhr.responseJSON.message) || 'Upload failed.');
+      }});
+      this.value = '';
     });
   }
-  $(document).off('change.posLogoUp').on('change.posLogoUp', '#rc_logo_file', function() {
-    _doUpload('logo', this, function(url) { _renderImgPreview('logo', url); });
-  });
-  $(document).off('change.posQrUp').on('change.posQrUp', '#rc_qr_file', function() {
-    _doUpload('qr', this, function(url) { _renderImgPreview('qr', url); });
-  });
-  // Remove links — clear the URL and persist via the receipt save (or write
-  // an empty value through the same /settings PUT).
-  $(document).off('click.posLogoRm').on('click.posLogoRm', '#rc_logo_remove', function(e) {
-    e.preventDefault();
-    $.ajax({ url:'/sales/settings', type:'PUT', contentType:'application/json',
-      data: JSON.stringify({ pos_receipt_logo_url: '' }),
-      success: function() { _renderImgPreview('logo', ''); if (typeof toastr !== 'undefined') toastr.success('Logo removed'); },
-    });
-  });
-  $(document).off('click.posQrRm').on('click.posQrRm', '#rc_qr_remove', function(e) {
-    e.preventDefault();
-    $.ajax({ url:'/sales/settings', type:'PUT', contentType:'application/json',
-      data: JSON.stringify({ pos_receipt_qr_image_url: '' }),
-      success: function() { _renderImgPreview('qr', ''); if (typeof toastr !== 'undefined') toastr.success('QR removed'); },
-    });
-  });
+  wireImgUpload('#biz_signature_file', 'biz_signature', 'biz_signature_url',       'biz_signature');
+  wireImgUpload('#biz_quality_file',   'biz_quality',   'biz_quality_badge_image', 'biz_quality');
+  $(document).on('click','#biz_signature_clear', function(){ $('#biz_signature_url').val('').trigger('change'); syncImagePreview('biz_signature','biz_signature_url'); });
+  $(document).on('click','#biz_quality_clear',   function(){ $('#biz_quality_badge_image').val('').trigger('change'); syncImagePreview('biz_quality','biz_quality_badge_image'); });
 
-  $(document).off('click.posReceipt').on('click.posReceipt', '#btnSaveReceipt', function(){
-    var body = {};
-    rcTextFields.forEach(function(k){ body['pos_receipt_'+k] = $('#rc_'+k).val() || ''; });
-    rcToggleFields.forEach(function(k){ body['pos_receipt_'+k] = $('#rc_'+k).is(':checked') ? '1' : '0'; });
-    var modes = [];
-    rcPaymentModes.forEach(function(m){ if ($('#rc_pm_'+m).is(':checked')) modes.push(m); });
-    body.pos_receipt_payment_modes = modes.join(',');
-    var $btn = $(this).prop('disabled', true);
-    $.ajax({ url:'/sales/settings', type:'PUT', contentType:'application/json',
-      data: JSON.stringify(body),
-      success:function(r){
-        $btn.prop('disabled', false);
-        if(r.status===200) toastr.success('Receipt settings saved');
-        else toastr.error(r.message||'Failed');
-      },
-      error:function(){ $btn.prop('disabled', false); toastr.error('Failed to save receipt settings'); }
-    });
-  });
+  // Thermal-receipt image uploads — each one POSTs to /sales/settings/upload/<kind>
+  // (the /Controllers/PosController.js settingsUpload route already maps these
+  // kinds to pos_receipt_logo_url / pos_receipt_qr_image_url / pos_receipt_signature_url).
+  wireImgUpload('#pos_receipt_logo_file',      'logo',      'pos_receipt_logo_url',      'pos_receipt_logo');
+  wireImgUpload('#pos_receipt_qr_file',        'qr',        'pos_receipt_qr_image_url',  'pos_receipt_qr');
+  wireImgUpload('#pos_receipt_signature_file', 'signature', 'pos_receipt_signature_url', 'pos_receipt_signature');
+  $(document).on('click','#pos_receipt_logo_clear',      function(){ $('#pos_receipt_logo_url').val('').trigger('change');      syncImagePreview('pos_receipt_logo',      'pos_receipt_logo_url'); });
+  $(document).on('click','#pos_receipt_qr_clear',        function(){ $('#pos_receipt_qr_image_url').val('').trigger('change');  syncImagePreview('pos_receipt_qr',        'pos_receipt_qr_image_url'); });
+  $(document).on('click','#pos_receipt_signature_clear', function(){ $('#pos_receipt_signature_url').val('').trigger('change'); syncImagePreview('pos_receipt_signature', 'pos_receipt_signature_url'); });
 
-  // Receipt preview — opens a thermal-receipt preview in a new tab using
-  // the most recent saved settings.
-  $(document).off('click.posReceiptPreview').on('click.posReceiptPreview', '#btnPreviewReceipt', function(){
-    window.open('/sales/receipt-preview', '_blank');
-  });
-
-  /* Explicit tab wiring — works whether the page is refreshed directly or
-     loaded through pos.js SPA nav. Bootstrap's auto-wiring only fires on
-     initial DOMContentLoaded; SPA-inserted markup misses it, so the Business
-     sub-tabs (Identity / Bank / Invoice) silently stop working. */
-  $(document).off('click.posSettingsTabs').on('click.posSettingsTabs', '#bizTabs a[data-bs-toggle="tab"]', function(e){
-    e.preventDefault();
-    var href = $(this).attr('href');
-    $('#bizTabs a').removeClass('active');
+  // ── Tab + quicknav scroll behaviour ───────────────────────────
+  $(document).on('click', '.ss-tab', function(){
+    var sec = $(this).data('section');
+    $('.ss-tab').removeClass('active');
     $(this).addClass('active');
-    $('#bizTabs').closest('.card-body, .pos-page-content, body').find('.tab-pane').removeClass('show active');
-    $(href).addClass('show active');
+    var $t = $('#' + sec); if ($t.length) $t[0].scrollIntoView({ behavior:'smooth', block:'start' });
   });
-});
+  $(document).on('click', '.ss-quicknav a', function(e){
+    e.preventDefault();
+    var id = ($(this).attr('href')||'').replace('#','');
+    var $t = $('#' + id); if ($t.length) $t[0].scrollIntoView({ behavior:'smooth', block:'start' });
+    $('.ss-quicknav a').removeClass('active'); $(this).addClass('active');
+  });
+  // Scroll-spy — manual scroll listener that finds the section currently
+  // closest to the top of the viewport (or the .pos-page-content scroll
+  // container if it has its own scrollbar). IntersectionObserver was
+  // sometimes flickering between adjacent cards because two sections were
+  // visible at once and both fired `isIntersecting=true` simultaneously.
+  function _findScrollContainer(){
+    var el = document.querySelector('.sales-settings');
+    while (el && el !== document.body){
+      var oy = window.getComputedStyle(el).overflowY;
+      if (oy === 'auto' || oy === 'scroll') return el;
+      el = el.parentElement;
+    }
+    return window;
+  }
+  function _spy(){
+    var sections = document.querySelectorAll('.sales-settings .ss-card[id]');
+    if (!sections.length) return;
+    var container = _findScrollContainer();
+    var topRef = (container === window) ? 0 : container.getBoundingClientRect().top;
+    var bestId = null, bestDist = Infinity;
+    sections.forEach(function(s){
+      var r = s.getBoundingClientRect();
+      // Distance from the section's top to a "trigger line" 100px below the
+      // top of the scrolling region. Most-negative AND closest-to-zero wins.
+      var d = (r.top - topRef) - 100;
+      // Prefer sections whose top is at or just above the trigger line.
+      if (d <= 0 && d > -window.innerHeight){
+        if (Math.abs(d) < bestDist) { bestDist = Math.abs(d); bestId = s.id; }
+      }
+    });
+    if (!bestId) bestId = sections[0].id;
+    document.querySelectorAll('.ss-quicknav a').forEach(function(l){
+      l.classList.toggle('active', l.getAttribute('href') === '#' + bestId);
+    });
+    document.querySelectorAll('.ss-tab').forEach(function(t){
+      t.classList.toggle('active', t.dataset.section === bestId);
+    });
+  }
+  // Throttle with rAF
+  var spyTicking = false;
+  function _onScroll(){
+    if (spyTicking) return;
+    spyTicking = true;
+    requestAnimationFrame(function(){ _spy(); spyTicking = false; });
+  }
+  // Bind to whichever container is actually scrolling
+  setTimeout(function(){
+    var c = _findScrollContainer();
+    if (c === window) window.addEventListener('scroll', _onScroll, { passive: true });
+    else c.addEventListener('scroll', _onScroll, { passive: true });
+    _spy();   // initial pass
+  }, 200);
+
+  // ── Reset POS theme (danger zone) ─────────────────────────────
+  window.ssResetTheme = function(){
+    if (typeof posConfirm === 'function') {
+      posConfirm({ title:'Reset POS theme?', msg:'All custom UI Kit colors will revert to defaults.\nCannot be undone.', confirmText:'Reset theme', cancelText:'Keep mine', confirmColor:'var(--ss-red)', icon:'bi-arrow-counterclockwise', iconColor:'var(--ss-red)', onConfirm: function(){
+        $.ajax({ url:'/sales/theme', type:'PUT', contentType:'application/json', data:'{"theme":{}}', success: function(r){ if (r.status === 200){ toastr.success('Theme reset.'); try { localStorage.removeItem('pv2Theme'); } catch(_){} location.reload(); } else toastr.error(r.message||'Failed.'); }, error: function(){ toastr.error('Failed.'); } });
+      }});
+    }
+  };
+
+  // ── Warn before navigating away with unsaved changes ─────────
+  // We intercept in-app navigation (sidebar links, back arrow, SPA tab
+  // clicks) and show our themed posConfirm dialog instead of the native
+  // browser "Changes you may not be saved" box. The beforeunload listener
+  // is only kept as a safety net for HARD navigation (tab close, browser
+  // refresh, typing a new URL) — those paths the browser MUST handle
+  // with its own dialog, no app can customise it.
+  function _hasUnsavedChanges(){ return dirtyKeys().length > 0; }
+  function _confirmDiscardThen(go){
+    if (!_hasUnsavedChanges()) { go(); return; }
+    if (typeof posConfirm !== 'function') { go(); return; }
+    posConfirm({
+      title:        'Discard unsaved changes?',
+      msg:          'You have ' + dirtyKeys().length + ' unsaved change' + (dirtyKeys().length > 1 ? 's' : '') + ' on this page. Leaving now will lose them.',
+      confirmText:  'Discard and leave',
+      cancelText:   'Stay on page',
+      confirmColor: 'var(--ss-red, #dc2626)',
+      icon:         'bi-exclamation-triangle-fill',
+      iconColor:    'var(--ss-amber, #f59e0b)',
+      onConfirm:    go,
+    });
+  }
+  // Intercept anchor clicks (sidebar links, back arrow, breadcrumbs, etc.)
+  $(document).on('click.ssDirty', '.sales-settings a[href], .pos-sidebar a[href], .pos-sidebar .ps-btn, .mob-topbar a[href], #mobMoreMenu .mob-mm-item', function(e){
+    var $t = $(this);
+    var href = $t.attr('href');
+    var onclick = $t.attr('onclick') || '';
+    // Skip pure-anchor (#hash) clicks — they don't navigate away.
+    if (href && href.charAt(0) === '#') return;
+    if (!href && !onclick) return;
+    if (!_hasUnsavedChanges()) return;            // Nothing dirty — let it through
+    e.preventDefault(); e.stopImmediatePropagation();
+    _confirmDiscardThen(function(){
+      // Temporarily silence beforeunload so re-firing the click doesn't
+      // re-prompt with the browser dialog after the user already confirmed.
+      window._ssSkipBeforeUnload = true;
+      if (href) { window.location.href = href; }
+      else      { (new Function(onclick)).call($t[0]); }
+    });
+  });
+  // Safety net for hard navigation only (tab close / refresh / external URL).
+  // The browser shows its own un-customisable message here; nothing we can
+  // do about that — but at least the dialog only appears for cases that
+  // bypass our in-app interceptor above.
+  window.addEventListener('beforeunload', function(e){
+    if (window._ssSkipBeforeUnload) { window._ssSkipBeforeUnload = false; return; }
+    if (_hasUnsavedChanges()) { e.preventDefault(); e.returnValue = ''; return ''; }
+  });
+
+  // ── Bootstrap! ────────────────────────────────────────────────
+  $(function(){ loadAll(); });
+})();
 </script>

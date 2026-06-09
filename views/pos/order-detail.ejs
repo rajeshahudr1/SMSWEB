@@ -41,8 +41,11 @@ function payIcon(method) {
   if (m === 'cheque') return 'bi-receipt';
   if (m === 'link' || m === 'pay-link' || m === 'paymentlink') return 'bi-link-45deg';
   if (m === 'mixed') return 'bi-shuffle';
+  if (m === 'wallet') return 'bi-wallet2';
   return 'bi-cash-stack';
 }
+
+const isWalletSale = (o.payment_method || '').toLowerCase() === 'wallet';
 
 // Build a simple timeline from order events
 const timeline = [];
@@ -330,6 +333,28 @@ timeline.sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0));
     <button class="od-btn" onclick="odEmail()"><i class="bi bi-envelope"></i> Email</button>
     <button class="od-btn" onclick="odMoreOpen(event)"><i class="bi bi-three-dots"></i> More</button>
   </div>
+
+  <% if (isWalletSale) { %>
+  <!-- Wallet sale banner — appears for orders charged on-account so cashiers
+       can collect payment later. Hidden once amount_due is zero. -->
+  <div class="od-wallet-banner" style="margin-bottom:14px;background:linear-gradient(180deg,#f1faf7,#e3f1ed);border:1px solid #c4e7dc;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div style="width:42px;height:42px;border-radius:10px;background:var(--pv2-brand,#008060);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="bi bi-wallet2" style="font-size:20px;"></i></div>
+    <div style="flex:1;min-width:200px;">
+      <div style="font-weight:700;color:var(--pv2-text,#1a2332);">Charged to wallet (on account)</div>
+      <div style="font-size:13px;color:var(--pv2-muted,#6b7280);margin-top:2px;">
+        <% if (Number(o.amount_due) > 0) { %>
+          Outstanding balance: <strong style="color:var(--pv2-danger,#dc2626);"><%= currency %><%= num(o.amount_due) %></strong>
+        <% } else { %>
+          Fully paid — no outstanding balance.
+        <% } %>
+      </div>
+    </div>
+    <% const _custUuid = (cust && cust.uuid) || o.customer_uuid; %>
+    <% if (Number(o.amount_due) > 0 && _custUuid) { %>
+      <a class="od-btn od-btn-primary" href="/sales/wallet?customer=<%= _custUuid %>"><i class="bi bi-cash-coin"></i> Record Payment</a>
+    <% } %>
+  </div>
+  <% } %>
 
   <!-- Body grid -->
   <div class="od-body">
@@ -667,18 +692,24 @@ timeline.sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0));
   window.odEmailSend = function() {
     var to = ($('#odEmTo').val() || '').trim();
     if (!to) { if (typeof toastr !== 'undefined') toastr.warning('Enter an email address.'); return; }
+    // Close the dialog optimistically — the API now returns 200 immediately
+    // and queues PDF generation + SMTP delivery in a background worker.
+    var $btn = $('#odEmailDlg').find('.od-btn-primary');
+    var orig = $btn.html();
+    $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Sending…');
     $.ajax({
       url: '/sales/orders/' + ORDER_UUID + '/invoice/email', type: 'POST', contentType: 'application/json',
       data: JSON.stringify({ to: to }),
       success: function(r) {
+        $btn.prop('disabled', false).html(orig);
         if (r && r.status === 200) {
-          if (typeof toastr !== 'undefined') toastr.success('Invoice emailed to ' + to);
+          if (typeof toastr !== 'undefined') toastr.success('Invoice email queued — will arrive in ' + to + ' shortly.');
           document.getElementById('odEmailDlg').close();
         } else {
           if (typeof toastr !== 'undefined') toastr.error((r && r.message) || 'Failed to send.');
         }
       },
-      error: function() { if (typeof toastr !== 'undefined') toastr.error('Network error.'); }
+      error: function() { $btn.prop('disabled', false).html(orig); if (typeof toastr !== 'undefined') toastr.error('Network error.'); }
     });
   };
 
@@ -733,11 +764,18 @@ timeline.sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0));
         error: function() { if (typeof toastr !== 'undefined') toastr.error('Network error.'); }
       });
     };
-    if (typeof posConfirm === 'function') {
-      posConfirm({ title: 'Cancel Order?', msg: 'Items will be returned to stock. This cannot be undone.', confirmText: 'Cancel Order', confirmClass: 'danger', onConfirm: doIt });
-    } else if (confirm('Cancel this order? Items will be returned to stock.')) {
-      doIt();
-    }
+    // pos-dialogs.js is loaded everywhere via pos-layout.ejs, so posConfirm
+    // is always defined. The native-confirm fallback was dead code — removed.
+    posConfirm({
+        title: 'Cancel Order?',
+        msg: 'Items will be returned to stock. This cannot be undone.',
+        confirmText: 'Yes, Cancel Order',
+        cancelText: 'Keep Order',
+        confirmColor: 'var(--red)',
+        icon: 'bi-x-octagon-fill',
+        iconColor: 'var(--red)',
+        onConfirm: doIt,
+    });
   };
 
   window.odMoreOpen = function(ev) {

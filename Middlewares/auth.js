@@ -217,24 +217,48 @@ async function injectLocals(req, res, next) {
         const radiusMap = { none: '0', sm: '4px', md: '8px', lg: '12px', xl: '16px' };
         res.locals.borderRadius = radiusMap[settings.border_radius] || '8px';
 
+        // Admin bypass: both super_admin AND org_admin pass every permission
+        // check automatically. Regular cashier/staff users still need the
+        // matching `view_*` / `edit_*` permission on their role.
         res.locals.can = function (perm) {
             if (!user) return false;
-            if (user.is_super_admin) return true;
-            // Everyone (including org admin) checks actual role permissions
+            if (user.is_super_admin || user.is_org_admin) return true;
             return permissions.includes(perm);
         };
 
-        // Helper: can access settings page? Must have view_settings FIRST
+        // Pre-built JSON snapshot of every POS-related permission for the
+        // current user. Used by pos/index.ejs and pos-layout.ejs to seed
+        // `window.SMS_CAN` for JS-rendered button gating (wallet cards,
+        // drafts table, customers table, etc.) — done here so the view
+        // just emits `<%- POS_CAN_JSON %>` without any complex EJS
+        // expressions (ejs-locals' parser chokes on multi-line IIFEs).
+        const POS_PERM_KEYS = [
+            'view_pos_drafts','add_pos_drafts','edit_pos_drafts','delete_pos_drafts',
+            'view_pos_pending_payments','edit_pos_pending_payments',
+            'view_pos_wallet','view_pos_wallet_customers','edit_pos_wallet_customers',
+            'add_pos_wallet_payments','edit_pos_wallet_settings',
+            'view_pos_orders','add_pos_orders','edit_pos_orders','delete_pos_orders',
+            'view_pos_customers','add_pos_customers','edit_pos_customers','delete_pos_customers',
+            'view_pos_settings','edit_pos_settings',
+            'view_pos_returns','add_pos_returns'
+        ];
+        const _posCanMap = {};
+        const _isAdmin = !!(user && (user.is_super_admin || user.is_org_admin));
+        for (let _i = 0; _i < POS_PERM_KEYS.length; _i++) {
+            const _k = POS_PERM_KEYS[_i];
+            _posCanMap[_k] = _isAdmin || permissions.includes(_k);
+        }
+        res.locals.POS_CAN_JSON = JSON.stringify(_posCanMap);
+
         res.locals.canAnySettings = function() {
             if (!user) return false;
-            if (user.is_super_admin) return true;
+            if (user.is_super_admin || user.is_org_admin) return true;
             return permissions.includes('view_settings');
         };
 
-        // Helper: can edit settings? view_settings + edit_settings both needed
         res.locals.canEditSettings = function() {
             if (!user) return false;
-            if (user.is_super_admin) return true;
+            if (user.is_super_admin || user.is_org_admin) return true;
             return permissions.includes('view_settings') && permissions.includes('edit_settings');
         };
 
@@ -256,6 +280,20 @@ function requireSuperAdmin(req, res, next) {
     res.redirect('/dashboard');
 }
 
+// requireAdmin — passes if the user is either a super admin OR an org admin.
+// Used for company-level configuration screens (POS settings, Wallet) that
+// regular cashiers shouldn't see or call. Returns JSON 403 for AJAX/SPA
+// fetches and redirects to /dashboard for full-page hits.
+function requireAdmin(req, res, next) {
+    const u = req.session && req.session.user;
+    if (u && (u.is_super_admin || u.is_org_admin)) return next();
+    if (req.xhr || req.headers['x-spa'] === '1' || (req.headers.accept && req.headers.accept.includes('json'))) {
+        return res.status(403).json({ status: 403, success: false, message: 'Access denied. Company admin only.' });
+    }
+    req.flash('error', 'This section is restricted to company administrators.');
+    res.redirect('/dashboard');
+}
+
 module.exports = {
     requireLogin,
     tokenGuard,
@@ -264,5 +302,6 @@ module.exports = {
     guestOnly,
     requirePermission,
     requireSuperAdmin,
+    requireAdmin,
     injectLocals,
 };

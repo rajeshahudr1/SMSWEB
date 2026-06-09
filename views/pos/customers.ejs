@@ -4,7 +4,9 @@
     <h3><i class="bi bi-people text-primary"></i> Customers <span class="badge bg-primary-lt" id="badgeTotal">-</span></h3>
     <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;">
       <select class="ph-sel" id="perPageSel"><option value="15">15</option><option value="30">30</option><option value="50">50</option></select>
-      <button class="pos-btn-primary" onclick="openForm()"><i class="bi bi-plus-lg"></i> Add Customer</button>
+      <% if (can('add_pos_customers')) { %>
+        <button class="pos-btn-primary" onclick="openForm()"><i class="bi bi-plus-lg"></i> Add Customer</button>
+      <% } %>
     </div>
   </div>
   <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
@@ -42,7 +44,9 @@
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;">
       <button class="pos-btn-outline" onclick="closeForm()">Cancel</button>
-      <button class="pos-btn-primary" onclick="saveCust()"><i class="bi bi-check-lg"></i> Save</button>
+      <% if (can('add_pos_customers') || can('edit_pos_customers')) { %>
+        <button class="pos-btn-primary" onclick="saveCust()"><i class="bi bi-check-lg"></i> Save</button>
+      <% } %>
     </div>
   </div>
 </div>
@@ -68,11 +72,17 @@ function loadData(){
         var data=res.data&&res.data.data?res.data.data:[],pg=res.data&&res.data.pagination?res.data.pagination:{};
         $('#badgeTotal').text((pg.total||0).toLocaleString());
         if(!data.length){$('#tableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-people" style="font-size:32px;opacity:.2;display:block;margin-bottom:6px;"></i>No customers</td></tr>');$('#tableInfo').text('');$('#tablePagination').html('');return;}
+        // Permission gates — Edit needs edit_pos_customers, Delete needs delete_pos_customers.
+        var _canEdit = window.posCan ? posCan('edit_pos_customers')   : true;
+        var _canDel  = window.posCan ? posCan('delete_pos_customers') : true;
         var rows='';
         data.forEach(function(c,i){
             var tp=typeMap[c.customer_type]||typeMap.regular;
             rows+='<tr><td class="text-muted">'+((pg.from||1)+i)+'</td><td class="fw-medium">'+H.esc(c.name)+'</td><td>'+H.esc(c.phone||'-')+'</td><td>'+H.esc(c.email||'-')+'</td><td><span class="badge '+tp.cls+'" style="font-size:10px;">'+tp.label+'</span></td><td class="text-end">'+H.currency(c.total_purchases)+'</td><td>'+c.total_orders+'</td>';
-            rows+='<td class="text-end" style="white-space:nowrap;"><button class="pos-btn-outline pos-btn-sm" onclick="editCust(\''+H.esc(c.uuid)+'\')" style="margin-right:4px;"><i class="bi bi-pencil"></i></button><button class="pos-btn-danger" onclick="delCust(\''+H.esc(c.uuid)+'\')"><i class="bi bi-trash3"></i></button></td></tr>';
+            var actions='';
+            if (_canEdit) actions+='<button class="pos-btn-outline pos-btn-sm" onclick="editCust(\''+H.esc(c.uuid)+'\')" style="margin-right:4px;"><i class="bi bi-pencil"></i></button>';
+            if (_canDel)  actions+='<button class="pos-btn-danger" onclick="delCust(\''+H.esc(c.uuid)+'\')"><i class="bi bi-trash3"></i></button>';
+            rows+='<td class="text-end" style="white-space:nowrap;">'+(actions || '<span class="text-muted" style="font-size:11px;">—</span>')+'</td></tr>';
         });
         $('#tableBody').html(rows);$('#tableInfo').text((pg.from||1)+'-'+(pg.to||data.length)+' of '+(pg.total||0));buildPg(pg);
     });

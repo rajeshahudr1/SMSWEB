@@ -1,0 +1,1061 @@
+<% if (typeof _spa === 'undefined' || !_spa) { %><%- layout('../layouts/pos-layout') %><% } %>
+
+<style>
+/* ════════════════════════════════════════════════════════════════════
+   Wallet · Wholesale Credit — design tokens mirror the POS Settings
+   page (.sales-settings) so cards, inputs, buttons, and switches share
+   the same visual language across the admin section.
+   Breakpoints (matched to settings.ejs):
+     ≥1025px  full layout — KPI 4-col, customer card horizontal w/ 4 metrics + 4 actions
+     720–1024 KPI 2x2, metrics wrap to 2x2 inside the card
+     ≤719px   stacked single column, action row becomes 2x2
+   ══════════════════════════════════════════════════════════════════ */
+.wl{
+  --wl-blue:        var(--pv2-brand,        #1e4cb8);
+  --wl-blue-dark:   var(--pv2-brand-dark,   #163a8a);
+  --wl-blue-soft:   var(--pv2-brand-light,  #eaf0fb);
+  --wl-green:       var(--pv2-success,      #16a34a);
+  --wl-green-soft:  var(--pv2-success-bg,   #e7f6ec);
+  --wl-red:         var(--pv2-danger,       #dc2626);
+  --wl-red-soft:    var(--pv2-danger-bg,    #fde8e8);
+  --wl-amber:       var(--pv2-warning,      #d97706);
+  --wl-amber-soft:  var(--pv2-warning-bg,   #fef3e2);
+  --wl-text:        var(--pv2-text,         #1a2332);
+  --wl-muted:       var(--pv2-muted,        #5b6578);
+  --wl-subtle:      var(--pv2-subtle,       #8a94a6);
+  --wl-border:      var(--pv2-border,       #e8ecf1);
+  --wl-border-strong: var(--pv2-border-strong, #d3d9e2);
+  --wl-surface:     var(--pv2-surface,      #ffffff);
+  --wl-surface-alt: var(--pv2-surface-alt,  #f7f9fc);
+  --wl-bg:          #f1f3f7;
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--wl-text);
+  background: var(--wl-bg);
+  min-height: 100%;
+  padding: 22px 28px 90px;
+  max-width: 1340px;
+  margin: 0 auto;
+}
+.wl *{ box-sizing: border-box; }
+.wl input, .wl select, .wl textarea, .wl button{ font-family: inherit; }
+
+/* ─── HEADER (mirrors .ss-hero) ─────────────────────────────────── */
+.wl-hdr{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+.wl-hdr h1{ font-size:26px; font-weight:800; margin:0; letter-spacing:-0.5px; color:var(--wl-text); }
+.wl-hdr p{ font-size:14px; color:var(--wl-muted); margin:6px 0 0; }
+.wl-hdr .btn-enable{
+    background:var(--wl-blue); color:#fff; border:none; border-radius:8px;
+    padding:10px 16px; font-size:13.5px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:filter .15s;
+}
+.wl-hdr .btn-enable:hover{ filter:brightness(.92); }
+
+/* ─── KPI TILES (settings-style cards with icon + meta) ─────────── */
+.wl-kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+.wl-kpi{ background:var(--wl-surface); border:1px solid var(--wl-border); border-radius:12px; padding:16px 18px;
+         display:flex; align-items:center; gap:14px; }
+.wl-kpi .ico{ width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+              flex-shrink:0; font-size:16px; }
+.wl-kpi .meta{ min-width:0; }
+.wl-kpi .meta .l{ font-size:11px; font-weight:700; color:var(--wl-subtle); text-transform:uppercase; letter-spacing:0.6px; }
+.wl-kpi .meta .v{ font-size:22px; font-weight:800; line-height:1.2; margin-top:4px; font-variant-numeric:tabular-nums; color:var(--wl-text); }
+.wl-kpi .meta .s{ font-size:11.5px; color:var(--wl-muted); margin-top:2px; }
+.wl-kpi.customers .ico{ background:var(--wl-blue-soft); color:var(--wl-blue); }
+.wl-kpi.outstanding .ico{ background:var(--wl-amber-soft); color:var(--wl-amber); }
+.wl-kpi.outstanding .v{ color:var(--wl-amber); }
+.wl-kpi.overdue .ico{ background:var(--wl-red-soft); color:var(--wl-red); }
+.wl-kpi.overdue .v{ color:var(--wl-red); }
+.wl-kpi.available .ico{ background:var(--wl-green-soft); color:var(--wl-green); }
+.wl-kpi.available .v{ color:var(--wl-green); }
+
+/* ─── FILTER BAR (settings input styling) ───────────────────────── */
+.wl-toolbar{ background:var(--wl-surface); border:1px solid var(--wl-border); border-radius:12px;
+             padding:12px 14px; display:grid; grid-template-columns:1fr 200px 180px auto; gap:10px;
+             align-items:center; margin-bottom:18px; }
+.wl-toolbar .search-wrap{ position:relative; }
+.wl-toolbar .search-wrap i{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--wl-subtle); font-size:13px; }
+.wl-toolbar input.search,
+.wl-toolbar select{ width:100%; height:38px; padding:0 12px; border:1px solid var(--wl-border-strong); border-radius:7px;
+                    font-size:13px; background:var(--wl-surface); color:var(--wl-text); transition:border-color .15s, box-shadow .15s; }
+.wl-toolbar input.search{ padding-left:34px; }
+.wl-toolbar input.search:focus, .wl-toolbar select:focus{ outline:none; border-color:var(--wl-blue);
+    box-shadow:0 0 0 3px rgba(30,76,184,0.12); }
+.wl-toolbar select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path fill='%235b6578' d='M3.5 6L8 10.5 12.5 6z'/></svg>");
+    background-repeat:no-repeat; background-position:right 11px center; padding-right:32px; }
+.wl-toolbar .btn-refresh{ height:38px; padding:0 14px; border:1px solid var(--wl-border-strong); border-radius:7px;
+                          background:var(--wl-surface); font-weight:600; font-size:13px; color:var(--wl-text); cursor:pointer;
+                          display:inline-flex; align-items:center; gap:7px; white-space:nowrap; transition:background .15s; }
+.wl-toolbar .btn-refresh:hover{ background:var(--wl-surface-alt); }
+
+/* ─── CUSTOMER CARD (settings .ss-card pattern) ─────────────────── */
+.wl-list{ display:flex; flex-direction:column; gap:14px; }
+.wl-card{ background:var(--wl-surface); border:1px solid var(--wl-border); border-radius:12px;
+          padding:18px 20px; transition:border-color .15s, box-shadow .15s; }
+.wl-card:hover{ border-color:var(--wl-border-strong); box-shadow:0 2px 8px rgba(15,23,42,0.04); }
+.wl-card-top{ display:grid; grid-template-columns:1fr repeat(4, minmax(0, max-content)); gap:24px; align-items:flex-start; }
+.wl-card-id{ display:flex; align-items:flex-start; gap:12px; min-width:0; }
+.wl-card-avatar{ width:42px; height:42px; border-radius:8px; background:var(--wl-blue-soft); color:var(--wl-blue);
+                 display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; flex-shrink:0; }
+.wl-card-namebox{ min-width:0; }
+.wl-card-name{ font-size:15px; font-weight:700; color:var(--wl-text);
+               display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.wl-card-pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600;
+               padding:2px 9px; border-radius:999px; }
+.wl-card-pill.active{ background:var(--wl-green-soft); color:var(--wl-green); }
+.wl-card-pill.disabled{ background:var(--wl-surface-alt); color:var(--wl-muted); }
+.wl-card-pill.overdue{ background:var(--wl-red-soft); color:var(--wl-red); }
+.wl-card-contact{ font-size:12.5px; color:var(--wl-muted); margin-top:5px;
+                  display:flex; flex-direction:column; gap:2px; }
+.wl-card-contact span{ display:inline-flex; align-items:center; gap:6px; }
+.wl-card-contact i{ font-size:11px; color:var(--wl-subtle); }
+.wl-metric{ min-width:0; }
+.wl-metric .l{ font-size:11.5px; color:var(--wl-muted); margin-bottom:3px; font-weight:500; }
+.wl-metric .v{ font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--wl-text); white-space:nowrap; }
+.wl-metric.amber .v{ color:var(--wl-amber); }
+.wl-metric.green .v{ color:var(--wl-green); }
+.wl-metric .s{ font-size:11px; color:var(--wl-muted); margin-top:2px; display:inline-flex; align-items:center; gap:5px; }
+.wl-metric .s i{ font-size:11px; color:var(--wl-subtle); }
+
+/* Used-credit progress — full-width row below the metrics */
+.wl-card-progress{ margin-top:14px; padding-top:14px; border-top:1px dashed var(--wl-border);
+                   display:flex; align-items:center; gap:14px; }
+.wl-card-progress .l{ font-size:12px; color:var(--wl-muted); white-space:nowrap; }
+.wl-card-progress .l strong{ color:var(--wl-text); font-weight:700; font-variant-numeric:tabular-nums; }
+.wl-card-progress .l small{ color:var(--wl-subtle); margin-left:5px; }
+.wl-card-progress .bar{ flex:1; height:6px; background:var(--wl-surface-alt); border-radius:3px; overflow:hidden; min-width:120px; }
+.wl-card-progress .bar-fill{ height:100%; background:var(--wl-amber); border-radius:3px; transition:width .25s; }
+.wl-card-progress .bar-fill.green{ background:var(--wl-green); }
+.wl-card-progress .pct{ font-size:12px; font-weight:600; color:var(--wl-muted); white-space:nowrap; min-width:40px; text-align:right; }
+
+/* Action button row — 4 buttons across at desktop, 2x2 on mobile */
+.wl-card-actions{ display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-top:14px; }
+.wl-card-actions button{ height:38px; border-radius:7px; border:1px solid var(--wl-border-strong); background:var(--wl-surface);
+                         font-size:13px; font-weight:600; color:var(--wl-text); cursor:pointer;
+                         display:inline-flex; align-items:center; justify-content:center; gap:7px;
+                         transition:background .15s, border-color .15s; }
+.wl-card-actions button:hover{ background:var(--wl-surface-alt); border-color:var(--wl-blue); }
+.wl-card-actions button.danger{ color:var(--wl-red); border-color:var(--wl-border-strong); }
+.wl-card-actions button.danger:hover{ background:var(--wl-red-soft); border-color:var(--wl-red); }
+.wl-card-actions button i{ font-size:14px; }
+
+/* Empty / loading state */
+.wl-empty{ background:var(--wl-surface); border:1px dashed var(--wl-border); border-radius:12px;
+           padding:60px 20px; text-align:center; color:var(--wl-muted); }
+.wl-empty i{ font-size:36px; color:var(--wl-subtle); display:block; margin-bottom:8px; }
+
+/* Pagination footer */
+.wl-pager{ display:flex; align-items:center; justify-content:space-between; gap:14px;
+           margin-top:18px; padding:0 4px; flex-wrap:wrap; }
+.wl-pager .info{ font-size:13px; color:var(--wl-muted); }
+.wl-pager .pages{ display:inline-flex; gap:6px; }
+.wl-pager .pages button{ width:34px; height:34px; border:1px solid var(--wl-border-strong); border-radius:7px;
+                         background:var(--wl-surface); cursor:pointer; font-weight:600; font-size:13px; color:var(--wl-text); }
+.wl-pager .pages button:hover:not(:disabled){ background:var(--wl-surface-alt); }
+.wl-pager .pages button:disabled{ opacity:.4; cursor:not-allowed; }
+.wl-pager .pages button.active{ background:var(--wl-blue); color:#fff; border-color:var(--wl-blue); }
+
+/* "How Wholesale Wallet Works?" banner — soft-blue card matching settings palette */
+.wl-howto{ background:var(--wl-blue-soft); border:1px solid var(--wl-border); border-radius:12px;
+           padding:18px 22px; margin-top:18px; }
+.wl-howto-h{ display:flex; align-items:center; gap:10px; font-size:15px; font-weight:700;
+             color:var(--wl-blue); margin-bottom:14px; }
+.wl-howto-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; }
+.wl-howto-step{ display:flex; gap:10px; align-items:flex-start; font-size:12.5px; color:var(--wl-text); line-height:1.45; }
+.wl-howto-step i{ width:30px; height:30px; border-radius:7px; background:var(--wl-surface); color:var(--wl-blue);
+                  display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; }
+
+/* ─── DETAIL DRAWER (View Ledger) ────────────────────────────────── */
+.wl-drawer-bg{ position:fixed; inset:0; background:rgba(11,18,32,.45); z-index:99996; display:none; }
+.wl-drawer-bg.show{ display:block; }
+.wl-drawer{ position:fixed; top:0; right:0; bottom:0; width:600px; max-width:100vw; background:var(--wl-surface);
+            z-index:99997; transform:translateX(100%); transition:transform .25s;
+            display:flex; flex-direction:column; box-shadow:-12px 0 30px rgba(11,18,32,.18); }
+.wl-drawer.open{ transform:translateX(0); }
+.wl-drawer-h{ padding:16px 20px; border-bottom:1px solid var(--wl-border);
+              display:flex; align-items:center; gap:12px; }
+.wl-drawer-h .av{ width:36px; height:36px; border-radius:8px; background:var(--wl-blue-soft);
+                  color:var(--wl-blue); display:flex; align-items:center; justify-content:center;
+                  font-size:14px; font-weight:800; flex-shrink:0; }
+.wl-drawer-h .name{ font-size:15px; font-weight:700; flex:1; min-width:0;
+                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wl-drawer-h .x{ background:none; border:none; font-size:16px; cursor:pointer; color:var(--wl-muted); padding:6px; }
+.wl-drawer-tabs{ display:flex; gap:4px; padding:0 20px; border-bottom:1px solid var(--wl-border); overflow-x:auto; }
+.wl-drawer-tab{ padding:10px 14px; border:none; background:none; font-size:13.5px; font-weight:600;
+                color:var(--wl-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+                transition:color .15s, border-color .15s; white-space:nowrap; }
+.wl-drawer-tab:hover{ color:var(--wl-text); }
+.wl-drawer-tab.active{ color:var(--wl-blue); border-bottom-color:var(--wl-blue); }
+.wl-drawer-b{ flex:1; overflow-y:auto; padding:18px 20px; }
+.wl-summary{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+.wl-sum-cell{ padding:12px; border:1px solid var(--wl-border); border-radius:8px; background:var(--wl-surface-alt); }
+.wl-sum-cell .l{ font-size:10.5px; color:var(--wl-subtle); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+.wl-sum-cell .v{ font-size:17px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums; color:var(--wl-text); }
+.wl-section-h{ font-size:11px; font-weight:700; color:var(--wl-subtle);
+               text-transform:uppercase; letter-spacing:0.6px; margin:16px 0 8px;
+               display:flex; align-items:center; justify-content:space-between; }
+
+/* Transaction row in the ledger drawer */
+.wl-tx{ display:grid; grid-template-columns:32px 1fr auto; gap:12px; padding:11px 0;
+        border-bottom:1px dashed var(--wl-border); align-items:flex-start; }
+.wl-tx:last-child{ border-bottom:none; }
+.wl-tx .ic{ width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+            font-size:13px; flex-shrink:0; }
+.wl-tx .ic.credit{ background:var(--wl-blue-soft); color:var(--wl-blue); }
+.wl-tx .ic.sale{ background:var(--wl-amber-soft); color:var(--wl-amber); }
+.wl-tx .ic.payment{ background:var(--wl-green-soft); color:var(--wl-green); }
+.wl-tx .ic.adjust{ background:var(--wl-surface-alt); color:var(--wl-muted); }
+.wl-tx .ic.late{ background:var(--wl-red-soft); color:var(--wl-red); }
+.wl-tx .info .t{ font-size:13px; font-weight:600; color:var(--wl-text); }
+.wl-tx .info .s{ font-size:11.5px; color:var(--wl-muted); margin-top:3px; }
+.wl-tx .amt{ font-size:13.5px; font-weight:800; font-variant-numeric:tabular-nums;
+             text-align:right; white-space:nowrap; }
+.wl-tx .amt.pos{ color:var(--wl-amber); }
+.wl-tx .amt.neg{ color:var(--wl-green); }
+.wl-tx .amt small{ display:block; font-size:10px; color:var(--wl-muted); font-weight:500; margin-top:2px; }
+
+/* Generic dialog (grant / payment / adjust / online_link / enable_new) — settings input styling */
+.wl-dlg-bg{ position:fixed; inset:0; background:rgba(11,18,32,.5); z-index:99998;
+            display:none; align-items:center; justify-content:center; padding:20px; }
+.wl-dlg-bg.show{ display:flex; }
+.wl-dlg{ background:var(--wl-surface); border-radius:12px; max-width:440px; width:100%;
+         box-shadow:0 20px 50px rgba(0,0,0,.25); overflow:hidden;
+         max-height:calc(100vh - 40px); display:flex; flex-direction:column; }
+.wl-dlg-h{ padding:14px 18px; border-bottom:1px solid var(--wl-border);
+           display:flex; align-items:center; justify-content:space-between; }
+.wl-dlg-h h5{ margin:0; font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; color:var(--wl-text); }
+.wl-dlg-h .x{ background:none; border:none; font-size:16px; cursor:pointer; color:var(--wl-muted); }
+.wl-dlg-b{ padding:18px; overflow-y:auto; }
+.wl-dlg-b label{ font-size:13px; font-weight:600; display:block; margin-bottom:5px; margin-top:12px; color:var(--wl-text); }
+.wl-dlg-b label:first-child{ margin-top:0; }
+/* Inline checkbox/radio labels (e.g. "Email link to customer") opt into a
+   flex row via `style="display:flex"`. Without this override the global
+   `label{display:block}` above would stack the box on top of the text. */
+.wl-dlg-b label[style*="display:flex"],
+.wl-dlg-b label[style*="display: flex"]{ display:flex !important; }
+/* Restrict the "fat input" styling to actual text inputs — checkboxes and
+   radios must keep their native compact rendering, otherwise they end up
+   stretched to 100% width with padding around them and look like empty
+   input boxes (regression that broke the Send-Online-Link dialog). */
+.wl-dlg-b input:not([type="checkbox"]):not([type="radio"]),
+.wl-dlg-b textarea,
+.wl-dlg-b select{
+    width:100%; padding:9px 11px; font-size:13px; border:1px solid var(--wl-border-strong); border-radius:7px;
+    background:var(--wl-surface); color:var(--wl-text); transition:border-color .15s, box-shadow .15s;
+}
+.wl-dlg-b input[type="checkbox"],
+.wl-dlg-b input[type="radio"]{
+    width:auto; flex-shrink:0; margin:0; cursor:pointer;
+}
+.wl-dlg-b input:not([type="checkbox"]):not([type="radio"]):focus,
+.wl-dlg-b textarea:focus,
+.wl-dlg-b select:focus{
+    outline:none; border-color:var(--wl-blue); box-shadow:0 0 0 3px rgba(30,76,184,0.12);
+}
+.wl-dlg-f{ padding:12px 18px; border-top:1px solid var(--wl-border);
+           display:flex; justify-content:flex-end; gap:8px; background:var(--wl-surface-alt); }
+.wl-dlg-f button{ padding:9px 16px; border-radius:7px; font-weight:600; font-size:13px;
+                  cursor:pointer; border:1px solid var(--wl-border-strong); background:var(--wl-surface); color:var(--wl-text); transition:filter .15s; }
+.wl-dlg-f button:hover{ background:var(--wl-surface-alt); }
+.wl-dlg-f button.primary{ background:var(--wl-blue); color:#fff; border-color:var(--wl-blue); }
+.wl-dlg-f button.primary:hover{ filter:brightness(.92); background:var(--wl-blue); }
+.wl-dlg-f button.success{ background:var(--wl-green); color:#fff; border-color:var(--wl-green); }
+.wl-dlg-f button.warn{    background:var(--wl-amber); color:#fff; border-color:var(--wl-amber); }
+.wl-dlg-f button.danger{  background:var(--wl-red);   color:#fff; border-color:var(--wl-red); }
+
+/* ─── RESPONSIVE — breakpoints aligned with settings.ejs ─────────── */
+/* Tablet: ≤1024px (matches settings's "@media (max-width:1024px)") */
+@media (max-width: 1024px){
+    .wl{ padding:18px 22px 90px; }
+    .wl-kpis{ grid-template-columns:repeat(2, 1fr); }
+    .wl-toolbar{ grid-template-columns:1fr 1fr auto; }
+    .wl-toolbar .search-wrap{ grid-column:1 / -1; }
+    .wl-card-top{ grid-template-columns:1fr 1fr; gap:18px; }
+    .wl-card-id{ grid-column:1 / -1; }
+    .wl-howto-grid{ grid-template-columns:repeat(2, 1fr); }
+}
+/* Small tablet / large phone: ≤720px */
+@media (max-width: 720px){
+    .wl{ padding:14px 14px 80px; }
+    .wl-hdr h1{ font-size:22px; }
+    .wl-hdr p{ font-size:13px; }
+    .wl-hdr{ flex-direction:column; align-items:stretch; }
+    .wl-hdr .btn-enable{ justify-content:center; }
+    .wl-kpis{ grid-template-columns:1fr; gap:10px; }
+    .wl-kpi{ padding:14px 16px; }
+    .wl-kpi .ico{ width:36px; height:36px; font-size:15px; }
+    .wl-kpi .meta .v{ font-size:20px; }
+    .wl-toolbar{ grid-template-columns:1fr; padding:10px 12px; gap:8px; }
+    .wl-toolbar .btn-refresh{ justify-content:center; }
+    .wl-card{ padding:14px 16px; }
+    .wl-card-top{ grid-template-columns:1fr 1fr; gap:12px; }
+    .wl-card-id{ grid-column:1 / -1; }
+    .wl-card-avatar{ width:40px; height:40px; font-size:15px; }
+    .wl-card-name{ font-size:14.5px; }
+    .wl-metric .v{ font-size:15px; }
+    .wl-card-actions{ grid-template-columns:repeat(2, 1fr); }
+    .wl-card-progress{ flex-direction:column; align-items:stretch; gap:6px; }
+    .wl-card-progress .bar{ width:100%; }
+    .wl-howto{ padding:16px; }
+    .wl-howto-grid{ grid-template-columns:1fr; gap:12px; }
+    .wl-drawer{ width:100vw; }
+    .wl-drawer-h{ padding:14px 16px; }
+    .wl-drawer-tabs{ padding:0 16px; }
+    .wl-drawer-b{ padding:14px 16px; }
+    .wl-summary{ grid-template-columns:repeat(3, 1fr); gap:6px; }
+    .wl-sum-cell{ padding:10px 8px; }
+    .wl-sum-cell .v{ font-size:14.5px; }
+    .wl-pager{ flex-direction:column; align-items:flex-start; gap:8px; }
+}
+</style>
+
+<div class="wl">
+  <!-- HEADER -->
+  <div class="wl-hdr">
+    <div>
+      <h1>Wallet · Wholesale Credit</h1>
+      <p>Manage credit limits, payment terms and outstanding balances for wallet customers.</p>
+    </div>
+    <% if (can('edit_pos_wallet_customers') || can('edit_pos_wallet_settings')) { %>
+    <a class="btn-enable" href="/sales/wallet/add" style="text-decoration:none;"><i class="bi bi-plus-lg"></i> Enable Wallet for Customer</a>
+    <% } %>
+  </div>
+
+  <!-- KPI TILES -->
+  <div class="wl-kpis">
+    <div class="wl-kpi customers">
+      <div class="ico"><i class="bi bi-people-fill"></i></div>
+      <div class="meta">
+        <div class="l">Total Customers</div>
+        <div class="v" id="wlKpiCustomers">0</div>
+        <div class="s">Wallet Enabled</div>
+      </div>
+    </div>
+    <div class="wl-kpi outstanding">
+      <div class="ico"><i class="bi bi-currency-rupee"></i></div>
+      <div class="meta">
+        <div class="l">Total Outstanding</div>
+        <div class="v" id="wlKpiOutstanding">₹0.00</div>
+        <div class="s">All Customers</div>
+      </div>
+    </div>
+    <div class="wl-kpi overdue">
+      <div class="ico"><i class="bi bi-calendar-x-fill"></i></div>
+      <div class="meta">
+        <div class="l">Total Overdue</div>
+        <div class="v" id="wlKpiOverdue">₹0.00</div>
+        <div class="s">Overdue Amount</div>
+      </div>
+    </div>
+    <div class="wl-kpi available">
+      <div class="ico"><i class="bi bi-wallet2"></i></div>
+      <div class="meta">
+        <div class="l">Total Available Credit</div>
+        <div class="v" id="wlKpiAvailable">₹0.00</div>
+        <div class="s">Across All Customers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="wl-toolbar">
+    <div class="search-wrap">
+      <i class="bi bi-search"></i>
+      <input type="text" id="wlSearch" class="search" placeholder="Search by name, phone, email…">
+    </div>
+    <select id="wlEnabledFilter">
+      <option value="1">Wallet Enabled Only</option>
+      <option value="0">All Customers</option>
+    </select>
+    <select id="wlStatusFilter">
+      <option value="">All Status</option>
+      <option value="active">Active &amp; clear</option>
+      <option value="outstanding">Outstanding</option>
+      <option value="overdue">Overdue</option>
+    </select>
+    <button class="btn-refresh" id="wlRefresh"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+  </div>
+
+  <!-- LIST -->
+  <div id="wlList" class="wl-list">
+    <div class="wl-empty"><i class="bi bi-hourglass-split"></i>Loading…</div>
+  </div>
+
+  <!-- Pagination removed — list grows via infinite scroll, see load(page)
+       and the scroll handler at the bottom of the script. -->
+
+  <!-- "HOW IT WORKS" BANNER -->
+  <div class="wl-howto">
+    <div class="wl-howto-h"><i class="bi bi-info-circle-fill"></i> How Wholesale Wallet Works?</div>
+    <div class="wl-howto-grid">
+      <div class="wl-howto-step"><i class="bi bi-people"></i><div>Enable wallet for customers to give credit facility</div></div>
+      <div class="wl-howto-step"><i class="bi bi-wallet2"></i><div>Set credit limit and payment terms</div></div>
+      <div class="wl-howto-step"><i class="bi bi-cart3"></i><div>Customer can buy on credit within the limit</div></div>
+      <div class="wl-howto-step"><i class="bi bi-currency-rupee"></i><div>Receive payments and track outstanding</div></div>
+    </div>
+  </div>
+
+  <!-- ─── DETAIL DRAWER (View Ledger) ─────────────────────────────────
+       Lives INSIDE .wl so the `--wl-*` CSS variables (defined on .wl)
+       cascade into it. Moving this outside the container produces a
+       transparent drawer (no background) and the user sees a white
+       screen behind the trigger button. -->
+  <div class="wl-drawer-bg" id="wlDrawerBg" onclick="wlCloseDrawer()"></div>
+  <div class="wl-drawer" id="wlDrawer">
+    <div class="wl-drawer-h">
+      <div class="av" id="wlDrAvatar">—</div>
+      <div class="name" id="wlDrName">—</div>
+      <button class="x" onclick="wlCloseDrawer()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="wl-drawer-tabs" role="tablist">
+      <button class="wl-drawer-tab active" data-tab="ledger">Ledger</button>
+      <button class="wl-drawer-tab" data-tab="unpaid">Unpaid sales</button>
+      <button class="wl-drawer-tab" data-tab="config">Config</button>
+    </div>
+    <div class="wl-drawer-b" id="wlDrBody">
+      <div class="text-muted">Select a customer to view their wallet…</div>
+    </div>
+  </div>
+
+  <!-- Generic dialog used for grant/payment/adjust/online_link/enable_new/disable
+       — same reason as above for being inside .wl. -->
+  <div class="wl-dlg-bg" id="wlDlgBg" onclick="if(event.target===this)wlCloseDlg()">
+    <div class="wl-dlg" role="dialog">
+      <div class="wl-dlg-h">
+        <h5 id="wlDlgTitle"><i class="bi bi-wallet2"></i> <span>Action</span></h5>
+        <button class="x" onclick="wlCloseDlg()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="wl-dlg-b" id="wlDlgBody"></div>
+      <div class="wl-dlg-f">
+        <button onclick="wlCloseDlg()">Cancel</button>
+        <button class="primary" id="wlDlgSubmit">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ─── State ─────────────────────────────────────────────────────
+  // _customers      — currently visible page of rows
+  // _activeUuid     — drawer/dialog target (set when "View Ledger" clicked)
+  // _activeCustomer — last loaded full customer payload (used by dialogs to
+  //                   show "Available credit: …" hints)
+  // _pagination     — { current_page, last_page, total, … }
+  var _customers = [];
+  var _activeUuid = null;
+  var _activeCustomer = null;
+  var _pagination = { current_page: 1, last_page: 1, total: 0, per_page: 10 };
+  var _activeTab = 'ledger';
+
+  // ─── Helpers ───────────────────────────────────────────────────
+  var CURR = (window.SMS_CURRENCY || '₹');
+  function fmt(n){ return CURR + parseFloat(n||0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDt(s){ try { return new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return s||'—'; } }
+  function initial(name){ return (String(name||'?').trim()[0] || '?').toUpperCase(); }
+
+  // ─── KPI tiles (separate /stats endpoint so totals don't depend
+  //     on the current page of the customer list) ────────────────
+  function loadStats(){
+    $.get('/sales/wallet/stats', function(r){
+      if (!r || r.status !== 200 || !r.data) return;
+      var d = r.data;
+      $('#wlKpiCustomers').text(d.total_customers || 0);
+      $('#wlKpiOutstanding').text(fmt(d.total_outstanding));
+      $('#wlKpiOverdue').text(fmt(d.total_overdue));
+      $('#wlKpiAvailable').text(fmt(d.total_available_credit));
+    });
+  }
+
+  // ─── Customer list — infinite scroll (no more pagination footer) ───
+  // _isLoading prevents overlapping fetches when the user scrolls fast.
+  // _hasMore is false once the API returns its last page; we stop firing
+  // scroll handlers from then on. Filter/search changes reset both.
+  var _isLoading = false;
+  var _hasMore   = true;
+  function _applyStatusFilter(rows){
+    var st = $('#wlStatusFilter').val();
+    if (st === 'active')         return rows.filter(function(c){ return parseFloat(c.wallet_balance||0) <= 0; });
+    if (st === 'outstanding')    return rows.filter(function(c){ return parseFloat(c.wallet_balance||0) > 0 && !c.is_overdue; });
+    if (st === 'overdue')        return rows.filter(function(c){ return c.is_overdue; });
+    return rows;
+  }
+  function load(page){
+    if (_isLoading) return;
+    if (!page) page = 1;
+    var reset = (page === 1);
+    if (!reset && !_hasMore) return;
+    _isLoading = true;
+    var q = {
+      search:       $('#wlSearch').val() || '',
+      enabled_only: $('#wlEnabledFilter').val(),
+      page:         page,
+      per_page:     20,
+    };
+    if (reset) {
+      _customers = [];
+      _hasMore   = true;
+      $('#wlList').html('<div class="wl-empty"><i class="bi bi-hourglass-split"></i>Loading…</div>');
+    } else {
+      // Append a small "loading more…" footer to indicate we're fetching.
+      $('#wlListMore').remove();
+      $('#wlList').append('<div id="wlListMore" class="wl-empty" style="padding:18px;"><i class="bi bi-hourglass-split"></i> Loading more…</div>');
+    }
+    $.get('/sales/wallet/customers', q, function(r){
+      _isLoading = false;
+      $('#wlListMore').remove();
+      if (!r || r.status !== 200) {
+        if (reset) $('#wlList').html('<div class="wl-empty"><i class="bi bi-exclamation-triangle"></i>Failed to load.</div>');
+        return;
+      }
+      var batch = (r.data && r.data.data) || [];
+      _pagination = (r.data && r.data.pagination) || { current_page:1, last_page:1, total:batch.length };
+      _hasMore = _pagination.current_page < _pagination.last_page;
+      // Concat to the running list, then re-render the full filtered view.
+      _customers = reset ? batch : _customers.concat(batch);
+      render(_applyStatusFilter(_customers));
+    }).fail(function(){
+      _isLoading = false;
+      $('#wlListMore').remove();
+      if (reset) $('#wlList').html('<div class="wl-empty"><i class="bi bi-wifi-off"></i>Network error.</div>');
+    });
+  }
+
+  function render(rows){
+    if (!rows.length){
+      $('#wlList').html(
+        '<div class="wl-empty"><i class="bi bi-people"></i>'
+        + '<div>No wallet customers match this filter.</div>'
+        + '<div style="font-size:11.5px;margin-top:6px;">Try clearing filters or click "Enable Wallet for Customer" to add one.</div>'
+        + '</div>'
+      );
+      return;
+    }
+    $('#wlList').html(rows.map(renderCard).join(''));
+    if (!_hasMore && rows.length > 6) {
+      // Soft end-of-list cue once everything is loaded.
+      $('#wlList').append('<div class="wl-empty" style="padding:18px 0 4px;font-size:12px;opacity:.7;"><i class="bi bi-check2-circle"></i> All customers loaded</div>');
+    }
+  }
+
+  // Each card matches the design: avatar + name+pill + contact on the left,
+  // then 4 inline metrics (Outstanding · Limit · Available · Wallet Since /
+  // Payment Terms), a used-credit progress bar across the bottom, and 4
+  // action buttons. Buttons fall back to a 2×2 grid on tablet/mobile.
+  function renderCard(c){
+    var bal     = parseFloat(c.wallet_balance || 0);
+    var limit   = parseFloat(c.wallet_credit_limit || 0);
+    var avail   = parseFloat(c.wallet_available || 0);
+    var used    = limit > 0 ? Math.min(100, Math.max(0, (bal / limit) * 100)) : 0;
+    var since   = c.wallet_since || c.created_at || c.wallet_last_payment_at || null;
+    var terms   = parseInt(c.wallet_terms_days || 0);
+    var termsLbl = terms === 0 ? 'Due on Receipt' : (terms + ' day' + (terms === 1 ? '' : 's'));
+    var pill    = c.is_overdue ? '<span class="wl-card-pill overdue"><i class="bi bi-exclamation-circle"></i> Overdue</span>'
+                : (c.is_wallet_enabled ? '<span class="wl-card-pill active"><i class="bi bi-check-circle-fill"></i> Active</span>'
+                                       : '<span class="wl-card-pill disabled"><i class="bi bi-pause-circle"></i> Disabled</span>');
+    // Permission gates — render each action button only if the user has
+    // the relevant permission. Admins (`posCan` returns true for every
+    // key) see them all; restricted users see a curated subset.
+    var canRecordPayment = posCan('add_pos_wallet_payments');
+    var canEditCustomer  = posCan('edit_pos_wallet_customers');
+    var canEditWallet    = posCan('edit_pos_wallet_settings');
+    var disableBtn = '';
+    if (canEditWallet) {
+      disableBtn = c.is_wallet_enabled
+          ? '<button class="danger" data-act="disable"><i class="bi bi-slash-circle"></i> Disable Wallet</button>'
+          : '<button data-act="enable"><i class="bi bi-check-circle"></i> Enable Wallet</button>';
+    }
+
+    return ''
+      + '<div class="wl-card" data-uuid="' + esc(c.uuid) + '" data-name="' + esc(c.name) + '">'
+      +   '<div class="wl-card-top">'
+      +     '<div class="wl-card-id">'
+      +       '<div class="wl-card-avatar">' + esc(initial(c.name)) + '</div>'
+      +       '<div class="wl-card-namebox">'
+      +         '<div class="wl-card-name">' + esc(c.name || 'Unnamed') + ' ' + pill + '</div>'
+      +         '<div class="wl-card-contact">'
+      +           (c.phone ? '<span><i class="bi bi-telephone"></i>' + esc(c.phone) + '</span>' : '')
+      +           (c.email ? '<span><i class="bi bi-envelope"></i>' + esc(c.email) + '</span>' : '')
+      +         '</div>'
+      +       '</div>'
+      +     '</div>'
+      +     '<div class="wl-metric ' + (bal > 0 ? 'amber' : '') + '">'
+      +       '<div class="l">Outstanding</div>'
+      +       '<div class="v">' + fmt(bal) + '</div>'
+      +     '</div>'
+      +     '<div class="wl-metric">'
+      +       '<div class="l">Credit Limit</div>'
+      +       '<div class="v">' + fmt(limit) + '</div>'
+      +     '</div>'
+      +     '<div class="wl-metric green">'
+      +       '<div class="l">Available Credit</div>'
+      +       '<div class="v">' + fmt(avail) + '</div>'
+      +     '</div>'
+      +     '<div class="wl-metric">'
+      +       '<div class="l">Wallet Since</div>'
+      +       '<div class="v" style="font-size:14px;">' + (since ? '<i class="bi bi-calendar3" style="color:var(--wl-subtle);font-size:13px;margin-right:4px;"></i>' + esc(fmtDt(since)) : '—') + '</div>'
+      +       '<div class="s" style="margin-top:8px;"><i class="bi bi-clock"></i> Payment Terms · ' + esc(termsLbl) + '</div>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div class="wl-card-progress">'
+      +     '<div class="l">Used Credit <strong>' + fmt(bal) + '</strong> <small>(' + Math.round(used) + '%)</small></div>'
+      +     '<div class="bar"><div class="bar-fill ' + (bal === 0 ? 'green' : '') + '" style="width:' + used + '%"></div></div>'
+      +     '<div class="pct">' + Math.round(used) + '%</div>'
+      +   '</div>'
+      +   '<div class="wl-card-actions">'
+      +     '<button data-act="ledger"><i class="bi bi-list-ul"></i> View Ledger</button>'
+      +     (canRecordPayment ? '<button data-act="payment"><i class="bi bi-currency-rupee"></i> Add Payment</button>' : '')
+      +     (canEditWallet    ? '<button data-act="config"><i class="bi bi-gear"></i> Set Credit Limit</button>'      : '')
+      +     disableBtn
+      +   '</div>'
+      + '</div>';
+  }
+
+  // ─── Card action wiring ────────────────────────────────────────
+  // Single delegated listener for every button on every card. The data-act
+  // attribute decides which dialog/drawer to open.
+  $(document).on('click', '.wl-card-actions button', function(e){
+    e.stopPropagation();
+    var $card = $(this).closest('.wl-card');
+    var uuid = $card.data('uuid');
+    var act = $(this).data('act');
+    if (!uuid || !act) return;
+    _activeUuid = uuid;
+    if (act === 'ledger')   { openDrawer(uuid, 'ledger'); }
+    else if (act === 'payment') { wlOpenPayment(); }
+    // Set Credit Limit jumps to the full Add/Edit page (matches the
+    // "Add / Edit Wholesale Wallet" design); the inline Config drawer
+    // tab is still available via View Ledger → Config.
+    else if (act === 'config')  { window.location.href = '/sales/wallet/edit/' + uuid; }
+    else if (act === 'disable') { wlConfirmDisable(uuid, $card.data('name')); }
+    else if (act === 'enable')  { window.location.href = '/sales/wallet/edit/' + uuid; }
+  });
+  // Infinite scroll — fetch next page when the user nears the bottom of
+  // the page. Listens on the pos-page-content scroller (pos-layout) AND
+  // window as a fallback, so it works whether the page scrolls inside the
+  // POS shell or on its own.
+  function _maybeLoadMore(scrollTop, viewportH, totalH){
+    if (_isLoading || !_hasMore) return;
+    if (totalH - (scrollTop + viewportH) < 240) {
+      load(_pagination.current_page + 1);
+    }
+  }
+  var _scrollEl = document.querySelector('.pos-page-content') || document.scrollingElement || document.documentElement;
+  $(_scrollEl).on('scroll', function(){
+    _maybeLoadMore(_scrollEl.scrollTop, _scrollEl.clientHeight, _scrollEl.scrollHeight);
+  });
+  $(window).on('scroll', function(){
+    if (_scrollEl === document.scrollingElement || _scrollEl === document.documentElement) return;
+    _maybeLoadMore(window.pageYOffset || document.documentElement.scrollTop, window.innerHeight, document.documentElement.scrollHeight);
+  });
+
+  // ─── Detail drawer (View Ledger) ───────────────────────────────
+  function openDrawer(uuid, tab){
+    _activeUuid = uuid;
+    _activeTab = tab || 'ledger';
+    $('.wl-drawer-tab').removeClass('active').filter('[data-tab="' + _activeTab + '"]').addClass('active');
+    $('#wlDrawerBg').addClass('show');
+    $('#wlDrawer').addClass('open');
+    $('#wlDrBody').html('<div class="text-muted">Loading…</div>');
+    $.get('/sales/wallet/customers/' + uuid, function(r){
+      if (!r || r.status !== 200) { $('#wlDrBody').html('<div class="text-danger">Failed to load.</div>'); return; }
+      _activeCustomer = r.data;
+      $('#wlDrName').text(_activeCustomer.name + (_activeCustomer.is_wallet_enabled ? '' : ' (wallet disabled)'));
+      $('#wlDrAvatar').text(initial(_activeCustomer.name));
+      renderDrawer();
+    });
+  }
+  window.wlCloseDrawer = function(){ $('#wlDrawerBg').removeClass('show'); $('#wlDrawer').removeClass('open'); };
+
+  $(document).on('click', '.wl-drawer-tab', function(){
+    _activeTab = $(this).data('tab');
+    $('.wl-drawer-tab').removeClass('active');
+    $(this).addClass('active');
+    renderDrawer();
+  });
+
+  function renderDrawer(){
+    var c = _activeCustomer;
+    if (!c) return;
+    var bal = parseFloat(c.wallet_balance)||0;
+    var avail = parseFloat(c.wallet_credit_limit||0) - bal;
+
+    // Summary tiles always visible at the top of the drawer
+    var html = ''
+      + '<div class="wl-summary">'
+      +   '<div class="wl-sum-cell"><div class="l">Outstanding</div><div class="v" style="color:' + (bal > 0 ? 'var(--wl-amber)' : 'var(--wl-green)') + '">' + fmt(bal) + '</div></div>'
+      +   '<div class="wl-sum-cell"><div class="l">Credit limit</div><div class="v">' + fmt(c.wallet_credit_limit) + '</div></div>'
+      +   '<div class="wl-sum-cell"><div class="l">Available</div><div class="v" style="color:var(--wl-green)">' + fmt(avail) + '</div></div>'
+      + '</div>';
+
+    if (_activeTab === 'ledger') {
+      html += '<div class="wl-section-h"><span>Transaction history</span><span style="color:var(--wl-muted);font-weight:500;">'
+            + (c.transactions ? c.transactions.length : 0) + ' entries</span></div>';
+      html += renderTransactions(c.transactions || []);
+    } else if (_activeTab === 'unpaid') {
+      var unpaid = c.unpaid_sales || [];
+      html += '<div class="wl-section-h"><span>Unpaid sales</span><span style="color:var(--wl-muted);font-weight:500;">'
+            + unpaid.length + ' open</span></div>';
+      if (!unpaid.length) {
+        html += '<div class="text-muted" style="padding:24px 12px;text-align:center;">No unpaid sales — this customer is fully settled.</div>';
+      } else {
+        unpaid.forEach(function(s){
+          var od = s.days_overdue > 0;
+          html += '<div class="wl-tx">'
+            + '<div class="ic sale"><i class="bi bi-receipt"></i></div>'
+            + '<div class="info"><div class="t">' + esc(s.order_number || 'Sale') + '</div>'
+            + '<div class="s">Due ' + esc(fmtDt(s.due_date)) + (od ? ' · <span style="color:var(--wl-red);font-weight:700;">' + s.days_overdue + ' days overdue</span>' : '') + '</div></div>'
+            + '<div class="amt pos">' + fmt(s.amount) + '</div>'
+            + '</div>';
+        });
+      }
+    } else if (_activeTab === 'config') {
+      html += '<div class="wl-section-h">Wallet configuration</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">'
+        +   '<div><label style="font-size:11.5px;font-weight:600;color:var(--wl-muted);display:block;margin-bottom:4px;">Credit limit (' + CURR + ')</label>'
+        +     '<input type="number" id="wlCfgLimit" min="0" step="100" value="' + (c.wallet_credit_limit || 0) + '" style="width:100%;padding:9px 11px;border:1px solid var(--wl-border);border-radius:8px;"/></div>'
+        +   '<div><label style="font-size:11.5px;font-weight:600;color:var(--wl-muted);display:block;margin-bottom:4px;">Payment terms (days)</label>'
+        +     '<input type="number" id="wlCfgTerms" min="0" value="' + (c.wallet_terms_days || 30) + '" style="width:100%;padding:9px 11px;border:1px solid var(--wl-border);border-radius:8px;"/></div>'
+        +   '<div><label style="font-size:11.5px;font-weight:600;color:var(--wl-muted);display:block;margin-bottom:4px;">Grace period (days)</label>'
+        +     '<input type="number" id="wlCfgGrace" min="0" value="' + (c.wallet_grace_days || 0) + '" style="width:100%;padding:9px 11px;border:1px solid var(--wl-border);border-radius:8px;"/></div>'
+        +   '<div><label style="font-size:11.5px;font-weight:600;color:var(--wl-muted);display:block;margin-bottom:4px;">Late fee %</label>'
+        +     '<input type="number" id="wlCfgFee" step="0.01" min="0" value="' + (c.wallet_late_fee_pct || 0) + '" style="width:100%;padding:9px 11px;border:1px solid var(--wl-border);border-radius:8px;"/></div>'
+        + '</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        +   '<button class="wl-card-actions" style="display:inline-flex;height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--wl-border);background:var(--wl-blue);color:#fff;border-color:var(--wl-blue);font-weight:600;cursor:pointer;align-items:center;gap:6px;" onclick="wlSaveConfig()"><i class="bi bi-check-lg"></i> Save changes</button>'
+        +   (c.is_wallet_enabled
+              ? '<button style="display:inline-flex;height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--wl-red);background:#fff;color:var(--wl-red);font-weight:600;cursor:pointer;align-items:center;gap:6px;" onclick="wlConfirmDisable(\'' + esc(c.uuid) + '\',\'' + esc(c.name) + '\')"><i class="bi bi-slash-circle"></i> Disable wallet</button>'
+              : '<button style="display:inline-flex;height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--wl-green);background:#fff;color:var(--wl-green);font-weight:600;cursor:pointer;align-items:center;gap:6px;" onclick="wlReEnable(\'' + esc(c.uuid) + '\')"><i class="bi bi-check-circle"></i> Re-enable wallet</button>')
+        + '</div>';
+    }
+
+    // Quick-action row at the very bottom of every tab so the cashier
+    // can jump into a payment / grant / online-link without going back
+    // to the list.
+    // Quick-action buttons inside the detail drawer — each one is permission-
+    // gated. Users who can only "view" the wallet see no action buttons.
+    var canPay   = posCan('add_pos_wallet_payments');
+    var canGrant = posCan('edit_pos_wallet_customers');
+    var canAdj   = posCan('edit_pos_wallet_customers');
+    var anyBtn = canPay || canGrant || canAdj;
+    if (anyBtn) {
+      html += '<div class="wl-section-h" style="margin-top:24px;">Quick actions</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        + (canPay   ? '<button onclick="wlOpenPayment()" style="height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--wl-green);background:var(--wl-green);color:#fff;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;"><i class="bi bi-cash-coin"></i> Record payment</button>' : '')
+        + (canGrant ? '<button onclick="wlOpenGrant()"   style="height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--wl-blue);background:var(--wl-blue);color:#fff;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;"><i class="bi bi-plus-lg"></i> Grant credit</button>' : '')
+        + ((canPay && bal > 0) ? '<button onclick="wlOpenOnlineLink()" style="height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--wl-blue);background:#fff;color:var(--wl-blue);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;"><i class="bi bi-link-45deg"></i> Send payment link</button>' : '')
+        + (canAdj   ? '<button onclick="wlOpenAdjust()"  style="height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--wl-border);background:#fff;color:var(--pv2-text);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;"><i class="bi bi-pencil"></i> Adjust</button>' : '')
+        + '</div>';
+    }
+
+    $('#wlDrBody').html(html);
+  }
+
+  // Render the running ledger as a series of wl-tx rows. Each row picks
+  // an icon + colour scheme by tx.type. Used by both the drawer's
+  // Ledger tab and any future "recent activity" widgets.
+  function renderTransactions(txs){
+    if (!txs.length) return '<div class="text-muted" style="padding:24px 12px;text-align:center;">No transactions yet.</div>';
+    return txs.map(function(t){
+      var icon = '', cls = '', sign = '';
+      if (t.type === 'credit_grant')      { icon='bi-plus-circle'; cls='credit'; }
+      else if (t.type === 'sale')         { icon='bi-receipt';     cls='sale';    sign='+'; }
+      else if (t.type === 'payment_received') { icon='bi-cash-coin'; cls='payment'; sign='-'; }
+      else if (t.type === 'refund')       { icon='bi-arrow-counterclockwise'; cls='payment'; sign='-'; }
+      else if (t.type === 'late_fee')     { icon='bi-exclamation-triangle';   cls='late'; sign='+'; }
+      else                                 { icon='bi-pencil'; cls='adjust';
+                                             sign = (parseFloat(t.amount) >= 0 ? '+' : ''); }
+      var amtCls = parseFloat(t.amount) < 0 ? 'neg' : (parseFloat(t.amount) > 0 ? 'pos' : '');
+      var label = (t.type || '').replace(/_/g, ' ').replace(/^\w/, function(s){ return s.toUpperCase(); });
+      return ''
+        + '<div class="wl-tx">'
+        +   '<div class="ic ' + cls + '"><i class="bi ' + icon + '"></i></div>'
+        +   '<div class="info">'
+        +     '<div class="t">' + esc(label) + (t.order_number ? ' · ' + esc(t.order_number) : '') + '</div>'
+        +     '<div class="s">' + esc(fmtDt(t.created_at))
+        +       (t.payment_method   ? ' · ' + esc(t.payment_method)   : '')
+        +       (t.reference        ? ' · ' + esc(t.reference)        : '')
+        +       (t.created_by_name  ? ' · ' + esc(t.created_by_name)  : '')
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="amt ' + amtCls + '">' + sign + fmt(Math.abs(t.amount || 0))
+        +     '<small>Bal ' + fmt(t.running_balance) + '</small>'
+        +   '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ─── Generic dialog framework ──────────────────────────────────
+  // _dlgKind drives both the body markup (inside each wlOpen*) and the
+  // submit handler at the bottom (URL + body shape per kind).
+  var _dlgKind = '';
+  function showDlg(title, icon, bodyHtml, kind, btnLabel, btnClass){
+    _dlgKind = kind;
+    $('#wlDlgTitle').html('<i class="bi ' + icon + '"></i> <span>' + title + '</span>');
+    $('#wlDlgBody').html(bodyHtml);
+    $('#wlDlgSubmit').text(btnLabel || 'Submit')
+      .removeClass('primary success warn danger')
+      .addClass(btnClass || 'primary')
+      .prop('disabled', false);
+    $('#wlDlgBg').addClass('show');
+  }
+  window.wlCloseDlg = function(){ $('#wlDlgBg').removeClass('show'); _dlgKind = ''; };
+
+  window.wlOpenGrant = function(){
+    showDlg('Grant credit', 'bi-plus-circle',
+        '<label>Amount to add to credit limit (' + CURR + ')</label><input id="wlF_amount" type="number" min="1" step="100" placeholder="10000">'
+      + '<label>Notes (optional)</label><textarea id="wlF_notes" rows="2" placeholder="Reason for granting credit…"></textarea>',
+      'grant', 'Grant credit', 'primary');
+  };
+  window.wlOpenPayment = function(){
+    showDlg('Record payment', 'bi-cash-coin',
+        '<label>Amount received (' + CURR + ')</label><input id="wlF_amount" type="number" min="1" step="0.01" placeholder="5000">'
+      + '<label>Method</label><select id="wlF_method"><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="online">Online</option><option value="bank">Bank transfer</option><option value="cheque">Cheque</option></select>'
+      + '<label>Reference (optional)</label><input id="wlF_reference" type="text" placeholder="Cheque #, UPI ref, etc.">'
+      + '<label>Notes (optional)</label><textarea id="wlF_notes" rows="2"></textarea>',
+      'payment', 'Record payment', 'success');
+  };
+  window.wlOpenAdjust = function(){
+    showDlg('Adjustment', 'bi-pencil',
+        '<label>Amount (' + CURR + ') — positive INCREASES outstanding, negative REDUCES</label><input id="wlF_amount" type="number" step="0.01" placeholder="-100 or 100">'
+      + '<label>Reason (required)</label><textarea id="wlF_reason" rows="3" placeholder="e.g. Write-off uncollectable balance"></textarea>',
+      'adjust', 'Apply adjustment', 'warn');
+  };
+  // Gateway list cache — populated from /sales/payment/gateways which only
+  // returns gateways that have credentials configured (enabled in POS
+  // Settings → Payment methods). If Razorpay isn't set up the dropdown
+  // doesn't show it at all; same for Stripe. Both fetched once per page.
+  var _wlGateways = null;
+  function _wlEnsureGateways(cb){
+    if (_wlGateways) return cb(_wlGateways);
+    $.get('/sales/payment/gateways', function(r){
+      _wlGateways = (r && r.status === 200 && r.data && r.data.gateways) ? r.data.gateways : [];
+      cb(_wlGateways);
+    }).fail(function(){ _wlGateways = []; cb(_wlGateways); });
+  }
+  window.wlOpenOnlineLink = function(){
+    _wlEnsureGateways(function(gws){
+      if (!gws.length) {
+        toastr.error('No payment gateway is configured. Open POS Settings → Payments to add Razorpay or Stripe credentials.');
+        return;
+      }
+      // Build options from enabled gateways only — disabled ones never
+      // appear in the picker (matches the user-facing requirement).
+      var gatewayHtml = '<label>Gateway</label><select id="wlF_gateway">';
+      if (gws.length > 1) gatewayHtml += '<option value="">Auto (org default)</option>';
+      gws.forEach(function(gw){
+        gatewayHtml += '<option value="' + esc(gw.key) + '">' + esc(gw.label || gw.key) + '</option>';
+      });
+      gatewayHtml += '</select>';
+      showDlg('Send online payment link', 'bi-link-45deg',
+          '<label>Amount to charge (' + CURR + ')</label><input id="wlF_amount" type="number" min="1" step="0.01" placeholder="5000">'
+        + gatewayHtml
+        + '<label style="display:flex;align-items:center;gap:8px;margin-top:14px;"><input id="wlF_notify_email" type="checkbox" checked> Email link to customer</label>'
+        + '<label style="display:flex;align-items:center;gap:8px;"><input id="wlF_notify_sms" type="checkbox"> SMS link via gateway</label>',
+        'online_link', 'Generate link', 'primary');
+    });
+  };
+
+  // Save the inline config form (drawer's Config tab)
+  window.wlSaveConfig = function(){
+    if (!_activeUuid) return;
+    var body = {
+      enabled: true,
+      credit_limit: parseFloat($('#wlCfgLimit').val()) || 0,
+      terms_days:   parseInt($('#wlCfgTerms').val()) || 0,
+      grace_days:   parseInt($('#wlCfgGrace').val()) || 0,
+      late_fee_pct: parseFloat($('#wlCfgFee').val()) || 0,
+    };
+    $.ajax({ url:'/sales/wallet/customers/' + _activeUuid + '/enable', type:'POST',
+      contentType:'application/json', data: JSON.stringify(body),
+      success: function(r){ if (r.status === 200) { toastr.success('Saved.'); openDrawer(_activeUuid, _activeTab); load(1); loadStats(); }
+                            else toastr.error(r.message || 'Failed.'); },
+      error: function(){ toastr.error('Network error.'); } });
+  };
+  // Disable confirmation (replaces the destructive button click directly hitting the API)
+  window.wlConfirmDisable = function(uuid, name){
+    showDlg('Disable wallet?', 'bi-exclamation-triangle',
+        '<p style="margin:0 0 14px;color:var(--wl-muted);">Disabling the wallet for <strong style="color:var(--pv2-text);">' + esc(name || 'this customer') + '</strong> stops any new on-account sales but does NOT clear their outstanding balance.</p>'
+      + '<p style="margin:0;color:var(--wl-muted);font-size:12.5px;">You can re-enable it later from the same row.</p>',
+      'disable_wallet', 'Disable wallet', 'danger');
+    _activeUuid = uuid;
+  };
+  // Re-enable an already-existing wallet customer (used from the Config tab
+  // and from the Disabled state's "Enable Wallet" button on the list card).
+  window.wlReEnable = function(uuid){
+    _activeUuid = uuid;
+    $.ajax({ url:'/sales/wallet/customers/' + uuid + '/enable', type:'POST', contentType:'application/json',
+      data: JSON.stringify({ enabled: true }),
+      success: function(r){ if (r.status === 200) { toastr.success('Wallet re-enabled.'); load(1); loadStats();
+                                                    if ($('#wlDrawer').hasClass('open')) openDrawer(uuid, _activeTab); }
+                            else toastr.error(r.message || 'Failed.'); },
+      error: function(){ toastr.error('Network error.'); } });
+  };
+  // Re-enable from the list card (no drawer open)
+  window.wlOpenEnableExisting = function(uuid, name){
+    _activeUuid = uuid;
+    showDlg('Enable wallet for ' + (name || 'this customer') + '?', 'bi-check-circle',
+        '<p style="margin:0 0 12px;color:var(--wl-muted);">Set the credit limit and payment terms. Defaults from the org settings will apply if you leave them blank.</p>'
+      + '<label>Credit limit (' + CURR + ')</label><input id="wlF_limit" type="number" min="0" step="100" value="10000">'
+      + '<label>Payment terms (days)</label><input id="wlF_terms" type="number" min="0" value="30">',
+      'enable_existing', 'Enable wallet', 'success');
+  };
+
+  // ─── Single submit handler covering all kinds ──────────────────
+  // Keyed by _dlgKind. Each branch builds its body, validates, and POSTs
+  // to the right endpoint. The "enable_new" + "enable_existing" + the new
+  // "disable_wallet" all reuse the same /enable endpoint with different
+  // payloads.
+  $('#wlDlgSubmit').on('click', function(){
+    if (!_dlgKind) return;
+    var pathByKind = {
+      grant:           'grant',
+      payment:         'payment',
+      adjust:          'adjust',
+      online_link:     'online-link',
+      enable_existing: 'enable',
+      enable_new:      'enable',
+      disable_wallet:  'enable',  // toggling enabled=false uses the same endpoint
+    };
+    var path = pathByKind[_dlgKind];
+    if (!path) return;
+    if (!_activeUuid) { toastr.warning('No customer selected.'); return; }
+
+    var body = {};
+    if (_dlgKind === 'grant') {
+      body.amount = parseFloat($('#wlF_amount').val());
+      body.notes  = $('#wlF_notes').val() || '';
+      if (!(body.amount > 0)) { toastr.warning('Enter a positive amount.'); return; }
+    } else if (_dlgKind === 'payment') {
+      body.amount         = parseFloat($('#wlF_amount').val());
+      body.payment_method = $('#wlF_method').val();
+      body.reference      = $('#wlF_reference').val() || '';
+      body.notes          = $('#wlF_notes').val() || '';
+      if (!(body.amount > 0)) { toastr.warning('Enter a positive amount.'); return; }
+    } else if (_dlgKind === 'adjust') {
+      body.amount = parseFloat($('#wlF_amount').val());
+      body.reason = $('#wlF_reason').val() || '';
+      if (!body.amount || body.amount === 0) { toastr.warning('Enter a non-zero amount.'); return; }
+      if (!body.reason.trim()) { toastr.warning('Reason is required.'); return; }
+    } else if (_dlgKind === 'online_link') {
+      body.amount  = parseFloat($('#wlF_amount').val());
+      body.gateway = $('#wlF_gateway').val() || null;
+      body.notify_email = $('#wlF_notify_email').is(':checked');
+      body.notify_sms   = $('#wlF_notify_sms').is(':checked');
+      if (!(body.amount > 0)) { toastr.warning('Enter a positive amount.'); return; }
+    } else if (_dlgKind === 'enable_new' || _dlgKind === 'enable_existing') {
+      body.enabled      = true;
+      body.credit_limit = parseFloat($('#wlF_limit').val()) || 0;
+      body.terms_days   = parseInt($('#wlF_terms').val()) || 30;
+    } else if (_dlgKind === 'disable_wallet') {
+      body.enabled = false;
+    }
+
+    var $btn = $('#wlDlgSubmit').prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Working…');
+    $.ajax({
+      url: '/sales/wallet/customers/' + _activeUuid + '/' + path,
+      type: 'POST', contentType: 'application/json', data: JSON.stringify(body),
+      success: function(r){
+        $btn.prop('disabled', false);
+        if (r && r.status === 200) {
+          // online_link returns the link URL — show in our themed posPrompt
+          // dialog so the cashier can copy / WhatsApp / re-share it. Uses
+          // the same dialog styling as every other prompt in the app.
+          if (_dlgKind === 'online_link' && r.data && r.data.link_url) {
+            if (typeof posPrompt === 'function') {
+              posPrompt({
+                title: 'Payment link generated',
+                msg: 'Copy this URL and share with the customer. The link is also being emailed/SMS\'d depending on your selection above.',
+                defaultValue: r.data.link_url,
+                multiline: false,
+                confirmText: 'Done',
+                cancelText: 'Close',
+                icon: 'bi-link-45deg',
+                iconColor: 'var(--wl-blue)',
+                onConfirm: function(){ /* user closes — already copied */ },
+              });
+            }
+          }
+          toastr.success(r.message || 'Done.');
+          wlCloseDlg();
+          load(1);
+          loadStats();
+          if ($('#wlDrawer').hasClass('open') && _activeUuid) openDrawer(_activeUuid, _activeTab);
+        } else {
+          toastr.error((r && r.message) || 'Failed.');
+        }
+      },
+      error: function(xhr){
+        $btn.prop('disabled', false);
+        toastr.error((xhr.responseJSON && xhr.responseJSON.message) || 'Network error.');
+      }
+    });
+  });
+
+  // ─── Enable wallet for ANY customer (search-pick flow) ─────────
+  $('#wlAddCustBtn').on('click', function(){
+    var html = ''
+      + '<label>Search a customer</label>'
+      + '<input id="wlF_search" type="text" placeholder="Name or phone…" autocomplete="off">'
+      + '<div id="wlF_results" style="margin-top:8px;max-height:200px;overflow-y:auto;"></div>'
+      + '<div id="wlF_form" style="display:none;margin-top:14px;border-top:1px solid var(--wl-border);padding-top:12px;">'
+      +   '<div id="wlF_chosen" style="font-weight:700;margin-bottom:8px;"></div>'
+      +   '<label>Credit limit (' + CURR + ')</label><input id="wlF_limit" type="number" min="0" step="100" value="10000">'
+      +   '<label>Payment terms (days)</label><input id="wlF_terms" type="number" min="0" value="30">'
+      + '</div>';
+    showDlg('Enable Wallet for Customer', 'bi-person-plus', html, 'enable_new', 'Enable wallet', 'primary');
+    $('#wlDlgSubmit').prop('disabled', true);
+    var st;
+    $('#wlF_search').on('input', function(){
+      var q = $(this).val();
+      clearTimeout(st);
+      if (!q || q.length < 2) { $('#wlF_results').empty(); return; }
+      st = setTimeout(function(){
+        $.get('/sales/customers/search?q=' + encodeURIComponent(q), function(r){
+          if (!r || r.status !== 200) return;
+          var rows = r.data || [];
+          $('#wlF_results').html(rows.slice(0, 8).map(function(c){
+            return '<div class="wl-pick" data-uuid="' + esc(c.uuid) + '" data-name="' + esc(c.name) + '" '
+                 + 'style="padding:10px 12px;border:1px solid var(--wl-border);border-radius:8px;margin-bottom:4px;cursor:pointer;display:flex;align-items:center;gap:8px;">'
+                 + '<div style="width:32px;height:32px;border-radius:8px;background:var(--wl-blue-soft);color:var(--wl-blue);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">' + esc(initial(c.name)) + '</div>'
+                 + '<div style="flex:1;min-width:0;"><div style="font-weight:700;color:var(--pv2-text);">' + esc(c.name) + '</div>'
+                 +   '<div style="color:var(--wl-muted);font-size:11.5px;margin-top:1px;">' + esc(c.phone || '') + (c.email ? ' · ' + esc(c.email) : '') + '</div></div>'
+                 + '</div>';
+          }).join('') || '<div class="text-muted small">No matches.</div>');
+        });
+      }, 250);
+    });
+    $(document).off('click.wlPick').on('click.wlPick', '.wl-pick', function(){
+      _activeUuid = $(this).data('uuid');
+      $('#wlF_chosen').text('Selected: ' + $(this).data('name'));
+      $('#wlF_form').show();
+      $('#wlDlgSubmit').prop('disabled', false);
+    });
+  });
+
+  // ─── Filter inputs ─────────────────────────────────────────────
+  var st;
+  $('#wlSearch').on('input', function(){ clearTimeout(st); st = setTimeout(function(){ load(1); }, 300); });
+  $('#wlEnabledFilter').on('change', function(){ load(1); });
+  // Status filter is applied client-side over the already-loaded set, so
+  // we just re-render. (Server doesn't know about the active/outstanding/
+  // overdue composite — it's derived from is_overdue + balance.)
+  $('#wlStatusFilter').on('change',  function(){ render(_applyStatusFilter(_customers)); });
+  $('#wlRefresh').on('click', function(){ load(1); loadStats(); });
+
+  // ─── Boot ──────────────────────────────────────────────────────
+  loadStats();
+  load(1);
+
+  // Deep-link: /sales/wallet?customer=<uuid> auto-opens that customer's
+  // drawer (used by the order-detail "Record Payment" button on wallet
+  // sales).
+  try {
+    var qs = new URLSearchParams(window.location.search);
+    var deeplinkUuid = qs.get('customer');
+    if (deeplinkUuid) openDrawer(deeplinkUuid, 'ledger');
+  } catch (_) {}
+})();
+</script>

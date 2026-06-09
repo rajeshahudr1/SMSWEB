@@ -527,21 +527,33 @@ function saveTheme(){
 }
 
 function resetTheme(){
-  if(!confirm('Reset the POS theme to the ScrapMS default for the whole organization?')) return;
-  var $btn = $('#btnSaveTheme');
-  $btn.prop('disabled', true);
-  $.ajax({
-    url: '/sales/theme', method: 'PUT',
-    contentType: 'application/json', data: JSON.stringify({ theme: {} }),
-    success: function(r){
-      $btn.prop('disabled', false);
-      window.__pv2SavedTheme = {};
-      try { localStorage.setItem('pv2Theme', '{}'); } catch(_){}
-      Object.keys(DEFAULTS).forEach(function(k){ setVar(k, DEFAULTS[k]); setRow(k, DEFAULTS[k]); });
-      toastr.success('Theme reset to default.');
-    },
-    error: function(){ $btn.prop('disabled', false); toastr.error('Reset failed.'); }
-  });
+  var doReset = function(){
+    var $btn = $('#btnSaveTheme');
+    $btn.prop('disabled', true);
+    $.ajax({
+      url: '/sales/theme', method: 'PUT',
+      contentType: 'application/json', data: JSON.stringify({ theme: {} }),
+      success: function(r){
+        $btn.prop('disabled', false);
+        window.__pv2SavedTheme = {};
+        try { localStorage.setItem('pv2Theme', '{}'); } catch(_){}
+        Object.keys(DEFAULTS).forEach(function(k){ setVar(k, DEFAULTS[k]); setRow(k, DEFAULTS[k]); });
+        toastr.success('Theme reset to default.');
+      },
+      error: function(){ $btn.prop('disabled', false); toastr.error('Reset failed.'); }
+    });
+  };
+  // Themed confirm (pos-dialogs.js) — never falls back to native confirm().
+  if (typeof posConfirm === 'function') {
+    posConfirm({
+      title: 'Reset POS theme?',
+      msg: 'The POS theme will revert to the ScrapMS default for the whole organization. Cannot be undone.',
+      confirmText: 'Reset theme', cancelText: 'Keep current',
+      confirmColor: 'var(--pv2-danger,#dc2626)',
+      icon: 'bi-arrow-counterclockwise', iconColor: 'var(--pv2-danger,#dc2626)',
+      onConfirm: doReset,
+    });
+  } else { doReset(); }
 }
 window.saveTheme = saveTheme; window.resetTheme = resetTheme;
 

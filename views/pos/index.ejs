@@ -60,13 +60,38 @@
     <a href="/dashboard" class="ps-logo">S</a>
     <button class="ps-btn" onclick="toggleSidebar()" data-tip="Collapse sidebar" data-tip-pos="right" style="margin-bottom:8px;"><i class="bi bi-layout-sidebar-inset"></i></button>
     <div class="ps-nav">
+      <%
+         /* Each sidebar button is gated by the role-permission system via
+            res.locals.can(). Org/super admins bypass every check; regular
+            cashiers only see what their role grants. Mirrors how the main
+            app sidebar (MenuController.sidebar) decides menu visibility. */
+      %>
+      <% if (can('view_pos')) { %>
       <button class="ps-btn active" data-tip="Point of Sale" data-tip-pos="right" onclick="spaNav('pos')"><i class="bi bi-grid-1x2-fill"></i></button>
+      <% } %>
+      <% if (can('view_pos_orders')) { %>
       <button class="ps-btn" data-tip="Sales Orders" data-tip-pos="right" onclick="spaNav('orders')"><i class="bi bi-bag-check"></i></button>
+      <% } %>
+      <% if (can('view_pos_customers')) { %>
       <button class="ps-btn" data-tip="Customers" data-tip-pos="right" onclick="spaNav('customers')"><i class="bi bi-people"></i></button>
-      <button class="ps-btn" data-tip="Returns & Refunds" data-tip-pos="right" onclick="spaNav('returns')"><i class="bi bi-arrow-counterclockwise"></i></button>
+      <% } %>
+      <% /* Returns & Refunds — hidden per request. Remove the `if (false)`
+            wrapper below to bring it back. */ %>
+      <% if (false && can('view_pos_returns')) { %>
+      <button class="ps-btn" data-tip="Returns &amp; Refunds" data-tip-pos="right" onclick="spaNav('returns')"><i class="bi bi-arrow-counterclockwise"></i></button>
+      <% } %>
+      <% if (can('view_pos_drafts')) { %>
       <button class="ps-btn" data-tip="Saved Drafts" data-tip-pos="right" onclick="spaNav('drafts')" style="position:relative;"><i class="bi bi-bookmark-heart"></i><span id="draftSidebarCnt" style="position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--pv2-warning,#f59e0b);color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;">0</span></button>
+      <% } %>
+      <% if (can('view_pos_pending_payments')) { %>
       <button class="ps-btn" data-tip="Pending Payments" data-tip-pos="right" onclick="spaNav('payments-pending')" style="position:relative;"><i class="bi bi-hourglass-split"></i><span id="pendingSidebarCnt" style="position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--pv2-warning,#f59e0b);color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;">0</span></button>
+      <% } %>
+      <% if (can('view_pos_wallet')) { %>
+      <button class="ps-btn" data-tip="Wallet" data-tip-pos="right" onclick="window.location.href='/sales/wallet'"><i class="bi bi-wallet2"></i></button>
+      <% } %>
+      <% if (can('view_pos_settings')) { %>
       <button class="ps-btn" data-tip="POS Settings" data-tip-pos="right" onclick="spaNav('settings')"><i class="bi bi-gear"></i></button>
+      <% } %>
     </div>
     <div class="ps-bottom">
       <a href="/sales/ui-kit" class="ps-btn" data-tip="UI Kit &middot; theme editor" data-tip-pos="right" data-tip-color="blue"><i class="bi bi-palette"></i></a>
@@ -101,13 +126,31 @@
           <span style="font-size:13px;font-weight:800;color:var(--text2,#6b7280);text-transform:uppercase;letter-spacing:0.5px;">Menu</span>
           <button onclick="mobMoreClose()" aria-label="Close" style="background:var(--bg,#f3f4f6);border:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text,#1a2332);"><i class="bi bi-x-lg"></i></button>
         </div>
+        <% if (can('view_pos')) { %>
         <button class="mob-mm-item" onclick="mobMoreClose();spaNav('pos')"><i class="bi bi-grid-1x2-fill"></i><span class="mob-mm-lbl">Point of Sale</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
+        <% if (can('view_pos_orders')) { %>
         <button class="mob-mm-item" onclick="mobMoreClose();spaNav('orders')"><i class="bi bi-bag-check"></i><span class="mob-mm-lbl">Sales Orders</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
+        <% if (can('view_pos_customers')) { %>
         <button class="mob-mm-item" onclick="mobMoreClose();spaNav('customers')"><i class="bi bi-people"></i><span class="mob-mm-lbl">Customers</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
+        <% /* Returns & Refunds — hidden from the mobile More menu. */ %>
+        <% if (false && can('view_pos_returns')) { %>
         <button class="mob-mm-item" onclick="mobMoreClose();spaNav('returns')"><i class="bi bi-arrow-counterclockwise"></i><span class="mob-mm-lbl">Returns &amp; Refunds</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
+        <% if (can('view_pos_drafts')) { %>
         <button class="mob-mm-item" onclick="mobMoreClose();spaNav('drafts')"><i class="bi bi-bookmark-heart"></i><span class="mob-mm-lbl">Saved Drafts</span><span id="mobMmDraftCnt" class="mob-mm-cnt">0</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
+        <% if (can('view_pos_pending_payments')) { %>
         <button class="mob-mm-item" onclick="mobMoreClose();spaNav('payments-pending')"><i class="bi bi-hourglass-split"></i><span class="mob-mm-lbl">Pending Payments</span><span id="mobMmPendingCnt" class="mob-mm-cnt">0</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
+        <% if (can('view_pos_wallet')) { %>
+        <button class="mob-mm-item" onclick="mobMoreClose();window.location.href='/sales/wallet'"><i class="bi bi-wallet2"></i><span class="mob-mm-lbl">Wallet</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
+        <% if (can('view_pos_settings')) { %>
         <button class="mob-mm-item" onclick="mobMoreClose();spaNav('settings')"><i class="bi bi-gear"></i><span class="mob-mm-lbl">POS Settings</span><i class="bi bi-chevron-right mob-mm-chev"></i></button>
+        <% } %>
         <div style="height:1px;background:var(--border);margin:6px 4px;"></div>
         <a class="mob-mm-item" href="/logout" style="color:var(--red);"><i class="bi bi-box-arrow-left"></i><span class="mob-mm-lbl">Logout</span><i class="bi bi-chevron-right mob-mm-chev"></i></a>
       </div>
@@ -148,18 +191,25 @@
         $('#mobMoreMenu').hide();
         $('#mobMoreBackdrop').hide();
       };
-      // Close on Escape — useful for keyboards / external bluetooth keyboards
-      $(document).on('keydown.mobmm', function(e){
-        if (e.key === 'Escape' && $('#mobMoreMenu').is(':visible')) mobMoreClose();
-      });
-      // Highlight the More button when there are pending payments or drafts
+      // jQuery loads further down the page, so defer the bits that run
+      // immediately (Escape-key handler + the periodic dot refresh) until
+      // $ is actually available. Without this guard we hit
+      //   "Uncaught ReferenceError: $ is not defined"
+      // because this <script> block executes before /libs/js/jquery.min.js.
       function _mobMoreDotUpdate(){
         var d = parseInt(($('#draftSidebarCnt').text() || '0'), 10);
         var p = parseInt(($('#pendingSidebarCnt').text() || '0'), 10);
         if (d > 0 || p > 0) $('#mobMoreDot').show(); else $('#mobMoreDot').hide();
       }
-      setInterval(_mobMoreDotUpdate, 5000);
-      setTimeout(_mobMoreDotUpdate, 1500);
+      (function waitForJQ(){
+        if (typeof window.jQuery === 'undefined') { return setTimeout(waitForJQ, 50); }
+        // Close on Escape — useful for keyboards / external bluetooth keyboards
+        jQuery(document).on('keydown.mobmm', function(e){
+          if (e.key === 'Escape' && jQuery('#mobMoreMenu').is(':visible')) mobMoreClose();
+        });
+        setInterval(_mobMoreDotUpdate, 5000);
+        setTimeout(_mobMoreDotUpdate, 1500);
+      })();
     </script>
 
     <!-- Header -->
@@ -172,7 +222,7 @@
       <button class="pos-btn-outline pos-btn-sm pos-refresh-btn" onclick="posRefresh(this)" data-tip="Refresh products" data-tip-pos="bottom" id="posRefreshBtn"><i class="bi bi-arrow-clockwise"></i></button>
       <div class="ph-filters">
         <select class="ph-sel" id="fWarehouse" data-vk-options data-tip="Filter by warehouse" data-tip-pos="bottom"><option value="">All Warehouses</option></select>
-        <select class="ph-sel" id="fPerPage" data-vk-options data-tip="Items per page" data-tip-pos="bottom"><option value="20">20</option><option value="40">40</option><option value="60">60</option></select>
+        <select class="ph-sel" id="fPerPage" data-tip="Items per page" data-tip-pos="bottom"><option value="20">20</option><option value="40">40</option><option value="60">60</option></select>
         <div class="ph-pg">
           <button id="pgPrev" disabled onclick="if(_page>1){_page--;loadProducts();}" data-tip="Previous page"><i class="bi bi-chevron-left"></i></button>
           <span id="pgInfo" data-tip="Current page / Total pages" data-tip-pos="bottom">1 / 1</span>
@@ -522,6 +572,15 @@
                 <div class="ci-val" id="ciEmail">-</div>
               </div>
             </div>
+            <!-- Wallet status — shown only when the picked customer has wallet
+                 enabled. Populated by cpsSetCustomer() via /sales/wallet/customers/:uuid. -->
+            <div class="ci-r" id="ciWalletRow" style="display:none;">
+              <i class="bi bi-wallet2" style="color:var(--cps-success,#10b981);"></i>
+              <div class="ci-r-text">
+                <div class="ci-lbl">Wallet</div>
+                <div class="ci-val"><span id="ciWalletAvail">—</span> available <span id="ciWalletDot" style="color:var(--cps-muted,#6b7280);font-weight:500;"> · Owes <span id="ciWalletOwed">—</span></span></div>
+              </div>
+            </div>
           </div>
           <input type="hidden" id="custId" value=""/>
         </div>
@@ -634,6 +693,17 @@
             </div>
             <i class="bi bi-receipt-cutoff cps-pmode-icon"></i>
             <span style="display:none;">Cheque</span>
+          </div>
+          <!-- Wallet (on-account) — hidden until a wallet-enabled customer is selected.
+               Shown by cpsSetCustomer() when c.is_wallet_enabled. -->
+          <div class="cps-pmode co-pay-btn cps-pmode-wallet" data-method="wallet" onclick="selPay(this)" style="display:none;">
+            <span class="cps-pmode-radio"><span></span></span>
+            <div class="cps-pmode-l">
+              <div class="cps-pmode-t">Wallet (on account)</div>
+              <div class="cps-pmode-s" id="cpsWalletAvail">Available credit: <span id="cpsWalletAvailVal">—</span></div>
+            </div>
+            <i class="bi bi-wallet2 cps-pmode-icon"></i>
+            <span style="display:none;">Wallet</span>
           </div>
         </div>
       </div>
@@ -817,141 +887,7 @@
   </div>
 </div>
 
-<!-- ═══════════ Virtual Keyboard popup (opened from .cps-kb-trigger icons) ═══════════ -->
-<div class="vk-overlay" id="vkOv" style="display:none;" onclick="if(event.target===this)closeVK();">
-  <div class="vk-panel" onmousedown="event.stopPropagation();">
-
-    <!-- ── Top row: Active Input + Numeric Keypad ── -->
-    <div class="vk-top">
-      <div class="vk-active">
-        <div class="vk-active-h">
-          <label class="vk-lbl">Active Input</label>
-          <button class="vk-close" onclick="closeVK()" title="Close (Esc)"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="vk-display" id="vkDisplay">0</div>
-      </div>
-
-      <div class="vk-numpad" id="vkNumpad">
-        <div class="vk-numpad-h">
-          <i class="bi bi-keyboard-fill"></i>
-          <span>NUMERIC KEYPAD</span>
-        </div>
-        <div class="vk-numpad-grid">
-          <button class="vk-key vk-num" onclick="vkType('7')">7</button>
-          <button class="vk-key vk-num" onclick="vkType('8')">8</button>
-          <button class="vk-key vk-num" onclick="vkType('9')">9</button>
-          <button class="vk-key vk-back" onclick="vkBack()"><i class="bi bi-backspace"></i></button>
-
-          <button class="vk-key vk-num" onclick="vkType('4')">4</button>
-          <button class="vk-key vk-num" onclick="vkType('5')">5</button>
-          <button class="vk-key vk-num" onclick="vkType('6')">6</button>
-          <button class="vk-key vk-clr" onclick="vkClear()">C</button>
-
-          <button class="vk-key vk-num" onclick="vkType('1')">1</button>
-          <button class="vk-key vk-num" onclick="vkType('2')">2</button>
-          <button class="vk-key vk-num" onclick="vkType('3')">3</button>
-          <button class="vk-key vk-ok" id="vkOkBtn" onclick="vkOK()" rowspan="2">OK</button>
-
-          <button class="vk-key vk-num" onclick="vkType('0')">0</button>
-          <button class="vk-key vk-num" onclick="vkType('.')">.</button>
-          <button class="vk-key vk-num" onclick="vkSign()">+/-</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Autocomplete results pane (only shown when bound input has live matches) ── -->
-    <div class="vk-autocomplete" id="vkAutoComplete" style="display:none;">
-      <div class="vk-autocomplete-h"><i class="bi bi-search"></i> <span>Matches</span></div>
-      <div class="vk-autocomplete-list" id="vkAutoCompleteList"></div>
-    </div>
-
-    <!-- ── Quick amounts row (only meaningful for amount inputs) ── -->
-    <div class="vk-quick" id="vkQuickRow">
-      <span class="vk-quick-l">Quick Actions</span>
-      <button onclick="vkSet('100')">₹100</button>
-      <button onclick="vkSet('200')">₹200</button>
-      <button onclick="vkSet('500')">₹500</button>
-      <button onclick="vkSet('1000')">₹1000</button>
-      <button onclick="vkSet('2000')">₹2000</button>
-      <button onclick="vkSet('5000')">₹5000</button>
-      <button onclick="vkSet('10000')">₹10000</button>
-      <button class="vk-clear-all" onclick="vkClear()">Clear All</button>
-    </div>
-
-    <!-- ── Full QWERTY (shown for text inputs only) ── -->
-    <div class="vk-qwerty" id="vkQwerty">
-      <div class="vk-row">
-        <button class="vk-key vk-k" onclick="vkType('1')">1</button>
-        <button class="vk-key vk-k" onclick="vkType('2')">2</button>
-        <button class="vk-key vk-k" onclick="vkType('3')">3</button>
-        <button class="vk-key vk-k" onclick="vkType('4')">4</button>
-        <button class="vk-key vk-k" onclick="vkType('5')">5</button>
-        <button class="vk-key vk-k" onclick="vkType('6')">6</button>
-        <button class="vk-key vk-k" onclick="vkType('7')">7</button>
-        <button class="vk-key vk-k" onclick="vkType('8')">8</button>
-        <button class="vk-key vk-k" onclick="vkType('9')">9</button>
-        <button class="vk-key vk-k" onclick="vkType('0')">0</button>
-        <button class="vk-key vk-k" onclick="vkType('-')">-</button>
-        <button class="vk-key vk-k" onclick="vkType('=')">=</button>
-        <button class="vk-key vk-k vk-back-sm" onclick="vkBack()"><i class="bi bi-backspace"></i></button>
-      </div>
-      <div class="vk-row">
-        <button class="vk-key vk-k vk-mod" onclick="vkType('\t')">Tab</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Q</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">W</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">E</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">R</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">T</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Y</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">U</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">I</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">O</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">P</button>
-        <button class="vk-key vk-k" onclick="vkType('[')">[</button>
-        <button class="vk-key vk-k" onclick="vkType(']')">]</button>
-        <button class="vk-key vk-k" onclick="vkType('\\')">\</button>
-      </div>
-      <div class="vk-row">
-        <button class="vk-key vk-k vk-mod" id="vkCaps" onclick="vkToggleCaps()"><span class="vk-caps-led"></span> Caps</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">A</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">S</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">D</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">F</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">G</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">H</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">J</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">K</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">L</button>
-        <button class="vk-key vk-k" onclick="vkType(';')">;</button>
-        <button class="vk-key vk-k" onclick="vkType(&quot;'&quot;)">'</button>
-        <button class="vk-key vk-k vk-mod" onclick="vkOK()">Enter</button>
-      </div>
-      <div class="vk-row">
-        <button class="vk-key vk-k vk-mod" id="vkShift" onclick="vkToggleShift()">Shift</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">Z</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">X</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">C</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">V</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">B</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">N</button>
-        <button class="vk-key vk-k vk-alpha" onclick="vkAlpha(this)">M</button>
-        <button class="vk-key vk-k" onclick="vkType(',')">,</button>
-        <button class="vk-key vk-k" onclick="vkType('.')">.</button>
-        <button class="vk-key vk-k" onclick="vkType('/')">/</button>
-        <button class="vk-key vk-k vk-mod" onclick="vkToggleShift()">Shift</button>
-      </div>
-      <div class="vk-row">
-        <button class="vk-key vk-k vk-mod" disabled>Ctrl</button>
-        <button class="vk-key vk-k vk-mod" disabled>Alt</button>
-        <button class="vk-key vk-k vk-space" onclick="vkType(' ')">Space</button>
-        <button class="vk-key vk-k" onclick="vkType('@')">@</button>
-        <button class="vk-key vk-k" onclick="vkType('.')">.</button>
-        <button class="vk-key vk-k vk-back-sm" onclick="vkBack()">&lt;&lt;</button>
-      </div>
-    </div>
-
-  </div>
-</div>
+<% include _virtual-keyboard %>
 
 <!-- ═══════════ Order Items popup (opened from "View order items") ═══════════ -->
 <div class="co-overlay" id="coItemsOv" onclick="if(event.target===this)$('#coItemsOv').hide();" style="display:none;">
@@ -1272,6 +1208,11 @@
    so we replicate them here to keep SPA pages working without a layout. */
 var BASE_URL='';
 var SMS_USER = <%- JSON.stringify(typeof user!=='undefined'?user:{name:'User',role:'Operator'}) %>;
+/* Permission map for JS-rendered buttons (wallet cards, drafts table,
+   payments-pending rows, etc.). Built server-side in auth middleware as
+   res.locals.POS_CAN_JSON so this output expression stays trivial. */
+window.SMS_CAN = <%- POS_CAN_JSON %>;
+window.posCan = function(perm){ return !!window.SMS_CAN[perm]; };
 var SMS_CURRENCY = (typeof SMS_CURRENCY !== 'undefined') ? SMS_CURRENCY : '<%- (typeof settings!=='undefined' && settings && settings.currency_symbol) ? settings.currency_symbol : '₹' %>';
 var SMS_ORG_NAME = '<%- (typeof settings!=='undefined' && settings && (settings.organization_name || settings.company_name)) ? (settings.organization_name || settings.company_name) : "Scrap Management" %>';
 toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2000};
@@ -2070,10 +2011,12 @@ if (typeof window.hideLoading !== 'function') window.hideLoading = function(){ $
 })();
 
 /* ═══ Smart tooltip (data-tip) — themed + auto-positioned ═══
-   Reads [data-tip], [data-tip-pos] (top|bottom|left|right|auto),
-   and [data-tip-color] (blue|green|red|orange). Picks whichever side has
-   the most space, clamps inside the viewport, and points the arrow at
-   the source element. Supports hover, focus, and touch-long-press. */
+   Moved into /js/pages/pos.js so every page that loads pos.js (POS index +
+   every pos-layout sub-page: wallet, payments-pending, orders, drafts,
+   customers, settings) shares the same tooltip behaviour. The block below
+   is kept as an early-init no-op so existing direct hits to /sales still
+   wire tooltips before pos.js finishes parsing — the __pv2TipInit guard
+   inside pos.js prevents a second registration. */
 (function(){
   if (window.__pv2TipInit) return; window.__pv2TipInit = true;
   var TIP = document.createElement('div');

@@ -326,3 +326,56 @@ SMSWEB/
 - Payment page: price breakdown + Stripe redirect / Razorpay modal
 - Success page: green confirmation with subscription summary
 - Payment result page: success/pending/error states
+
+---
+
+## May 2026 additions — POS sub-pages, Wallet, admin gating
+
+### POS Wallet (`/sales/wallet`)
+Wholesale credit / on-account management. Three pages:
+
+- **List** (`/sales/wallet`) — KPI tiles (total customers, outstanding, overdue, available credit), filter bar (search + enabled-only + status), customer cards with metrics, used-credit progress bar, action buttons (View Ledger / Add Payment / Set Credit Limit / Disable). Paginated. Responsive: ≥1100px horizontal layout, 700–1099 wraps to 2×2, <700 stacks. Includes a per-customer ledger drawer with Ledger / Unpaid sales / Config tabs.
+- **Add** (`/sales/wallet/add`) — full form: customer search picker (live debounced lookup via `/sales/customers/search`), credit limit, terms days, grace days, late fee %, status toggle, payment terms preset (Net 7/15/30/45/60 or Custom), payment reminder timing, notes textarea. Right sidebar: live Credit Summary (recomputes as you type) + Transaction History panel (empty state on Add). Sticky bottom action bar: Cancel · Reset · Save Wallet. Every input has an on-screen keyboard icon (`.we-kb`) — desktop only; hidden via media query at `≤1024px` or `pointer:coarse`.
+- **Edit** (`/sales/wallet/edit/:uuid`) — same shell as Add but customer field is locked, all values pre-populated, Transaction History shows the real ledger.
+
+### Order detail — wallet integration
+[`pos/order-detail.ejs`](views/pos/order-detail.ejs) — when `order.payment_method === 'wallet'`, renders a brand banner at the top showing the outstanding balance with a "Record Payment" button that deep-links to `/sales/wallet?customer=<uuid>` (auto-opens the customer drawer). Wallet icon added to `payIcon()` lookup.
+
+### POS Settings page — restructured
+[`pos/settings.ejs`](views/pos/settings.ejs) — sidebar + mobile tabs now match the DOM section order line-by-line so the scroll-spy highlight tracks scrolling correctly. Sections in order:
+
+`General → Bank → POS preferences → Invoicing → Payments → Receipts → Thermal → Numbering → Terms → Integrations → Wallet → Advanced (super) → Danger (super)`
+
+- **Receipts section** — added 3 quick-action buttons in the card head: **Preview 80mm receipt** (`/sales/receipt-preview`), **Preview A4 invoice** (`/sales/invoice-preview` — new demo route, sample data + org settings, no real order required), **Printer settings** (`/sales/printer-settings`).
+- **Thermal section** — restored from the old design with all 36 `pos_receipt_*` fields grouped into 5 subsections: Company info, Format & layout, What to show (12 visibility toggles in 2×2 grid), Header/footer/notes, UPI & QR. Field IDs match setting keys 1:1 so load/save iterates a key list with no per-field branches. Image uploads for logo / QR / signature reuse the existing `/sales/settings/upload/:kind` endpoint.
+- **Removed** — Tax mode (CGST/SGST vs IGST) section + sidebar entry. The PDF helper now derives the line-item tax caption from `tax_breakdown` rows directly.
+
+### Admin-only gating (Settings + Wallet)
+Regular cashiers no longer see Settings or Wallet:
+
+- **Server gate** — new [`requireAdmin`](Middlewares/auth.js) middleware (passes for `is_super_admin` OR `is_org_admin`). Applied via `router.use(adminPaths, requireAdmin)` in [Routes/pos.js](Routes/pos.js) covering: `/settings*`, `/next-invoice-number`, `/wallet*` (every wallet path including JSON APIs and the add/edit pages). Returns JSON 403 for SPA fetches, redirects to `/dashboard` for full-page hits.
+- **Sidebar gate** — `<% if (user && (user.is_super_admin || user.is_org_admin)) { %>` wraps the Settings + Wallet links in [pos-layout.ejs](views/layouts/pos-layout.ejs) (sub-pages), [pos/index.ejs](views/pos/index.ejs) main sidebar, and the mobile 3-dot menu.
+
+### POS feature flags (UI side)
+A boot-time loader in [pos.js](public/js/pages/pos.js) pulls `/sales/settings/data` once into `window.SMS_POS_CFG` and toggles body classes. Inline CSS in `pos.js` reacts via:
+
+| Body class | Comes from | Effect |
+|---|---|---|
+| `pos-no-vehicle-tab` | `pos_show_vehicle_tab='0'` | Vehicle catalog tab hidden |
+| `pos-no-discount` | `pos_enable_discount='0'` | Discount card + per-line discount UI hidden; `calcCheckout()` zero-discount |
+| `pos-no-tax` | `pos_enable_tax='0'` | Tax rows hidden; `updTotals()` + `calcCheckout()` skip tax loop |
+| `pos-locked-warehouse` | `pos_allow_multi_warehouse='0'` | Warehouse picker disabled, force-set to default |
+| (n/a, JS) | `pos_default_warehouse=<id>` | Auto-selected on boot with retry |
+| (n/a, JS) | `pos_low_stock_alert=N` | `partCard()` adds `.is-low-stock` class — red badge top-right |
+| (n/a, JS) | `pos_allow_partial_payments='0'` | `doCheckout` blocks any non-wallet method whose amount-received < total |
+
+### Settings page — fixed save-form regressions
+Previously the Invoicing-section toggles (`pos_auto_email_invoice`, `pos_invoice_show_qr`, `pos_allow_partial_payments`) were sent on save but silently dropped because they weren't in `POS_SETTING_KEYS`. Now in the allow-list and persist correctly.
+
+### Sub-page navigation regressions fixed
+- Wallet menu now visible from the main POS shell — previously it only appeared on full refresh because pos/index.ejs sidebar was missing the entry.
+- `$ is not defined` regression in pos/index.ejs — inline scripts that ran at parse time before jQuery loaded are now wrapped in a `waitForJQ` poller.
+- Wallet drawer's generic dialog submit handler no longer fires a junk POST to `/undefined` for the "enable_new" / "enable_existing" / "disable_wallet" dialog kinds.
+
+### Mobile / tablet — keyboard icons hidden
+The on-screen keyboard buttons (`.we-kb`, `.cps-kb-trigger`) are hidden via `@media (max-width:1024px), (pointer:coarse)` since the OS soft keyboard pops automatically when a field is focused.

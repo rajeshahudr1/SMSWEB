@@ -2,9 +2,21 @@
 const express = require('express');
 const router = express.Router();
 const Ctrl = require('../Controllers/PosController');
-const { requireLogin } = require('../Middlewares/auth');
+const { requireLogin, requireAdmin } = require('../Middlewares/auth');
 
 router.use(requireLogin);
+
+// Company-admin-only sections — Settings + Wallet are configuration screens
+// that regular cashiers shouldn't see or call. The middleware sends 403 JSON
+// for SPA fetches and redirects to /dashboard for full-page hits.
+const adminPaths = ['/settings', '/settings/data', '/settings/upload/:kind', '/next-invoice-number',
+                    '/wallet', '/wallet/add', '/wallet/edit/:uuid',
+                    '/wallet/stats', '/wallet/customers', '/wallet/customers/:uuid',
+                    '/wallet/customers/:uuid/enable',  '/wallet/customers/:uuid/grant',
+                    '/wallet/customers/:uuid/payment', '/wallet/customers/:uuid/adjust',
+                    '/wallet/customers/:uuid/online-link',
+                    '/wallet/settings', '/wallet/transactions/recent'];
+router.use(adminPaths, requireAdmin);
 
 // POS Screen
 router.get('/', Ctrl.index);
@@ -37,6 +49,22 @@ router.get('/payment/gateways',     Ctrl.paymentGateways);
 router.get('/payment/pending',      Ctrl.paymentPendingList);
 router.get('/payments-pending',     Ctrl.paymentsPendingPage);
 router.post('/payment/:uuid/rollback', Ctrl.paymentRollback);
+
+// Wallet — page + APIs
+router.get ('/wallet',                            Ctrl.walletPage);
+router.get ('/wallet/add',                        Ctrl.walletEditPage);
+router.get ('/wallet/edit/:uuid',                 Ctrl.walletEditPage);
+router.get ('/wallet/stats',                      Ctrl.walletStats);
+router.get ('/wallet/customers',                  Ctrl.walletCustomers);
+router.get ('/wallet/customers/:uuid',            Ctrl.walletCustomer);
+router.post('/wallet/customers/:uuid/enable',     Ctrl.walletEnable);
+router.post('/wallet/customers/:uuid/grant',      Ctrl.walletGrant);
+router.post('/wallet/customers/:uuid/payment',    Ctrl.walletRecordPayment);
+router.post('/wallet/customers/:uuid/adjust',     Ctrl.walletAdjust);
+router.post('/wallet/customers/:uuid/online-link', Ctrl.walletOnlineLink);
+router.get ('/wallet/settings',                   Ctrl.walletSettings);
+router.put ('/wallet/settings',                   Ctrl.walletSettingsUpd);
+router.get ('/wallet/transactions/recent',        Ctrl.walletRecent);
 router.get('/dashboard-data', Ctrl.dashboard);
 router.get('/warehouses', Ctrl.warehouses);
 router.get('/taxes', Ctrl.taxes);
@@ -86,6 +114,7 @@ router.get('/next-invoice-number', Ctrl.nextInvoiceNumber);
 // File uploads for receipt assets — kind = logo | qr | signature
 router.post('/settings/upload/:kind', Ctrl.settingsUpload);
 router.get('/receipt-preview', Ctrl.receiptPreview);
+router.get('/invoice-preview', Ctrl.invoicePreview);
 
 // Returns
 router.get('/returns', Ctrl.returnsPage);

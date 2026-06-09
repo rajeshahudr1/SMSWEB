@@ -126,8 +126,12 @@
 
       <div class="dr-pv-foot">
         <button class="dr-pv-fbtn dr-pv-fbtn-cancel" onclick="$('#draftViewOv').hide();"><i class="bi bi-x-lg"></i> Close</button>
-        <button class="dr-pv-fbtn dr-pv-fbtn-del" id="dvDelBtn"><i class="bi bi-trash3"></i> Delete Draft</button>
-        <button class="dr-pv-fbtn dr-pv-fbtn-ok" id="dvResumeBtn"><i class="bi bi-arrow-right-circle-fill"></i> Resume Sale</button>
+        <% if (can('delete_pos_drafts')) { %>
+          <button class="dr-pv-fbtn dr-pv-fbtn-del" id="dvDelBtn"><i class="bi bi-trash3"></i> Delete Draft</button>
+        <% } %>
+        <% if (can('edit_pos_drafts')) { %>
+          <button class="dr-pv-fbtn dr-pv-fbtn-ok" id="dvResumeBtn"><i class="bi bi-arrow-right-circle-fill"></i> Resume Sale</button>
+        <% } %>
       </div>
     </div>
   </div>
@@ -146,7 +150,7 @@
 .dr-toolbar-l{ display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
 .dr-toolbar-icon{
   width:42px; height:42px; border-radius:10px;
-  background:rgba(44,95,213,.10); color:#2c5fd5;
+  background:rgba(44,95,213,.10); color:var(--pv2-brand, #2c5fd5);
   display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
 }
 .dr-toolbar-title{ font-size:16px; font-weight:800; color:var(--pv2-text,#1d2747); line-height:1.1; }
@@ -174,13 +178,13 @@
   display:flex; flex-direction:column; gap:10px;
 }
 .dr-card:hover{
-  border-color:#2c5fd5; box-shadow:0 6px 18px rgba(44,95,213,.12);
+  border-color:var(--pv2-brand, #2c5fd5); box-shadow:0 6px 18px rgba(44,95,213,.12);
   transform:translateY(-1px);
 }
 .dr-card-h{ display:flex; align-items:center; gap:10px; }
 .dr-card-h .dr-icon{
   width:36px; height:36px; border-radius:8px;
-  background:rgba(44,95,213,.10); color:#2c5fd5;
+  background:rgba(44,95,213,.10); color:var(--pv2-brand, #2c5fd5);
   display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
 }
 .dr-card-h .dr-cust{ flex:1; min-width:0; }
@@ -201,7 +205,7 @@
 .dr-card-foot{
   display:flex; justify-content:space-between; align-items:center; gap:8px;
 }
-.dr-amt{ font-size:18px; font-weight:800; color:#16a34a; font-variant-numeric:tabular-nums; }
+.dr-amt{ font-size:18px; font-weight:800; color:var(--pv2-success, #16a34a); font-variant-numeric:tabular-nums; }
 .dr-actions{ display:flex; gap:6px; }
 .dr-btn{
   display:inline-flex; align-items:center; gap:5px;
@@ -210,16 +214,16 @@
   transition:filter .12s, transform .04s;
 }
 .dr-btn:active{ transform:translateY(1px); }
-.dr-btn-view{ background:#fff; color:#2c5fd5; border-color:#2c5fd5; }
+.dr-btn-view{ background:#fff; color:var(--pv2-brand, #2c5fd5); border-color:var(--pv2-brand, #2c5fd5); }
 .dr-btn-view:hover{ background:rgba(44,95,213,.06); }
-.dr-btn-resume{ background:#2c5fd5; color:#fff; border-color:#2c5fd5; }
-.dr-btn-resume:hover{ background:#1f4cb8; }
-.dr-btn-del{ background:#fff; color:#dc2626; border-color:#fecaca; }
-.dr-btn-del:hover{ background:#fee2e2; }
+.dr-btn-resume{ background:var(--pv2-brand, #2c5fd5); color:#fff; border-color:var(--pv2-brand, #2c5fd5); }
+.dr-btn-resume:hover{ background:var(--pv2-brand-dark, #1f4cb8); }
+.dr-btn-del{ background:#fff; color:var(--pv2-danger, #dc2626); border-color:#fecaca; }
+.dr-btn-del:hover{ background:var(--pv2-danger-bg, #fee2e2); }
 
 /* ── Empty state ── */
 .dr-empty{ text-align:center; padding:60px 20px; color:var(--pv2-muted,#6b7280); }
-.dr-empty i{ font-size:54px; color:#cbd5e1; display:block; margin-bottom:14px; }
+.dr-empty i{ font-size:54px; color:var(--pv2-border-strong, #cbd5e1); display:block; margin-bottom:14px; }
 .dr-empty h3{ font-size:17px; font-weight:700; color:var(--pv2-text,#1d2747); margin:0 0 6px; }
 .dr-empty p{ font-size:13px; margin:0; line-height:1.5; }
 
@@ -233,7 +237,7 @@
 .dr-pv-ov[style*="display:flex"],
 .dr-pv-ov[style*="display: flex"]{ display:flex !important; }
 .dr-pv-card{
-  background:#f3f6fb; border-radius:14px; width:100%; max-width:920px;
+  background:var(--pv2-surface-alt, #f3f6fb); border-radius:14px; width:100%; max-width:920px;
   max-height:calc(100vh - 40px); overflow:hidden;
   box-shadow:0 24px 60px rgba(11,18,32,.30);
   position:relative;
@@ -247,7 +251,7 @@
   border:1px solid var(--pv2-border,#e5e9f2); background:#fff; color:var(--pv2-muted,#6b7280);
   cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px;
 }
-.dr-pv-close:hover{ background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
+.dr-pv-close:hover{ background:var(--pv2-danger-bg, #fee2e2); color:var(--pv2-danger, #dc2626); border-color:#fca5a5; }
 
 /* Header */
 .dr-pv-hdr{
@@ -258,18 +262,18 @@
 }
 .dr-pv-hdr-icon{
   width:50px; height:50px; border-radius:10px;
-  background:rgba(44,95,213,.10); color:#2c5fd5;
+  background:rgba(44,95,213,.10); color:var(--pv2-brand, #2c5fd5);
   display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
 }
 .dr-pv-hdr-text{ flex:1; min-width:0; }
-.dr-pv-hdr-text h2{ font-size:20px; font-weight:800; color:#1d2747; margin:0; line-height:1.15; }
-.dr-pv-hdr-meta{ font-size:12.5px; color:#6b7280; margin:4px 0 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.dr-pv-hdr-meta strong{ color:#1d2747; font-weight:700; }
-.dr-pv-dot{ color:#cbd5e1; }
+.dr-pv-hdr-text h2{ font-size:20px; font-weight:800; color:var(--pv2-text, #1d2747); margin:0; line-height:1.15; }
+.dr-pv-hdr-meta{ font-size:12.5px; color:var(--pv2-muted, #6b7280); margin:4px 0 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.dr-pv-hdr-meta strong{ color:var(--pv2-text, #1d2747); font-weight:700; }
+.dr-pv-dot{ color:var(--pv2-border-strong, #cbd5e1); }
 .dr-saved-badge{
   display:inline-flex; align-items:center; gap:5px;
   padding:5px 12px; border-radius:999px;
-  background:rgba(44,95,213,.10); color:#2c5fd5;
+  background:rgba(44,95,213,.10); color:var(--pv2-brand, #2c5fd5);
   font-size:12px; font-weight:700;
   margin-right:42px;     /* room for the close button on the absolute-right */
 }
@@ -304,20 +308,20 @@
 .dr-pv-block-h-l{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
 .dr-pv-block-h-icon{
   width:32px; height:32px; border-radius:8px;
-  background:rgba(44,95,213,.10); color:#2c5fd5;
+  background:rgba(44,95,213,.10); color:var(--pv2-brand, #2c5fd5);
   display:flex; align-items:center; justify-content:center; font-size:14px;
   flex-shrink:0;
 }
-.dr-pv-block-h-t{ font-size:14.5px; font-weight:800; color:#1d2747; margin:0; }
-.dr-pv-block-count{ color:#6b7280; font-weight:500; font-size:13px; margin-left:4px; }
+.dr-pv-block-h-t{ font-size:14.5px; font-weight:800; color:var(--pv2-text, #1d2747); margin:0; }
+.dr-pv-block-count{ color:var(--pv2-muted, #6b7280); font-weight:500; font-size:13px; margin-left:4px; }
 .dr-call-btn{
   width:42px; height:42px; border-radius:8px;
-  border:1px solid var(--pv2-border,#e5e9f2); background:#fff; color:#2c5fd5;
+  border:1px solid var(--pv2-border,#e5e9f2); background:#fff; color:var(--pv2-brand, #2c5fd5);
   display:flex; align-items:center; justify-content:center; font-size:16px;
   cursor:pointer; text-decoration:none;
   transition:background .12s, border-color .12s, transform .12s;
 }
-.dr-call-btn:hover{ background:rgba(44,95,213,.06); border-color:#2c5fd5; }
+.dr-call-btn:hover{ background:rgba(44,95,213,.06); border-color:var(--pv2-brand, #2c5fd5); }
 .dr-call-btn:active{ transform:scale(.96); }
 
 /* Customer fields — 3 columns on web, 1 on mobile.
@@ -332,16 +336,16 @@
 .dr-pv-fields3 > .dr-pv-row{ display:block !important; visibility:visible !important; min-width:0; }
 .dr-pv-l{
   display:block;
-  font-size:12px; color:#6b7280; font-weight:500;
+  font-size:12px; color:var(--pv2-muted, #6b7280); font-weight:500;
   margin-bottom:4px;
 }
 .dr-pv-v{
   display:block;
-  font-size:14px; color:#1d2747; font-weight:600;
+  font-size:14px; color:var(--pv2-text, #1d2747); font-weight:600;
   word-break:break-word; line-height:1.4;
 }
 .dr-pv-method{ display:inline-flex; align-items:center; gap:6px; }
-.dr-pv-method i{ color:#2c5fd5; font-size:14px; }
+.dr-pv-method i{ color:var(--pv2-brand, #2c5fd5); font-size:14px; }
 
 /* Items table */
 .dr-pv-items-wrap{ overflow-x:auto; }
@@ -350,17 +354,17 @@
   text-align:left; padding:14px 18px;
   background:#fafbfc;
   border-bottom:1px solid var(--pv2-border,#e5e9f2);
-  font-size:12.5px; color:#6b7280; font-weight:700;
+  font-size:12.5px; color:var(--pv2-muted, #6b7280); font-weight:700;
 }
 .dr-pv-items thead th.num{ text-align:right; }
 .dr-pv-items tbody td{
   padding:14px 18px; border-bottom:1px solid #f1f3f8; vertical-align:middle;
-  color:#1d2747;
+  color:var(--pv2-text, #1d2747);
 }
 .dr-pv-items tbody td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
 .dr-pv-items tbody tr:last-child td{ border-bottom:none; }
-.dr-pv-items .pv-sku{ font-family:'Courier New',monospace; font-size:13px; color:#6b7280; }
-.dr-pv-items .pv-unit{ color:#6b7280; font-weight:400; }
+.dr-pv-items .pv-sku{ font-family:'Courier New',monospace; font-size:13px; color:var(--pv2-muted, #6b7280); }
+.dr-pv-items .pv-unit{ color:var(--pv2-muted, #6b7280); font-weight:400; }
 
 /* Totals — flat list of rows, last one is the Grand Total.  Use !important
    on the visibility-critical declarations so any cascading rule from the
@@ -372,32 +376,32 @@
 .dr-pv-totals > .dr-pv-trow{
   display:flex !important;
   justify-content:space-between; align-items:center;
-  padding:10px 0; font-size:14px; color:#6b7280;
+  padding:10px 0; font-size:14px; color:var(--pv2-muted, #6b7280);
   font-variant-numeric:tabular-nums;
   border-bottom:1px solid #f1f3f8;
   visibility:visible !important;
 }
-.dr-pv-totals > .dr-pv-trow > span:last-child{ color:#1d2747; font-weight:700; }
+.dr-pv-totals > .dr-pv-trow > span:last-child{ color:var(--pv2-text, #1d2747); font-weight:700; }
 .dr-pv-totals > .dr-pv-trow-grand{
   border-top:2px solid var(--pv2-border,#e5e9f2);
   border-bottom:none;
   padding-top:14px; margin-top:6px;
   font-size:16px; font-weight:800;
 }
-.dr-pv-totals > .dr-pv-trow-grand > span:first-child{ color:#1d2747; }
-.dr-pv-totals > .dr-pv-trow-grand > span:last-child{ color:#16a34a; font-size:20px; }
+.dr-pv-totals > .dr-pv-trow-grand > span:first-child{ color:var(--pv2-text, #1d2747); }
+.dr-pv-totals > .dr-pv-trow-grand > span:last-child{ color:var(--pv2-success, #16a34a); font-size:20px; }
 
 /* Note banner */
 .dr-pv-note{
   display:flex; align-items:flex-start; gap:10px;
   padding:14px 18px; background:#eff6ff;
   border:1px solid #bfdbfe; border-radius:10px;
-  font-size:13px; color:#1d2747; line-height:1.5;
+  font-size:13px; color:var(--pv2-text, #1d2747); line-height:1.5;
 }
-.dr-pv-note > i{ font-size:18px; color:#2c5fd5; flex-shrink:0; margin-top:1px; }
-.dr-pv-note strong{ color:#2c5fd5; font-weight:700; }
+.dr-pv-note > i{ font-size:18px; color:var(--pv2-brand, #2c5fd5); flex-shrink:0; margin-top:1px; }
+.dr-pv-note strong{ color:var(--pv2-brand, #2c5fd5); font-weight:700; }
 
-.dr-pv-notes-v{ font-size:13px; color:#1d2747; padding:14px 18px; line-height:1.5; white-space:pre-wrap; }
+.dr-pv-notes-v{ font-size:13px; color:var(--pv2-text, #1d2747); padding:14px 18px; line-height:1.5; white-space:pre-wrap; }
 
 /* Footer */
 .dr-pv-foot{
@@ -414,20 +418,20 @@
 }
 .dr-pv-fbtn:active{ transform:translateY(1px); }
 .dr-pv-fbtn-cancel{
-  background:#fff; color:#1d2747; border-color:var(--pv2-border,#e5e9f2);
+  background:#fff; color:var(--pv2-text, #1d2747); border-color:var(--pv2-border,#e5e9f2);
   flex:0 0 auto;
 }
 .dr-pv-fbtn-cancel:hover{ background:#f8fafc; }
 .dr-pv-fbtn-del{
-  background:#fff; color:#dc2626; border-color:#fca5a5;
+  background:#fff; color:var(--pv2-danger, #dc2626); border-color:#fca5a5;
   flex:0 0 auto;
 }
-.dr-pv-fbtn-del:hover{ background:#fee2e2; }
+.dr-pv-fbtn-del:hover{ background:var(--pv2-danger-bg, #fee2e2); }
 .dr-pv-fbtn-ok{
-  background:#2c5fd5; color:#fff; border-color:#2c5fd5;
+  background:var(--pv2-brand, #2c5fd5); color:#fff; border-color:var(--pv2-brand, #2c5fd5);
   flex:1; min-width:180px;
 }
-.dr-pv-fbtn-ok:hover{ background:#1f4cb8; }
+.dr-pv-fbtn-ok:hover{ background:var(--pv2-brand-dark, #1f4cb8); }
 
 /* ── Tablet ── */
 @media (max-width:1099px){
@@ -576,15 +580,21 @@
       html +=   '<div class="dr-card-meta">';
       html +=     '<div><div class="dr-meta-l">Items</div><div class="dr-meta-v">' + (d.item_count || 0) + ' line' + ((d.item_count||0)!==1?'s':'') + '</div></div>';
       html +=     '<div><div class="dr-meta-l">Saved</div><div class="dr-meta-v">' + _date(d.created_at) + '</div></div>';
-      html +=     '<div><div class="dr-meta-l">Method</div><div class="dr-meta-v"><i class="bi ' + _methodIcon(d.payment_method) + '" style="margin-right:4px;color:#2c5fd5;"></i>' + _methodLbl(d.payment_method) + '</div></div>';
+      html +=     '<div><div class="dr-meta-l">Method</div><div class="dr-meta-v"><i class="bi ' + _methodIcon(d.payment_method) + '" style="margin-right:4px;color:var(--pv2-brand, #2c5fd5);"></i>' + _methodLbl(d.payment_method) + '</div></div>';
       html +=     '<div><div class="dr-meta-l">Discount</div><div class="dr-meta-v">' + (d.discount_value > 0 ? (d.discount_type === 'percent' ? d.discount_value + '%' : ((d.currency==='INR'?'₹':'') + ' ' + parseFloat(d.discount_value).toFixed(2))) : 'None') + '</div></div>';
       html +=   '</div>';
+      // Permission gates per row — View is always available to anyone who
+      // can see the page (they already have `view_pos_drafts`); Delete
+      // requires `delete_pos_drafts`; Resume (re-opens cart for editing
+      // the original order) requires `edit_pos_drafts`.
+      var _canDel    = window.posCan ? posCan('delete_pos_drafts') : true;
+      var _canResume = window.posCan ? posCan('edit_pos_drafts')   : true;
       html +=   '<div class="dr-card-foot">';
       html +=     '<div class="dr-amt">' + _money(d) + '</div>';
       html +=     '<div class="dr-actions">';
-      html +=       '<button class="dr-btn dr-btn-del" onclick="event.stopPropagation();dvDelete(\'' + d.uuid + '\');" data-tip="Delete draft" data-tip-color="red"><i class="bi bi-trash3"></i></button>';
-      html +=       '<button class="dr-btn dr-btn-view" onclick="event.stopPropagation();dvOpen(\'' + d.uuid + '\');"><i class="bi bi-eye"></i> View</button>';
-      html +=       '<button class="dr-btn dr-btn-resume" onclick="event.stopPropagation();cpsLoadDraft(\'' + d.uuid + '\');"><i class="bi bi-arrow-right-circle-fill"></i> Resume</button>';
+      if (_canDel)    html += '<button class="dr-btn dr-btn-del" onclick="event.stopPropagation();dvDelete(\'' + d.uuid + '\');" data-tip="Delete draft" data-tip-color="red"><i class="bi bi-trash3"></i></button>';
+                      html += '<button class="dr-btn dr-btn-view" onclick="event.stopPropagation();dvOpen(\'' + d.uuid + '\');"><i class="bi bi-eye"></i> View</button>';
+      if (_canResume) html += '<button class="dr-btn dr-btn-resume" onclick="event.stopPropagation();cpsLoadDraft(\'' + d.uuid + '\');"><i class="bi bi-arrow-right-circle-fill"></i> Resume</button>';
       html +=     '</div>';
       html +=   '</div>';
       html += '</div>';
@@ -623,7 +633,7 @@
       $('#dvDate2').text(_date(d.created_at));
       var methodLbl = _methodLbl(d.payment_method);
       var methodIco = _methodIcon(d.payment_method);
-      $('#dvMethod').html('<i class="bi ' + methodIco + '" style="margin-right:6px;color:#2c5fd5;"></i>' + _esc(methodLbl));
+      $('#dvMethod').html('<i class="bi ' + methodIco + '" style="margin-right:6px;color:var(--pv2-brand, #2c5fd5);"></i>' + _esc(methodLbl));
       /* Phone call button */
       if (phone){
         $('#dvCallBtn').attr('href', 'tel:' + phone).css('display','flex');
@@ -662,7 +672,7 @@
                  +   '<td class="num">' + _esc(fmt(amt)) + '</td>'
                  + '</tr>';
       });
-      if (!rowsHtml) rowsHtml = '<tr><td colspan="6" style="text-align:center;color:#6b7280;padding:18px;">No items in this draft</td></tr>';
+      if (!rowsHtml) rowsHtml = '<tr><td colspan="6" style="text-align:center;color:var(--pv2-muted, #6b7280);padding:18px;">No items in this draft</td></tr>';
       $('#dvItems').html(rowsHtml);
       $('#dvItemsCount').text('(' + items.length + ')');
 
@@ -707,8 +717,16 @@
         error: function(){ if (window.toastr) toastr.error('Failed to delete draft.'); }
       });
     };
-    if (typeof posConfirm === 'function') posConfirm('Delete this draft? All saved cart data will be cleared.', fn);
-    else if (confirm('Delete this draft?')) fn();
+    // pos-dialogs.js is loaded everywhere via pos-layout.ejs, so posConfirm
+    // is always defined. The native-confirm fallback was dead code — removed.
+    posConfirm({
+      title: 'Delete draft?',
+      msg: 'All saved cart data for this draft will be cleared. This cannot be undone.',
+      confirmText: 'Delete draft', cancelText: 'Keep it',
+      confirmColor: 'var(--pv2-danger,#dc2626)',
+      icon: 'bi-trash3', iconColor: 'var(--pv2-danger,#dc2626)',
+      onConfirm: fn,
+    });
   };
 
   /* Live filter */

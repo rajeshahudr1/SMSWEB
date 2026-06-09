@@ -57,12 +57,39 @@
     <a href="/dashboard" class="ps-logo">S</a>
     <button class="ps-btn" onclick="document.getElementById('posSidebar').classList.toggle('collapsed');" data-tip="Toggle sidebar" data-tip-pos="right" style="margin-bottom:8px;"><i class="bi bi-layout-sidebar-inset"></i></button>
     <div class="ps-nav">
+      <%
+         /* Each entry is gated by `can('view_*')`. Org/super admins bypass
+            every check; regular cashiers only see what their role's
+            permissions allow. Matches how the main app sidebar
+            (MenuController.sidebar) filters menus, plus the same gating
+            on the POS index page. */
+      %>
+      <% if (can('view_pos')) { %>
       <a href="/sales" class="ps-btn" data-tip="POS" data-tip-pos="right"><i class="bi bi-grid-1x2-fill"></i></a>
+      <% } %>
+      <% if (can('view_pos_orders')) { %>
       <a href="/sales/orders" class="ps-btn <%- activeLink==='pos-orders'?'active':'' %>" data-tip="Sales Orders" data-tip-pos="right"><i class="bi bi-bag-check"></i></a>
+      <% } %>
+      <% if (can('view_pos_pending_payments')) { %>
       <a href="/sales/payments-pending" class="ps-btn <%- activeLink==='pos-payments-pending'?'active':'' %>" data-tip="Pending Payments" data-tip-pos="right"><i class="bi bi-hourglass-split"></i></a>
+      <% } %>
+      <% if (can('view_pos_wallet')) { %>
+      <a href="/sales/wallet" class="ps-btn <%- activeLink==='pos-wallet'?'active':'' %>" data-tip="Wallet" data-tip-pos="right"><i class="bi bi-wallet2"></i></a>
+      <% } %>
+      <% if (can('view_pos_customers')) { %>
       <a href="/sales/customers" class="ps-btn <%- activeLink==='pos-customers'?'active':'' %>" data-tip="Customers" data-tip-pos="right"><i class="bi bi-people"></i></a>
+      <% } %>
+      <% /* Returns & Refunds — hidden per request. Re-enable by removing
+            the `false &&` guard below. */ %>
+      <% if (false && can('view_pos_returns')) { %>
       <a href="/sales/returns" class="ps-btn <%- activeLink==='pos-returns'?'active':'' %>" data-tip="Returns" data-tip-pos="right"><i class="bi bi-arrow-counterclockwise"></i></a>
+      <% } %>
+      <% if (can('view_pos_drafts')) { %>
+      <a href="/sales/drafts" class="ps-btn <%- activeLink==='pos-drafts'?'active':'' %>" data-tip="Saved Drafts" data-tip-pos="right"><i class="bi bi-bookmark-heart"></i></a>
+      <% } %>
+      <% if (can('view_pos_settings')) { %>
       <a href="/sales/settings" class="ps-btn <%- activeLink==='pos-settings'?'active':'' %>" data-tip="Settings" data-tip-pos="right"><i class="bi bi-gear"></i></a>
+      <% } %>
     </div>
     <div class="ps-bottom">
       <button class="ps-btn" id="fsToggle" onclick="toggleFS()" data-tip="Toggle Fullscreen" data-tip-pos="right"><i class="bi bi-arrows-fullscreen"></i></button>
@@ -92,10 +119,19 @@
     <script src="/libs/js/jquery.min.js"></script>
     <script src="/libs/js/tabler.min.js"></script>
     <script src="/libs/js/toastr.min.js"></script>
+    <!-- Themed posConfirm + posPrompt — same dialogs the main /sales screen
+         uses, so sub-pages don't fall through to the native browser confirm/
+         prompt boxes when called directly via URL. -->
+    <script src="/js/common/pos-dialogs.js?v=<%= Date.now() %>"></script>
     <script>
     var BASE_URL='';
     toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2500};
     var H={esc:function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');},currency:function(v){return parseFloat(v||0).toFixed(2);}};
+    /* Permission map for SPA partials rendered before the body-bottom
+       block runs. Pre-built JSON comes from auth middleware so this
+       output expression stays trivial. */
+    window.SMS_CAN = window.SMS_CAN || <%- POS_CAN_JSON %>;
+    window.posCan = window.posCan || function(perm){ return !!window.SMS_CAN[perm]; };
     function smsFormatDateTime(d){if(!d)return '—';var dt=new Date(d);return dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
     function smsFormatDate(d){if(!d)return '—';return new Date(d).toLocaleDateString();}
     function smsInitPerPage(sel){var v=localStorage.getItem('pp')||15;$(sel).val(v);return parseInt(v);}
@@ -115,10 +151,27 @@
 <script src="/libs/js/jquery.min.js"></script>
 <script src="/libs/js/tabler.min.js"></script>
 <script src="/libs/js/toastr.min.js"></script>
+<script src="/js/common/pos-dialogs.js?v=<%= Date.now() %>"></script>
+<!--
+  Virtual Keyboard popup \u2014 shared markup so any `.cps-kb-trigger` or `.we-kb`
+  click on a pos-layout sub-page (wallet, payments-pending, drafts, orders,
+  customers, returns) opens the same VK that runs on the main POS screen.
+  Without this, openVK() throws "no #vkOv" and the click is a no-op \u2014 which
+  is exactly what was happening on wallet-edit before this include.
+-->
+<% include ../pos/_virtual-keyboard %>
+<!-- Keyboard JS \u2014 same file /sales (POS index) uses, so the setting toggle
+     and the click handlers stay consistent. (pos.css is already loaded above
+     for the rest of the POS theme.) -->
+<script src="/js/pages/pos.js?v=<%= Date.now() %>"></script>
 <script>
 var BASE_URL='';
 toastr.options={closeButton:true,progressBar:true,positionClass:'toast-top-right',timeOut:2500};
 var H={esc:function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');},currency:function(v){return parseFloat(v||0).toFixed(2);}};
+/* Permission map for JS-rendered buttons (wallet cards, drafts table,
+   customers table, etc.). Pre-built JSON from auth middleware. */
+window.SMS_CAN = window.SMS_CAN || <%- POS_CAN_JSON %>;
+window.posCan = window.posCan || function(perm){ return !!window.SMS_CAN[perm]; };
 function smsFormatDateTime(d){if(!d)return '\u2014';var dt=new Date(d);return dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function smsFormatDate(d){if(!d)return '\u2014';return new Date(d).toLocaleDateString();}
 function smsInitPerPage(sel){var v=localStorage.getItem('pp')||15;$(sel).val(v);return parseInt(v);}

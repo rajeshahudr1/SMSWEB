@@ -120,10 +120,12 @@ const currency = (typeof locals !== 'undefined' && locals.currency) ? locals.cur
   <!-- Filters -->
   <div class="pp-filters">
     <input type="text" id="ppSearch" class="form-control pp-search" placeholder="Search by tx UUID, gateway order ID, customer name or phone…">
+    <!-- Gateway options populated client-side from /sales/payment/gateways
+         so the dropdown only lists gateways the org has actually enabled
+         (configured credentials). Disabled gateways are hidden entirely
+         — Razorpay disappears when only Stripe is set up, and vice versa. -->
     <select id="ppGateway" class="form-select">
       <option value="">All gateways</option>
-      <option value="razorpay">Razorpay</option>
-      <option value="stripe">Stripe</option>
     </select>
     <select id="ppStatus" class="form-select">
       <option value="">Pending only</option>
@@ -213,7 +215,12 @@ const currency = (typeof locals !== 'undefined' && locals.currency) ? locals.cur
       var statusCls = r.status || 'created';
       var statusLabel = ({ created:'Awaiting payment', pending:'Verifying', paid:'Paid', expired:'Expired', cancelled:'Cancelled', failed:'Failed' })[r.status] || r.status;
       var timerCls = r.expired ? 'crit' : (r.ms_remaining < 5*60*1000 ? 'warn' : '');
-      var canRollback = (r.status === 'created' || r.status === 'pending');
+      // Two gates: business rule (must be in-flight) AND user permission
+      // (`edit_pos_pending_payments` controls who can rollback). Admins
+      // bypass via the can() helper; restricted users see the status pill
+      // and copy link but no rollback button.
+      var canRollback = (r.status === 'created' || r.status === 'pending')
+                     && (window.posCan ? posCan('edit_pos_pending_payments') : true);
       var customer = r.customer_name ? r.customer_name : 'Walk-in';
       var phone    = r.customer_phone || '';
       var itemsList = (r.items_summary || []).map(function(i){ return esc(i.name) + ' x' + i.qty; }).join(', ');
@@ -309,15 +316,15 @@ const currency = (typeof locals !== 'undefined' && locals.currency) ? locals.cur
   }
 
   window.ppRollback = function(uuid, amount) {
-    var msg = 'Roll back this transaction (' + F(amount) + ')? Stock will be released back to inventory and the gateway link will stop working.';
-    var doIt = function() {
-      var reason = prompt('Optional reason for rollback (shown in audit log):', 'Manual rollback by operator');
+    var msg = 'Roll back this transaction (' + F(amount) + ')?\n\nStock will be released back to inventory and the gateway link will stop working.';
+    var sendRollback = function(reason) {
       $.ajax({
         url: '/sales/payment/' + uuid + '/rollback', type: 'POST', contentType: 'application/json',
         data: JSON.stringify({ reason: reason || 'Manual rollback by operator' }),
         success: function(r) {
           if (r && r.status === 200) {
-            toastr.success('Rolled back. ' + ((r.data && r.data.holds_released) || 0) + ' hold(s) released.');
+            toastr.success('Rolled back. ' + ((r.data && r.data.holds_released) || 0) + ' hold(s) released.'
+              + ((r.data && r.data.link_expired) ? ' Gateway link expired.' : ''));
             load();
           } else {
             toastr.error((r && r.message) || 'Rollback failed.');
@@ -329,8 +336,33 @@ const currency = (typeof locals !== 'undefined' && locals.currency) ? locals.cur
         }
       });
     };
-    if (typeof posConfirm === 'function') posConfirm({ title: 'Rollback Payment?', msg: msg, confirmText: 'Yes, rollback', confirmClass: 'danger', onConfirm: doIt });
-    else if (confirm(msg)) doIt();
+    var doIt = function() {
+      // pos-dialogs.js is loaded everywhere via pos-layout.ejs, so posPrompt
+      // is always defined. Native-prompt fallback removed.
+      posPrompt({
+        title: 'Reason for Rollback',
+        msg: 'This is logged in the audit trail. Optional but recommended.',
+        placeholder: 'e.g. customer asked to cancel, paid by cash instead, etc.',
+        defaultValue: 'Manual rollback by operator',
+        multiline: true,
+        confirmText: 'Submit Rollback',
+        cancelText: 'Cancel',
+        confirmColor: 'var(--red)',
+        icon: 'bi-arrow-counterclockwise',
+        iconColor: 'var(--red)',
+        onConfirm: function(reason){ sendRollback(reason); },
+      });
+    };
+    posConfirm({
+        title: 'Rollback Payment?',
+        msg: msg,
+        confirmText: 'Yes, Rollback',
+        cancelText: 'Keep Active',
+        confirmColor: 'var(--red)',
+        icon: 'bi-arrow-counterclockwise',
+        iconColor: 'var(--red)',
+        onConfirm: doIt,
+    });
   };
 
   window.ppRefreshOne = function(uuid) {
@@ -358,6 +390,17 @@ const currency = (typeof locals !== 'undefined' && locals.currency) ? locals.cur
   $('#ppClear').on('click', function(){ $('#ppSearch').val(''); $('#ppGateway').val(''); $('#ppStatus').val(''); load(); });
   $('#ppSearch').on('keypress', function(e){ if (e.which === 13) load(); });
   $('#ppGateway, #ppStatus').on('change', load);
+
+  // Populate the Gateway filter from /sales/payment/gateways — only
+  // gateways with configured credentials show up. Razorpay / Stripe
+  // toggle their own visibility based on what's enabled in POS Settings.
+  $.get('/sales/payment/gateways', function(r){
+    var gws = (r && r.status === 200 && r.data && r.data.gateways) ? r.data.gateways : [];
+    var $sel = $('#ppGateway');
+    gws.forEach(function(gw){
+      $sel.append('<option value="' + (gw.key || '') + '">' + (gw.label || gw.key) + '</option>');
+    });
+  });
 
   // Web-only keyboard icon for search
   if (typeof posAttachKeyboards === 'function') setTimeout(posAttachKeyboards, 100);

@@ -17,13 +17,142 @@ if(!window.smsInitPerPage)window.smsInitPerPage=function(sel){var v=15;if(sel)$(
 if(!window.smsFormatDateTime)window.smsFormatDateTime=function(d){if(!d)return '\u2014';var dt=new Date(d);return dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});};
 if(!window.smsFormatDate)window.smsFormatDate=function(d){if(!d)return '\u2014';return new Date(d).toLocaleDateString();};
 if(!window.smsConfirm)window.smsConfirm=function(o){posConfirm(o.msg||'Are you sure?',o.onConfirm);};
-function posConfirm(msg,onYes){
-    var $ov=$('#posConfirmOv');
-    if(!$ov.length){$('body').append('<div id="posConfirmOv" class="co-overlay" style="z-index:99998;" onclick="if(event.target===this)$(this).hide();"><div class="co-box" style="max-width:360px;text-align:center;padding:28px 24px;"><div style="font-size:40px;color:var(--yellow);margin-bottom:10px;"><i class="bi bi-exclamation-triangle-fill"></i></div><p id="posConfirmMsg" style="font-size:14px;font-weight:600;margin-bottom:18px;"></p><div style="display:flex;gap:8px;justify-content:center;"><button class="pm-btn cancel" id="posConfirmNo" style="flex:0;padding:10px 24px;">Cancel</button><button class="pm-btn" id="posConfirmYes" style="flex:0;padding:10px 24px;background:var(--red);color:#fff;border:none;font-weight:700;">Delete</button></div></div></div>');$ov=$('#posConfirmOv');}
+/* posConfirm — overridable confirm dialog.
+     Forms:
+       posConfirm(msg, onYes)
+       posConfirm(msg, onYes, opts)
+       posConfirm({ msg, onConfirm, title, confirmText, cancelText, confirmColor, icon })
+     opts/options keys (all optional):
+       title         Heading shown above msg            (default: '')
+       confirmText   Yes button label                   (default: 'Confirm')
+       cancelText    No button label                    (default: 'Cancel')
+       confirmColor  CSS variable name OR hex for the
+                     Yes button background              (default: 'var(--red)')
+       icon          Bootstrap icon class               (default: 'bi-exclamation-triangle-fill')
+       iconColor     icon CSS color                     (default: 'var(--yellow)')
+*/
+function posConfirm(msg, onYes, opts){
+    if (msg && typeof msg === 'object' && !Array.isArray(msg)) {
+        opts = msg;
+        onYes = opts.onConfirm || opts.onYes;
+        msg = opts.msg || opts.message || '';
+    }
+    opts = opts || {};
+    var title        = opts.title        || '';
+    var confirmText  = opts.confirmText  || 'Confirm';
+    var cancelText   = opts.cancelText   || 'Cancel';
+    var confirmColor = opts.confirmColor || 'var(--red)';
+    var icon         = opts.icon         || 'bi-exclamation-triangle-fill';
+    var iconColor    = opts.iconColor    || 'var(--yellow)';
+
+    var $ov = $('#posConfirmOv');
+    if (!$ov.length) {
+        $('body').append(
+          '<div id="posConfirmOv" class="co-overlay" style="z-index:99998;" onclick="if(event.target===this)$(this).hide();">'
+        +   '<div class="co-box" style="max-width:380px;text-align:center;padding:26px 24px;border-radius:14px;">'
+        +     '<div id="posConfirmIcon" style="font-size:40px;margin-bottom:10px;"><i class="bi ' + icon + '"></i></div>'
+        +     '<h5 id="posConfirmTitle" style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text);display:none;"></h5>'
+        +     '<p id="posConfirmMsg" style="font-size:13.5px;font-weight:500;margin:0 0 20px;color:var(--text);white-space:pre-line;"></p>'
+        +     '<div style="display:flex;gap:10px;justify-content:center;">'
+        +       '<button class="pm-btn cancel" id="posConfirmNo" style="flex:0 0 auto;padding:10px 22px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:8px;font-weight:600;cursor:pointer;"></button>'
+        +       '<button class="pm-btn" id="posConfirmYes" style="flex:0 0 auto;padding:10px 22px;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;"></button>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+        );
+        $ov = $('#posConfirmOv');
+    }
+
+    // Apply per-call overrides every time so the same overlay can host any
+    // shape of confirmation (delete, rollback, cancel order, etc.)
+    $('#posConfirmIcon').html('<i class="bi ' + icon + '" style="color:' + iconColor + ';"></i>');
+    if (title) { $('#posConfirmTitle').text(title).show(); } else { $('#posConfirmTitle').hide(); }
     $('#posConfirmMsg').text(msg);
-    $ov.css('display','flex');
-    $('#posConfirmNo').off('click').on('click',function(){$ov.hide();});
-    $('#posConfirmYes').off('click').on('click',function(){$ov.hide();if(onYes)onYes();});
+    $('#posConfirmNo').text(cancelText);
+    $('#posConfirmYes').text(confirmText).css('background', confirmColor);
+
+    $ov.css('display', 'flex');
+    $('#posConfirmNo').off('click').on('click', function(){ $ov.hide(); });
+    $('#posConfirmYes').off('click').on('click', function(){ $ov.hide(); if (onYes) onYes(); });
+}
+
+/* posPrompt — themed text-input dialog. Replaces window.prompt().
+     posPrompt({
+       title, msg, placeholder, defaultValue, required, multiline,
+       confirmText, cancelText, confirmColor, icon, iconColor,
+       onConfirm: function(value){ ... },     // called with the entered text
+       onCancel:  function(){ ... }           // optional
+     });
+*/
+function posPrompt(opts){
+    opts = opts || {};
+    var title        = opts.title        || '';
+    var msg          = opts.msg          || '';
+    var placeholder  = opts.placeholder  || '';
+    var defaultValue = opts.defaultValue != null ? String(opts.defaultValue) : '';
+    var required     = !!opts.required;
+    var multiline    = !!opts.multiline;
+    var confirmText  = opts.confirmText  || 'OK';
+    var cancelText   = opts.cancelText   || 'Cancel';
+    var confirmColor = opts.confirmColor || 'var(--primary)';
+    var icon         = opts.icon         || 'bi-pencil-square';
+    var iconColor    = opts.iconColor    || 'var(--primary)';
+
+    var $ov = $('#posPromptOv');
+    if (!$ov.length) {
+        $('body').append(
+          '<div id="posPromptOv" class="co-overlay" style="z-index:99998;" onclick="if(event.target===this)$(this).hide();">'
+        +   '<div class="co-box" style="max-width:420px;text-align:left;padding:24px;border-radius:14px;">'
+        +     '<div id="posPromptIcon" style="font-size:30px;text-align:center;margin-bottom:8px;"></div>'
+        +     '<h5 id="posPromptTitle" style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text);text-align:center;display:none;"></h5>'
+        +     '<p id="posPromptMsg" style="font-size:13px;color:var(--muted);margin:0 0 14px;text-align:center;white-space:pre-line;"></p>'
+        +     '<div id="posPromptInputWrap"></div>'
+        +     '<div id="posPromptError" style="font-size:11.5px;color:var(--red);margin-top:6px;display:none;"></div>'
+        +     '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">'
+        +       '<button class="pm-btn cancel" id="posPromptNo" style="padding:10px 22px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:8px;font-weight:600;cursor:pointer;"></button>'
+        +       '<button class="pm-btn" id="posPromptYes" style="padding:10px 22px;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;"></button>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+        );
+        $ov = $('#posPromptOv');
+    }
+
+    // Re-render the input fresh each call so multiline / placeholder / value
+    // overrides take effect.
+    var inputHtml = multiline
+        ? '<textarea id="posPromptInput" rows="3" class="form-control" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;resize:vertical;font-family:inherit;"></textarea>'
+        : '<input id="posPromptInput" type="text" class="form-control" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;height:42px;"/>';
+    $('#posPromptInputWrap').html(inputHtml);
+    var $inp = $('#posPromptInput');
+    $inp.attr('placeholder', placeholder).val(defaultValue);
+
+    $('#posPromptIcon').html('<i class="bi ' + icon + '" style="color:' + iconColor + ';"></i>');
+    if (title) { $('#posPromptTitle').text(title).show(); } else { $('#posPromptTitle').hide(); }
+    $('#posPromptMsg').text(msg);
+    $('#posPromptNo').text(cancelText);
+    $('#posPromptYes').text(confirmText).css('background', confirmColor);
+    $('#posPromptError').hide().text('');
+
+    function close() { $ov.hide(); }
+    function submit() {
+        var val = $('#posPromptInput').val();
+        if (required && !String(val || '').trim()) {
+            $('#posPromptError').text('This field is required.').show();
+            return;
+        }
+        close();
+        if (opts.onConfirm) opts.onConfirm(val);
+    }
+    $('#posPromptNo').off('click').on('click', function(){ close(); if (opts.onCancel) opts.onCancel(); });
+    $('#posPromptYes').off('click').on('click', submit);
+    $inp.off('keydown.posPrompt').on('keydown.posPrompt', function(e){
+        if (e.key === 'Escape') { e.preventDefault(); close(); if (opts.onCancel) opts.onCancel(); }
+        if (!multiline && e.key === 'Enter') { e.preventDefault(); submit(); }
+    });
+
+    $ov.css('display', 'flex');
+    setTimeout(function(){ $inp.trigger('focus').trigger('select'); }, 30);
 }
 if(!window.showLoading)window.showLoading=function(){};
 if(!window.hideLoading)window.hideLoading=function(){};
@@ -40,6 +169,116 @@ function closePanel(){if(isMob())$('#posRight').removeClass('open');$('body').re
 /* Sync the .pos-cart-open body class with any direct toggle of #posRight.open
    (inline onclick handlers like `$('#posRight').toggleClass('open')` exist in the
    EJS markup, so we observe the attribute and mirror it). */
+/* ════════════════════════════════════════════════════════════════════
+   POS feature flags loaded once on boot from /sales/settings/data.
+   Each flag drives a body-class so CSS can hide / show without
+   per-call JS branches:
+     pos_show_vehicle_tab  '0' → body.pos-no-vehicle-tab
+     pos_allow_multi_warehouse '0' → body.pos-locked-warehouse
+     pos_enable_discount   '0' → body.pos-no-discount
+     pos_enable_tax        '0' → body.pos-no-tax
+     pos_low_stock_alert   N   → window.SMS_LOW_STOCK threshold
+     pos_default_warehouse <id> → forced into the warehouse dropdown
+   The flags arrive a few hundred ms after first paint so the cart
+   skeleton flashes briefly with everything visible — that's a
+   deliberate trade so we don't block render on a network call.
+   ════════════════════════════════════════════════════════════════════ */
+window.SMS_POS_CFG = window.SMS_POS_CFG || {};
+window.SMS_LOW_STOCK = 0;
+// `_posCfgReady` becomes true once the settings AJAX returns (or fails).
+// The initial loadProducts() call at the bottom of pos.js waits on this
+// so the default-warehouse filter is in effect for the very first render
+// — otherwise the first paint shows "all parts" and the next reload
+// (search, tab-switch, pagination) drops to the filtered set, making
+// products appear to "disappear". Failsafe 1.5s timer caps the wait.
+window._posCfgReady = false;
+window._posCfgWaiters = [];
+window.posCfgWhenReady = function(fn){
+    if (window._posCfgReady) { try { fn(); } catch(_){} return; }
+    window._posCfgWaiters.push(fn);
+};
+function _markPosCfgReady(){
+    if (window._posCfgReady) return;
+    window._posCfgReady = true;
+    var queue = window._posCfgWaiters.slice();
+    window._posCfgWaiters.length = 0;
+    queue.forEach(function(fn){ try { fn(); } catch(_){} });
+}
+setTimeout(_markPosCfgReady, 1500);   // hard failsafe — never wait longer
+$(function(){
+    $.get('/sales/settings/data').done(function(r){
+        if (!r || r.status !== 200 || !r.data) { _markPosCfgReady(); return; }
+        var d = r.data;
+        window.SMS_POS_CFG = d;
+        var $b = $('body');
+        $b.toggleClass('pos-no-vehicle-tab',   d.pos_show_vehicle_tab      === '0');
+        $b.toggleClass('pos-locked-warehouse', d.pos_allow_multi_warehouse === '0');
+        $b.toggleClass('pos-no-discount',      d.pos_enable_discount       === '0');
+        $b.toggleClass('pos-no-tax',           d.pos_enable_tax            === '0');
+        $b.toggleClass('pos-no-keyboard',      d.pos_keyboard_enabled      === '0');
+        var lowStock = parseInt(d.pos_low_stock_alert || 0, 10);
+        window.SMS_LOW_STOCK = lowStock > 0 ? lowStock : 0;
+        // Default warehouse — only auto-apply the filter when the org has
+        // EXPLICITLY locked the cashier to a single warehouse (pos_allow_
+        // multi_warehouse='0'). In the default (multi) mode, we keep _wh
+        // empty so the cashier sees parts from every warehouse on POS load
+        // and tab-switches stay consistent — even if pos_default_warehouse
+        // points at an empty warehouse (which would otherwise hide parts
+        // and look like a bug).
+        //
+        // When the user explicitly picks a warehouse from the dropdown, the
+        // change handler sets _wh — that path always works.
+        var defWh = d.pos_default_warehouse || '';
+        var lockedToOne = (d.pos_allow_multi_warehouse === '0');
+        if (lockedToOne && defWh) {
+            var presetWarehouse = function(){
+                var $sel = $('#fWarehouse');
+                if (!$sel.length) return false;
+                if ($sel.find('option[value="' + defWh + '"]').length === 0) return false;
+                $sel.val(defWh).prop('disabled', true);
+                if (typeof window._wh !== 'undefined') window._wh = defWh;
+                return true;
+            };
+            if (!presetWarehouse()) {
+                setTimeout(function(){ presetWarehouse(); }, 600);
+                setTimeout(function(){ presetWarehouse(); }, 1500);
+            }
+        } else if (lockedToOne) {
+            // Locked mode but no default chosen — just disable the picker.
+            setTimeout(function(){ $('#fWarehouse').prop('disabled', true); }, 600);
+        }
+        // If a switchTab was attempting 'vehicles' but the tab is hidden,
+        // force the active tab back to 'parts'.
+        if (d.pos_show_vehicle_tab === '0' && typeof window._tab !== 'undefined' && window._tab === 'vehicles') {
+            try { switchTab($('.pcat[data-tab="parts"]')[0]); } catch(_){}
+        }
+        // Signal "settings applied" so the initial loadProducts() (queued
+        // by posCfgWhenReady) can finally fire with _wh set to the
+        // default warehouse — no more "all parts, then filtered set
+        // replaces them" flicker on tab switch.
+        _markPosCfgReady();
+    }).fail(_markPosCfgReady);
+});
+
+/* CSS hooks for the boot-time flags above. Lives inline so it ships with
+   pos.js — no extra <style> tag or stylesheet edit needed. */
+(function(){
+    var css = ''
+      + 'body.pos-no-vehicle-tab .pcat[data-tab="vehicles"]{display:none !important;}'
+      + 'body.pos-no-discount .cps-card[data-mob="discount"]{display:none !important;}'
+      + 'body.pos-no-discount .cps-card[data-mob="discount"]+.cps-card{margin-top:0;}'
+      + 'body.pos-no-discount .pc-discount,body.pos-no-discount .cart-line-discount,body.pos-no-discount [data-pos-discount]{display:none !important;}'
+      + 'body.pos-no-tax .cps-tax-row,body.pos-no-tax [data-pos-tax-row]{display:none !important;}'
+      + 'body.pos-no-keyboard .cps-kb-trigger,body.pos-no-keyboard .we-kb,body.pos-no-keyboard .pos-kb-icon,body.pos-no-keyboard .ps-kb-trigger,body.pos-no-keyboard .ps-s2-kb-trigger,body.pos-no-keyboard [data-pos-kb]{display:none !important;}'
+      + 'body.pos-no-keyboard .ps-sel.has-vk-kb > .ps-kb-trigger{display:none !important;}'
+      + 'body.pos-locked-warehouse #fWarehouse{background:#f3f4f6;cursor:not-allowed;}'
+      + '.pc.is-low-stock{position:relative;}'
+      + '.pc.is-low-stock::after{content:"Low stock";position:absolute;top:6px;right:6px;background:#fee2e2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;line-height:1;}';
+    var s = document.createElement('style');
+    s.textContent = css;
+    document.head.appendChild(s);
+})();
+
 $(function(){
     if (typeof MutationObserver !== 'function') return;
     var $pr = $('#posRight'); if (!$pr.length) return;
@@ -47,17 +286,171 @@ $(function(){
         $('body').toggleClass('pos-cart-open', $pr.hasClass('open'));
     }).observe($pr[0], { attributes:true, attributeFilter:['class'] });
 });
+
+/* ════════════════════════════════════════════════════════════════════════
+   Smart tooltip — themed + auto-positioned.
+
+   Used to live inline in pos/index.ejs which meant the sidebar tooltips on
+   pos-layout sub-pages (wallet, payments-pending, orders, drafts, customers,
+   settings) never worked. Moved here so every page that loads pos.js gets
+   the same tooltip system.
+
+   Reads:
+     data-tip        → text to show
+     data-tip-pos    → forced side: top | bottom | left | right | auto (default auto)
+     data-tip-color  → tone: blue | green | red | orange
+     data-tip-kbd    → keyboard hint shown as a small pill inside the tip
+
+   The handler picks whichever side has the most space, clamps inside the
+   viewport, and points the arrow at the source element. Supports hover,
+   focus, and touch-long-press (via the focus path).
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+    if (window.__pv2TipInit) return; window.__pv2TipInit = true;
+    function init(){
+        if (!document.body) { return setTimeout(init, 20); }
+        var TIP = document.createElement('div');
+        TIP.className = 'pv2-tip';
+        TIP.setAttribute('role','tooltip');
+        document.body.appendChild(TIP);
+        var PAD = 8, current = null, showTimer = null, hideTimer = null, animIn = null;
+
+        function setText(el){
+            var text = el.getAttribute('data-tip') || '';
+            var kbd  = el.getAttribute('data-tip-kbd') || '';
+            TIP.innerHTML = ''; TIP.appendChild(document.createTextNode(text));
+            if (kbd){
+                var k = document.createElement('span'); k.className = 'pv2-tip-kbd'; k.textContent = kbd;
+                TIP.appendChild(k);
+            }
+        }
+        function clearTone(){
+            TIP.classList.remove('tone-blue','tone-green','tone-red','tone-orange');
+        }
+        function place(el){
+            setText(el);
+            clearTone();
+            var tone = (el.getAttribute('data-tip-color')||'').toLowerCase();
+            if (tone) TIP.classList.add('tone-'+tone);
+
+            TIP.classList.add('show'); TIP.classList.remove('in');
+            TIP.style.left = '-9999px'; TIP.style.top = '-9999px'; TIP.style.maxWidth = '';
+
+            var er = el.getBoundingClientRect();
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var maxW = Math.min(260, vw - PAD*2);
+            TIP.style.maxWidth = maxW + 'px';
+            var tr = TIP.getBoundingClientRect();
+
+            var forced = (el.getAttribute('data-tip-pos')||'').toLowerCase();
+            var sideOrder;
+            if (forced && forced !== 'auto'){
+                sideOrder = [forced, 'bottom','top','right','left'].filter(function(v,i,a){return a.indexOf(v)===i;});
+            } else {
+                var spaces = {
+                    bottom: vh - er.bottom - PAD,
+                    top:    er.top - PAD,
+                    right:  vw - er.right - PAD,
+                    left:   er.left - PAD
+                };
+                var needs = { bottom: tr.height, top: tr.height, right: tr.width, left: tr.width };
+                var fits = Object.keys(spaces).filter(function(s){ return spaces[s] >= needs[s]; });
+                if (fits.length){
+                    var pref = ['bottom','top','right','left'];
+                    fits.sort(function(a,b){ return pref.indexOf(a) - pref.indexOf(b); });
+                    sideOrder = fits.concat(pref.filter(function(s){ return fits.indexOf(s)<0; }));
+                } else {
+                    sideOrder = Object.keys(spaces).sort(function(a,b){ return spaces[b]-spaces[a]; });
+                }
+            }
+            var side = sideOrder[0];
+
+            var x, y;
+            if (side === 'bottom'){ x = er.left + er.width/2 - tr.width/2; y = er.bottom + PAD; }
+            else if (side === 'top'){ x = er.left + er.width/2 - tr.width/2; y = er.top - tr.height - PAD; }
+            else if (side === 'right'){ x = er.right + PAD; y = er.top + er.height/2 - tr.height/2; }
+            else { x = er.left - tr.width - PAD; y = er.top + er.height/2 - tr.height/2; }
+
+            var clampedX = Math.max(PAD, Math.min(vw - tr.width - PAD, x));
+            var clampedY = Math.max(PAD, Math.min(vh - tr.height - PAD, y));
+
+            var ax = er.left + er.width/2 - clampedX;
+            var ay = er.top + er.height/2 - clampedY;
+            ax = Math.max(12, Math.min(tr.width - 12, ax));
+            ay = Math.max(12, Math.min(tr.height - 12, ay));
+
+            TIP.setAttribute('data-side', side);
+            TIP.style.setProperty('--pv2-tip-ax', ax + 'px');
+            TIP.style.setProperty('--pv2-tip-ay', ay + 'px');
+            TIP.style.left = clampedX + 'px';
+            TIP.style.top  = clampedY + 'px';
+
+            cancelAnimationFrame(animIn);
+            animIn = requestAnimationFrame(function(){ TIP.classList.add('in'); });
+        }
+        function show(el){
+            if (!el || !el.getAttribute) return;
+            if (!el.getAttribute('data-tip')) return;
+            if (current === el) return;
+            current = el;
+            clearTimeout(hideTimer); clearTimeout(showTimer);
+            showTimer = setTimeout(function(){ if (current===el) place(el); }, 60);
+        }
+        function hide(){
+            current = null;
+            clearTimeout(showTimer);
+            TIP.classList.remove('in');
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(function(){ TIP.classList.remove('show'); }, 140);
+        }
+        function findTipEl(e){
+            var n = e.target;
+            while (n && n !== document.body){
+                if (n.getAttribute && n.getAttribute('data-tip')) return n;
+                n = n.parentNode;
+            }
+            return null;
+        }
+        document.addEventListener('mouseover', function(e){ var el=findTipEl(e); if(el) show(el); });
+        document.addEventListener('mouseout', function(e){
+            var from = findTipEl(e);
+            var to   = e.relatedTarget ? findTipEl({target:e.relatedTarget}) : null;
+            if (from && !to) hide();
+        });
+        document.addEventListener('focusin', function(e){ var el=findTipEl(e); if(el) show(el); });
+        document.addEventListener('focusout', hide);
+        document.addEventListener('click',    hide, true);
+        document.addEventListener('keydown',  function(e){ if(e.key==='Escape') hide(); });
+        window.addEventListener('scroll', hide, true);
+        window.addEventListener('resize', hide);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
 function showCart(){$('#detailView').removeClass('active');$('#cartView').removeClass('hidden');_selPart=null;$('.pc').removeClass('selected');}
 function showDetailPanel(){$('#cartView').addClass('hidden');$('#detailView').addClass('active');openPanel();}
 
 /* ── Tab switch ── */
 function switchTab(el){$('.pcat').removeClass('active');$(el).addClass('active');_tab=$(el).data('tab');_page=1;_advBuilt={parts:false,vehicles:false};_advFilters={};$('#advCount').hide();showCart();closePanel();if(_vMode)closeVehicleParts();else loadProducts();}
 
-/* ── Smart tooltip — auto positions to best visible side ── */
-var $pcTip=null;
+/* ── Smart tooltip — auto positions to best visible side ──
+   Tracks _pcTipFor so transitioning between cards always rebuilds the
+   tooltip with the new card's data (and never leaves a stale tooltip
+   visible after the user clicks through to a different view). */
+var $pcTip=null, _pcTipFor=null;
 function showPcTip(el){
     if(window.innerWidth<=1024)return;
-    var d;try{d=JSON.parse($(el).attr('data-tipdata').replace(/&#39;/g,"'"));}catch(e){return;}
+    // Touch devices fire a synthetic mouseenter on tap — refuse to show
+    // the hover popup if the most recent input came from touch.
+    if(window._pcLastInputTouch && (Date.now()-window._pcLastInputTouch<600))return;
+    var raw=$(el).attr('data-tipdata');
+    if(!raw)return;                  // Card without data — bail early
+    var d;try{d=JSON.parse(raw.replace(/&#39;/g,"'"));}catch(e){return;}
+    if(!d||!d.n)return;              // Malformed payload — bail
+    _pcTipFor=el;
     if(!$pcTip){$pcTip=$('<div class="pc-tip"><div class="pc-tip-arrow"></div><div class="pc-tip-inner"></div></div>');$('body').append($pcTip);}
     // Build content
     var h='<div class="pc-tip-name">'+esc(d.n)+'</div>';
@@ -108,7 +501,17 @@ function showPcTip(el){
     $pcTip.css({top:top+'px',left:left+'px',width:tw+'px'});
     requestAnimationFrame(function(){$pcTip.addClass('show');});
 }
-function hidePcTip(){if($pcTip)$pcTip.removeClass('show');}
+function hidePcTip(){ if($pcTip)$pcTip.removeClass('show'); _pcTipFor=null; }
+
+/* Mark recent touch input so showPcTip can ignore the synthetic mouseenter
+   that fires on tap. Otherwise the tooltip gets "stuck" on touch devices
+   because there's no matching mouseleave when the finger lifts. */
+$(document).on('touchstart.posTip', function(){ window._pcLastInputTouch = Date.now(); });
+/* Hide the tooltip whenever the cursor leaves the product grid entirely
+   — guards against the "tooltip remains visible after I click through to
+   the part-detail panel" bug where mouseleave on the card never fires
+   because the card is removed from the DOM. */
+$(document).on('mouseleave.posTip', '#prodGrid, #vBackBar', hidePcTip);
 
 /* ══════════════════════════════════════════
    SPA NAVIGATION — no page refresh, fullscreen stays
@@ -119,7 +522,10 @@ var _spaUrls={orders:'/sales/orders',customers:'/sales/customers',returns:'/sale
 function spaNav(page){
     // Update sidebar active state
     $('.ps-nav .ps-btn').removeClass('active');
-    $('.ps-nav .ps-btn').eq({pos:0,orders:1,customers:2,returns:3,drafts:4,'payments-pending':5,settings:6}[page]||0).addClass('active');
+    /* Index map — must match the visible button order in pos/index.ejs.
+       'returns' is currently hidden per ops decision, so it gets no
+       sidebar highlight even if direct-URL-navigated to. */
+    $('.ps-nav .ps-btn').eq({pos:0,orders:1,customers:2,drafts:3,'payments-pending':4,settings:5}[page]||0).addClass('active');
     _spaPage=page;
 
     if(page==='pos'){
@@ -419,10 +825,12 @@ function _s2(sel,url,ph,extraData){
 
     /* Drop a kb pill INSIDE the .select2-container so it's vertically centered
        on the dropdown trigger (not on the label-plus-trigger column).  Web only. */
+    if (_kbDisabled()) return;
     $(sel).each(function(){
         var $s = $(this);
         var sid = $s.attr('id'); if (!sid) return;
         setTimeout(function(){
+            if (_kbDisabled()) return;
             var $container = $s.next('.select2-container');
             if (!$container.length) return;
             if ($container.find('> .ps-s2-kb-trigger').length) return;
@@ -636,14 +1044,23 @@ function loadProducts(){
 }
 function partCard(p){
     var img=p.image_url?'<img src="'+esc(p.image_url)+'" alt=""/>':'<i class="bi bi-gear no-img"></i>';
-    var sq=parseInt(p.quantity)||0,sc=sq>5?'':'low';if(sq<=0)sc='out';
+    // Show what's actually sellable — Available units (status=1 in
+    // part_inventory_locations). Falls back to pi.quantity for old payloads
+    // that don't include available_count yet.
+    var sq=parseInt((p.available_count != null ? p.available_count : p.quantity))||0;
+    // Low-stock threshold from `pos_low_stock_alert` (loaded once on boot
+    // into window.SMS_LOW_STOCK). When set, any in-stock card with qty
+    // ≤ threshold gets a red "Low stock" badge via the .is-low-stock class.
+    var lowStockThreshold = parseInt(window.SMS_LOW_STOCK || 0, 10);
+    var isLow = lowStockThreshold > 0 && sq > 0 && sq <= lowStockThreshold;
+    var sc=sq>5?'':'low'; if(sq<=0)sc='out';
     var name=p.catalog_name||p.part_code||'Part';
     var code=p.part_internal_id||p.part_code||'';
     var tipData=esc(JSON.stringify({n:name,id:code,pc:p.part_code||'',wh:p.warehouse_name||'',cond:p.condition||'',price:F(p.display_price),qty:sq,sc:sc||'ok'}).replace(/'/g,'&#39;'));
-    return '<div class="pc" onclick="pcClick(this)" onmouseenter="showPcTip(this)" onmouseleave="hidePcTip()" data-act="part" data-uuid="'+esc(p.uuid)+'" data-id="'+p.id+'" data-name="'+esc(name)+'" data-price="'+p.display_price+'" data-qty="'+sq+'" data-code="'+esc(p.part_code||'')+'" data-wh="'+(p.warehouse_id||0)+'" data-img="'+esc(p.image_url||'')+'" data-tipdata=\''+tipData+'\'>'
+    return '<div class="pc' + (isLow ? ' is-low-stock' : '') + '" onclick="pcClick(this)" onmouseenter="showPcTip(this)" onmouseleave="hidePcTip()" data-act="part" data-uuid="'+esc(p.uuid)+'" data-id="'+p.id+'" data-name="'+esc(name)+'" data-price="'+p.display_price+'" data-qty="'+sq+'" data-code="'+esc(p.part_code||'')+'" data-wh="'+(p.warehouse_id||0)+'" data-img="'+esc(p.image_url||'')+'" data-tipdata=\''+tipData+'\'>'
         +'<div class="pc-img">'+img+'</div>'
         +'<div class="pc-body"><div class="pc-name">'+esc(name)+'</div><div class="pc-code">'+esc(code)+'</div>'
-        +'<div class="pc-foot"><span class="pc-price">'+F(p.display_price)+'</span><span class="pc-stock '+sc+'">'+sq+'</span></div></div></div>';
+        +'<div class="pc-foot"><span class="pc-price">'+F(p.display_price)+'</span><span class="pc-stock '+sc+'" title="Available units">'+sq+'</span></div></div></div>';
 }
 function vehicleCard(v){
     var img=v.image_url?'<img src="'+esc(v.image_url)+'" alt=""/>':'<i class="bi bi-truck no-img"></i>';
@@ -656,7 +1073,15 @@ function vehicleCard(v){
         +'<div class="pc-body"><div class="pc-name">'+esc(name)+'</div><div class="pc-code">'+esc(code)+'</div>'
         +'<div class="pc-foot"><span class="pc-stock" style="background:var(--pv2-brand-light,#e3f1ed);color:var(--primary);"><i class="bi bi-gear-wide-connected"></i> '+pc+' parts</span><i class="bi bi-chevron-right" style="color:var(--primary);font-size:12px;"></i></div></div></div>';
 }
-function pcClick(el){var $el=$(el),act=$el.data('act');if(act==='part')openPartDetail($el);else if(act==='vehicle')openVehicleParts($el.data('uuid'),$el.data('name'));}
+function pcClick(el){
+    // Hide the hover tooltip immediately — the click is about to swap
+    // the grid (either to part-detail or vehicle-parts view) and the
+    // mouseleave event won't fire if the card is removed from the DOM.
+    hidePcTip();
+    var $el=$(el),act=$el.data('act');
+    if(act==='part')openPartDetail($el);
+    else if(act==='vehicle')openVehicleParts($el.data('uuid'),$el.data('name'));
+}
 
 /* ══════════════════════════════════════════
    PART DETAIL
@@ -983,14 +1408,18 @@ function renderCart(){
     if (typeof window.attachCartSwipe === 'function') attachCartSwipe();
 }
 function updTotals(sub){
-    // Calculate tax — only on items without vat_included
+    // Calculate tax — only on items without vat_included.
+    // pos_enable_tax='0' short-circuits the entire tax block so the cart
+    // matches what the server will actually compute (server also skips
+    // the tax loop when this flag is off).
+    var TAX_ENABLED = !(window.SMS_POS_CFG && window.SMS_POS_CFG.pos_enable_tax === '0');
     var taxableAmount=0,taxFreeCount=0,taxCount=0;
     _cart.forEach(function(c){
         if(c.vat_included){taxFreeCount++;}
         else{taxableAmount+=c.total_price;taxCount++;}
     });
     var taxBreakdown=[],taxTotal=0;
-    if(_taxes.length&&taxableAmount>0){
+    if(TAX_ENABLED && _taxes.length && taxableAmount>0){
         _taxes.forEach(function(t){
             var pct=parseFloat(t.percentage)||0;
             if(pct<=0)return;
@@ -1366,9 +1795,31 @@ window.cpsTogglePD = function(){
    To opt out, mark the input with `data-no-keyboard` or `.no-vk`.
    To force amount mode, mark with `data-vk="amount"`.
    ════════════════════════════════════════════════════════════════════════ */
+/* Shared check used by every kb-icon injector below. Returns true when the
+   user has disabled "Enable on-screen keyboard" in POS settings. */
+function _kbDisabled(){
+    return $('body').hasClass('pos-no-keyboard')
+        || (window.SMS_POS_CFG && window.SMS_POS_CFG.pos_keyboard_enabled === '0');
+}
 window.posAttachKeyboards = function(root){
+    // Honour the pos_keyboard_enabled setting — when OFF, don't inject icons
+    // at all (and strip any that an earlier run may have placed). The body
+    // class is set by the boot config loader once /sales/settings/data
+    // resolves.
+    var kbOff = _kbDisabled();
     var $root = root ? $(root) : $('body.pos-mode, body .pos-mode, body');
     if (!$root.length) return;
+    if (kbOff) {
+        // Remove any kb-triggers + unwrap their inputs so the page looks
+        // identical to a page that never had keyboard icons.
+        $root.find('.cps-kb-trigger').remove();
+        $root.find('.cps-input-wrap').each(function(){
+            var $wrap = $(this);
+            var $inp  = $wrap.find('> input, > textarea').first();
+            if ($inp.length) $inp.unwrap();
+        });
+        return;
+    }
 
     /* Cleanup: any kb-trigger that ended up inside a wrap also containing a
        <select>, .select2-container, .ps-sel, or other dropdown-type widget. */
@@ -1404,6 +1855,12 @@ window.posAttachKeyboards = function(root){
         // Already wrapped?
         if ($el.parent().hasClass('cps-input-wrap')) return;
         if ($el.next('.cps-kb-trigger').length) return;
+        // Skip inputs that already have their own keyboard button next to
+        // them (e.g. wallet-edit's hardcoded `.we-kb` buttons) — those have
+        // their own click handlers that call openVK directly.
+        if ($el.parent().hasClass('we-input-wrap')) return;
+        if ($el.siblings('.we-kb').length) return;
+        if ($el.next('.we-kb').length) return;
         // Need a unique id — invent one if missing.
         if (!$el.attr('id')) {
             $el.attr('id', 'kbinp_' + Math.random().toString(36).slice(2, 9));
@@ -1627,6 +2084,12 @@ $(document).on('click', '#vkAutoCompleteList a[data-target-select]', function(e)
 /* After every posAutocomplete enhancement, attach a kb-trigger to any select
    marked with `data-vk-options`.  CSS keeps it hidden on tablet/mobile. */
 function _wireSelectKeyboards(root){
+    if (_kbDisabled()) {
+        // Also strip any previously-injected pills so the page is clean.
+        $('.ps-kb-trigger').remove();
+        $('.ps-sel.has-vk-kb').removeClass('has-vk-kb');
+        return;
+    }
     var $root = root ? $(root) : $('body');
     $root.find('select[data-vk-options]').each(function(){
         var $sel = $(this);
@@ -1736,6 +2199,7 @@ $(document).on('click', '#vkAutoCompleteList a[data-target-s2]', function(e){
 
 /* Wire a keyboard icon next to every Select2 widget on the filter page. */
 function _wirePosS2Keyboards(){
+    if (_kbDisabled()) { $('.ps-s2-kb-trigger').remove(); return; }
     $('select.pos-s2').each(function(){
         var $sel = $(this);
         var sid  = $sel.attr('id');
@@ -2076,6 +2540,57 @@ function cpsResetCustomerInfo(){
     $('#custResult').empty().removeClass('show');
     $('#cpsWalkin').show();
     $('.cps-cust-info').hide();
+    // Wallet UI off — walk-ins can't pay on credit
+    cpsHideWalletUI();
+}
+
+/* Wallet UI helpers — shown only when a registered customer with
+   is_wallet_enabled=true is selected. */
+window._smsWallet = null;     // { available, balance, limit, terms_days }
+function cpsHideWalletUI(){
+    window._smsWallet = null;
+    $('#ciWalletRow').hide();
+    $('#ciWalletAvail').text('—');
+    $('#ciWalletOwed').text('—');
+    var $wt = $('.cps-pmode-wallet');
+    $wt.hide();
+    if ($wt.hasClass('active')){
+        // If wallet was the active method, fall back to UPI
+        $wt.removeClass('active');
+        var $upi = $('.cps-pmode[data-method="upi"]').first();
+        if ($upi.length) $upi.addClass('active');
+        if (typeof selPay === 'function') selPay($upi[0]);
+    }
+}
+function cpsShowWalletUI(w){
+    window._smsWallet = w;
+    var avail = parseFloat(w.available || 0);
+    var owed  = parseFloat(w.balance || 0);
+    var fmt   = (typeof F === 'function') ? F : function(n){ return parseFloat(n||0).toFixed(2); };
+    $('#ciWalletRow').show();
+    $('#ciWalletAvail').text(fmt(avail));
+    $('#ciWalletOwed').text(fmt(owed));
+    $('#cpsWalletAvailVal').text(fmt(avail));
+    $('.cps-pmode-wallet').show();
+}
+function cpsLoadWallet(uuid){
+    if (!uuid) { cpsHideWalletUI(); return; }
+    $.ajax({
+        url: BASE_URL + '/sales/wallet/customers/' + uuid,
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success: function(r){
+            var c = (r && r.data) || null;
+            if (!c || !c.is_wallet_enabled) { cpsHideWalletUI(); return; }
+            cpsShowWalletUI({
+                available:  parseFloat(c.wallet_available || 0),
+                balance:    parseFloat(c.wallet_balance   || 0),
+                limit:      parseFloat(c.wallet_credit_limit || 0),
+                terms_days: parseInt(c.wallet_terms_days  || 30)
+            });
+        },
+        error: function(){ cpsHideWalletUI(); }
+    });
 }
 
 /* Stub kept for compatibility with prior bindings — no longer drives any UI
@@ -2095,6 +2610,10 @@ window.cpsSetCustomer = function(c){
     $('.cps-cust-info').show();
     $('#walkInName').val('');
     $('#walkInPhone').val('');
+    // Look up wallet status — only customers with is_wallet_enabled=true can
+    // pay on account. Use UUID since the wallet endpoint takes UUID.
+    if (c.uuid) cpsLoadWallet(c.uuid);
+    else cpsHideWalletUI();
 };
 
 /* Indian-English number-to-words (for "In Words" line on Amount To Pay). */
@@ -2291,11 +2810,19 @@ function goCoStep(step){
 }
 
 function calcCheckout(){
+    // Mirror the server's checkout: when pos_enable_discount or
+    // pos_enable_tax is off, force the corresponding component to 0
+    // so the "Pay" button shows the same number the API will charge.
+    var DISCOUNT_ENABLED = !(window.SMS_POS_CFG && window.SMS_POS_CFG.pos_enable_discount === '0');
+    var TAX_ENABLED      = !(window.SMS_POS_CFG && window.SMS_POS_CFG.pos_enable_tax === '0');
+
     var sub=_coData.sub;
     var dType=$('#dType').val(),dVal=parseFloat($('#dVal').val())||0;
     var discount=0;
-    if(dType==='percent'&&dVal>0)discount=parseFloat((sub*dVal/100).toFixed(2));
-    else if(dType==='fixed'&&dVal>0)discount=Math.min(dVal,sub);
+    if (DISCOUNT_ENABLED) {
+        if(dType==='percent'&&dVal>0)discount=parseFloat((sub*dVal/100).toFixed(2));
+        else if(dType==='fixed'&&dVal>0)discount=Math.min(dVal,sub);
+    }
     var afterDiscount=sub-discount;
 
     var taxableAmount=0;
@@ -2303,12 +2830,14 @@ function calcCheckout(){
     var taxableAfterDiscount=taxableAmount>0?Math.max(0,taxableAmount-(taxableAmount/sub*discount)):0;
 
     var taxes=[],taxTotal=0;
-    _taxes.forEach(function(t){
-        var pct=parseFloat(t.percentage)||0;if(pct<=0)return;
-        var amt=parseFloat((taxableAfterDiscount*pct/100).toFixed(2));
-        taxes.push({name:t.tax_name,pct:pct,amount:amt});
-        taxTotal+=amt;
-    });
+    if (TAX_ENABLED) {
+        _taxes.forEach(function(t){
+            var pct=parseFloat(t.percentage)||0;if(pct<=0)return;
+            var amt=parseFloat((taxableAfterDiscount*pct/100).toFixed(2));
+            taxes.push({name:t.tax_name,pct:pct,amount:amt});
+            taxTotal+=amt;
+        });
+    }
 
     var total=parseFloat((afterDiscount+taxTotal).toFixed(2));
     _coData={sub:sub,discount:discount,taxable:taxableAfterDiscount,taxes:taxes,taxTotal:taxTotal,total:total};
@@ -2387,8 +2916,9 @@ function selPay(el){
     $('#cpsAmtRcvBox').toggle(method === 'cash');
 
     // For non-cash modes, force amount received = total (no change calculation).
+    // EXCEPT wallet — wallet sales are unpaid; amount_paid = 0.
     if (method !== 'cash') {
-        $('#amtRcv').val(F(_coData.total));
+        $('#amtRcv').val(method === 'wallet' ? 0 : F(_coData.total));
     }
     calcChange();
 
@@ -2399,6 +2929,7 @@ function selPay(el){
     else if (method === 'upi')    label = 'PAY BY UPI';
     else if (method === 'cheque') label = 'ACCEPT CHEQUE';
     else if (method === 'cash')   label = 'COLLECT CASH';
+    else if (method === 'wallet') label = 'CHARGE TO WALLET';
     $('#cpsPayLabel').text(label);
 
     // Hidden legacy footer chip
@@ -2433,6 +2964,34 @@ function doCheckout(autoPrint){
             var rcvA = parseFloat($('#amtRcv').val()) || 0;
             if (rcvA < _coData.total) {
                 toastr.warning('Amount received ('+F(rcvA)+') is less than total ('+F(_coData.total)+'). Please collect full amount.');
+                return;
+            }
+        }
+        // pos_allow_partial_payments='0' — block any non-wallet, non-cash
+        // method that's about to settle for less than the cart total. The
+        // server enforces this too; warning early avoids the round-trip.
+        var PARTIAL_ALLOWED = !(window.SMS_POS_CFG && window.SMS_POS_CFG.pos_allow_partial_payments === '0');
+        if (!PARTIAL_ALLOWED && payMethod !== 'wallet') {
+            var rcvP = parseFloat($('#amtRcv').val()) || 0;
+            if (rcvP < _coData.total - 0.01) {
+                toastr.warning('Partial payments are disabled. Collect the full amount (' + F(_coData.total) + ').');
+                return;
+            }
+        }
+        // For wallet: customer must be wallet-enabled and cart must fit within
+        // available credit. The backend re-validates, but warn early.
+        if (payMethod === 'wallet') {
+            if (!$('#custId').val()) {
+                toastr.warning('Pick a registered customer for on-account payment.');
+                return;
+            }
+            var w = window._smsWallet;
+            if (!w) {
+                toastr.warning('Wallet is not enabled for this customer.');
+                return;
+            }
+            if (_coData.total > parseFloat(w.available || 0) + 0.01) {
+                toastr.warning('Cart total ('+F(_coData.total)+') exceeds available credit ('+F(w.available)+').');
                 return;
             }
         }
@@ -2788,7 +3347,33 @@ function _showLinkSharePopup(linkUrl, txUuid) {
     $('#oplinkSms').attr('href', 'sms:?&body=' + encodeURIComponent('Pay here: ' + linkUrl));
     $('#oplinkOv').data('url', linkUrl).data('tx', txUuid).css('display', 'flex');
 }
-function _closeLinkShare(){ $('#oplinkOv').hide(); }
+/* Closing the share popup means "I'm done here, the link is sent to the
+   customer." We go back to the main POS sell screen so the cashier can take
+   the next sale. The link itself stays active for 1 hour (or until the
+   webhook fires / cron expires it / cashier rolls it back from /sales/payments-pending).
+   `silent=true` skips the toast — used by the auto-close after a successful
+   webhook so we don't double-confirm a "Payment received" then a "Closed". */
+function _closeLinkShare(silent){
+    $('#oplinkOv').hide();
+    // Hide the checkout screen and reset the cart — the items are now
+    // claimed by the gateway hold and will turn into a real order when the
+    // customer pays (or get released after 1 hour if they don't).
+    $('#coPage').removeClass('open');
+    _cart = [];
+    if (typeof renderCart === 'function') renderCart();
+    $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');
+    $('#custResult').empty().removeClass('show');
+    if (typeof cpsResetCustomerInfo === 'function') cpsResetCustomerInfo();
+    if (typeof _resetCheckoutBtn === 'function') _resetCheckoutBtn();
+    // Refresh the Pending Payments badge so the cashier can see the new
+    // entry waiting in the sidebar without navigating.
+    if (typeof refreshPendingBadge === 'function') setTimeout(refreshPendingBadge, 600);
+    // Toast skipped on the silent path (called from `_pollPaymentStatus`
+    // after webhook completes — there's already a "Payment received" toast).
+    if (!silent && typeof toastr !== 'undefined') {
+        toastr.info('Payment link is active — track it under Pending Payments.', '', { timeOut: 4000 });
+    }
+}
 function _oplinkCopy(){
     var url = $('#oplinkOv').data('url') || '';
     if (!url) return;
@@ -2872,10 +3457,20 @@ function _openRazorpayCheckout(tx){
         },
         modal: {
             ondismiss: function(){
-                // User closed without paying — release holds
-                $.post(BASE_URL+'/sales/payment/cancel', { tx_uuid: tx.tx_uuid });
-                toastr.info('Payment cancelled — stock released.');
+                // Cashier closed the Razorpay window WITHOUT paying. Per
+                // operational rule: keep the stock held for the full 1-hour
+                // window so a customer paying on their phone (or a delayed
+                // webhook) can still finalise the order. The order shows up
+                // in /sales/payments-pending where the cashier can rollback
+                // manually if needed. Cart is cleared and we drop back to POS.
+                $('#coPage').removeClass('open');
+                _cart = []; renderCart();
+                $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');
+                $('#custResult').empty().removeClass('show');
+                if(typeof cpsResetCustomerInfo === 'function') cpsResetCustomerInfo();
                 _resetCheckoutBtn();
+                toastr.info('Payment popup closed — stock is held for 1 hour. Track it in Pending Payments.', '', { timeOut: 5000 });
+                if (typeof refreshPendingBadge === 'function') setTimeout(refreshPendingBadge, 800);
             }
         }
     });
@@ -2894,9 +3489,18 @@ function _openStripeCheckout(tx){
         stripe.confirmPayment({ clientSecret: tx.client_secret, confirmParams: { return_url: window.location.href + '?tx=' + encodeURIComponent(tx.tx_uuid) } })
             .then(function(result){
                 if(result.error){
-                    toastr.error(result.error.message||'Stripe error');
-                    $.post(BASE_URL+'/sales/payment/cancel', { tx_uuid: tx.tx_uuid });
+                    // Stripe surfaced an error (card declined / network blip).
+                    // Keep the stock hold so the cashier can retry; the
+                    // 1-hour cron releases it if they walk away. They can
+                    // also rollback manually from /sales/payments-pending.
+                    toastr.error((result.error.message || 'Stripe error') + ' — stock kept on hold. Cancel from Pending Payments if needed.');
+                    $('#coPage').removeClass('open');
+                    _cart = []; renderCart();
+                    $('#custId,#custSearch,#dType,#dVal,#payRef,#oNotes').val('');
+                    $('#custResult').empty().removeClass('show');
+                    if(typeof cpsResetCustomerInfo === 'function') cpsResetCustomerInfo();
                     _resetCheckoutBtn();
+                    if (typeof refreshPendingBadge === 'function') setTimeout(refreshPendingBadge, 800);
                 } else {
                     // success — verify on server
                     $.ajax({url:BASE_URL+'/sales/payment/verify', type:'POST', contentType:'application/json',
@@ -2969,7 +3573,7 @@ function _pollPaymentStatus(txUuid){
                     if ($sp.length) {
                         $sp.html('<i class="bi bi-check-circle-fill" style="color:var(--pv2-success,#059669);font-size:18px;"></i> <strong>Payment received.</strong> Closing…');
                     }
-                    setTimeout(function(){ _closeLinkShare(); }, 1500);
+                    setTimeout(function(){ _closeLinkShare(true); }, 1500);
                     _onPaymentSuccess({ order_uuid: s.order_uuid, order_number: s.order_number, total_amount: s.amount });
                     return; // stop polling
                 }
@@ -3229,7 +3833,7 @@ $(document).on('input','#custSearch',function(){
             // Show at most the top 2 best matches — keeps the dropdown short
             // and predictable on tablets/phones where vertical room is tight.
             r.data.slice(0, 2).forEach(function(c){
-                var args = [c.id, c.name, c.phone||'', c.email||'', c.customer_type||''].map(function(v){
+                var args = [c.id, c.name, c.phone||'', c.email||'', c.customer_type||'', c.uuid||''].map(function(v){
                     return "'" + String(v).replace(/'/g,"\\'") + "'";
                 }).join(',');
                 h += '<a href="#" onclick="selCust('+args+');return false;">'
@@ -3256,12 +3860,12 @@ $(document).on('mousedown', function(e){
     _custResultsClear();
 });
 
-function selCust(id, n, p, e, type){
+function selCust(id, n, p, e, type, uuid){
     $('#custId').val(id);
     $('#custSearch').val(n);
     _custResultsClear();
     if (typeof window.cpsSetCustomer === 'function') {
-        cpsSetCustomer({ id: id, name: n, phone: p, email: e || '', customer_type: type || 'Registered Customer' });
+        cpsSetCustomer({ id: id, uuid: uuid || '', name: n, phone: p, email: e || '', customer_type: type || 'Registered Customer' });
     }
 }
 function openNewCust(){$('#ncName,#ncPhone,#ncEmail,#ncAddr,#ncGst,#ncPan').val('');$('#ncType').val('regular');$('#newCustOv').css('display','flex');}
@@ -3685,7 +4289,12 @@ $(function(){
     if(localStorage.getItem('pos_sidebar')==='0'){$('.pos-sidebar').addClass('collapsed');$('.ps-toggle').addClass('show');}
     $.get(BASE_URL+'/sales/warehouses',function(r){if(r&&r.status===200&&r.data)r.data.forEach(function(w){$('#fWarehouse').append('<option value="'+w.id+'">'+esc(w.name)+'</option>');});});
     $.get(BASE_URL+'/sales/taxes',function(r){if(r&&r.status===200&&r.data)_taxes=r.data;});
-    loadProducts();
+    // Wait for /sales/settings/data so the default warehouse filter is
+    // honored on the very first render. Without this, the first load
+    // shows ALL parts and the next reload (search, tab switch) drops to
+    // the filtered set, looking like parts "disappeared". Falls through
+    // unconditionally after 1.5s via the failsafe in posCfgWhenReady.
+    posCfgWhenReady(function(){ loadProducts(); });
     // Auto-focus search box (scanner types directly here)
     $('#fSearch').focus();
     var st;$('#fSearch').on('input',function(){clearTimeout(st);_search=$(this).val().trim();st=setTimeout(function(){_page=1;if(_vMode)closeVehicleParts();else loadProducts();},300);});

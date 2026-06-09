@@ -1553,7 +1553,7 @@ body.pos-mode .btn-close:hover{opacity:1;}
 }
 .adv-header-icon{
   width:48px; height:48px; border-radius:10px;
-  background:rgba(44,95,213,.10); color:#2c5fd5;
+  background:rgba(44,95,213,.10); color:var(--pv2-brand, #2c5fd5);
   display:flex; align-items:center; justify-content:center;
   font-size:20px; flex-shrink:0;
 }
@@ -1571,8 +1571,8 @@ body.pos-mode .btn-close:hover{opacity:1;}
   font-size:13px; font-weight:600; cursor:pointer;
   transition:border-color .12s, background .12s;
 }
-.adv-save-btn i{ color:#2c5fd5; font-size:14px; }
-.adv-save-btn:hover{ border-color:#2c5fd5; background:rgba(44,95,213,.04); }
+.adv-save-btn i{ color:var(--pv2-brand, #2c5fd5); font-size:14px; }
+.adv-save-btn:hover{ border-color:var(--pv2-brand, #2c5fd5); background:rgba(44,95,213,.04); }
 .adv-close{
   width:38px; height:38px; border-radius:8px;
   border:1px solid var(--pv2-border); background:#fff; color:#6b7280;
@@ -1603,7 +1603,7 @@ body.pos-mode .btn-close:hover{opacity:1;}
   background:#fff; box-shadow:0 1px 2px rgba(11,18,32,.16);
   transition:transform .18s;
 }
-.adv-toggle input:checked ~ .adv-toggle-track{ background:#2c5fd5; }
+.adv-toggle input:checked ~ .adv-toggle-track{ background:var(--pv2-brand, #2c5fd5); }
 .adv-toggle input:checked ~ .adv-toggle-track .adv-toggle-thumb{ transform:translateX(16px); }
 .adv-toggle-text strong{ font-size:13.5px; color:#111827; font-weight:700; display:block; }
 .adv-toggle-text small{ font-size:11.5px; color:#6b7280; display:block; margin-top:1px; }
@@ -1635,8 +1635,8 @@ body.pos-mode .btn-close:hover{opacity:1;}
 .adv-screen .adv-tabs .pcat:hover{ color:#111827 !important; }
 .adv-screen .adv-tabs .pcat.active,
 .adv-tabs .pcat.active{
-  color:#2c5fd5 !important;
-  border-bottom-color:#2c5fd5 !important;
+  color:var(--pv2-brand, #2c5fd5) !important;
+  border-bottom-color:var(--pv2-brand, #2c5fd5) !important;
   background:transparent !important;
   font-weight:700 !important;
 }
@@ -1697,7 +1697,7 @@ body.pos-mode .btn-close:hover{opacity:1;}
 .adv-grid input.pos-input::placeholder{ color:#9ca3af; }
 .adv-grid input.pos-input:focus,
 .adv-grid select.pos-input:focus{
-  border-color:#2c5fd5; box-shadow:0 0 0 3px rgba(44,95,213,.14);
+  border-color:var(--pv2-brand, #2c5fd5); box-shadow:0 0 0 3px rgba(44,95,213,.14);
 }
 .adv-grid select.pos-input{
   appearance:none; -webkit-appearance:none;
@@ -1718,7 +1718,7 @@ body.pos-mode .btn-close:hover{opacity:1;}
 }
 .adv-collapse-h .adv-collapse-icon{
   width:28px; height:28px; border-radius:6px;
-  background:rgba(44,95,213,.08); color:#2c5fd5;
+  background:rgba(44,95,213,.08); color:var(--pv2-brand, #2c5fd5);
   display:flex; align-items:center; justify-content:center; font-size:13px;
 }
 .adv-collapse-h-text{ flex:1; }
@@ -1748,12 +1748,12 @@ body.pos-mode .btn-close:hover{opacity:1;}
 }
 .adv-apply-btn{
   padding:10px 22px; font-size:13.5px; font-weight:700;
-  border-radius:8px; background:#2c5fd5; color:#fff;
-  border:1px solid #2c5fd5; min-width:160px; height:42px;
+  border-radius:8px; background:var(--pv2-brand, #2c5fd5); color:#fff;
+  border:1px solid var(--pv2-brand, #2c5fd5); min-width:160px; height:42px;
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
   flex:0 0 auto; white-space:nowrap;
 }
-.adv-apply-btn:hover{ background:#1f4cb8; border-color:#1f4cb8; }
+.adv-apply-btn:hover{ background:var(--pv2-brand-dark, #1f4cb8); border-color:var(--pv2-brand-dark, #1f4cb8); }
 
 /* ── Tablet (≥768 ≤1099) ── */
 @media (min-width:768px) and (max-width:1099px){
@@ -2697,21 +2697,25 @@ body.pos-mode .select2-container--default:not(.select2-container--has-clear) .se
    that are still defined above. Keep `info-page { display:none }` semantics:
    the screen is hidden by default and shown when JS adds the `.open` class.
    ═════════════════════════════════════════════════════════════════════════ */
+/* CPS palette is aliased onto the themable --pv2-* tokens so changing the
+   theme in /sales/ui-kit re-skins the Checkout / Confirm / Success / Drafts
+   screens too — not just the main sell screen. Hex literals are kept as
+   defaults for the case where --pv2-* vars haven't loaded yet (cold reload). */
 :root{
-  --cps-navy:        #1d2747;
-  --cps-navy-2:      #232f54;
-  --cps-blue:        #2c5fd5;
-  --cps-blue-soft:   #e8efff;
-  --cps-green:       #16a34a;
-  --cps-green-soft:  #e8f7ee;
-  --cps-red:         #dc2626;
-  --cps-amber:       #f59e0b;
-  --cps-bg:          #f3f6fb;
-  --cps-card:        #ffffff;
-  --cps-line:        #e5e9f2;
-  --cps-text:        #1d2747;
-  --cps-muted:       #6b7280;
-  --cps-subtle:      #94a3b8;
+  --cps-navy:        var(--pv2-ink,            #1d2747);
+  --cps-navy-2:      var(--pv2-ink,            #232f54);
+  --cps-blue:        var(--pv2-brand,          #2c5fd5);
+  --cps-blue-soft:   var(--pv2-brand-light,    #e8efff);
+  --cps-green:       var(--pv2-success,        #16a34a);
+  --cps-green-soft:  var(--pv2-success-bg,     #e8f7ee);
+  --cps-red:         var(--pv2-danger,         #dc2626);
+  --cps-amber:       var(--pv2-warning,        #f59e0b);
+  --cps-bg:          var(--pv2-surface-alt,    #f3f6fb);
+  --cps-card:        var(--pv2-surface,        #ffffff);
+  --cps-line:        var(--pv2-border,         #e5e9f2);
+  --cps-text:        var(--pv2-text,           #1d2747);
+  --cps-muted:       var(--pv2-muted,          #6b7280);
+  --cps-subtle:      var(--pv2-subtle,         #94a3b8);
 }
 
 .cps-screen.info-page.open{
@@ -3035,7 +3039,7 @@ select.cps-input{
   font-size:13px; font-weight:700; cursor:pointer;
   transition:background .12s, transform .12s;
 }
-.cps-btn-primary:hover{ background:#1f4cb8; transform:translateY(-1px); }
+.cps-btn-primary:hover{ background:var(--pv2-brand-dark, #1f4cb8); transform:translateY(-1px); }
 
 /* Customer search results — proper floating dropdown panel.
    Positioned absolutely directly under the search input. Default hidden;
@@ -3625,7 +3629,7 @@ select.cps-input{
 .sc-fbtn-orders{
   background:var(--cps-blue); color:#fff; border:none;
 }
-.sc-fbtn-orders:hover{ background:#1f4cb8; }
+.sc-fbtn-orders:hover{ background:var(--pv2-brand-dark, #1f4cb8); }
 
 /* Tablet (≤1099) — keep 2 columns but tighter */
 @media (max-width:1099px){
@@ -3682,7 +3686,7 @@ select.cps-input{
 }
 
 /* ── Confirm Payment screen (re-uses .sc-card / .sc-block / .sc-footer) ── */
-.pc-card .sc-check.pc-check{ background:#1d4ed8; box-shadow:0 6px 16px rgba(29,78,216,.30); }
+.pc-card .sc-check.pc-check{ background:var(--pv2-brand, #1d4ed8); box-shadow:0 6px 16px rgba(29,78,216,.30); }
 .pc-method-block #ccMethodBlockBody{ font-size:13px; color:var(--cps-text); }
 .pc-method-block .pc-cash-row,
 .pc-method-block .pc-ref-row{
