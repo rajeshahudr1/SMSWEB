@@ -144,6 +144,5 @@ vite.config.ts.timestamp-*
 /.idea/SMSWEB.iml
 /SMSWEB.zip
 /.idea/vcs.xml
-package-lock.json
-README.md
-.gitignore
+# IMPORTANT: package-lock.json is intentionally tracked so server deploys
+# get reproducible installs (`npm ci`). Do not re-add it to .gitignore.
