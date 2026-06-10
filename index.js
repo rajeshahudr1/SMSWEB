@@ -13,6 +13,17 @@ const H          = require('./helpers/helper');
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
+// ── Trust reverse-proxy headers ───────────────────
+// When nginx (or any L7 proxy) forwards a request internally as HTTP, Express
+// sees req.secure === false and refuses to set a `secure: true` cookie —
+// causing the post-login session cookie to be silently dropped on production
+// HTTPS deployments. Trusting the first proxy hop makes Express honour the
+// X-Forwarded-Proto header so req.secure reflects the ORIGINAL scheme.
+//
+// '1' = trust ONE hop in front (nginx). Use a larger int / IP whitelist if
+// the architecture has more proxies (e.g. CloudFlare → nginx → node).
+app.set('trust proxy', 1);
+
 // ── View engine ───────────────────────────────────
 app.set('views', path.join(__dirname, 'views'));
 app.engine('ejs', engine);
